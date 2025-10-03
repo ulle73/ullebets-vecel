@@ -1,16 +1,22 @@
-import clientPromise from "@/lib/mongo";
+﻿import clientPromise from "@/lib/mongo";
 
 const asArray = (v) =>
   Array.isArray(v) ? v :
   (Array.isArray(v?.shots) ? v.shots : []); // om shotmap har form { shots: [...] }
 
-export async function GET(_req, { params }) {
+export async function GET(_req, context) {
+  const { params } = await context;
+  const matchId = params?.id;
+  if (!matchId) {
+    return new Response("Missing id", { status: 400 });
+  }
+
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB || "app");
   const col = db.collection("teamstats");
 
   const doc = await col.findOne(
-    { _id: params.id },
+    { _id: matchId },
     { projection: { _id: 1, full: { $slice: 1 } } }
   );
   if (!doc) return new Response("Not found", { status: 404 });

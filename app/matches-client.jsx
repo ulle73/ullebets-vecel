@@ -1,83 +1,31 @@
-// "use client";
+﻿"use client";
 
-//   import useSWR from "swr";
-//   import { useState, useMemo, useMemo as useMemo2 } from "react";
-//   import DatePicker from "@/components/DatePicker";
-//   import LeagueTable from "@/components/LeagueTable";
-
-//   const fetcher = (url) => fetch(url).then(r => {
-//     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-//     return r.json();
-//   });
-
-//   export default function MatchesClient({ defaultDate }) {
-//     const [date, setDate] = useState(defaultDate);
-
-//     const { data, error, isLoading } = useSWR(
-//       date ? `/api/matches/by-date?date=${date}` : null,
-//       fetcher,
-//       {
-//         revalidateOnFocus: false,
-//         dedupingInterval: 60_000,
-//         keepPreviousData: true,
-//       }
-//     );
-
-//     const items = useMemo(() => data?.items ?? [], [data]);
-
-//     // Lokal formatterare på klienten (svensk tid)
-//     const fmt = useMemo2(
-//       () =>
-//         new Intl.DateTimeFormat("sv-SE", {
-//           hour: "2-digit",
-//           minute: "2-digit",
-//           hour12: false,
-//           timeZone: "Europe/Stockholm",
-//         }),
-//       []
-//     );
-//     const formatTime = (ts) => (ts ? fmt.format(new Date(ts * 1000)) : "—");
-
-//     return (
-//       <div>
-//         <div style={{ display: "flex", gap: 12, alignItems: "center", margin: "12px 0 8px" }}>
-//           <DatePicker value={date} onChange={setDate} />
-//           <div style={{ color: "#888", fontSize: 14 }}>
-//             {error ? "Fel vid hämtning." : isLoading ? "Laddar…" : `Matcher: ${items.length}`}
-//           </div>
-//         </div>
-
-//         <LeagueTable items={items} formatTime={formatTime} />
-//       </div>
-//     );
-//   }
- 
-
-"use client";
-
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
-import { useMemo, useState } from "react";
-import DatePicker from "@/components/DatePicker";
-import LeagueTable from "@/components/LeagueTable";
+import LeagueTables from "@/components/LeagueTables";
+import TeamCompare from "@/components/TeamCompare";
+import Lineups from "@/components/Lineups";
+import BacktestPage from "@/components/BacktestPage";
+import { normalizeMatch } from "@/components/LeagueTable";
 
 const fetcher = (url) =>
-  fetch(url).then((r) => {
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+  fetch(url).then((response) => {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json();
   });
 
-// Hjälp: plocka ut timestamp från "rå" fixture
-const getTs = (e) =>
+const getTimestamp = (entry) =>
   Number(
-    e?.startTimestamp ??
-    e?.event?.startTimestamp ??
-    e?.timestamp ??
-    e?.kickoffTime ??
-    0
+    entry?.startTimestamp ??
+      entry?.event?.startTimestamp ??
+      entry?.timestamp ??
+      entry?.kickoffTime ??
+      0
   ) || 0;
 
-// Format "HH:mm" i svensk tid
-function makeFmtSE() {
+function makeFormatter() {
   return new Intl.DateTimeFormat("sv-SE", {
     hour: "2-digit",
     minute: "2-digit",
@@ -86,11 +34,9 @@ function makeFmtSE() {
   });
 }
 
-// YYYY-MM-DD i svensk tid
 function ymdSEFromTs(ts) {
-  const d = new Date(ts * 1000);
-  // toLocaleDateString('sv-SE') ger redan "YYYY-MM-DD"
-  return d.toLocaleDateString("sv-SE", {
+  const date = new Date(ts * 1000);
+  return date.toLocaleDateString("sv-SE", {
     timeZone: "Europe/Stockholm",
     year: "numeric",
     month: "2-digit",
@@ -100,6 +46,7 @@ function ymdSEFromTs(ts) {
 
 export default function MatchesClient({ defaultDate }) {
   const [date, setDate] = useState(defaultDate);
+  const [selectedMatchId, setSelectedMatchId] = useState(null);
 
   const { data, error, isLoading } = useSWR(
     date ? `/api/matches/by-date?date=${date}` : null,
@@ -113,29 +60,94 @@ export default function MatchesClient({ defaultDate }) {
 
   const allItems = useMemo(() => data?.items ?? [], [data]);
 
-  // *** Viktigt: visa bara matcher vars lokala (SE) datum === valt datum ***
-  const items = useMemo(
-    () => allItems.filter((e) => {
-      const ts = getTs(e);
+  const items = useMemo(() => {
+    return allItems.filter((entry) => {
+      const ts = getTimestamp(entry);
       if (!ts) return false;
       return ymdSEFromTs(ts) === date;
-    }),
-    [allItems, date]
+    });
+  }, [allItems, date]);
+
+  const matches = useMemo(() => items.map(normalizeMatch), [items]);
+
+  useEffect(() => {
+    if (!selectedMatchId) return;
+    const stillExists = matches.some((match) => match.id === selectedMatchId);
+    if (!stillExists) {
+      setSelectedMatchId(null);
+    }
+  }, [matches, selectedMatchId]);
+
+  const formatter = useMemo(makeFormatter, []);
+  const formatTime = (ts) => (ts ? formatter.format(new Date(ts * 1000)) : "—");
+
+  const { data: matchDetails, error: matchError, isLoading: isMatchLoading } = useSWR(
+    selectedMatchId ? `/api/match/${selectedMatchId}` : null,
+    fetcher,
+    {
+      shouldRetryOnError: false,
+      revalidateOnFocus: false,
+    }
   );
 
-  const fmt = useMemo(makeFmtSE, []);
-  const formatTime = (ts) => (ts ? fmt.format(new Date(ts * 1000)) : "—");
+  const selectedMatchSummary = useMemo(
+    () => matches.find((match) => match.id === selectedMatchId) ?? null,
+    [matches, selectedMatchId]
+  );
+
+  const mergedMatch = useMemo(() => {
+    if (!selectedMatchSummary) return null;
+    return {
+      ...selectedMatchSummary.raw,
+      ...matchDetails,
+      matchId: selectedMatchSummary.id,
+      homeTeamName: matchDetails?.homeTeamName ?? selectedMatchSummary.homeTeamName,
+      awayTeamName: matchDetails?.awayTeamName ?? selectedMatchSummary.awayTeamName,
+      homeTeamId: matchDetails?.homeTeamId ?? selectedMatchSummary.homeTeamId,
+      awayTeamId: matchDetails?.awayTeamId ?? selectedMatchSummary.awayTeamId,
+    };
+  }, [selectedMatchSummary, matchDetails]);
+
+  const showDetails = Boolean(selectedMatchSummary);
+
+  const containerWidthClass = showDetails ? "max-w-full" : "md:max-w-[70vw]";
+  const containerPaddingClass = showDetails ? "px-3 sm:px-6 lg:px-8" : "px-4 sm:px-6";
+  const gridColumnsClass = showDetails
+    ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
+    : "grid-cols-1 md:grid-cols-2";
+  const gridRowClass = "auto-rows-[minmax(0,1fr)]";
 
   return (
-    <div>
-      <div style={{ display: "flex", gap: 12, alignItems: "center", margin: "12px 0 8px" }}>
-        <DatePicker value={date} onChange={setDate} />
-        <div style={{ color: "#888", fontSize: 14 }}>
-          {error ? "Fel vid hämtning." : isLoading ? "Laddar…" : `Matcher: ${items.length}`}
+    <div className="w-full">
+      <div
+        className={`mx-auto w-full ${containerPaddingClass} pb-6 ${containerWidthClass}`}
+      >
+        <div className={`grid gap-4 ${gridColumnsClass} ${gridRowClass}`}>
+          <LeagueTables
+            date={date}
+            onDateChange={setDate}
+            items={items}
+            formatTime={formatTime}
+            onSelectMatch={setSelectedMatchId}
+            selectedMatchId={selectedMatchId}
+            isLoading={isLoading}
+            error={error}
+            matchesCount={matches.length}
+          />
+
+          <TeamCompare
+            match={mergedMatch}
+            isLoading={isMatchLoading}
+            error={matchError}
+          />
+
+          {showDetails ? (
+            <Lineups match={mergedMatch} isLoading={isMatchLoading} />
+          ) : null}
+
+          {showDetails ? <BacktestPage match={mergedMatch} /> : null}
         </div>
       </div>
-
-      <LeagueTable items={items} formatTime={formatTime} />
     </div>
   );
 }
