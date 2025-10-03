@@ -78,6 +78,10 @@ function average(values) {
   return sum / values.length;
 }
 
+function isFiniteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 function formatTeamNameForStats(teamName) {
   return teamName.toLowerCase().replace(/\s+/g, "_");
 }
@@ -550,6 +554,112 @@ function computeSpecials(matches, matchType) {
   return specials;
 }
 
+function computeSpecialsLeagueAverage(profiles) {
+  const leagueAverage = {
+    shotsPerMinute: {
+      for: {},
+      against: {},
+    },
+    firstGoal: {
+      concedeFirstPercentage: null,
+      scoreFirstPercentage: null,
+      averageTimeScoredFirst: null,
+      averageTimeConcededFirst: null,
+    },
+    shotsPerTenMinutes: {
+      for: {},
+      against: {},
+    },
+  };
+
+  if (!Array.isArray(profiles) || !profiles.length) {
+    for (const state of SCORE_STATES) {
+      leagueAverage.shotsPerMinute.for[state] = null;
+      leagueAverage.shotsPerMinute.against[state] = null;
+    }
+    for (const label of BASE_WINDOW_LABELS) {
+      leagueAverage.shotsPerTenMinutes.for[label] = null;
+      leagueAverage.shotsPerTenMinutes.against[label] = null;
+    }
+    return leagueAverage;
+  }
+
+  const specialsList = profiles
+    .map((profile) => profile.specials)
+    .filter((specials) => specials && typeof specials === "object");
+
+  for (const state of SCORE_STATES) {
+    const forValues = specialsList
+      .map((specials) => specials?.shotsPerMinute?.for?.[state])
+      .filter(isFiniteNumber);
+    const againstValues = specialsList
+      .map((specials) => specials?.shotsPerMinute?.against?.[state])
+      .filter(isFiniteNumber);
+
+    leagueAverage.shotsPerMinute.for[state] = forValues.length ? average(forValues) : null;
+    leagueAverage.shotsPerMinute.against[state] =
+      againstValues.length ? average(againstValues) : null;
+  }
+
+  const firstGoalMetrics = [
+    "concedeFirstPercentage",
+    "scoreFirstPercentage",
+    "averageTimeScoredFirst",
+    "averageTimeConcededFirst",
+  ];
+
+  for (const metric of firstGoalMetrics) {
+    const values = specialsList
+      .map((specials) => specials?.firstGoal?.[metric])
+      .filter(isFiniteNumber);
+    leagueAverage.firstGoal[metric] = values.length ? average(values) : null;
+  }
+
+  const windowLabels = new Set(BASE_WINDOW_LABELS);
+
+  for (const specials of specialsList) {
+    const forWindows = specials?.shotsPerTenMinutes?.for;
+    if (forWindows && typeof forWindows === "object") {
+      for (const label of Object.keys(forWindows)) {
+        windowLabels.add(label);
+      }
+    }
+
+    const againstWindows = specials?.shotsPerTenMinutes?.against;
+    if (againstWindows && typeof againstWindows === "object") {
+      for (const label of Object.keys(againstWindows)) {
+        windowLabels.add(label);
+      }
+    }
+  }
+
+  const sortedLabels = Array.from(windowLabels).sort((a, b) => {
+    const parseLabel = (label) => {
+      const match = label.match(/d+/);
+      return match ? parseInt(match[0], 10) : 0;
+    };
+    return parseLabel(a) - parseLabel(b);
+  });
+
+  for (const label of sortedLabels) {
+    const forValues = specialsList
+      .map((specials) => specials?.shotsPerTenMinutes?.for?.[label])
+      .filter(isFiniteNumber);
+    const againstValues = specialsList
+      .map((specials) => specials?.shotsPerTenMinutes?.against?.[label])
+      .filter(isFiniteNumber);
+
+    leagueAverage.shotsPerTenMinutes.for[label] = forValues.length
+      ? average(forValues)
+      : null;
+    leagueAverage.shotsPerTenMinutes.against[label] = againstValues.length
+      ? average(againstValues)
+      : null;
+  }
+
+  return leagueAverage;
+}
+
 
 function assignRanks(profiles, statGroup) {
   for (const statKey of STAT_KEYS) {
@@ -611,12 +721,17 @@ function applyLeagueRankings(leagueProfilesByMatchType) {
 
     const leagueAverageFor = computeLeagueAverages(profiles, "for");
     const leagueAverageAgainst = computeLeagueAverages(profiles, "against");
+    const leagueAverageSpecials = computeSpecialsLeagueAverage(profiles);
 
     for (const profile of profiles) {
       profile.statistics.leagueAverage = {
         for: leagueAverageFor,
         against: leagueAverageAgainst,
       };
+      if (!profile.specials) {
+        profile.specials = {};
+      }
+      profile.specials.leagueAverage = leagueAverageSpecials;
     }
   }
 }
