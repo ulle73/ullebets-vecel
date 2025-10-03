@@ -56,6 +56,9 @@ const STAT_KEYS = [
 
 const PERIODS = ["ALL", "1ST", "2ND"];
 const MATCH_TYPES = ["home", "away"];
+const SCORE_STATES = ["leading", "trailing", "tied"];
+const BASE_WINDOW_LABELS = ["0-10", "11-20", "21-30", "31-40", "41-50", "51-60", "61-70", "71-80", "81-90"];
+
 
 async function readJSON(filePath) {
   try {
@@ -191,6 +194,362 @@ function resolveLatestSavedAt(matches) {
   return new Date(latest).toISOString();
 }
 
+function normalizeAddedMinutes(value) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 60) {
+    return 0;
+  }
+  return value;
+}
+
+function resolveIncidentTimeSeconds(incident) {
+  if (!incident || typeof incident.time !== "number") {
+    return null;
+  }
+  const added = normalizeAddedMinutes(incident.addedTime);
+  return Math.max(0, incident.time * 60 + added * 60);
+}
+
+function resolveShotTimeSeconds(shot) {
+  if (!shot) {
+    return null;
+  }
+  if (typeof shot.timeSeconds === "number" && Number.isFinite(shot.timeSeconds)) {
+    return shot.timeSeconds;
+  }
+  if (typeof shot.time !== "number") {
+    return null;
+  }
+  const added = normalizeAddedMinutes(shot.addedTime);
+  return Math.max(0, shot.time * 60 + added * 60);
+}
+
+function resolveMatchDuration(shotEntries, incidents) {
+  const defaultDuration = 90 * 60;
+  const incidentTimes = Array.isArray(incidents)
+    ? incidents
+        .map((incident) => resolveIncidentTimeSeconds(incident))
+        .filter((value) => Number.isFinite(value))
+    : [];
+  const shotTimes = Array.isArray(shotEntries)
+    ? shotEntries
+        .map((shot) => resolveShotTimeSeconds(shot))
+        .filter((value) => Number.isFinite(value))
+    : [];
+  const ftIncident = Array.isArray(incidents)
+    ? incidents.find(
+        (incident) => incident?.text === "FT" && incident?.incidentType === "period"
+      )
+    : null;
+  const ftTime = resolveIncidentTimeSeconds(ftIncident);
+  const maxIncidentTime = incidentTimes.length ? Math.max(...incidentTimes) : 0;
+  const maxShotTime = shotTimes.length ? Math.max(...shotTimes) : 0;
+  return Math.max(defaultDuration, ftTime ?? 0, maxIncidentTime, maxShotTime);
+}
+
+function determineScoreState(homeScore, awayScore, teamIsHome) {
+  const teamScore = teamIsHome ? homeScore : awayScore;
+  const opponentScore = teamIsHome ? awayScore : homeScore;
+  if (teamScore > opponentScore) {
+    return "leading";
+  }
+  if (teamScore < opponentScore) {
+    return "trailing";
+  }
+  return "tied";
+}
+
+function buildScoreSegments(incidents, teamIsHome, matchDuration) {
+  const goals = Array.isArray(incidents)
+    ? incidents
+        .filter((incident) => incident?.incidentType === "goal")
+        .map((incident) => ({
+          seconds: resolveIncidentTimeSeconds(incident),
+          homeScore: typeof incident.homeScore === "number" ? incident.homeScore : null,
+          awayScore: typeof incident.awayScore === "number" ? incident.awayScore : null,
+          isHome: incident.isHome === true,
+        }))
+        .filter((goal) => Number.isFinite(goal.seconds))
+        .sort((a, b) => a.seconds - b.seconds)
+    : [];
+
+  let currentHome = 0;
+  let currentAway = 0;
+  let currentState = "tied";
+  const segments = [];
+  let previousTime = 0;
+
+  for (const goal of goals) {
+    const segmentEnd = Math.min(Math.max(goal.seconds, previousTime), matchDuration);
+    if (segmentEnd > previousTime) {
+      segments.push({ start: previousTime, end: segmentEnd, state: currentState });
+    }
+    if (typeof goal.homeScore === "number" && typeof goal.awayScore === "number") {
+      currentHome = goal.homeScore;
+      currentAway = goal.awayScore;
+    } else if (goal.isHome) {
+      currentHome += 1;
+    } else {
+      currentAway += 1;
+    }
+    currentState = determineScoreState(currentHome, currentAway, teamIsHome);
+    previousTime = segmentEnd;
+  }
+
+  if (!segments.length || matchDuration > previousTime) {
+    const start = segments.length ? previousTime : 0;
+    const end = matchDuration;
+    if (end > start) {
+      segments.push({ start, end, state: currentState });
+    }
+  }
+
+  if (!segments.length) {
+    segments.push({ start: 0, end: matchDuration, state: currentState });
+  }
+
+  return segments;
+}
+
+function findStateForTime(segments, matchDuration, timeSeconds) {
+  if (!segments.length) {
+    return "tied";
+  }
+  const clamped = Math.min(Math.max(timeSeconds, 0), matchDuration);
+  for (const segment of segments) {
+    if (clamped >= segment.start && clamped < segment.end) {
+      return segment.state;
+    }
+  }
+  return segments[segments.length - 1].state;
+}
+
+function countShotsByState(shots, segments, matchDuration) {
+  const counts = {
+    leading: 0,
+    trailing: 0,
+    tied: 0,
+  };
+  if (!Array.isArray(shots) || !segments.length) {
+    return counts;
+  }
+  for (const shot of shots) {
+    const seconds = resolveShotTimeSeconds(shot);
+    if (!Number.isFinite(seconds)) {
+      continue;
+    }
+    const state = findStateForTime(segments, matchDuration, seconds);
+    counts[state] += 1;
+  }
+  return counts;
+}
+
+function accumulateWindowCounts(target, source) {
+  for (const [label, count] of source.entries()) {
+    target.set(label, (target.get(label) ?? 0) + count);
+  }
+}
+
+function getWindowLabelFromMinute(minute) {
+  if (!Number.isFinite(minute) || minute <= 0) {
+    return BASE_WINDOW_LABELS[0];
+  }
+  if (minute <= 10) {
+    return BASE_WINDOW_LABELS[0];
+  }
+  const index = Math.ceil(minute / 10) - 1;
+  if (index <= 0) {
+    return BASE_WINDOW_LABELS[0];
+  }
+  const labelStart = index * 10 + 1;
+  const labelEnd = (index + 1) * 10;
+  return labelStart + "-" + labelEnd;
+}
+
+function countShotsByWindow(shots) {
+  const map = new Map();
+  if (!Array.isArray(shots)) {
+    return map;
+  }
+  for (const shot of shots) {
+    const seconds = resolveShotTimeSeconds(shot);
+    if (!Number.isFinite(seconds)) {
+      continue;
+    }
+    const minute = seconds / 60;
+    const label = getWindowLabelFromMinute(minute);
+    map.set(label, (map.get(label) ?? 0) + 1);
+  }
+  return map;
+}
+
+function computeSpecials(matches, matchType) {
+  const specials = {
+    shotsPerMinute: {
+      for: {
+        leading: null,
+        trailing: null,
+        tied: null,
+      },
+      against: {
+        leading: null,
+        trailing: null,
+        tied: null,
+      },
+    },
+    firstGoal: {
+      concedeFirstPercentage: null,
+      scoreFirstPercentage: null,
+      averageTimeScoredFirst: null,
+      averageTimeConcededFirst: null,
+    },
+    shotsPerTenMinutes: {
+      for: {},
+      against: {},
+    },
+  };
+
+  if (!Array.isArray(matches) || !matches.length) {
+    for (const label of BASE_WINDOW_LABELS) {
+      specials.shotsPerTenMinutes.for[label] = null;
+      specials.shotsPerTenMinutes.against[label] = null;
+    }
+    return specials;
+  }
+
+  const teamIsHome = matchType === "home";
+  const stateTotalsFor = {
+    leading: { shots: 0, minutes: 0 },
+    trailing: { shots: 0, minutes: 0 },
+    tied: { shots: 0, minutes: 0 },
+  };
+  const stateTotalsAgainst = {
+    leading: { shots: 0, minutes: 0 },
+    trailing: { shots: 0, minutes: 0 },
+    tied: { shots: 0, minutes: 0 },
+  };
+  const windowCountsFor = new Map();
+  const windowCountsAgainst = new Map();
+  let matchesWithShotmap = 0;
+
+  const firstGoalStats = {
+    total: 0,
+    scoredFirst: 0,
+    concededFirst: 0,
+    scoredFirstTimeSum: 0,
+    concededFirstTimeSum: 0,
+    scoredFirstSamples: 0,
+    concededFirstSamples: 0,
+  };
+
+  for (const match of matches) {
+    const shotEntries = match?.shotmap?.shotmap;
+    const incidents = match?.incidents?.incidents;
+    const hasShotmap = Array.isArray(shotEntries);
+    const hasIncidents = Array.isArray(incidents);
+
+    if (hasShotmap) {
+      matchesWithShotmap += 1;
+      const teamShots = shotEntries.filter((shot) => shot?.isHome === teamIsHome);
+      const opponentShots = shotEntries.filter((shot) => shot?.isHome === !teamIsHome);
+
+      accumulateWindowCounts(windowCountsFor, countShotsByWindow(teamShots));
+      accumulateWindowCounts(windowCountsAgainst, countShotsByWindow(opponentShots));
+
+      if (hasIncidents) {
+        const matchDuration = resolveMatchDuration(shotEntries, incidents);
+        const segments = buildScoreSegments(incidents, teamIsHome, matchDuration);
+
+        for (const segment of segments) {
+          const minutes = (segment.end - segment.start) / 60;
+          if (minutes <= 0) {
+            continue;
+          }
+          stateTotalsFor[segment.state].minutes += minutes;
+          stateTotalsAgainst[segment.state].minutes += minutes;
+        }
+
+        const teamShotsByState = countShotsByState(teamShots, segments, matchDuration);
+        const oppShotsByState = countShotsByState(opponentShots, segments, matchDuration);
+
+        for (const state of SCORE_STATES) {
+          stateTotalsFor[state].shots += teamShotsByState[state];
+          stateTotalsAgainst[state].shots += oppShotsByState[state];
+        }
+      }
+    }
+
+    if (hasIncidents) {
+      const goalEvents = incidents
+        .filter((incident) => incident?.incidentType === "goal")
+        .map((incident) => ({
+          seconds: resolveIncidentTimeSeconds(incident),
+          isTeam: incident?.isHome === teamIsHome,
+        }))
+        .filter((event) => Number.isFinite(event.seconds))
+        .sort((a, b) => a.seconds - b.seconds);
+
+      if (goalEvents.length) {
+        firstGoalStats.total += 1;
+        const firstGoal = goalEvents[0];
+        const minutes = firstGoal.seconds / 60;
+        if (firstGoal.isTeam) {
+          firstGoalStats.scoredFirst += 1;
+          firstGoalStats.scoredFirstTimeSum += minutes;
+          firstGoalStats.scoredFirstSamples += 1;
+        } else {
+          firstGoalStats.concededFirst += 1;
+          firstGoalStats.concededFirstTimeSum += minutes;
+          firstGoalStats.concededFirstSamples += 1;
+        }
+      }
+    }
+  }
+
+  for (const state of SCORE_STATES) {
+    const forMinutes = stateTotalsFor[state].minutes;
+    const againstMinutes = stateTotalsAgainst[state].minutes;
+    specials.shotsPerMinute.for[state] = forMinutes > 0 ? stateTotalsFor[state].shots / forMinutes : null;
+    specials.shotsPerMinute.against[state] =
+      againstMinutes > 0 ? stateTotalsAgainst[state].shots / againstMinutes : null;
+  }
+
+  if (firstGoalStats.total > 0) {
+    specials.firstGoal.scoreFirstPercentage = firstGoalStats.scoredFirst / firstGoalStats.total;
+    specials.firstGoal.concedeFirstPercentage = firstGoalStats.concededFirst / firstGoalStats.total;
+  }
+  if (firstGoalStats.scoredFirstSamples > 0) {
+    specials.firstGoal.averageTimeScoredFirst =
+      firstGoalStats.scoredFirstTimeSum / firstGoalStats.scoredFirstSamples;
+  }
+  if (firstGoalStats.concededFirstSamples > 0) {
+    specials.firstGoal.averageTimeConcededFirst =
+      firstGoalStats.concededFirstTimeSum / firstGoalStats.concededFirstSamples;
+  }
+
+  const windowLabels = new Set(BASE_WINDOW_LABELS);
+  for (const key of windowCountsFor.keys()) {
+    windowLabels.add(key);
+  }
+  for (const key of windowCountsAgainst.keys()) {
+    windowLabels.add(key);
+  }
+  const sortedLabels = Array.from(windowLabels).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+
+  for (const label of sortedLabels) {
+    if (matchesWithShotmap > 0) {
+      specials.shotsPerTenMinutes.for[label] = (windowCountsFor.get(label) ?? 0) / matchesWithShotmap;
+      specials.shotsPerTenMinutes.against[label] =
+        (windowCountsAgainst.get(label) ?? 0) / matchesWithShotmap;
+    } else {
+      specials.shotsPerTenMinutes.for[label] = null;
+      specials.shotsPerTenMinutes.against[label] = null;
+    }
+  }
+
+  return specials;
+}
+
+
 function assignRanks(profiles, statGroup) {
   for (const statKey of STAT_KEYS) {
     for (const period of PERIODS) {
@@ -221,6 +580,24 @@ function assignRanks(profiles, statGroup) {
   }
 }
 
+function computeLeagueAverages(profiles, statGroup) {
+  const leagueAverage = {};
+
+  for (const statKey of STAT_KEYS) {
+    leagueAverage[statKey] = {};
+
+    for (const period of PERIODS) {
+      const values = profiles
+        .map((profile) => profile.statistics?.[statGroup]?.[statKey]?.[period]?.value)
+        .filter((value) => value !== null && value !== undefined);
+
+      leagueAverage[statKey][period] = { value: average(values) };
+    }
+  }
+
+  return leagueAverage;
+}
+
 function applyLeagueRankings(leagueProfilesByMatchType) {
   for (const matchType of MATCH_TYPES) {
     const profiles = leagueProfilesByMatchType[matchType];
@@ -230,6 +607,16 @@ function applyLeagueRankings(leagueProfilesByMatchType) {
 
     assignRanks(profiles, "for");
     assignRanks(profiles, "against");
+
+    const leagueAverageFor = computeLeagueAverages(profiles, "for");
+    const leagueAverageAgainst = computeLeagueAverages(profiles, "against");
+
+    for (const profile of profiles) {
+      profile.statistics.leagueAverage = {
+        for: leagueAverageFor,
+        against: leagueAverageAgainst,
+      };
+    }
   }
 }
 
@@ -274,6 +661,7 @@ async function main() {
         const games = buildGames(matches);
         const savedAt = resolveLatestSavedAt(matches) ?? new Date().toISOString();
         const statistics = computeStatistics(matches, matchType);
+        const specials = computeSpecials(matches, matchType);
         const teamFileName = `${sanitizeFileComponent(team.name)}_${matchType}.json`;
         const outputPath = path.join(leagueOutputDir, teamFileName);
 
@@ -289,6 +677,7 @@ async function main() {
           },
           games,
           statistics,
+          specials,
         };
 
         leagueProfilesByMatchType[matchType].push(profile);
