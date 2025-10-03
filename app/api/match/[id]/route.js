@@ -1,11 +1,14 @@
 import clientPromise from "@/lib/mongo";
 
+const asArray = (v) =>
+  Array.isArray(v) ? v :
+  (Array.isArray(v?.shots) ? v.shots : []); // om shotmap har form { shots: [...] }
+
 export async function GET(_req, { params }) {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB || "app");
   const col = db.collection("teamstats");
 
-  // hämta endast första elementet i full (minimerar payload)
   const doc = await col.findOne(
     { _id: params.id },
     { projection: { _id: 1, full: { $slice: 1 } } }
@@ -14,6 +17,11 @@ export async function GET(_req, { params }) {
 
   const f0 = Array.isArray(doc.full) ? doc.full[0] ?? {} : {};
 
+  const incidents = Array.isArray(f0.incidents) ? f0.incidents : [];
+  const shotmap = asArray(f0.shotmap);
+  const odds = (f0.odds && typeof f0.odds === "object") ? f0.odds : null;
+  const statistics = Array.isArray(f0.matchDetails?.statistics) ? f0.matchDetails.statistics : [];
+
   const res = {
     matchId: doc._id,
     timestamp: f0.timestamp ?? null,
@@ -21,10 +29,10 @@ export async function GET(_req, { params }) {
     homeTeamName: f0.homeTeamName ?? null,
     awayTeamId: f0.awayTeamId ?? null,
     awayTeamName: f0.awayTeamName ?? null,
-    incidents: f0.incidents ?? [],
-    shotmap: f0.shotmap ?? [],
-    odds: f0.odds ?? null,
-    statistics: f0.matchDetails?.statistics ?? [],
+    incidents,
+    shotmap,
+    odds,
+    statistics,
   };
 
   return new Response(JSON.stringify(res), {
