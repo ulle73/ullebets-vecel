@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import clientPromise from "../lib/mongo.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -620,6 +621,45 @@ function applyLeagueRankings(leagueProfilesByMatchType) {
   }
 }
 
+async function saveProfilesToDatabase(profiles, generatedAt) {
+  if (!Array.isArray(profiles) || !profiles.length) {
+    console.log("Info: No team profiles to upsert into database.");
+    return;
+  }
+
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB || "app");
+  const collection = db.collection("teamprofiles");
+
+  const timestamp = generatedAt ?? new Date().toISOString();
+  const operations = profiles.map(({ leagueName, profile }) => {
+    const meta = profile.meta ?? {};
+    const identifier = `${meta.ligaId ?? "unknown"}:${meta.lagId ?? "unknown"}:${meta.matchType ?? "unknown"}`;
+    const document = {
+      _id: identifier,
+      leagueName,
+      generatedAt: timestamp,
+      ...profile,
+    };
+
+    return {
+      updateOne: {
+        filter: { _id: identifier },
+        update: { $set: document },
+        upsert: true,
+      },
+    };
+  });
+
+  const chunkSize = 500;
+  for (let i = 0; i < operations.length; i += chunkSize) {
+    const chunk = operations.slice(i, i + chunkSize);
+    await collection.bulkWrite(chunk, { ordered: false });
+  }
+
+  console.log(`Success: Upserted ${operations.length} team profiles into MongoDB`);
+}
+
 async function main() {
   const dataDir = path.resolve(__dirname, "../data");
   const teamStatsDir = path.join(dataDir, "teamstats");
@@ -632,6 +672,8 @@ async function main() {
   }
 
   await fs.mkdir(teamProfilesDir, { recursive: true });
+
+  const profilesForDatabase = [];
 
   for (const [leagueName, leagueInfo] of Object.entries(leaguesData)) {
     const leagueDirName = sanitizeFileComponent(leagueName).replace(/\s+/g, "-");
@@ -682,6 +724,7 @@ async function main() {
 
         leagueProfilesByMatchType[matchType].push(profile);
         filesToWrite.push({ profile, outputPath });
+        profilesForDatabase.push({ leagueName, profile });
       }
     }
 
@@ -692,6 +735,8 @@ async function main() {
       console.log(`Success: Created profile ${path.relative(dataDir, file.outputPath)}`);
     }
   }
+  const generatedAt = new Date().toISOString();
+  await saveProfilesToDatabase(profilesForDatabase, generatedAt);
 }
 
 main().catch((error) => {
