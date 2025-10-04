@@ -128,22 +128,25 @@ function groupPlayersByFormation(starters = [], formation) {
   return { goalkeeper, lines: layout };
 }
 
-function computeRowX(totalRows, rowIndex, orientation) {
-  if (totalRows <= 1) return 50;
-  const minX = 14;
-  const maxX = 86;
-  const fraction = totalRows === 1 ? 0.5 : rowIndex / (totalRows - 1);
-  const x = minX + (maxX - minX) * fraction;
-  return orientation === "right" ? 100 - x : x;
+function computeLineY(totalRows, rowIndex, orientation) {
+  if (totalRows <= 1) {
+    return orientation === "bottom" ? 72 : 28;
+  }
+
+  const isBottom = orientation === "bottom";
+  const start = isBottom ? 90 : 10;
+  const end = isBottom ? 54 : 46;
+  const fraction = rowIndex / (totalRows - 1);
+  return start + (end - start) * fraction;
 }
 
-function computeRowY(count) {
+function computeLineXs(count) {
   if (count <= 0) return [];
   if (count === 1) return [50];
-  const top = 14;
-  const bottom = 86;
-  const step = (bottom - top) / (count - 1);
-  return Array.from({ length: count }, (_, index) => top + step * index);
+  const minX = 18;
+  const maxX = 82;
+  const step = (maxX - minX) / (count - 1);
+  return Array.from({ length: count }, (_, index) => minX + step * index);
 }
 
 function buildPitchPlayers(starters, formation, orientation) {
@@ -155,17 +158,17 @@ function buildPitchPlayers(starters, formation, orientation) {
   let rowIndex = 0;
 
   if (grouping.goalkeeper) {
-    const x = computeRowX(totalRows, rowIndex, orientation);
-    result.push({ ...grouping.goalkeeper, x, y: 50, isGoalkeeper: true });
+    const y = computeLineY(totalRows, rowIndex, orientation);
+    result.push({ ...grouping.goalkeeper, x: 50, y, isGoalkeeper: true });
     rowIndex += 1;
   }
 
   for (const line of grouping.lines) {
     const players = Array.isArray(line) ? line.filter(Boolean) : [];
-    const x = computeRowX(totalRows, rowIndex, orientation);
-    const ys = computeRowY(players.length || 1);
+    const y = computeLineY(totalRows, rowIndex, orientation);
+    const xs = computeLineXs(players.length || 1);
     players.forEach((player, index) => {
-      result.push({ ...player, x, y: ys[index] ?? 50, isGoalkeeper: false });
+      result.push({ ...player, x: xs[index] ?? 50, y, isGoalkeeper: false });
     });
     rowIndex += 1;
   }
@@ -219,41 +222,65 @@ function formatPosition(player) {
   return value ? value.toUpperCase() : null;
 }
 
-function Pitch({ players, badgeClass }) {
+function PlayerMarker({ player, badgeClass }) {
+  const badge = formatJerseyNumber(player) || (player.name ? player.name[0] : "?");
   return (
-    <div className="relative isolate w-full overflow-hidden rounded-xl border border-emerald-700 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-900 pb-[140%] shadow-inner">
-      <div className="absolute inset-[4%] rounded-xl border border-emerald-500/70"></div>
-      <div className="absolute left-1/2 top-[4%] h-[92%] w-px -translate-x-1/2 bg-emerald-500/60"></div>
-      <div className="absolute left-[4%] top-1/2 h-[40%] w-[14%] -translate-y-1/2 rounded-r-[45%] border border-emerald-500/60"></div>
-      <div className="absolute right-[4%] top-1/2 h-[40%] w-[14%] -translate-y-1/2 rounded-l-[45%] border border-emerald-500/60"></div>
-      <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-emerald-500/60"></div>
-      <div className="absolute left-[4%] top-1/2 h-[24%] w-[6%] -translate-y-1/2 border border-emerald-500/60"></div>
-      <div className="absolute right-[4%] top-1/2 h-[24%] w-[6%] -translate-y-1/2 border border-emerald-500/60"></div>
-      {players.map((player) => {
-        const badge = formatJerseyNumber(player) || (player.name ? player.name[0] : "?");
-        return (
-          <div
-            key={player.id ?? `${player.name}-${player.x}-${player.y}`}
-            className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
-            style={{ left: `${player.x}%`, top: `${player.y}%` }}
-          >
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white shadow-lg ${badgeClass}`}
-            >
-              {badge}
-            </div>
-            <div className="mt-1 whitespace-nowrap px-2 text-center text-xs font-medium text-emerald-50 drop-shadow">
-              {formatPlayerName(player)}
-              {player.captain ? <span className="ml-1 text-[10px]">©</span> : null}
-            </div>
-            {player.rating != null ? (
-              <div className="text-[11px] font-semibold text-emerald-200">
-                {player.rating}
-              </div>
-            ) : null}
-          </div>
-        );
-      })}
+    <div
+      className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
+      style={{ left: `${player.x}%`, top: `${player.y}%` }}
+    >
+      <div
+        className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white shadow-lg ${badgeClass}`}
+      >
+        {badge}
+      </div>
+      <div className="mt-1 whitespace-nowrap px-2 text-center text-xs font-medium text-white drop-shadow">
+        {formatPlayerName(player)}
+        {player.captain ? <span className="ml-1 text-[10px]">©</span> : null}
+      </div>
+      {player.rating != null ? (
+        <div className="text-[11px] font-semibold text-emerald-100">
+          {player.rating}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CombinedPitch({ homeLineup, awayLineup }) {
+  const homePlayers = useMemo(
+    () => buildPitchPlayers(homeLineup?.starters ?? [], homeLineup?.formation, "top"),
+    [homeLineup]
+  );
+  const awayPlayers = useMemo(
+    () => buildPitchPlayers(awayLineup?.starters ?? [], awayLineup?.formation, "bottom"),
+    [awayLineup]
+  );
+
+  if (!homePlayers.length && !awayPlayers.length) {
+    return null;
+  }
+
+  const homeBadge = resolveBadgeClass("home");
+  const awayBadge = resolveBadgeClass("away");
+
+  return (
+    <div className="relative isolate w-full overflow-hidden rounded-2xl border border-emerald-700 shadow-lg">
+      <div className="relative w-full pb-[150%]">
+        <div className="absolute inset-0 bg-[url('/pitch4.png')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-emerald-900/30" />
+        <div className="absolute inset-x-[10%] top-1/2 h-px bg-white/40" />
+        <div className="absolute inset-[6%] rounded-[32px] border border-white/25" />
+        {[homePlayers, awayPlayers].map((group, index) =>
+          group.map((player) => (
+            <PlayerMarker
+              key={player.id ?? `${player.name}-${player.x}-${player.y}`}
+              player={player}
+              badgeClass={index === 0 ? homeBadge : awayBadge}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -291,12 +318,7 @@ function SubstitutesList({ players }) {
   );
 }
 
-function TeamLineup({ lineup, teamLabel, orientation, badgeClass }) {
-  const playersOnPitch = useMemo(
-    () => buildPitchPlayers(lineup?.starters ?? [], lineup?.formation, orientation),
-    [lineup, orientation]
-  );
-
+function TeamLineup({ lineup, teamLabel }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
@@ -317,7 +339,6 @@ function TeamLineup({ lineup, teamLabel, orientation, badgeClass }) {
           </span>
         ) : null}
       </div>
-      <Pitch players={playersOnPitch} badgeClass={badgeClass} />
       <SubstitutesList players={lineup?.substitutes ?? []} />
     </div>
   );
@@ -426,13 +447,12 @@ export default function Lineups({ match, isLoading, className = "" }) {
             Uppdatera
           </button>
         </div>
+        <CombinedPitch homeLineup={homeLineup} awayLineup={awayLineup} />
         <div className="grid gap-6 lg:grid-cols-2">
           {homeLineup ? (
             <TeamLineup
               lineup={homeLineup}
-              orientation="left"
               teamLabel="Hemma"
-              badgeClass={resolveBadgeClass("home")}
             />
           ) : (
             <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
@@ -442,9 +462,7 @@ export default function Lineups({ match, isLoading, className = "" }) {
           {awayLineup ? (
             <TeamLineup
               lineup={awayLineup}
-              orientation="right"
               teamLabel="Borta"
-              badgeClass={resolveBadgeClass("away")}
             />
           ) : (
             <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
