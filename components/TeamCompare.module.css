@@ -27,6 +27,42 @@
   color: #9ca3af;
 }
 
+.teamIdentities {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+.teamIdentity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.teamIdentityLogo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.teamIdentityName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.teamIdentitiesDivider {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
 .table {
   display: flex;
   flex-direction: column;
@@ -40,9 +76,8 @@
 .mainHeader {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
-  grid-template-rows: auto auto;
-  gap: 10px 16px;
-  padding: 16px 18px 12px;
+  gap: 0 16px;
+  padding: 12px 18px;
   background: #f9fafb;
   color: #6b7280;
   font-size: 0.7rem;
@@ -50,51 +85,17 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   align-items: center;
+  justify-items: center;
 }
 
 .mainHeaderMetric {
   grid-column: 3;
-  grid-row: 1 / span 2;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.teamHeader {
-  grid-row: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  text-transform: none;
-  letter-spacing: normal;
-}
-
-.teamHeaderHome {
-  grid-column: 1 / span 2;
-}
-
-.teamHeaderAway {
-  grid-column: 4 / span 2;
-}
-
-.teamHeaderLogo {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
-}
-
-.teamHeaderName {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #111827;
-  text-transform: none;
-  text-align: center;
 }
 
 .mainHeaderLabel {
-  grid-row: 2;
   display: flex;
   align-items: center;
   justify-content: center;

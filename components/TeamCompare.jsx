@@ -585,23 +585,6 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
         </div>
         <div className={styles.table}>
           <div className={styles.mainHeader}>
-            <div className={`${styles.teamHeader} ${styles.teamHeaderHome}`}>
-              <TeamLogo
-                teamId={homeTeamId}
-                teamName={homeTeamLabel}
-                className={styles.teamHeaderLogo}
-              />
-              <span className={styles.teamHeaderName}>{homeTeamLabel}</span>
-            </div>
-            <span className={styles.mainHeaderMetric}>Metric</span>
-            <div className={`${styles.teamHeader} ${styles.teamHeaderAway}`}>
-              <TeamLogo
-                teamId={awayTeamId}
-                teamName={awayTeamLabel}
-                className={styles.teamHeaderLogo}
-              />
-              <span className={styles.teamHeaderName}>{awayTeamLabel}</span>
-            </div>
             <span
               className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelHomeFor}`}
             >
@@ -612,6 +595,7 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
             >
               Against
             </span>
+            <span className={styles.mainHeaderMetric}>Metric</span>
             <span
               className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelAwayFor}`}
             >
@@ -963,6 +947,27 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
               </option>
             ))}
           </select>
+        </div>
+        <div className={styles.teamIdentities}>
+          <div className={styles.teamIdentity}>
+            <TeamLogo
+              teamId={homeTeamId}
+              teamName={homeTeamLabel}
+              size={72}
+              className={styles.teamIdentityLogo}
+            />
+            <span className={styles.teamIdentityName}>{homeTeamLabel}</span>
+          </div>
+          <span className={styles.teamIdentitiesDivider}>vs</span>
+          <div className={styles.teamIdentity}>
+            <TeamLogo
+              teamId={awayTeamId}
+              teamName={awayTeamLabel}
+              size={72}
+              className={styles.teamIdentityLogo}
+            />
+            <span className={styles.teamIdentityName}>{awayTeamLabel}</span>
+          </div>
         </div>
         {renderStatistics()}
         {renderSpecials()}
