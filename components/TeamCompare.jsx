@@ -140,12 +140,14 @@ function buildProfileUrl(match, side) {
   return url;
 }
 
-function extractStatValue(profile, statKey) {
-  return profile?.statistics?.for?.[statKey]?.ALL ?? null;
+function extractStatValue(profile, statKey, type = "for") {
+  if (!profile?.statistics) return null;
+  return profile.statistics?.[type]?.[statKey]?.ALL ?? null;
 }
 
-function extractLeagueAverage(profile, statKey) {
-  return profile?.statistics?.leagueAverage?.for?.[statKey]?.ALL ?? null;
+function extractLeagueAverage(profile, statKey, type = "for") {
+  if (!profile?.statistics?.leagueAverage) return null;
+  return profile.statistics.leagueAverage?.[type]?.[statKey]?.ALL ?? null;
 }
 
 function renderRankBadge(node) {
@@ -303,42 +305,108 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
           <h3 className={styles.sectionTitle}>All periods</h3>
         </div>
         <div className={styles.table}>
-          <div className={styles.headerRow}>
-            <span>Metric</span>
-            <span>{match?.homeTeamName ?? "Home"}</span>
-            <span>{match?.awayTeamName ?? "Away"}</span>
+          <div className={styles.mainHeader}>
+            <span className={styles.mainHeaderMetric}>Metric</span>
+            <span
+              className={`${styles.mainHeaderTeam} ${styles.mainHeaderTeamHome}`}
+            >
+              {match?.homeTeamName ?? "Home"}
+            </span>
+            <span
+              className={`${styles.mainHeaderTeam} ${styles.mainHeaderTeamAway}`}
+            >
+              {match?.awayTeamName ?? "Away"}
+            </span>
+            <span
+              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelHomeFor}`}
+            >
+              For
+            </span>
+            <span
+              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelHomeAgainst}`}
+            >
+              Against
+            </span>
+            <span
+              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelAwayFor}`}
+            >
+              For
+            </span>
+            <span
+              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelAwayAgainst}`}
+            >
+              Against
+            </span>
           </div>
           <div className={styles.rows}>
             {PROFILE_STATS.map(({ key, label }) => {
-              const homeNode = extractStatValue(homeProfile, key);
-              const awayNode = extractStatValue(awayProfile, key);
-              const leagueAvgNode = extractLeagueAverage(homeProfile, key) ?? null;
-              const homeValue = formatValue(homeNode?.value, {
+              const homeForNode = extractStatValue(homeProfile, key, "for");
+              const homeAgainstNode = extractStatValue(homeProfile, key, "against");
+              const awayForNode = extractStatValue(awayProfile, key, "for");
+              const awayAgainstNode = extractStatValue(awayProfile, key, "against");
+              const leagueAvgForNode = extractLeagueAverage(homeProfile, key, "for");
+              const leagueAvgAgainstNode = extractLeagueAverage(
+                homeProfile,
+                key,
+                "against"
+              );
+              const isPercentage = key === "ballPossession";
+              const homeForValue = formatValue(homeForNode?.value, {
+                isPercentage,
+              });
+              const homeAgainstValue = formatValue(homeAgainstNode?.value, {
+                isPercentage,
+              });
+              const awayForValue = formatValue(awayForNode?.value, {
+                isPercentage,
+              });
+              const awayAgainstValue = formatValue(awayAgainstNode?.value, {
                 isPercentage: key === "ballPossession",
               });
-              const awayValue = formatValue(awayNode?.value, {
-                isPercentage: key === "ballPossession",
-              });
-              const leagueAvgValue =
-                leagueAvgNode?.value != null
-                  ? formatValue(leagueAvgNode.value, { isPercentage: key === "ballPossession" })
+              const leagueAvgForValue =
+                leagueAvgForNode?.value != null
+                  ? formatValue(leagueAvgForNode.value, { isPercentage })
                   : null;
+              const leagueAvgAgainstValue =
+                leagueAvgAgainstNode?.value != null
+                  ? formatValue(leagueAvgAgainstNode.value, { isPercentage })
+                  : null;
+              const leagueAvgHint = (() => {
+                if (leagueAvgForValue && leagueAvgAgainstValue) {
+                  return `League avg (for/against): ${leagueAvgForValue} / ${leagueAvgAgainstValue}`;
+                }
+                if (leagueAvgForValue) {
+                  return `League avg (for): ${leagueAvgForValue}`;
+                }
+                if (leagueAvgAgainstValue) {
+                  return `League avg (against): ${leagueAvgAgainstValue}`;
+                }
+                return null;
+              })();
 
               return (
-                <div className={styles.row} key={key}>
+                <div className={`${styles.row} ${styles.mainRow}`} key={key}>
                   <div className={styles.metric}>
                     <span className={styles.metricLabel}>{label}</span>
-                    {leagueAvgValue ? (
-                      <span className={styles.metricHint}>League avg: {leagueAvgValue}</span>
+                    {leagueAvgHint ? (
+                      <span className={styles.metricHint}>{leagueAvgHint}</span>
                     ) : null}
                   </div>
-                  <div className={styles.valueCell}>
-                    <span>{homeValue}</span>
-                    {renderRankBadge(homeNode)}
+                  <div className={`${styles.valueCell} ${styles.valueCellFor}`}>
+                    <span>{homeForValue}</span>
+                    {renderRankBadge(homeForNode)}
                   </div>
-                  <div className={styles.valueCell}>
-                    <span>{awayValue}</span>
-                    {renderRankBadge(awayNode)}
+                  <div className={`${styles.valueCell} ${styles.valueCellAgainst}`}>
+                    <span>{homeAgainstValue}</span>
+                    {renderRankBadge(homeAgainstNode)}
+                  </div>
+                  <div className={`${styles.valueCell} ${styles.valueCellFor}`}>
+                    <span>{awayForValue}</span>
+                    {renderRankBadge(awayForNode)}
+                  </div>
+                  <div className={`${styles.valueCell} ${styles.valueCellAgainst}`}>
+                    <span>{awayAgainstValue}</span>
+                    {renderRankBadge(awayAgainstNode)}
                   </div>
                 </div>
               );
