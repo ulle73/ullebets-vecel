@@ -45,7 +45,23 @@ const PROFILE_STATS = [
   { key: "redCards", label: "Red Cards" },
 ];
 
-const SCORE_STATES = ["leading", "tied", "trailing"];
+const SHOTS_PER_MINUTE_METRICS = [
+  { key: "leading", label: "When leading" },
+  { key: "tied", label: "When tied" },
+  { key: "trailing", label: "When trailing" },
+];
+
+const SHOTS_PER_TEN_MINUTES_METRICS = [
+  { key: "0-10", label: "0-10 min" },
+  { key: "11-20", label: "11-20 min" },
+  { key: "21-30", label: "21-30 min" },
+  { key: "31-40", label: "31-40 min" },
+  { key: "41-50", label: "41-50 min" },
+  { key: "51-60", label: "51-60 min" },
+  { key: "61-70", label: "61-70 min" },
+  { key: "71-80", label: "71-80 min" },
+  { key: "81-90", label: "81-90 min" },
+];
 
 const NUMBER_FORMATTERS = {
   integer: new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }),
@@ -99,6 +115,104 @@ const FIRST_GOAL_METRICS = [
     format: (value) => (value == null ? "—" : formatValue(value)),
   },
 ];
+
+function toNumberOrNull(value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getSpecialMetricNode(specials, category, type, key) {
+  if (!specials || typeof specials !== "object") {
+    return { value: null, rank: null };
+  }
+
+  const categoryNode = specials[category];
+  if (!categoryNode || typeof categoryNode !== "object") {
+    return { value: null, rank: null };
+  }
+
+  if (type) {
+    const typeNode = categoryNode[type];
+    if (typeNode && typeof typeNode === "object") {
+      const rawValue = typeNode[key];
+      const rawRank = typeNode[`rank-${key}`];
+      return {
+        value: toNumberOrNull(rawValue),
+        rank: toNumberOrNull(rawRank),
+      };
+    }
+  }
+
+  const rawValue = categoryNode[key];
+  const rawRank = categoryNode[`rank-${key}`];
+  return {
+    value: toNumberOrNull(rawValue),
+    rank: toNumberOrNull(rawRank),
+  };
+}
+
+function getSpecialLeagueValue(leagueSpecials, category, type, key) {
+  if (!leagueSpecials || typeof leagueSpecials !== "object") {
+    return null;
+  }
+
+  const categoryNode = leagueSpecials[category];
+  if (!categoryNode || typeof categoryNode !== "object") {
+    return null;
+  }
+
+  if (type) {
+    const typeNode = categoryNode[type];
+    if (typeNode && typeof typeNode === "object" && typeNode[key] != null) {
+      return toNumberOrNull(typeNode[key]);
+    }
+  }
+
+  if (categoryNode[key] != null) {
+    return toNumberOrNull(categoryNode[key]);
+  }
+
+  return null;
+}
+
+function hasAnyFiniteValue(...values) {
+  return values.some((value) => Number.isFinite(value));
+}
+
+function formatMetricValue(value, formatter) {
+  if (value == null) {
+    return "—";
+  }
+
+  return formatter(value);
+}
+
+function buildLeagueAverageHint(forValue, againstValue, formatter) {
+  const hasFor = Number.isFinite(forValue);
+  const hasAgainst = Number.isFinite(againstValue);
+
+  if (hasFor && hasAgainst) {
+    return `League avg (for/against): ${formatter(forValue)} / ${formatter(againstValue)}`;
+  }
+
+  if (hasFor) {
+    return `League avg (for): ${formatter(forValue)}`;
+  }
+
+  if (hasAgainst) {
+    return `League avg (against): ${formatter(againstValue)}`;
+  }
+
+  return null;
+}
 
 function normalizeId(value) {
   const num = Number(value);
@@ -295,14 +409,16 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
     .filter(Boolean)
     .join(" ");
 
-  const renderStatistics = () => {
-    if (!homeProfile || !awayProfile) return null;
+  const renderComparisonTable = (key, title, subtitle, rows) => {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return null;
+    }
 
     return (
-      <div className={styles.section}>
+      <div className={styles.section} key={key}>
         <div className={styles.sectionHeader}>
-          <span className={styles.sectionSubtitle}>Key metrics (per match)</span>
-          <h3 className={styles.sectionTitle}>All periods</h3>
+          <span className={styles.sectionSubtitle}>{subtitle}</span>
+          <h3 className={styles.sectionTitle}>{title}</h3>
         </div>
         <div className={styles.table}>
           <div className={styles.mainHeader}>
@@ -339,81 +455,95 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
             </span>
           </div>
           <div className={styles.rows}>
-            {PROFILE_STATS.map(({ key, label }) => {
-              const homeForNode = extractStatValue(homeProfile, key, "for");
-              const homeAgainstNode = extractStatValue(homeProfile, key, "against");
-              const awayForNode = extractStatValue(awayProfile, key, "for");
-              const awayAgainstNode = extractStatValue(awayProfile, key, "against");
-              const leagueAvgForNode = extractLeagueAverage(homeProfile, key, "for");
-              const leagueAvgAgainstNode = extractLeagueAverage(
-                homeProfile,
-                key,
-                "against"
-              );
-              const isPercentage = key === "ballPossession";
-              const homeForValue = formatValue(homeForNode?.value, {
-                isPercentage,
-              });
-              const homeAgainstValue = formatValue(homeAgainstNode?.value, {
-                isPercentage,
-              });
-              const awayForValue = formatValue(awayForNode?.value, {
-                isPercentage,
-              });
-              const awayAgainstValue = formatValue(awayAgainstNode?.value, {
-                isPercentage: key === "ballPossession",
-              });
-              const leagueAvgForValue =
-                leagueAvgForNode?.value != null
-                  ? formatValue(leagueAvgForNode.value, { isPercentage })
-                  : null;
-              const leagueAvgAgainstValue =
-                leagueAvgAgainstNode?.value != null
-                  ? formatValue(leagueAvgAgainstNode.value, { isPercentage })
-                  : null;
-              const leagueAvgHint = (() => {
-                if (leagueAvgForValue && leagueAvgAgainstValue) {
-                  return `League avg (for/against): ${leagueAvgForValue} / ${leagueAvgAgainstValue}`;
-                }
-                if (leagueAvgForValue) {
-                  return `League avg (for): ${leagueAvgForValue}`;
-                }
-                if (leagueAvgAgainstValue) {
-                  return `League avg (against): ${leagueAvgAgainstValue}`;
-                }
-                return null;
-              })();
-
-              return (
-                <div className={`${styles.row} ${styles.mainRow}`} key={key}>
-                  <div className={styles.metric}>
-                    <span className={styles.metricLabel}>{label}</span>
-                    {leagueAvgHint ? (
-                      <span className={styles.metricHint}>{leagueAvgHint}</span>
-                    ) : null}
-                  </div>
-                  <div className={`${styles.valueCell} ${styles.valueCellFor}`}>
-                    <span>{homeForValue}</span>
-                    {renderRankBadge(homeForNode)}
-                  </div>
-                  <div className={`${styles.valueCell} ${styles.valueCellAgainst}`}>
-                    <span>{homeAgainstValue}</span>
-                    {renderRankBadge(homeAgainstNode)}
-                  </div>
-                  <div className={`${styles.valueCell} ${styles.valueCellFor}`}>
-                    <span>{awayForValue}</span>
-                    {renderRankBadge(awayForNode)}
-                  </div>
-                  <div className={`${styles.valueCell} ${styles.valueCellAgainst}`}>
-                    <span>{awayAgainstValue}</span>
-                    {renderRankBadge(awayAgainstNode)}
-                  </div>
+            {rows.map((row) => (
+              <div className={`${styles.row} ${styles.mainRow}`} key={row.key}>
+                <div className={styles.metric}>
+                  <span className={styles.metricLabel}>{row.label}</span>
+                  {row.hint ? (
+                    <span className={styles.metricHint}>{row.hint}</span>
+                  ) : null}
                 </div>
-              );
-            })}
+                <div className={`${styles.valueCell} ${styles.valueCellFor}`}>
+                  <span>{row.home.for.display}</span>
+                  {renderRankBadge({ rank: row.home.for.rank })}
+                </div>
+                <div className={`${styles.valueCell} ${styles.valueCellAgainst}`}>
+                  <span>{row.home.against.display}</span>
+                  {renderRankBadge({ rank: row.home.against.rank })}
+                </div>
+                <div className={`${styles.valueCell} ${styles.valueCellFor}`}>
+                  <span>{row.away.for.display}</span>
+                  {renderRankBadge({ rank: row.away.for.rank })}
+                </div>
+                <div className={`${styles.valueCell} ${styles.valueCellAgainst}`}>
+                  <span>{row.away.against.display}</span>
+                  {renderRankBadge({ rank: row.away.against.rank })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+    );
+  };
+
+  const renderStatistics = () => {
+    if (!homeProfile || !awayProfile) return null;
+
+    const rows = PROFILE_STATS.map(({ key, label }) => {
+      const homeForNode = extractStatValue(homeProfile, key, "for");
+      const homeAgainstNode = extractStatValue(homeProfile, key, "against");
+      const awayForNode = extractStatValue(awayProfile, key, "for");
+      const awayAgainstNode = extractStatValue(awayProfile, key, "against");
+      const leagueAvgForNode = extractLeagueAverage(homeProfile, key, "for");
+      const leagueAvgAgainstNode = extractLeagueAverage(
+        homeProfile,
+        key,
+        "against"
+      );
+      const isPercentage = key === "ballPossession";
+      const formatter = (value) =>
+        formatValue(value, {
+          isPercentage,
+        });
+      const leagueAvgHint = buildLeagueAverageHint(
+        leagueAvgForNode?.value,
+        leagueAvgAgainstNode?.value,
+        formatter
+      );
+
+      return {
+        key,
+        label,
+        hint: leagueAvgHint,
+        home: {
+          for: {
+            display: formatMetricValue(homeForNode?.value, formatter),
+            rank: homeForNode?.rank ?? null,
+          },
+          against: {
+            display: formatMetricValue(homeAgainstNode?.value, formatter),
+            rank: homeAgainstNode?.rank ?? null,
+          },
+        },
+        away: {
+          for: {
+            display: formatMetricValue(awayForNode?.value, formatter),
+            rank: awayForNode?.rank ?? null,
+          },
+          against: {
+            display: formatMetricValue(awayAgainstNode?.value, formatter),
+            rank: awayAgainstNode?.rank ?? null,
+          },
+        },
+      };
+    });
+
+    return renderComparisonTable(
+      "all-periods",
+      "All periods",
+      "Key metrics (per match)",
+      rows
     );
   };
 
@@ -424,154 +554,222 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
     const awaySpecials = awayProfile.specials ?? {};
     const leagueSpecials = homeSpecials.leagueAverage ?? awaySpecials.leagueAverage ?? {};
 
-    const shotsPerMinuteRows = SCORE_STATES.map((state) => {
-      const homeValue = homeSpecials?.shotsPerMinute?.for?.[state] ?? null;
-      const awayValue = awaySpecials?.shotsPerMinute?.for?.[state] ?? null;
-      const leagueValue = leagueSpecials?.shotsPerMinute?.for?.[state] ?? null;
-      const label =
-        state === "leading" ? "When leading" : state === "trailing" ? "When trailing" : "When tied";
+    const formatRate = (value) => formatValue(value);
+
+    const shotsPerMinuteRows = SHOTS_PER_MINUTE_METRICS.map(({ key, label }) => {
+      const homeFor = getSpecialMetricNode(homeSpecials, "shotsPerMinute", "for", key);
+      const homeAgainst = getSpecialMetricNode(homeSpecials, "shotsPerMinute", "against", key);
+      const awayFor = getSpecialMetricNode(awaySpecials, "shotsPerMinute", "for", key);
+      const awayAgainst = getSpecialMetricNode(awaySpecials, "shotsPerMinute", "against", key);
+      const leagueFor = getSpecialLeagueValue(leagueSpecials, "shotsPerMinute", "for", key);
+      const leagueAgainst = getSpecialLeagueValue(
+        leagueSpecials,
+        "shotsPerMinute",
+        "against",
+        key
+      );
+      const hasData = hasAnyFiniteValue(
+        homeFor.value,
+        homeAgainst.value,
+        awayFor.value,
+        awayAgainst.value,
+        leagueFor,
+        leagueAgainst
+      );
 
       return {
-        key: state,
+        key,
         label,
-        homeValue,
-        awayValue,
-        leagueValue,
+        hint: buildLeagueAverageHint(leagueFor, leagueAgainst, formatRate),
+        home: {
+          for: {
+            display: formatMetricValue(homeFor.value, formatRate),
+            rank: homeFor.rank,
+          },
+          against: {
+            display: formatMetricValue(homeAgainst.value, formatRate),
+            rank: homeAgainst.rank,
+          },
+        },
+        away: {
+          for: {
+            display: formatMetricValue(awayFor.value, formatRate),
+            rank: awayFor.rank,
+          },
+          against: {
+            display: formatMetricValue(awayAgainst.value, formatRate),
+            rank: awayAgainst.rank,
+          },
+        },
+        hasData,
       };
-    });
+    }).filter((row) => row.hasData);
 
-    const allWindowLabels = new Set([
-      ...Object.keys(homeSpecials?.shotsPerTenMinutes?.for ?? {}),
-      ...Object.keys(awaySpecials?.shotsPerTenMinutes?.for ?? {}),
-      ...Object.keys(leagueSpecials?.shotsPerTenMinutes?.for ?? {}),
-    ]);
+    const shotsPerTenRows = SHOTS_PER_TEN_MINUTES_METRICS.map(({ key, label }) => {
+      const homeFor = getSpecialMetricNode(homeSpecials, "shotsPerTenMinutes", "for", key);
+      const homeAgainst = getSpecialMetricNode(
+        homeSpecials,
+        "shotsPerTenMinutes",
+        "against",
+        key
+      );
+      const awayFor = getSpecialMetricNode(awaySpecials, "shotsPerTenMinutes", "for", key);
+      const awayAgainst = getSpecialMetricNode(
+        awaySpecials,
+        "shotsPerTenMinutes",
+        "against",
+        key
+      );
+      const leagueFor = getSpecialLeagueValue(
+        leagueSpecials,
+        "shotsPerTenMinutes",
+        "for",
+        key
+      );
+      const leagueAgainst = getSpecialLeagueValue(
+        leagueSpecials,
+        "shotsPerTenMinutes",
+        "against",
+        key
+      );
+      const hasData = hasAnyFiniteValue(
+        homeFor.value,
+        homeAgainst.value,
+        awayFor.value,
+        awayAgainst.value,
+        leagueFor,
+        leagueAgainst
+      );
 
-    const windowRows = Array.from(allWindowLabels)
-      .sort((a, b) => {
-        const getStart = (label) => {
-          const match = label.match(/\d+/);
-          return match ? parseInt(match[0], 10) : 0;
-        };
-        return getStart(a) - getStart(b);
-      })
-      .map((label) => ({
-        key: label,
-        label: `${label} min`,
-        homeValue: homeSpecials?.shotsPerTenMinutes?.for?.[label] ?? null,
-        awayValue: awaySpecials?.shotsPerTenMinutes?.for?.[label] ?? null,
-        leagueValue: leagueSpecials?.shotsPerTenMinutes?.for?.[label] ?? null,
-      }));
+      return {
+        key,
+        label,
+        hint: buildLeagueAverageHint(leagueFor, leagueAgainst, formatRate),
+        home: {
+          for: {
+            display: formatMetricValue(homeFor.value, formatRate),
+            rank: homeFor.rank,
+          },
+          against: {
+            display: formatMetricValue(homeAgainst.value, formatRate),
+            rank: homeAgainst.rank,
+          },
+        },
+        away: {
+          for: {
+            display: formatMetricValue(awayFor.value, formatRate),
+            rank: awayFor.rank,
+          },
+          against: {
+            display: formatMetricValue(awayAgainst.value, formatRate),
+            rank: awayAgainst.rank,
+          },
+        },
+        hasData,
+      };
+    }).filter((row) => row.hasData);
 
     const firstGoalRows = FIRST_GOAL_METRICS.map((metric) => {
-      const homeValue = homeSpecials?.firstGoal?.[metric.key] ?? null;
-      const awayValue = awaySpecials?.firstGoal?.[metric.key] ?? null;
-      const leagueValue = leagueSpecials?.firstGoal?.[metric.key] ?? null;
+      const homeFor = getSpecialMetricNode(homeSpecials, "firstGoal", "for", metric.key);
+      const homeAgainst = getSpecialMetricNode(
+        homeSpecials,
+        "firstGoal",
+        "against",
+        metric.key
+      );
+      const awayFor = getSpecialMetricNode(awaySpecials, "firstGoal", "for", metric.key);
+      const awayAgainst = getSpecialMetricNode(
+        awaySpecials,
+        "firstGoal",
+        "against",
+        metric.key
+      );
+      const leagueFor = getSpecialLeagueValue(
+        leagueSpecials,
+        "firstGoal",
+        "for",
+        metric.key
+      );
+      const leagueAgainst = getSpecialLeagueValue(
+        leagueSpecials,
+        "firstGoal",
+        "against",
+        metric.key
+      );
+      const hasData = hasAnyFiniteValue(
+        homeFor.value,
+        homeAgainst.value,
+        awayFor.value,
+        awayAgainst.value,
+        leagueFor,
+        leagueAgainst
+      );
+      const formatter = metric.format;
+
       return {
         key: metric.key,
         label: metric.label,
-        homeValue: metric.format(homeValue),
-        awayValue: metric.format(awayValue),
-        leagueValue: leagueValue == null ? null : metric.format(leagueValue),
+        hint: buildLeagueAverageHint(leagueFor, leagueAgainst, formatter),
+        home: {
+          for: {
+            display: formatMetricValue(homeFor.value, formatter),
+            rank: homeFor.rank,
+          },
+          against: {
+            display: formatMetricValue(homeAgainst.value, formatter),
+            rank: homeAgainst.rank,
+          },
+        },
+        away: {
+          for: {
+            display: formatMetricValue(awayFor.value, formatter),
+            rank: awayFor.rank,
+          },
+          against: {
+            display: formatMetricValue(awayAgainst.value, formatter),
+            rank: awayAgainst.rank,
+          },
+        },
+        hasData,
       };
-    });
-
-    const renderGenericTable = (
-      key,
-      title,
-      subtitle,
-      rows,
-      formatter = (value) => formatValue(value)
-    ) => (
-      <div className={styles.section} key={key}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionSubtitle}>{subtitle}</span>
-          <h3 className={styles.sectionTitle}>{title}</h3>
-        </div>
-        <div className={styles.table}>
-          <div className={styles.headerRow}>
-            <span>Metric</span>
-            <span>{match?.homeTeamName ?? "Home"}</span>
-            <span>{match?.awayTeamName ?? "Away"}</span>
-          </div>
-          <div className={styles.rows}>
-            {rows.map(({ key: rowKey, label, homeValue, awayValue, leagueValue }) => {
-              const homeDisplay = formatter(homeValue);
-              const awayDisplay = formatter(awayValue);
-              const leagueDisplay = leagueValue == null ? null : formatter(leagueValue);
-
-              return (
-                <div className={styles.row} key={rowKey}>
-                  <div className={styles.metric}>
-                    <span className={styles.metricLabel}>{label}</span>
-                    {leagueDisplay ? (
-                      <span className={styles.metricHint}>League avg: {leagueDisplay}</span>
-                    ) : null}
-                  </div>
-                  <div className={styles.valueCell}>
-                    <span>{homeDisplay}</span>
-                  </div>
-                  <div className={styles.valueCell}>
-                    <span>{awayDisplay}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
+    }).filter((row) => row.hasData);
 
     const specials = [];
 
     if (shotsPerMinuteRows.length) {
       specials.push(
-        renderGenericTable("shots-per-minute", "Shots per minute", "Game state", shotsPerMinuteRows)
+        renderComparisonTable(
+          "shots-per-minute",
+          "Shots per minute",
+          "Game state",
+          shotsPerMinuteRows
+        )
       );
     }
 
-    if (windowRows.length) {
+    if (shotsPerTenRows.length) {
       specials.push(
-        renderGenericTable("shots-per-ten-minutes", "Shots per ten minutes", "Timing", windowRows)
+        renderComparisonTable(
+          "shots-per-ten-minutes",
+          "Shots per ten minutes",
+          "Timing",
+          shotsPerTenRows
+        )
       );
     }
 
     if (firstGoalRows.length) {
       specials.push(
-        <div className={styles.section} key="first-goal">
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionSubtitle}>Game flow</span>
-            <h3 className={styles.sectionTitle}>First goal tendencies</h3>
-          </div>
-          <div className={styles.table}>
-            <div className={styles.headerRow}>
-              <span>Metric</span>
-              <span>{match?.homeTeamName ?? "Home"}</span>
-              <span>{match?.awayTeamName ?? "Away"}</span>
-            </div>
-            <div className={styles.rows}>
-              {firstGoalRows.map(({ key: rowKey, label, homeValue, awayValue, leagueValue }) => (
-                <div className={styles.row} key={rowKey}>
-                  <div className={styles.metric}>
-                    <span className={styles.metricLabel}>{label}</span>
-                    {leagueValue ? (
-                      <span className={styles.metricHint}>League avg: {leagueValue}</span>
-                    ) : null}
-                  </div>
-                  <div className={styles.valueCell}>
-                    <span>{homeValue}</span>
-                  </div>
-                  <div className={styles.valueCell}>
-                    <span>{awayValue}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        renderComparisonTable(
+          "first-goal",
+          "First goal tendencies",
+          "Game flow",
+          firstGoalRows
+        )
       );
     }
 
-    return specials;
+    return specials.length ? specials : null;
   };
 
   const renderBody = () => {
