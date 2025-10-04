@@ -268,6 +268,7 @@ function TeamLogo({ teamId, teamName, size = 48, className }) {
       onError={() => {
         setIndex((prev) => (prev < candidates.length - 1 ? prev + 1 : prev));
       }}
+      unoptimized
     />
   );
 }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useCallback, useState } from "react";
 import Image from "next/image";
@@ -151,6 +151,7 @@ function ImageWithFallback({ candidates, alt, size = 20, className }) {
       onError={() => {
         setIndex((prev) => (prev < sources.length - 1 ? prev + 1 : prev));
       }}
+      unoptimized 
     />
   );
 }

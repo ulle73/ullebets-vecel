@@ -434,7 +434,10 @@ export async function GET(_req, context) {
         lineups: normalized.lineups,
       }),
       {
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "cache-control": "public, s-maxage=1800, stale-while-revalidate=900",
+        },
       }
     );
   } catch (error) {

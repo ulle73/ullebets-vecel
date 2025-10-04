@@ -162,7 +162,8 @@ export async function GET(req) {
         { profile: profileFromDb },
         {
           headers: {
-            "cache-control": "public, s-maxage=300, stale-while-revalidate=600",
+            "cache-control":
+              "public, s-maxage=86400, stale-while-revalidate=604800",
           },
         }
       );
