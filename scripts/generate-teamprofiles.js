@@ -691,6 +691,149 @@ function assignRanks(profiles, statGroup) {
   }
 }
 
+function assignSpecialRanks(profiles) {
+  if (!Array.isArray(profiles) || !profiles.length) {
+    return;
+  }
+
+  const sides = ["for", "against"];
+
+  for (const side of sides) {
+    for (const state of SCORE_STATES) {
+      const entries = [];
+
+      for (let index = 0; index < profiles.length; index += 1) {
+        const profile = profiles[index];
+        const value = profile.specials?.shotsPerMinute?.[side]?.[state];
+        if (isFiniteNumber(value)) {
+          entries.push({ index, value });
+        }
+      }
+
+      entries.sort((a, b) => b.value - a.value);
+
+      const rankMap = new Map();
+      let rank = 1;
+      for (const entry of entries) {
+        rankMap.set(entry.index, rank);
+        rank += 1;
+      }
+
+      for (let index = 0; index < profiles.length; index += 1) {
+        const profile = profiles[index];
+        const container = profile.specials?.shotsPerMinute?.[side];
+        if (!container || typeof container !== "object") {
+          continue;
+        }
+        const rankValue = rankMap.get(index) ?? null;
+        container[`rank-${state}`] = rankValue;
+      }
+    }
+  }
+
+  const windowLabelSets = {
+    for: new Set(BASE_WINDOW_LABELS),
+    against: new Set(BASE_WINDOW_LABELS),
+  };
+
+  for (const profile of profiles) {
+    for (const side of sides) {
+      const windows = profile.specials?.shotsPerTenMinutes?.[side];
+      if (windows && typeof windows === "object") {
+        for (const label of Object.keys(windows)) {
+          windowLabelSets[side].add(label);
+        }
+      }
+    }
+  }
+
+  for (const side of sides) {
+    const labels = Array.from(windowLabelSets[side]).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+
+    for (const label of labels) {
+      const entries = [];
+
+      for (let index = 0; index < profiles.length; index += 1) {
+        const profile = profiles[index];
+        const value = profile.specials?.shotsPerTenMinutes?.[side]?.[label];
+        if (isFiniteNumber(value)) {
+          entries.push({ index, value });
+        }
+      }
+
+      entries.sort((a, b) => b.value - a.value);
+
+      const rankMap = new Map();
+      let rank = 1;
+      for (const entry of entries) {
+        rankMap.set(entry.index, rank);
+        rank += 1;
+      }
+
+      for (let index = 0; index < profiles.length; index += 1) {
+        const profile = profiles[index];
+        const container = profile.specials?.shotsPerTenMinutes?.[side];
+        if (!container || typeof container !== "object") {
+          continue;
+        }
+        const rankValue = rankMap.get(index) ?? null;
+        container[`rank-${label}`] = rankValue;
+      }
+    }
+  }
+
+  const firstGoalMetrics = [
+    "concedeFirstPercentage",
+    "scoreFirstPercentage",
+    "averageTimeScoredFirst",
+    "averageTimeConcededFirst",
+  ];
+
+  for (const metric of firstGoalMetrics) {
+    const entries = [];
+
+    for (let index = 0; index < profiles.length; index += 1) {
+      const profile = profiles[index];
+      const value = profile.specials?.firstGoal?.[metric];
+      if (isFiniteNumber(value)) {
+        entries.push({ index, value });
+      }
+    }
+
+    const ascending = metric === "averageTimeScoredFirst" || metric === "averageTimeConcededFirst";
+    entries.sort((a, b) => (ascending ? a.value - b.value : b.value - a.value));
+
+    const rankMap = new Map();
+    let rank = 1;
+    for (const entry of entries) {
+      rankMap.set(entry.index, rank);
+      rank += 1;
+    }
+
+    for (let index = 0; index < profiles.length; index += 1) {
+      const profile = profiles[index];
+      const container = profile.specials?.firstGoal;
+      if (!container || typeof container !== "object") {
+        continue;
+      }
+      const rankValue = rankMap.get(index) ?? null;
+      container[`rank-${metric}`] = rankValue;
+    }
+  }
+
+  for (const profile of profiles) {
+    if (profile.specials?.shotsPerMinute?.rank) {
+      delete profile.specials.shotsPerMinute.rank;
+    }
+    if (profile.specials?.shotsPerTenMinutes?.rank) {
+      delete profile.specials.shotsPerTenMinutes.rank;
+    }
+    if (profile.specials?.firstGoal?.rank) {
+      delete profile.specials.firstGoal.rank;
+    }
+  }
+}
+
 function computeLeagueAverages(profiles, statGroup) {
   const leagueAverage = {};
 
@@ -718,6 +861,7 @@ function applyLeagueRankings(leagueProfilesByMatchType) {
 
     assignRanks(profiles, "for");
     assignRanks(profiles, "against");
+    assignSpecialRanks(profiles);
 
     const leagueAverageFor = computeLeagueAverages(profiles, "for");
     const leagueAverageAgainst = computeLeagueAverages(profiles, "against");
@@ -743,36 +887,41 @@ async function saveProfilesToDatabase(profiles, generatedAt) {
   }
 
   const client = await clientPromise;
-  const db = client.db(process.env.MONGODB_DB || "app");
-  const collection = db.collection("teamprofiles");
 
-  const timestamp = generatedAt ?? new Date().toISOString();
-  const operations = profiles.map(({ leagueName, profile }) => {
-    const meta = profile.meta ?? {};
-    const identifier = `${meta.ligaId ?? "unknown"}:${meta.lagId ?? "unknown"}:${meta.matchType ?? "unknown"}`;
-    const document = {
-      _id: identifier,
-      leagueName,
-      generatedAt: timestamp,
-      ...profile,
-    };
+  try {
+    const db = client.db(process.env.MONGODB_DB || "app");
+    const collection = db.collection("teamprofiles");
 
-    return {
-      updateOne: {
-        filter: { _id: identifier },
-        update: { $set: document },
-        upsert: true,
-      },
-    };
-  });
+    const timestamp = generatedAt ?? new Date().toISOString();
+    const operations = profiles.map(({ leagueName, profile }) => {
+      const meta = profile.meta ?? {};
+      const identifier = `${meta.ligaId ?? "unknown"}:${meta.lagId ?? "unknown"}:${meta.matchType ?? "unknown"}`;
+      const document = {
+        _id: identifier,
+        leagueName,
+        generatedAt: timestamp,
+        ...profile,
+      };
 
-  const chunkSize = 500;
-  for (let i = 0; i < operations.length; i += chunkSize) {
-    const chunk = operations.slice(i, i + chunkSize);
-    await collection.bulkWrite(chunk, { ordered: false });
+      return {
+        updateOne: {
+          filter: { _id: identifier },
+          update: { $set: document },
+          upsert: true,
+        },
+      };
+    });
+
+    const chunkSize = 500;
+    for (let i = 0; i < operations.length; i += chunkSize) {
+      const chunk = operations.slice(i, i + chunkSize);
+      await collection.bulkWrite(chunk, { ordered: false });
+    }
+
+    console.log(`Success: Upserted ${operations.length} team profiles into MongoDB`);
+  } finally {
+    await client.close();
   }
-
-  console.log(`Success: Upserted ${operations.length} team profiles into MongoDB`);
 }
 
 async function main() {

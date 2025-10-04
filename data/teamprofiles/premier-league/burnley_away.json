@@ -2424,19 +2424,29 @@
       "for": {
         "leading": null,
         "trailing": 0.17094017094017094,
-        "tied": 0
+        "tied": 0,
+        "rank-leading": null,
+        "rank-trailing": 6,
+        "rank-tied": 20
       },
       "against": {
         "leading": null,
         "trailing": 0.2222222222222222,
-        "tied": 0.24285714285714285
+        "tied": 0.24285714285714285,
+        "rank-leading": null,
+        "rank-trailing": 1,
+        "rank-tied": 1
       }
     },
     "firstGoal": {
       "concedeFirstPercentage": 1,
       "scoreFirstPercentage": 0,
       "averageTimeScoredFirst": null,
-      "averageTimeConcededFirst": 18.5
+      "averageTimeConcededFirst": 18.5,
+      "rank-concedeFirstPercentage": 1,
+      "rank-scoreFirstPercentage": 18,
+      "rank-averageTimeScoredFirst": null,
+      "rank-averageTimeConcededFirst": 5
     },
     "shotsPerTenMinutes": {
       "for": {
@@ -2449,7 +2459,18 @@
         "61-70": 1,
         "71-80": 0.3333333333333333,
         "81-90": 0,
-        "91-100": 0
+        "91-100": 0,
+        "rank-0-10": 19,
+        "rank-11-20": 19,
+        "rank-21-30": 1,
+        "rank-31-40": 13,
+        "rank-41-50": 9,
+        "rank-51-60": 4,
+        "rank-61-70": 16,
+        "rank-71-80": 19,
+        "rank-81-90": 19,
+        "rank-91-100": 19,
+        "rank-101-110": null
       },
       "against": {
         "0-10": 1.6666666666666667,
@@ -2461,7 +2482,18 @@
         "61-70": 3,
         "71-80": 1.6666666666666667,
         "81-90": 2.6666666666666665,
-        "91-100": 0.6666666666666666
+        "91-100": 0.6666666666666666,
+        "rank-0-10": 1,
+        "rank-11-20": 1,
+        "rank-21-30": 1,
+        "rank-31-40": 6,
+        "rank-41-50": 1,
+        "rank-51-60": 1,
+        "rank-61-70": 1,
+        "rank-71-80": 3,
+        "rank-81-90": 1,
+        "rank-91-100": 14,
+        "rank-101-110": null
       }
     },
     "leagueAverage": {
@@ -2495,6 +2527,17 @@
           "71-80": 1.036336441336441,
           "81-90": 1.1110275835275836,
           "91-100": 0.8872144522144524,
+          "rank-0-10": 10.5,
+          "rank-11-20": 10.5,
+          "rank-21-30": 10.5,
+          "rank-31-40": 10.5,
+          "rank-41-50": 10.5,
+          "rank-51-60": 10.5,
+          "rank-61-70": 10.5,
+          "rank-71-80": 10.5,
+          "rank-81-90": 10.5,
+          "rank-91-100": 10.5,
+          "rank-101-110": 2,
           "101-110": 0.027777777777777776
         },
         "against": {
@@ -2508,6 +2551,17 @@
           "71-80": 1.315920745920746,
           "81-90": 1.4442851592851595,
           "91-100": 0.9348620823620823,
+          "rank-0-10": 10.5,
+          "rank-11-20": 10.5,
+          "rank-21-30": 10.5,
+          "rank-31-40": 10.5,
+          "rank-41-50": 10.5,
+          "rank-51-60": 10.5,
+          "rank-61-70": 10.5,
+          "rank-71-80": 10.5,
+          "rank-81-90": 10.5,
+          "rank-91-100": 10.5,
+          "rank-101-110": 2,
           "101-110": 0.11363636363636365
         }
       }
