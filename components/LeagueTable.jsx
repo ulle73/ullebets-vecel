@@ -1,10 +1,12 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useCallback, useState } from "react";
 import Image from "next/image";
 import styles from "./LeagueTable.module.css";
 
 const LEAGUE_ORDER = [17, 8, 35, 23, 325, 34];
+const DEBUG_TAG = "[LeagueTable]";
+const debug = (...args) => console.log(DEBUG_TAG, ...args);
 
 function pick(v, paths, fallback = null) {
   for (const p of paths) {
@@ -25,6 +27,11 @@ function slugify(value) {
     .replace(/(^-|-$)/g, "");
 }
 
+function toPositiveInt(value) {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
 function normalizeMatch(item) {
   const id = String(
     pick(
@@ -34,25 +41,39 @@ function normalizeMatch(item) {
     )
   );
 
-  const leagueId =
-    Number(
-      pick(
-        item,
-        [
-          "tournament.uniqueTournament.id",
-          "uniqueTournament.id",
-          "tournament.id",
-          "event.tournament.uniqueTournament.id",
-          "event.tournament.id",
-        ],
-        0
-      )
-    ) || 0;
+  const leagueId = toPositiveInt(
+    pick(
+      item,
+      [
+        "tournament.uniqueTournament.id",
+        "uniqueTournament.id",
+        "tournament.id",
+        "event.tournament.uniqueTournament.id",
+        "event.tournament.id",
+      ],
+      null
+    )
+  );
 
   const leagueName = pick(
     item,
     ["tournament.name", "event.tournament.name", "league.name"],
     "Unknown"
+  );
+
+  const homeTeamId = toPositiveInt(
+    pick(
+      item,
+      ["homeTeam.id", "event.homeTeam.id", "home.id", "teams.home.id"],
+      null
+    )
+  );
+  const awayTeamId = toPositiveInt(
+    pick(
+      item,
+      ["awayTeam.id", "event.awayTeam.id", "away.id", "teams.away.id"],
+      null
+    )
   );
 
   const homeTeamName = pick(
@@ -66,70 +87,55 @@ function normalizeMatch(item) {
     "—"
   );
 
-  const homeTeamId =
-    Number(
-      pick(
-        item,
-        ["homeTeam.id", "event.homeTeam.id", "home.id", "teams.home.id"],
-        0
-      )
-    ) || 0;
-  const awayTeamId =
-    Number(
-      pick(
-        item,
-        ["awayTeam.id", "event.awayTeam.id", "away.id", "teams.away.id"],
-        0
-      )
-    ) || 0;
-
-  const timestamp =
-    Number(
-      pick(
-        item,
-        ["startTimestamp", "event.startTimestamp", "timestamp", "kickoffTime"],
-        null
-      )
-    ) || null;
+  const timestampRaw = pick(
+    item,
+    ["startTimestamp", "event.startTimestamp", "timestamp", "kickoffTime"],
+    null
+  );
+  const timestamp = Number(timestampRaw);
+  const safeTimestamp = Number.isFinite(timestamp) ? timestamp : null;
 
   return {
     id,
+    matchId: id,
     leagueId,
     leagueName,
     homeTeamName,
     awayTeamName,
     homeTeamId,
     awayTeamId,
-    timestamp,
+    timestamp: safeTimestamp,
     raw: item,
   };
 }
 
 function teamLogoCandidates(id) {
-  if (!id) return ["/images/teams/placeholder.png"];
+  const numeric = toPositiveInt(id);
+  if (!numeric) return ["/images/teams/placeholder.png"];
+  const base = String(numeric);
   return [
-    `/images/teams/${id}.png`,
-    `/images/teams/${id}.svg`,
-    `/images/teams/${id}@2x.png`,
+    `/images/teams/${base}.png`,
+    `/images/teams/${base}.svg`,
+    `/images/teams/${base}@2x.png`,
     "/images/teams/placeholder.png",
   ];
 }
 
 function leagueLogoCandidates(leagueId, leagueName) {
   const slug = slugify(leagueName);
-  return [
-    `/images/league/${slug}.png`,
-    `/images/league/${slug}.svg`,
-    `/images/league/${leagueId}.png`,
-    `/images/league/${leagueId}.svg`,
-    "/images/placeholder.png",
-  ];
+  const candidates = [`/images/league/${slug}.png`, `/images/league/${slug}.svg`];
+  const numeric = toPositiveInt(leagueId);
+  if (numeric) {
+    const base = String(numeric);
+    candidates.push(`/images/league/${base}.png`);
+    candidates.push(`/images/league/${base}.svg`);
+  }
+  candidates.push("/images/placeholder.png");
+  return candidates;
 }
 
 function ImageWithFallback({ candidates, alt, size = 20, className }) {
-  const sources = Array.isArray(candidates) && candidates.length > 0
-    ? candidates
-    : ["/images/placeholder.png"];
+  const sources = Array.isArray(candidates) && candidates.length > 0 ? candidates : ["/images/placeholder.png"];
   const [index, setIndex] = useState(0);
   const src = sources[Math.min(index, sources.length - 1)];
   const resolvedClassName = [styles.badge, className].filter(Boolean).join(" ");
@@ -152,13 +158,23 @@ function ImageWithFallback({ candidates, alt, size = 20, className }) {
 export default function LeagueTable({ items, formatTime, onSelectMatch, selectedMatchId }) {
   const matches = useMemo(() => {
     if (!Array.isArray(items)) return [];
-    return items.map(normalizeMatch);
+    const normalized = items.map(normalizeMatch);
+    debug("normalize", {
+      count: normalized.length,
+      sample: normalized.slice(0, 3).map((match) => ({
+        matchId: match.matchId,
+        leagueId: match.leagueId,
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+      })),
+    });
+    return normalized;
   }, [items]);
 
   const groups = useMemo(() => {
     const map = new Map();
     for (const match of matches) {
-      const key = `${match.leagueId}:${match.leagueName}`;
+      const key = `${match.leagueId ?? "unknown"}:${match.leagueName}`;
       if (!map.has(key)) {
         map.set(key, []);
       }
@@ -170,7 +186,8 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
   const orderedGroups = useMemo(() => {
     const entries = [...groups.entries()];
     const indexOf = (id) => {
-      const idx = LEAGUE_ORDER.indexOf(Number(id));
+      const num = Number(id);
+      const idx = Number.isFinite(num) ? LEAGUE_ORDER.indexOf(num) : -1;
       return idx === -1 ? Number.POSITIVE_INFINITY : idx;
     };
     entries.sort((a, b) => {
@@ -187,9 +204,19 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
   }, [groups]);
 
   const handleRowClick = useCallback(
-    (matchId) => {
+    (match) => {
+      if (!match) {
+        debug("rowClick", { state: "missing-match-object" });
+        return;
+      }
+      debug("rowClick", {
+        matchId: match.matchId,
+        leagueId: match.leagueId,
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+      });
       if (typeof onSelectMatch === "function") {
-        onSelectMatch(matchId);
+        onSelectMatch(match);
       }
     },
     [onSelectMatch]
@@ -202,7 +229,8 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
   return (
     <div className={styles.wrapper}>
       {orderedGroups.map(([key, list]) => {
-        const [leagueId, leagueName] = key.split(":");
+        const [leagueIdRaw, leagueName] = key.split(":");
+        const leagueId = leagueIdRaw === "unknown" ? null : Number(leagueIdRaw);
         const sortedList = [...list].sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
 
         return (
@@ -242,8 +270,12 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
                     <button
                       key={match.id}
                       type="button"
-                      onClick={() => handleRowClick(match.id)}
+                      onClick={() => handleRowClick(match)}
                       className={rowClassName}
+                      data-match-id={match.matchId}
+                      data-league-id={match.leagueId ?? undefined}
+                      data-home-team-id={match.homeTeamId ?? undefined}
+                      data-away-team-id={match.awayTeamId ?? undefined}
                     >
                       <span className={styles.timeCell}>{timeLabel}</span>
                       <span className={styles.teamCell}>

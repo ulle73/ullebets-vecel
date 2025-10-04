@@ -1,11 +1,11 @@
-﻿import clientPromise from "@/lib/mongo";
+import clientPromise from "@/lib/mongo";
 
 const asArray = (v) =>
   Array.isArray(v) ? v :
   (Array.isArray(v?.shots) ? v.shots : []); // om shotmap har form { shots: [...] }
 
 export async function GET(_req, context) {
-  const { params } = await context;
+  const { params } = context;
   const matchId = params?.id;
   if (!matchId) {
     return new Response("Missing id", { status: 400 });
