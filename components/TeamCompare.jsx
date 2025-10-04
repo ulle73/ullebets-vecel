@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import styles from "./TeamCompare.module.css";
 
@@ -61,6 +61,12 @@ const SHOTS_PER_TEN_MINUTES_METRICS = [
   { key: "61-70", label: "61-70 min" },
   { key: "71-80", label: "71-80 min" },
   { key: "81-90", label: "81-90 min" },
+];
+
+const PERIOD_OPTIONS = [
+  { value: "ALL", label: "Hela matchen" },
+  { value: "1ST", label: "Första halvlek" },
+  { value: "2ND", label: "Andra halvlek" },
 ];
 
 const NUMBER_FORMATTERS = {
@@ -214,6 +220,14 @@ function buildLeagueAverageHint(forValue, againstValue, formatter) {
   return null;
 }
 
+function buildSingleLeagueAverageHint(value, formatter) {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  return `League avg: ${formatter(value)}`;
+}
+
 function normalizeId(value) {
   const num = Number(value);
   return Number.isFinite(num) && num > 0 ? num : null;
@@ -254,14 +268,52 @@ function buildProfileUrl(match, side) {
   return url;
 }
 
-function extractStatValue(profile, statKey, type = "for") {
-  if (!profile?.statistics) return null;
-  return profile.statistics?.[type]?.[statKey]?.ALL ?? null;
+function extractStatValue(profile, statKey, type = "for", period = "ALL") {
+  if (!profile?.statistics?.[type]?.[statKey]) {
+    return null;
+  }
+
+  const node = profile.statistics[type][statKey][period];
+  if (node == null) {
+    return null;
+  }
+
+  if (typeof node === "object") {
+    return {
+      value: toNumberOrNull(node.value),
+      rank: toNumberOrNull(node.rank),
+    };
+  }
+
+  return {
+    value: toNumberOrNull(node),
+    rank: null,
+  };
 }
 
-function extractLeagueAverage(profile, statKey, type = "for") {
-  if (!profile?.statistics?.leagueAverage) return null;
-  return profile.statistics.leagueAverage?.[type]?.[statKey]?.ALL ?? null;
+function extractLeagueAverage(profile, statKey, type = "for", period = "ALL") {
+  if (!profile?.statistics?.leagueAverage?.[type]?.[statKey]) {
+    return null;
+  }
+
+  const baseNode = profile.statistics.leagueAverage[type][statKey];
+  const periodNode = baseNode?.[period] ?? baseNode?.ALL ?? null;
+
+  if (periodNode == null) {
+    return null;
+  }
+
+  if (typeof periodNode === "object") {
+    return {
+      value: toNumberOrNull(periodNode.value),
+      rank: toNumberOrNull(periodNode.rank),
+    };
+  }
+
+  return {
+    value: toNumberOrNull(periodNode),
+    rank: null,
+  };
 }
 
 function renderRankBadge(node) {
@@ -396,6 +448,10 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
   const loading = isLoading || isProfileLoading;
   const combinedError = error ?? profileError ?? null;
 
+  const [selectedPeriod, setSelectedPeriod] = useState(PERIOD_OPTIONS[0].value);
+  const selectedPeriodOption =
+    PERIOD_OPTIONS.find((option) => option.value === selectedPeriod) ?? PERIOD_OPTIONS[0];
+
   useEffect(() => {
     if (combinedError) {
       debugError("combinedError", combinedError);
@@ -409,9 +465,50 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
     .filter(Boolean)
     .join(" ");
 
-  const renderComparisonTable = (key, title, subtitle, rows) => {
+  const renderComparisonTable = (key, title, subtitle, rows, options = {}) => {
+    const { layout = "forAgainst" } = options;
     if (!Array.isArray(rows) || rows.length === 0) {
       return null;
+    }
+
+    if (layout === "single") {
+      return (
+        <div className={styles.section} key={key}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionSubtitle}>{subtitle}</span>
+            <h3 className={styles.sectionTitle}>{title}</h3>
+          </div>
+          <div className={styles.table}>
+            <div className={styles.headerRow}>
+              <span className={styles.simpleHeaderMetric}>Metric</span>
+              <span className={`${styles.simpleHeaderTeam} ${styles.simpleHeaderTeamHome}`}>
+                {match?.homeTeamName ?? "Home"}
+              </span>
+              <span className={`${styles.simpleHeaderTeam} ${styles.simpleHeaderTeamAway}`}>
+                {match?.awayTeamName ?? "Away"}
+              </span>
+            </div>
+            <div className={styles.rows}>
+              {rows.map((row) => (
+                <div className={styles.row} key={row.key}>
+                  <div className={styles.metric}>
+                    <span className={styles.metricLabel}>{row.label}</span>
+                    {row.hint ? <span className={styles.metricHint}>{row.hint}</span> : null}
+                  </div>
+                  <div className={styles.valueCell}>
+                    <span>{row.home.display}</span>
+                    {renderRankBadge(row.home)}
+                  </div>
+                  <div className={styles.valueCell}>
+                    <span>{row.away.display}</span>
+                    {renderRankBadge(row.away)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
     }
 
     return (
@@ -465,19 +562,19 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
                 </div>
                 <div className={`${styles.valueCell} ${styles.valueCellFor}`}>
                   <span>{row.home.for.display}</span>
-                  {renderRankBadge({ rank: row.home.for.rank })}
+                  {renderRankBadge(row.home.for)}
                 </div>
                 <div className={`${styles.valueCell} ${styles.valueCellAgainst}`}>
                   <span>{row.home.against.display}</span>
-                  {renderRankBadge({ rank: row.home.against.rank })}
+                  {renderRankBadge(row.home.against)}
                 </div>
                 <div className={`${styles.valueCell} ${styles.valueCellFor}`}>
                   <span>{row.away.for.display}</span>
-                  {renderRankBadge({ rank: row.away.for.rank })}
+                  {renderRankBadge(row.away.for)}
                 </div>
                 <div className={`${styles.valueCell} ${styles.valueCellAgainst}`}>
                   <span>{row.away.against.display}</span>
-                  {renderRankBadge({ rank: row.away.against.rank })}
+                  {renderRankBadge(row.away.against)}
                 </div>
               </div>
             ))}
@@ -491,15 +588,21 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
     if (!homeProfile || !awayProfile) return null;
 
     const rows = PROFILE_STATS.map(({ key, label }) => {
-      const homeForNode = extractStatValue(homeProfile, key, "for");
-      const homeAgainstNode = extractStatValue(homeProfile, key, "against");
-      const awayForNode = extractStatValue(awayProfile, key, "for");
-      const awayAgainstNode = extractStatValue(awayProfile, key, "against");
-      const leagueAvgForNode = extractLeagueAverage(homeProfile, key, "for");
+      const homeForNode = extractStatValue(homeProfile, key, "for", selectedPeriod);
+      const homeAgainstNode = extractStatValue(homeProfile, key, "against", selectedPeriod);
+      const awayForNode = extractStatValue(awayProfile, key, "for", selectedPeriod);
+      const awayAgainstNode = extractStatValue(awayProfile, key, "against", selectedPeriod);
+      const leagueAvgForNode = extractLeagueAverage(
+        homeProfile,
+        key,
+        "for",
+        selectedPeriod
+      );
       const leagueAvgAgainstNode = extractLeagueAverage(
         homeProfile,
         key,
-        "against"
+        "against",
+        selectedPeriod
       );
       const isPercentage = key === "ballPossession";
       const formatter = (value) =>
@@ -540,9 +643,9 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
     });
 
     return renderComparisonTable(
-      "all-periods",
-      "All periods",
-      "Key metrics (per match)",
+      "team-statistics",
+      "Lagstatistik",
+      selectedPeriodOption.label,
       rows
     );
   };
@@ -670,65 +773,23 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
     }).filter((row) => row.hasData);
 
     const firstGoalRows = FIRST_GOAL_METRICS.map((metric) => {
-      const homeFor = getSpecialMetricNode(homeSpecials, "firstGoal", "for", metric.key);
-      const homeAgainst = getSpecialMetricNode(
-        homeSpecials,
-        "firstGoal",
-        "against",
-        metric.key
-      );
-      const awayFor = getSpecialMetricNode(awaySpecials, "firstGoal", "for", metric.key);
-      const awayAgainst = getSpecialMetricNode(
-        awaySpecials,
-        "firstGoal",
-        "against",
-        metric.key
-      );
-      const leagueFor = getSpecialLeagueValue(
-        leagueSpecials,
-        "firstGoal",
-        "for",
-        metric.key
-      );
-      const leagueAgainst = getSpecialLeagueValue(
-        leagueSpecials,
-        "firstGoal",
-        "against",
-        metric.key
-      );
-      const hasData = hasAnyFiniteValue(
-        homeFor.value,
-        homeAgainst.value,
-        awayFor.value,
-        awayAgainst.value,
-        leagueFor,
-        leagueAgainst
-      );
+      const homeMetric = getSpecialMetricNode(homeSpecials, "firstGoal", null, metric.key);
+      const awayMetric = getSpecialMetricNode(awaySpecials, "firstGoal", null, metric.key);
+      const leagueValue = getSpecialLeagueValue(leagueSpecials, "firstGoal", null, metric.key);
+      const hasData = hasAnyFiniteValue(homeMetric.value, awayMetric.value, leagueValue);
       const formatter = metric.format;
 
       return {
         key: metric.key,
         label: metric.label,
-        hint: buildLeagueAverageHint(leagueFor, leagueAgainst, formatter),
+        hint: buildSingleLeagueAverageHint(leagueValue, formatter),
         home: {
-          for: {
-            display: formatMetricValue(homeFor.value, formatter),
-            rank: homeFor.rank,
-          },
-          against: {
-            display: formatMetricValue(homeAgainst.value, formatter),
-            rank: homeAgainst.rank,
-          },
+          display: formatMetricValue(homeMetric.value, formatter),
+          rank: homeMetric.rank,
         },
         away: {
-          for: {
-            display: formatMetricValue(awayFor.value, formatter),
-            rank: awayFor.rank,
-          },
-          against: {
-            display: formatMetricValue(awayAgainst.value, formatter),
-            rank: awayAgainst.rank,
-          },
+          display: formatMetricValue(awayMetric.value, formatter),
+          rank: awayMetric.rank,
         },
         hasData,
       };
@@ -764,7 +825,8 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
           "first-goal",
           "First goal tendencies",
           "Game flow",
-          firstGoalRows
+          firstGoalRows,
+          { layout: "single" }
         )
       );
     }
@@ -801,6 +863,26 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
           <p className="text-xs text-gray-500">
             {match.homeTeamName} vs {match.awayTeamName}
           </p>
+        </div>
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <label
+            className="text-xs font-semibold uppercase tracking-wide text-gray-600"
+            htmlFor="team-compare-period"
+          >
+            Period
+          </label>
+          <select
+            id="team-compare-period"
+            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            value={selectedPeriod}
+            onChange={(event) => setSelectedPeriod(event.target.value)}
+          >
+            {PERIOD_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
         {renderStatistics()}
         {renderSpecials()}

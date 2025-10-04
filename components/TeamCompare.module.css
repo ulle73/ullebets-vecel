@@ -126,6 +126,30 @@
   text-transform: uppercase;
 }
 
+.simpleHeaderMetric {
+  display: flex;
+  align-items: center;
+}
+
+.simpleHeaderTeam {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111827;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.simpleHeaderTeamHome {
+  grid-column: 2;
+}
+
+.simpleHeaderTeamAway {
+  grid-column: 3;
+}
+
 .rows {
   display: flex;
   flex-direction: column;
