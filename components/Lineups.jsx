@@ -134,20 +134,74 @@ function computeLineY(totalRows, rowIndex, orientation) {
   }
 
   const isBottom = orientation === "bottom";
-  const start = isBottom ? 90 : 10;
-  const end = isBottom ? 54 : 46;
+  const start = isBottom ? 95 : 5;
+  const end = isBottom ? 56 : 44;
   const fraction = rowIndex / (totalRows - 1);
   return start + (end - start) * fraction;
 }
 
-function computeLineXs(count) {
+// function computeLineXs(count) {
+//   if (count <= 0) return [];
+//   if (count === 1) return [50];
+//   const minX = 18;
+//   const maxX = 82;
+//   const step = (maxX - minX) / (count - 1);
+//   return Array.from({ length: count }, (_, index) => minX + step * index);
+// }
+
+// Ny: flexibel spridning med padding och minsta avstånd
+function computeLineXs(
+  count,
+  {
+    mode = "between",        // "between" | "around"
+    minX = 14,               // ursprungsband
+    maxX = 88,
+    sidePadding = 2,         // extra padding från kanter (procentenheter)
+    minGap = 0,              // minsta gap mellan spelare (procentenheter)
+  } = {}
+) {
   if (count <= 0) return [];
   if (count === 1) return [50];
-  const minX = 18;
-  const maxX = 82;
-  const step = (maxX - minX) / (count - 1);
-  return Array.from({ length: count }, (_, index) => minX + step * index);
+
+  // 1) Effektivt band med extra padding
+  const left = minX + sidePadding;
+  const right = maxX - sidePadding;
+  const width = Math.max(0, right - left);
+
+  // 2) Bas-gap utifrån mode
+  let baseGap;
+  if (mode === "around") {
+    // lika gap överallt + halvt gap mot kanterna
+    baseGap = width / count;
+    // start ligger ett halvt gap in
+    let start = left + baseGap / 2;
+
+    // 3) Respektera minGap: om baseGap < minGap, centrera med minGap
+    if (minGap > 0 && baseGap < minGap) {
+      const need = minGap * (count - 1);
+      const inner = Math.min(width, need);
+      start = left + (width - inner) / 2;
+      baseGap = count > 1 ? (inner / (count - 1)) : 0; // för säkerhets skull
+    }
+
+    return Array.from({ length: count }, (_, i) => start + i * baseGap);
+  }
+
+  // mode = "between" (default): första vid vänsterkant, sista vid högerkant
+  baseGap = count > 1 ? width / (count - 1) : width;
+  let start = left;
+
+  // 3) Respektera minGap även här
+  if (minGap > 0 && baseGap < minGap) {
+    const need = minGap * (count - 1);
+    const inner = Math.min(width, need);
+    start = left + (width - inner) / 2;
+    baseGap = count > 1 ? (inner / (count - 1)) : 0;
+  }
+
+  return Array.from({ length: count }, (_, i) => start + i * baseGap);
 }
+
 
 function buildPitchPlayers(starters, formation, orientation) {
   const grouping = groupPlayersByFormation(starters, formation);
@@ -166,7 +220,14 @@ function buildPitchPlayers(starters, formation, orientation) {
   for (const line of grouping.lines) {
     const players = Array.isArray(line) ? line.filter(Boolean) : [];
     const y = computeLineY(totalRows, rowIndex, orientation);
-    const xs = computeLineXs(players.length || 1);
+    // const xs = computeLineXs(players.length || 1);
+    const xs = computeLineXs(players.length || 1, {
+mode: "around",      // eller "between"
+      sidePadding: 0,      // t.ex. 8% extra marginal från kanter
+      minGap: 4,           // t.ex. minst 6% mellan spelare
+      minX: 14,
+      maxX: 88,
+    });
     players.forEach((player, index) => {
       result.push({ ...player, x: xs[index] ?? 50, y, isGoalkeeper: false });
     });
@@ -267,10 +328,7 @@ function CombinedPitch({ homeLineup, awayLineup }) {
   return (
     <div className="relative isolate w-full overflow-hidden rounded-2xl border border-emerald-700 shadow-lg">
       <div className="relative w-full pb-[150%]">
-        <div className="absolute inset-0 bg-[url('/pitch4.png')] bg-cover bg-center" />
-        <div className="absolute inset-0 bg-emerald-900/30" />
-        <div className="absolute inset-x-[10%] top-1/2 h-px bg-white/40" />
-        <div className="absolute inset-[6%] rounded-[32px] border border-white/25" />
+        <div className="absolute inset-0 bg-[url('/images/pitch4.png')] bg-cover bg-center" />
         {[homePlayers, awayPlayers].map((group, index) =>
           group.map((player) => (
             <PlayerMarker
