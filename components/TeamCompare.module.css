@@ -36,6 +36,99 @@
   background: #ffffff;
 }
 
+
+.mainHeader {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto auto;
+  gap: 10px 16px;
+  padding: 16px 18px 12px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  align-items: center;
+}
+
+.mainHeaderMetric {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.teamHeader {
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.teamHeaderHome {
+  grid-column: 1 / span 2;
+}
+
+.teamHeaderAway {
+  grid-column: 4 / span 2;
+}
+
+.teamHeaderLogo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.teamHeaderName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #111827;
+  text-transform: none;
+  text-align: center;
+}
+
+.mainHeaderLabel {
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+}
+
+.mainHeaderLabelHomeFor {
+  grid-column: 1;
+}
+
+.mainHeaderLabelHomeAgainst {
+  grid-column: 2;
+}
+
+.mainHeaderLabelAwayFor {
+  grid-column: 4;
+}
+
+.mainHeaderLabelAwayAgainst {
+  grid-column: 5;
+}
+
+.mainHeaderLabelHomeFor,
+.mainHeaderLabelAwayFor,
+.valueCellFor {
+  color: #047857;
+}
+
+.mainHeaderLabelHomeAgainst,
+.mainHeaderLabelAwayAgainst,
+.valueCellAgainst {
+  color: #be185d;
+}
+
 .headerRow {
   display: grid;
   grid-template-columns: 1.2fr 1fr 1fr;
@@ -49,6 +142,30 @@
   text-transform: uppercase;
 }
 
+.simpleHeaderMetric {
+  display: flex;
+  align-items: center;
+}
+
+.simpleHeaderTeam {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111827;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.simpleHeaderTeamHome {
+  grid-column: 2;
+}
+
+.simpleHeaderTeamAway {
+  grid-column: 3;
+}
+
 .rows {
   display: flex;
   flex-direction: column;
@@ -58,9 +175,13 @@
   display: grid;
   grid-template-columns: 1.2fr 1fr 1fr;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 12px 18px;
   font-size: 0.85rem;
   color: #111827;
+}
+
+.mainRow {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
 }
 
 .row:nth-child(even) {
@@ -71,6 +192,16 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.metricMain {
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+}
+
+.metricMain .metricHint {
+  text-align: center;
 }
 
 .metricLabel {
@@ -89,7 +220,17 @@
   justify-content: flex-end;
   gap: 6px;
   font-variant-numeric: tabular-nums;
-  color: #111827;
+  color: inherit;
+}
+
+.valueCellHome {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.valueCellAway {
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .rankBadge {
@@ -116,6 +257,27 @@
 }
 
 @media (max-width: 639px) {
+  .mainHeader {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(5, auto);
+    gap: 8px;
+  }
+
+  .mainHeaderMetric,
+  .mainHeaderTeam,
+  .mainHeaderLabel {
+    grid-column: auto;
+    grid-row: auto;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .mainHeaderTeam,
+  .mainHeaderLabel {
+    text-transform: none;
+    color: #4b5563;
+  }
+
   .headerRow,
   .row {
     grid-template-columns: 1fr;
