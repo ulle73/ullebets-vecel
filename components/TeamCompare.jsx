@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import styles from "./TeamCompare.module.css";
@@ -233,6 +234,44 @@ function normalizeId(value) {
   return Number.isFinite(num) && num > 0 ? num : null;
 }
 
+function buildTeamLogoCandidates(teamId) {
+  const numeric = normalizeId(teamId);
+  if (!numeric) {
+    return ["/images/teams/placeholder.png"];
+  }
+
+  const base = String(numeric);
+  return [
+    `/images/teams/${base}.png`,
+    `/images/teams/${base}.svg`,
+    `/images/teams/${base}@2x.png`,
+    "/images/teams/placeholder.png",
+  ];
+}
+
+function TeamLogo({ teamId, teamName, size = 48, className }) {
+  const candidates = useMemo(() => buildTeamLogoCandidates(teamId), [teamId]);
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    setIndex(0);
+  }, [candidates]);
+  const src = candidates[Math.min(index, candidates.length - 1)];
+
+  return (
+    <Image
+      src={src}
+      alt={teamName ?? "Lag"}
+      width={size}
+      height={size}
+      className={className}
+      loading="lazy"
+      onError={() => {
+        setIndex((prev) => (prev < candidates.length - 1 ? prev + 1 : prev));
+      }}
+    />
+  );
+}
+
 function buildProfileUrl(match, side) {
   const matchType = side === "home" ? "home" : "away";
   const params = new URLSearchParams();
@@ -452,6 +491,33 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
   const selectedPeriodOption =
     PERIOD_OPTIONS.find((option) => option.value === selectedPeriod) ?? PERIOD_OPTIONS[0];
 
+  const homeTeamId =
+    normalizeId(
+      match?.homeTeamId ??
+        match?.raw?.homeTeamId ??
+        match?.homeTeam?.id ??
+        match?.raw?.homeTeam?.id
+    ) ?? null;
+  const awayTeamId =
+    normalizeId(
+      match?.awayTeamId ??
+        match?.raw?.awayTeamId ??
+        match?.awayTeam?.id ??
+        match?.raw?.awayTeam?.id
+    ) ?? null;
+  const homeTeamLabel =
+    match?.homeTeamName ??
+    match?.raw?.homeTeamName ??
+    match?.homeTeam?.name ??
+    match?.raw?.homeTeam?.name ??
+    "Home";
+  const awayTeamLabel =
+    match?.awayTeamName ??
+    match?.raw?.awayTeamName ??
+    match?.awayTeam?.name ??
+    match?.raw?.awayTeam?.name ??
+    "Away";
+
   useEffect(() => {
     if (combinedError) {
       debugError("combinedError", combinedError);
@@ -482,10 +548,10 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
             <div className={styles.headerRow}>
               <span className={styles.simpleHeaderMetric}>Metric</span>
               <span className={`${styles.simpleHeaderTeam} ${styles.simpleHeaderTeamHome}`}>
-                {match?.homeTeamName ?? "Home"}
+                {homeTeamLabel}
               </span>
               <span className={`${styles.simpleHeaderTeam} ${styles.simpleHeaderTeamAway}`}>
-                {match?.awayTeamName ?? "Away"}
+                {awayTeamLabel}
               </span>
             </div>
             <div className={styles.rows}>
@@ -519,17 +585,23 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
         </div>
         <div className={styles.table}>
           <div className={styles.mainHeader}>
+            <div className={`${styles.teamHeader} ${styles.teamHeaderHome}`}>
+              <TeamLogo
+                teamId={homeTeamId}
+                teamName={homeTeamLabel}
+                className={styles.teamHeaderLogo}
+              />
+              <span className={styles.teamHeaderName}>{homeTeamLabel}</span>
+            </div>
             <span className={styles.mainHeaderMetric}>Metric</span>
-            <span
-              className={`${styles.mainHeaderTeam} ${styles.mainHeaderTeamHome}`}
-            >
-              {match?.homeTeamName ?? "Home"}
-            </span>
-            <span
-              className={`${styles.mainHeaderTeam} ${styles.mainHeaderTeamAway}`}
-            >
-              {match?.awayTeamName ?? "Away"}
-            </span>
+            <div className={`${styles.teamHeader} ${styles.teamHeaderAway}`}>
+              <TeamLogo
+                teamId={awayTeamId}
+                teamName={awayTeamLabel}
+                className={styles.teamHeaderLogo}
+              />
+              <span className={styles.teamHeaderName}>{awayTeamLabel}</span>
+            </div>
             <span
               className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelHomeFor}`}
             >
@@ -554,25 +626,33 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
           <div className={styles.rows}>
             {rows.map((row) => (
               <div className={`${styles.row} ${styles.mainRow}`} key={row.key}>
-                <div className={styles.metric}>
+                <div
+                  className={`${styles.valueCell} ${styles.valueCellHome} ${styles.valueCellFor}`}
+                >
+                  <span>{row.home.for.display}</span>
+                  {renderRankBadge(row.home.for)}
+                </div>
+                <div
+                  className={`${styles.valueCell} ${styles.valueCellHome} ${styles.valueCellAgainst}`}
+                >
+                  <span>{row.home.against.display}</span>
+                  {renderRankBadge(row.home.against)}
+                </div>
+                <div className={`${styles.metric} ${styles.metricMain}`}>
                   <span className={styles.metricLabel}>{row.label}</span>
                   {row.hint ? (
                     <span className={styles.metricHint}>{row.hint}</span>
                   ) : null}
                 </div>
-                <div className={`${styles.valueCell} ${styles.valueCellFor}`}>
-                  <span>{row.home.for.display}</span>
-                  {renderRankBadge(row.home.for)}
-                </div>
-                <div className={`${styles.valueCell} ${styles.valueCellAgainst}`}>
-                  <span>{row.home.against.display}</span>
-                  {renderRankBadge(row.home.against)}
-                </div>
-                <div className={`${styles.valueCell} ${styles.valueCellFor}`}>
+                <div
+                  className={`${styles.valueCell} ${styles.valueCellAway} ${styles.valueCellFor}`}
+                >
                   <span>{row.away.for.display}</span>
                   {renderRankBadge(row.away.for)}
                 </div>
-                <div className={`${styles.valueCell} ${styles.valueCellAgainst}`}>
+                <div
+                  className={`${styles.valueCell} ${styles.valueCellAway} ${styles.valueCellAgainst}`}
+                >
                   <span>{row.away.against.display}</span>
                   {renderRankBadge(row.away.against)}
                 </div>
