@@ -74,12 +74,6 @@ function inferPeriod(name = "") {
   return "ALL";
 }
 
-function parseLine(label = "") {
-  const match = String(label).match(/(\d+(?:[.,]\d+)?)/);
-  if (!match) return null;
-  return Number.parseFloat(match[1].replace(",", "."));
-}
-
 function parseDirection(label = "") {
   return /under/i.test(label) ? "under" : "over";
 }
@@ -94,6 +88,54 @@ function parseNumeric(value) {
     if (!normalized) return null;
     const parsed = Number.parseFloat(normalized);
     return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function parseLineFromText(value) {
+  if (value == null) return null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const match = value.match(/(\d+(?:[.,]\d+)?)/);
+    if (match) {
+      const parsed = Number.parseFloat(match[1].replace(",", "."));
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    const numeric = Number.parseFloat(value.replace(",", "."));
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+  return null;
+}
+
+function resolveLine(outcome = {}, market = {}) {
+  const candidates = [
+    outcome.label,
+    outcome.outcome,
+    outcome.handicap,
+    outcome.line,
+    outcome.points,
+    outcome.total,
+    outcome.target,
+    outcome.handicapValue,
+    outcome.odds?.handicap,
+    outcome.selectionHandicap,
+    market.handicap,
+    market.line,
+    market.points,
+    market.total,
+    market.criterion?.handicap,
+    market.criterion?.points,
+    market.criterion?.total,
+  ];
+  for (const candidate of candidates) {
+    const line = parseLineFromText(candidate);
+    if (Number.isFinite(line)) {
+      return line;
+    }
   }
   return null;
 }
@@ -213,7 +255,7 @@ function mapFromMarkets(markets = [], aliasContext = EMPTY_ALIAS_CONTEXT) {
 
     for (const outcome of outcomes) {
       const label = outcome.label ?? outcome.outcome ?? "";
-      const line = parseLine(label ?? outcome.handicap ?? outcome.line);
+      const line = resolveLine(outcome, market);
       if (!Number.isFinite(line)) continue;
       const dir = parseDirection(label ?? outcome.type ?? "");
       const odds = parseOdds(outcome);
