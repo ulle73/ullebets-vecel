@@ -1,4 +1,4 @@
-﻿import { memo, useMemo } from "react";
+import { memo, useMemo } from "react";
 import { collectEvMetrics, computePrimaryFormula, DEFAULT_FORMULAS } from "./formulas";
 import { formatPercent } from "./utils";
 
@@ -11,22 +11,31 @@ function resolveTeamLabel(result) {
 
 const PositiveEvTable = memo(function PositiveEvTable({ results, statLabels, formulas = DEFAULT_FORMULAS }) {
   const rows = useMemo(() => {
-    if (!Array.isArray(results)) return [];
-    return results
+    if (!Array.isArray(results)) {
+      console.log("[PositiveEvTable] no results to display", { results });
+      return [];
+    }
+    const mapped = results
       .map((result) => {
+        console.log("[PositiveEvTable] processing result", result);
         const { formula, value } = computePrimaryFormula(result, formulas);
+        const metrics = collectEvMetrics(result);
+        console.log("[PositiveEvTable] computed metrics", { formula, value, metrics });
         return {
           result,
           formula,
           primaryValue: value,
-          metrics: collectEvMetrics(result),
+          metrics,
         };
       })
       .filter((entry) => typeof entry.primaryValue === "number" && entry.primaryValue > 0)
       .sort((a, b) => b.primaryValue - a.primaryValue);
+    console.log("[PositiveEvTable] rows", mapped);
+    return mapped;
   }, [results, formulas]);
 
   if (!rows.length) {
+    console.log("[PositiveEvTable] no +EV rows to render");
     return null;
   }
 

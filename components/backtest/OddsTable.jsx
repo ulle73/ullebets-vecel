@@ -1,9 +1,15 @@
-﻿import { useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { collectEvMetrics } from "./formulas";
 import { formatPercent } from "./utils";
 
 function findResult(results, predicate) {
-  return Array.isArray(results) ? results.find(predicate) ?? null : null;
+  if (!Array.isArray(results)) {
+    console.log("[OddsTable] findResult called with non-array", { results });
+    return null;
+  }
+  const match = results.find(predicate) ?? null;
+  console.log("[OddsTable] findResult", { hasMatch: Boolean(match) });
+  return match;
 }
 
 function formatStatValue({ match, value, teamType, statKey }) {
@@ -53,7 +59,10 @@ function formatStatValue({ match, value, teamType, statKey }) {
 }
 
 function collectMatches(result, scope, neutralGround, direction) {
-  if (!result) return [];
+  if (!result) {
+    console.log("[OddsTable] collectMatches missing result", { scope, neutralGround, direction });
+    return [];
+  }
   const isOver = direction === "över";
 
   if (scope === "total") {
@@ -152,15 +161,25 @@ export default function OddsTable({
 
   const thresholds = useMemo(() => {
     const pattern = statPatterns?.[statKey];
-    return pattern ? pattern.thresholds(scope, period) : [];
+    const values = pattern ? pattern.thresholds(scope, period) : [];
+    console.log("[OddsTable] thresholds computed", { statKey, scope, period, values });
+    return values;
   }, [statPatterns, statKey, scope, period]);
 
   const opponentLabel = scope === "home" ? awayTeam : scope === "away" ? homeTeam : "Under";
 
   const updateOddsStore = (line, dir, value) => {
+    console.log("[OddsTable] updateOddsStore", {
+      statKey,
+      scope,
+      period,
+      line,
+      dir,
+      value,
+    });
     setOddsStore((prev) => {
       const currentOdds = prev?.[teamKey]?.[statKey]?.[scope]?.[period] ?? {};
-      return {
+      const nextStore = {
         ...prev,
         [teamKey]: {
           ...prev?.[teamKey],
@@ -179,23 +198,35 @@ export default function OddsTable({
           },
         },
       };
+      console.log("[OddsTable] updateOddsStore next state", nextStore);
+      return nextStore;
     });
   };
 
   const handleOddsChange = (line, dir) => (event) => {
     const value = event.target.value;
+    console.log("[OddsTable] handleOddsChange", { line, dir, value });
     updateOddsStore(line, dir, value);
 
     const timeoutKey = `${line}-${dir}`;
     clearTimeout(timeouts.current[timeoutKey]);
     timeouts.current[timeoutKey] = setTimeout(() => {
       const direction = dir === "over" ? "över" : "under";
+      console.log("[OddsTable] triggering delayed recalculation", {
+        statKey,
+        line,
+        direction,
+        value,
+        scope,
+        period,
+      });
       onRecalculate(statKey, line, direction, value, scope, period);
     }, 2000);
   };
 
   const buildEvEntries = (line, direction) => {
     const result = findResult(results, (res) => res.bet.line === line && res.bet.direction === direction);
+    console.log("[OddsTable] buildEvEntries", { line, direction, hasResult: Boolean(result) });
     if (!result) {
       return [
         {
@@ -210,6 +241,7 @@ export default function OddsTable({
 
     const leagueTooltip = getLeagueFormulaTooltip({ result, period, scope });
     const metrics = collectEvMetrics(result);
+    console.log("[OddsTable] metrics for line", { line, direction, metrics });
 
     if (!metrics.length) {
       return [
@@ -298,6 +330,7 @@ export default function OddsTable({
               findResult(results, (res) => res.bet.line === line && res.bet.direction === "över") ??
               findResult(results, (res) => res.bet.line === line && res.bet.direction === "under");
             const store = oddsStore?.[teamKey]?.[statKey]?.[scope]?.[period]?.[line] ?? {};
+            console.log("[OddsTable] rendering line", { line, store, overEntries, underEntries });
             return (
               <tr key={line} className="bg-gray-900/60">
                 <td className="px-3 py-2 align-top text-gray-200">{line}</td>
@@ -369,5 +402,4 @@ export default function OddsTable({
     </div>
   );
 }
-
 
