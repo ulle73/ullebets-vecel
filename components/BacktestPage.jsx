@@ -21,7 +21,7 @@ import {
   logClientBacktestStep,
   resetClientBacktestSteps,
 } from "@/lib/backtest/logger";
-import { areTeamNamesEquivalent } from "@/lib/teamNameAliases";
+import { areTeamNamesEquivalent, getTeamAliases } from "@/lib/teamNameAliases";
 import leaguesAndTeams from "@/data/leagues-and-teams.json";
 
 const STRINGS = {
@@ -721,7 +721,20 @@ export default function BacktestPage({ match, className = "" }) {
         });
         throw new Error(translate("error_unibet_team_mismatch"));
       }
-      const tuples = mapUnibetOdds(data.odds ?? data, entry.homeTeam, entry.awayTeam);
+      // const tuples = mapUnibetOdds(data.odds ?? data, entry.homeTeam, entry.awayTeam);
+      const aliasContext = {
+ homeTeam: entry.homeTeam,
+        awayTeam: entry.awayTeam,
+          homeAliases: getTeamAliases(entry.homeTeam), // <-- använd din aliaslista
+           awayAliases: getTeamAliases(entry.awayTeam),
+           };
+    const tuples = mapUnibetOdds(
+       data.odds ?? data,
+       entry.homeTeam,
+        entry.awayTeam,
+        aliasContext
+      );
+      
       if (!tuples.length) {
         logClientBacktestError("Inga odds mappades från Unibet-svaret.", {
           dataPreview: data,
@@ -736,6 +749,13 @@ export default function BacktestPage({ match, className = "" }) {
           sample: tuples.slice(0, 5),
         }
       );
+      
+      console.log("MAPPED TUPLES (preview)",
+        tuples.slice(0, 15).map(t => ({
+          statKey: t.statKey, scope: t.scope, period: t.period, line: t.line, odds: t.odds
+        }))
+      );
+
 
       setOddsStore((prev) => {
         const next = { ...prev };
