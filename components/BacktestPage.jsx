@@ -673,7 +673,8 @@ export default function BacktestPage({ match, className = "" }) {
     setLoading(true);
     setError(null);
     const backendBaseUrl = getBackendBaseUrl();
-    const backendUrl = buildBackendUrl(`/unibet-odds/${matchId}`);
+    const backendUrl = `/api/unibet-odds/${matchId}`;
+
     logClientBacktestStep("Backend-url för Unibet-hämtningen fastställs.", {
       matchId,
       backendBaseUrl,

@@ -1,0 +1,36 @@
+const mapping = {
+  sv: {
+    totalShotsOnGoal: "Totala Skott",
+    totalShots: "Totala Skott",
+    onTargetScoringAttempt: "Skott På Mål",
+    shotsOnGoal: "Skott På Mål",
+    totalPass: "Passningar",
+    totalTackle: "Tacklingar",
+    yellowCards: "Gula Kort",
+    fouls: "Fouls",
+    wasFouled: "Fouls emot sig",
+    offsides: "Offside",
+    throwIns: "Inkast",
+    cornerKicks: "Hörnor",
+    freeKicks: "Frisparkar",
+    goalKicks: "Insparkar",
+  },
+  en: {
+    totalShotsOnGoal: "Total Shots",
+    totalShots: "Total Shots",
+    onTargetScoringAttempt: "Shots On Target",
+    shotsOnGoal: "Shots On Target",
+    totalPass: "Passes",
+    totalTackle: "Tackles",
+    yellowCards: "Yellow Cards",
+    fouls: "Fouls",
+    wasFouled: "Fouled",
+    offsides: "Offside",
+    throwIns: "Throw-Ins",
+    cornerKicks: "Corner Kicks",
+    freeKicks: "Free Kicks",
+    goalKicks: "Goal Kicks",
+  },
+};
+
+export default mapping;
