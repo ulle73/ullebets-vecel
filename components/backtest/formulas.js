@@ -1,3 +1,5 @@
+import { logClientBacktestStep } from "@/lib/backtest/logger";
+
 const EV_METRICS = [
   { key: "evPct", label: "EV (Modell)", shortLabel: "EV Modell" },
   { key: "evPctWithMultiplier", label: "EV (Multiplier)", shortLabel: "EV Mult" },
@@ -56,11 +58,14 @@ export function computePrimaryFormula(result, formulas = DEFAULT_FORMULAS) {
   for (const formula of formulas) {
     const value = formula.compute(result);
     if (typeof value === "number" && Number.isFinite(value)) {
-      console.log("[Formulas] selected primary formula", { formula: formula.id, value });
+      logClientBacktestStep("Formel för primärt värde väljs.", {
+        formula: formula.id,
+        value,
+      });
       return { formula, value };
     }
   }
-  console.log("[Formulas] no primary formula matched", { result });
+  logClientBacktestStep("Ingen primärformel matchade resultatet.", { result });
   return { formula: formulas[0] ?? null, value: null };
 }
 
@@ -72,6 +77,6 @@ export function collectEvMetrics(result) {
       value,
     };
   }).filter((metric) => metric.value !== null);
-  console.log("[Formulas] collected EV metrics", metrics);
+  logClientBacktestStep("EV-måtten sammanställs för resultatraden.", metrics);
   return metrics;
 }
