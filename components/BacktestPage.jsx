@@ -10,7 +10,6 @@ import {
   buildBackendUrl,
   buildBacktestApiUrl,
   createInitialForm,
-  getBackendBaseUrl,
   makeTeamKey,
   normalizeTeamName,
   replaceTeamsInForm,
@@ -647,20 +646,89 @@ export default function BacktestPage({ match, className = "" }) {
   };
 
   const handleLoadUnibetOdds = async () => {
-    logClientBacktestStep(
-      "Användaren laddar in odds från Unibet och begär backend-hämtning.",
-      { unibetUrl }
+    const matchIdCandidates = [];
+
+    if (match?.matchId) {
+      matchIdCandidates.push({
+        source: "matchProp.matchId",
+        value: String(match.matchId),
+      });
+    }
+
+    if (match?.id && (!match?.matchId || match.matchId !== match.id)) {
+      matchIdCandidates.push({
+        source: "matchProp.id",
+        value: String(match.id),
+      });
+    }
+
+    const urlPatterns = [
+      /event\/(\d+)/i,
+      /match\/(\d+)/i,
+      /(\d{6,})/,
+    ];
+
+    if (unibetUrl) {
+      for (const pattern of urlPatterns) {
+        const matchResult = unibetUrl.match(pattern);
+        if (matchResult?.[1]) {
+          matchIdCandidates.push({
+            source: "unibetUrl",
+            value: matchResult[1],
+          });
+          break;
+        }
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      const href = window.location.href;
+      for (const pattern of urlPatterns) {
+        const matchResult = href.match(pattern);
+        if (matchResult?.[1]) {
+          matchIdCandidates.push({
+            source: "window.location.href",
+            value: matchResult[1],
+          });
+          break;
+        }
+      }
+
+      const searchParams = new URLSearchParams(window.location.search);
+      const queryMatchId = searchParams.get("matchId");
+      if (queryMatchId) {
+        matchIdCandidates.push({
+          source: "queryString",
+          value: queryMatchId,
+        });
+      }
+    }
+
+    const resolvedMatchIdEntry = matchIdCandidates.find(
+      (candidate) => candidate.value && candidate.value !== "null"
     );
-    const matchIdMatch = unibetUrl.match(/event\/(\d+)/i);
-    const matchId = matchIdMatch ? matchIdMatch[1] : null;
+
+    const matchId = resolvedMatchIdEntry?.value ?? null;
+
+    logClientBacktestStep(
+      "Användaren laddar in odds från Unibet och match-id identifieras.",
+      {
+        unibetUrl,
+        candidates: matchIdCandidates,
+        matchId,
+        source: resolvedMatchIdEntry?.source ?? null,
+      }
+    );
+
     if (!matchId) {
-      logClientBacktestError("Unibet-url saknar match-id och hämtning avbryts.", {
+      logClientBacktestError("Match-id kunde inte identifieras för Unibet-hämtning.", {
+        candidates: matchIdCandidates,
         unibetUrl,
       });
       setError(translate("error_unibet_url"));
       return;
     }
-    logClientBacktestStep("Match-id extraheras från Unibet-url.", { matchId });
+    logClientBacktestStep("Match-id extraheras inför Unibet-hämtning.", { matchId });
     const entry = form[firstStatKey];
     if (!entry?.homeTeam || !entry?.awayTeam) {
       logClientBacktestError("Kan inte hämta Unibet-odds utan lag i formuläret.", {
@@ -672,24 +740,22 @@ export default function BacktestPage({ match, className = "" }) {
 
     setLoading(true);
     setError(null);
-    const backendBaseUrl = getBackendBaseUrl();
-    const backendUrl = buildBackendUrl(`/unibet-odds/${matchId}`);
-    logClientBacktestStep("Backend-url för Unibet-hämtningen fastställs.", {
+    const backendUrl = `/api/unibet-odds/${matchId}`;
+    logClientBacktestStep("API-url för Unibet-hämtningen fastställs.", {
       matchId,
-      backendBaseUrl,
       backendUrl,
       pageOrigin: typeof window !== "undefined" ? window.location.origin : null,
     });
     try {
       const response = await fetch(backendUrl);
-      logClientBacktestStep("Svar mottaget från backend för Unibet-odds.", {
+      logClientBacktestStep("Svar mottaget från API för Unibet-odds.", {
         url: response.url,
         status: response.status,
         ok: response.ok,
         statusText: response.statusText,
       });
       if (!response.ok) {
-        logClientBacktestError("Backend-svaret för Unibet-odds returnerade felstatus.", {
+        logClientBacktestError("API-svaret för Unibet-odds returnerade felstatus.", {
           status: response.status,
           statusText: response.statusText,
           url: response.url,
@@ -697,7 +763,7 @@ export default function BacktestPage({ match, className = "" }) {
         throw new Error(translate("error_unibet_fetch"));
       }
       const data = await response.json();
-      logClientBacktestStep("Oddsdata hämtas från backend och förbereds för mapping.", {
+      logClientBacktestStep("Oddsdata hämtas från API och förbereds för mapping.", {
         meta: data?.meta ?? null,
         keys: Object.keys(data ?? {}),
       });
@@ -803,7 +869,6 @@ export default function BacktestPage({ match, className = "" }) {
         "Misslyckades att läsa in odds från Unibet.",
         {
           error: err,
-          backendBaseUrl,
           backendUrl,
         }
       );
