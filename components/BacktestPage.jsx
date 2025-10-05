@@ -15,6 +15,11 @@ import {
   replaceTeamsInForm,
 } from "./backtest/utils";
 import { mapUnibetOdds } from "./backtest/unibetOddsMapper";
+import {
+  logClientBacktestError,
+  logClientBacktestStep,
+  resetClientBacktestSteps,
+} from "@/lib/backtest/logger";
 import leaguesAndTeams from "@/data/leagues-and-teams.json";
 
 const STRINGS = {
@@ -146,7 +151,8 @@ export default function BacktestPage({ match, className = "" }) {
 
   useEffect(() => {
     if (!match) {
-      console.log("[Backtest] reset state because no match is selected");
+      resetClientBacktestSteps("Ingen match vald");
+      logClientBacktestStep("Formuläret nollställs eftersom ingen match är vald.");
       setForm(createInitialForm(statPatterns));
       setResultsMap({});
       setHistoryTooltip(null);
@@ -155,7 +161,13 @@ export default function BacktestPage({ match, className = "" }) {
     }
     const home = match.homeTeamName ?? "";
     const away = match.awayTeamName ?? "";
-    console.log("[Backtest] match changed", {
+    resetClientBacktestSteps(`${home || "?"} vs ${away || "?"}`, {
+      matchId: match?.id ?? match?.matchId ?? null,
+      leagueName: match?.leagueName ?? null,
+      home,
+      away,
+    });
+    logClientBacktestStep("Matchdata tas emot och skickas till formuläret.", {
       home,
       away,
       matchId: match?.id ?? match?.matchId ?? null,
@@ -207,7 +219,7 @@ export default function BacktestPage({ match, className = "" }) {
 
   useEffect(() => {
     if (!homeTeamName || !awayTeamName) {
-      console.log("[Backtest] skipping team profile fetch – missing team names", {
+      logClientBacktestStep("Hoppar över hämtning av lagprofiler eftersom lag saknas.", {
         homeTeamName,
         awayTeamName,
       });
@@ -229,7 +241,7 @@ export default function BacktestPage({ match, className = "" }) {
     makeTask({ label: "awayTeam:away", team: awayTeamName, league: awayLeagueName, matchType: "away" });
 
     if (!tasks.length) {
-      console.log("[Backtest] no team profile fetch tasks created", {
+      logClientBacktestStep("Inga uppgifter skapades för lagprofilshämtning.", {
         homeTeamName,
         awayTeamName,
       });
@@ -237,7 +249,9 @@ export default function BacktestPage({ match, className = "" }) {
     }
 
     let cancelled = false;
-    console.log("[Backtest] starting team profile fetch", { tasks });
+    logClientBacktestStep("Lagprofiler beställs från /api/teamprofiles för backtest.", {
+      tasks,
+    });
     setRankingError(null);
     setTeamProfiles(null);
 
@@ -248,7 +262,13 @@ export default function BacktestPage({ match, className = "" }) {
         params.set("matchType", matchType);
         if (league) params.set("league", league);
         const url = `/api/teamprofiles?${params.toString()}`;
-        console.log("[Backtest] fetching team profile", { label, url, team, league, matchType });
+        logClientBacktestStep("Lagprofil hämtas från databasen via API och skickas vidare.", {
+          label,
+          url,
+          team,
+          league,
+          matchType,
+        });
         const response = await fetch(url, { signal });
         if (!response.ok) {
           const error = new Error(`${response.status} ${response.statusText}`);
@@ -256,7 +276,7 @@ export default function BacktestPage({ match, className = "" }) {
           throw error;
         }
         const payload = await response.json();
-        console.log("[Backtest] fetched team profile", {
+        logClientBacktestStep("Lagprofil mottagen, tolkad och ställs i kö för RankingSummary.", {
           label,
           team,
           league,
@@ -266,9 +286,13 @@ export default function BacktestPage({ match, className = "" }) {
         return { label, matchType, team, league, payload };
       } catch (err) {
         if (err.name === "AbortError") {
-          console.log("[Backtest] team profile fetch aborted", { label, team, matchType });
+          logClientBacktestStep("Hämtning av lagprofil avbruten.", {
+            label,
+            team,
+            matchType,
+          });
         } else {
-          console.error("[Backtest] team profile fetch failed", {
+          logClientBacktestError("Fel vid hämtning av lagprofil.", {
             label,
             team,
             league,
@@ -283,7 +307,7 @@ export default function BacktestPage({ match, className = "" }) {
     Promise.all(tasks.map(fetchProfile))
       .then((entries) => {
         if (cancelled) {
-          console.log("[Backtest] skipping team profile state update – component unmounted");
+          logClientBacktestStep("Ingen uppdatering av lagprofiler eftersom komponenten avmonterats.");
           return;
         }
 
@@ -309,7 +333,13 @@ export default function BacktestPage({ match, className = "" }) {
           summary[role][entry.matchType] = entry.payload.profile;
         }
 
-        console.log("[Backtest] team profile fetch summary", { summary, errors });
+        logClientBacktestStep(
+          "Lagprofilerna sparas och skickas vidare till RankingSummary och tabellerna.",
+          {
+            summary,
+            errors,
+          }
+        );
 
         setTeamProfiles(summary);
 
@@ -323,7 +353,7 @@ export default function BacktestPage({ match, className = "" }) {
       })
       .catch((err) => {
         if (err?.name === "AbortError") return;
-        console.error("[Backtest] team profile fetch pipeline failed", err);
+        logClientBacktestError("Fel i kedjan för att hämta lagprofiler.", err);
         setRankingError(translate("error_load_ranking") + (err?.message ?? ""));
       });
 
@@ -336,7 +366,11 @@ export default function BacktestPage({ match, className = "" }) {
   const handleFormChange = useCallback(
     (statKey, field) => (event) => {
       const rawValue = event.target.value;
-      console.log("[Backtest] form change", { statKey, field, rawValue });
+      logClientBacktestStep("Formuläret uppdateras av användaren.", {
+        statKey,
+        field,
+        rawValue,
+      });
       const value = field.includes("importance")
         ? (() => {
             const parsed = Number.parseInt(rawValue, 10);
@@ -357,17 +391,17 @@ export default function BacktestPage({ match, className = "" }) {
 
   const handleNeutralGround = (event) => {
     const checked = event.target.checked;
-    console.log("[Backtest] neutral ground toggled", { checked });
+    logClientBacktestStep("Neutral plan ändras.", { checked });
     setNeutralGround(checked);
   };
 
   const saveBacktest = useCallback(
     async (lines, homeTeam, awayTeam, matchDate) => {
       if (!lines?.length) {
-        console.log("[Backtest] skipping saveBacktest – no lines to persist");
+        logClientBacktestStep("Inga backtestlinor att spara skickas.");
         return;
       }
-      console.log("[Backtest] persisting backtest", {
+      logClientBacktestStep("Backtest skickas till backendens lagrings-endpoint.", {
         lineCount: lines.length,
         homeTeam,
         awayTeam,
@@ -385,9 +419,9 @@ export default function BacktestPage({ match, className = "" }) {
             url: unibetUrl,
           }),
         });
-        console.log("[Backtest] backtest persisted successfully");
+        logClientBacktestStep("Backtestet har sparats framgångsrikt.");
       } catch (err) {
-        console.error("[Backtest] Failed to persist backtest", err);
+        logClientBacktestError("Misslyckades spara backtest i backend.", err);
       }
     },
     [unibetUrl]
@@ -396,7 +430,7 @@ export default function BacktestPage({ match, className = "" }) {
   const recalculateBet = useCallback(
     async (statKey, line, direction, oddsValue, scopeOverride, periodOverride) => {
       const entry = form[statKey];
-      console.log("[Backtest] recalculateBet called", {
+      logClientBacktestStep("En lina skickas till servern för expected value-beräkning.", {
         statKey,
         line,
         direction,
@@ -425,7 +459,10 @@ export default function BacktestPage({ match, className = "" }) {
         away_importance: entry.away_importance,
       };
 
-      console.log("[Backtest] recalculateBet request payload", body);
+      logClientBacktestStep(
+        "Payload för expected value skickas till /api/backtest/expected-value.",
+        body
+      );
 
       const endpointSlug =
         typeof window !== "undefined" && window.location.pathname.includes("backtest-copy")
@@ -447,7 +484,12 @@ export default function BacktestPage({ match, className = "" }) {
           throw new Error(`Serverfel för lina ${line} (${statKey})`);
         }
         const data = await response.json();
-        console.log("[Backtest] recalculateBet response", { statKey, line, direction, data });
+        logClientBacktestStep("Svar från expected value-beräkningen tas emot och tolkas.", {
+          statKey,
+          line,
+          direction,
+          data,
+        });
         const evSummary = {
           evPct: data?.evPct ?? null,
           evPctWithMultiplier: data?.evPctWithMultiplier ?? null,
@@ -502,10 +544,13 @@ export default function BacktestPage({ match, className = "" }) {
         };
 
         setResultsMap((prev) => ({ ...prev, [betKey]: updatedResult }));
-        console.log("[Backtest] recalculateBet stored result", updatedResult);
+        logClientBacktestStep(
+          "Beräknat resultat sparas lokalt och skickas till tabellerna.",
+          updatedResult
+        );
         return updatedResult;
       } catch (err) {
-        console.error("[Backtest] recalc error", err);
+        logClientBacktestError("Beräkningen av expected value misslyckades.", err);
         setError(err.message);
         return null;
       } finally {
@@ -517,7 +562,7 @@ export default function BacktestPage({ match, className = "" }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log("[Backtest] submit triggered");
+    logClientBacktestStep("Användaren kör ett backtest manuellt och triggar API-anrop.");
     if (!match) {
       setError(translate("error_fill_teams"));
       return;
@@ -562,7 +607,7 @@ export default function BacktestPage({ match, className = "" }) {
       });
     });
 
-    console.log("[Backtest] prepared bets", bets);
+    logClientBacktestStep("Alla linor för backtest sammanställs och skickas i en batch.", bets);
 
     if (!bets.length) {
       setError(translate("error_fill_odds"));
@@ -585,7 +630,7 @@ export default function BacktestPage({ match, className = "" }) {
         )
       );
       const filtered = responses.filter(Boolean);
-      console.log("[Backtest] submit responses", filtered);
+      logClientBacktestStep("Svar från manuellt backtest tas emot och sprids till komponenterna.", filtered);
       if (filtered.length) {
         setResultsMap((prev) => {
           const next = { ...prev };
@@ -601,7 +646,10 @@ export default function BacktestPage({ match, className = "" }) {
   };
 
   const handleLoadUnibetOdds = async () => {
-    console.log("[Backtest] loadUnibetOdds triggered", { unibetUrl });
+    logClientBacktestStep(
+      "Användaren laddar in odds från Unibet och begär backend-hämtning.",
+      { unibetUrl }
+    );
     const matchIdMatch = unibetUrl.match(/event\/(\d+)/i);
     const matchId = matchIdMatch ? matchIdMatch[1] : null;
     if (!matchId) {
@@ -622,13 +670,18 @@ export default function BacktestPage({ match, className = "" }) {
         throw new Error(translate("error_unibet_fetch"));
       }
       const data = await response.json();
-      console.log("[Backtest] loadUnibetOdds response", { data });
+      logClientBacktestStep("Oddsdata hämtas från backend och förbereds för mapping.", {
+        data,
+      });
       const tuples = mapUnibetOdds(data.odds ?? data, entry.homeTeam, entry.awayTeam);
       if (!tuples.length) {
         throw new Error(translate("error_unibet_map"));
       }
 
-      console.log("[Backtest] mapped Unibet odds", tuples);
+      logClientBacktestStep(
+        "Odds från Unibet tolkas, mappas till linor och skickas till tabellen.",
+        tuples
+      );
 
       setOddsStore((prev) => {
         const next = { ...prev };
@@ -648,7 +701,10 @@ export default function BacktestPage({ match, className = "" }) {
           teamStore[statKey] = statStore;
         });
         next[currentTeamKey] = teamStore;
-        console.log("[Backtest] updated odds store", { teamKey: currentTeamKey, teamStore });
+        logClientBacktestStep("Oddslistan uppdateras med nya värden.", {
+          teamKey: currentTeamKey,
+          teamStore,
+        });
         return next;
       });
 
@@ -704,7 +760,7 @@ export default function BacktestPage({ match, className = "" }) {
 
       await saveBacktest(linesToSave, entry.homeTeam, entry.awayTeam, matchDate);
     } catch (err) {
-      console.error("[Backtest] loadUnibetOdds", err);
+      logClientBacktestError("Misslyckades att läsa in odds från Unibet.", err);
       setError(err.message ?? translate("error_unibet_fetch"));
     } finally {
       setLoading(false);

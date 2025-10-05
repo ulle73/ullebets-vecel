@@ -1,14 +1,17 @@
 import { useMemo, useRef } from "react";
 import { collectEvMetrics } from "./formulas";
 import { formatPercent } from "./utils";
+import { logClientBacktestStep } from "@/lib/backtest/logger";
 
 function findResult(results, predicate) {
   if (!Array.isArray(results)) {
-    console.log("[OddsTable] findResult called with non-array", { results });
+    logClientBacktestStep("OddsTabellen får inga resultat att matcha mot.", { results });
     return null;
   }
   const match = results.find(predicate) ?? null;
-  console.log("[OddsTable] findResult", { hasMatch: Boolean(match) });
+  logClientBacktestStep("OddsTabellen letar efter beräknat resultat.", {
+    hasMatch: Boolean(match),
+  });
   return match;
 }
 
@@ -60,7 +63,11 @@ function formatStatValue({ match, value, teamType, statKey }) {
 
 function collectMatches(result, scope, neutralGround, direction) {
   if (!result) {
-    console.log("[OddsTable] collectMatches missing result", { scope, neutralGround, direction });
+    logClientBacktestStep("Inga historiska matcher hittades för raden.", {
+      scope,
+      neutralGround,
+      direction,
+    });
     return [];
   }
   const isOver = direction === "över";
@@ -162,14 +169,19 @@ export default function OddsTable({
   const thresholds = useMemo(() => {
     const pattern = statPatterns?.[statKey];
     const values = pattern ? pattern.thresholds(scope, period) : [];
-    console.log("[OddsTable] thresholds computed", { statKey, scope, period, values });
+    logClientBacktestStep("Tröskelvärdena för statistiken hämtas.", {
+      statKey,
+      scope,
+      period,
+      values,
+    });
     return values;
   }, [statPatterns, statKey, scope, period]);
 
   const opponentLabel = scope === "home" ? awayTeam : scope === "away" ? homeTeam : "Under";
 
   const updateOddsStore = (line, dir, value) => {
-    console.log("[OddsTable] updateOddsStore", {
+    logClientBacktestStep("Odds fältet uppdateras.", {
       statKey,
       scope,
       period,
@@ -198,21 +210,25 @@ export default function OddsTable({
           },
         },
       };
-      console.log("[OddsTable] updateOddsStore next state", nextStore);
+      logClientBacktestStep("Oddsbutiken har skrivits om.", nextStore);
       return nextStore;
     });
   };
 
   const handleOddsChange = (line, dir) => (event) => {
     const value = event.target.value;
-    console.log("[OddsTable] handleOddsChange", { line, dir, value });
+    logClientBacktestStep("Användaren matar in ett nytt odds.", {
+      line,
+      dir,
+      value,
+    });
     updateOddsStore(line, dir, value);
 
     const timeoutKey = `${line}-${dir}`;
     clearTimeout(timeouts.current[timeoutKey]);
     timeouts.current[timeoutKey] = setTimeout(() => {
       const direction = dir === "over" ? "över" : "under";
-      console.log("[OddsTable] triggering delayed recalculation", {
+      logClientBacktestStep("Rekalkylering av expected value schemaläggs.", {
         statKey,
         line,
         direction,
@@ -226,7 +242,11 @@ export default function OddsTable({
 
   const buildEvEntries = (line, direction) => {
     const result = findResult(results, (res) => res.bet.line === line && res.bet.direction === direction);
-    console.log("[OddsTable] buildEvEntries", { line, direction, hasResult: Boolean(result) });
+    logClientBacktestStep("Historik för raden byggs upp.", {
+      line,
+      direction,
+      hasResult: Boolean(result),
+    });
     if (!result) {
       return [
         {
@@ -241,7 +261,11 @@ export default function OddsTable({
 
     const leagueTooltip = getLeagueFormulaTooltip({ result, period, scope });
     const metrics = collectEvMetrics(result);
-    console.log("[OddsTable] metrics for line", { line, direction, metrics });
+    logClientBacktestStep("EV-mått beräknas för raden.", {
+      line,
+      direction,
+      metrics,
+    });
 
     if (!metrics.length) {
       return [
@@ -330,7 +354,12 @@ export default function OddsTable({
               findResult(results, (res) => res.bet.line === line && res.bet.direction === "över") ??
               findResult(results, (res) => res.bet.line === line && res.bet.direction === "under");
             const store = oddsStore?.[teamKey]?.[statKey]?.[scope]?.[period]?.[line] ?? {};
-            console.log("[OddsTable] rendering line", { line, store, overEntries, underEntries });
+            logClientBacktestStep("Oddsraden renderas i tabellen.", {
+              line,
+              store,
+              overEntries,
+              underEntries,
+            });
             return (
               <tr key={line} className="bg-gray-900/60">
                 <td className="px-3 py-2 align-top text-gray-200">{line}</td>

@@ -1,6 +1,7 @@
 import { memo, useMemo } from "react";
 import { collectEvMetrics, computePrimaryFormula, DEFAULT_FORMULAS } from "./formulas";
 import { formatPercent } from "./utils";
+import { logClientBacktestStep } from "@/lib/backtest/logger";
 
 function resolveTeamLabel(result) {
   if (!result?.bet) return "-";
@@ -12,15 +13,19 @@ function resolveTeamLabel(result) {
 const PositiveEvTable = memo(function PositiveEvTable({ results, statLabels, formulas = DEFAULT_FORMULAS }) {
   const rows = useMemo(() => {
     if (!Array.isArray(results)) {
-      console.log("[PositiveEvTable] no results to display", { results });
+      logClientBacktestStep("+EV-tabellen saknar resultat att visa.", { results });
       return [];
     }
     const mapped = results
       .map((result) => {
-        console.log("[PositiveEvTable] processing result", result);
+        logClientBacktestStep("+EV-tabellen bearbetar ett resultat.", result);
         const { formula, value } = computePrimaryFormula(result, formulas);
         const metrics = collectEvMetrics(result);
-        console.log("[PositiveEvTable] computed metrics", { formula, value, metrics });
+        logClientBacktestStep("+EV-tabellen räknar fram nyckeltal.", {
+          formula,
+          value,
+          metrics,
+        });
         return {
           result,
           formula,
@@ -30,12 +35,12 @@ const PositiveEvTable = memo(function PositiveEvTable({ results, statLabels, for
       })
       .filter((entry) => typeof entry.primaryValue === "number" && entry.primaryValue > 0)
       .sort((a, b) => b.primaryValue - a.primaryValue);
-    console.log("[PositiveEvTable] rows", mapped);
+    logClientBacktestStep("+EV-tabellen har förberett rader för visning.", mapped);
     return mapped;
   }, [results, formulas]);
 
   if (!rows.length) {
-    console.log("[PositiveEvTable] no +EV rows to render");
+    logClientBacktestStep("+EV-tabellen har inga spel att visa.");
     return null;
   }
 

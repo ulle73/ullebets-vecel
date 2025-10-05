@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { logClientBacktestStep } from "@/lib/backtest/logger";
 
 function parseRank(rank) {
   const numeric = Number.parseInt(rank, 10);
@@ -96,7 +97,7 @@ function buildValues({ statKey, periodKey, formEntry, teamProfiles }) {
   const awayProfile = teamProfiles?.awayTeam?.[awayMatchType];
 
   if (!homeProfile && !awayProfile) {
-    console.log("[RankingSummary] missing profiles", {
+    logClientBacktestStep("Ranking-översikten saknar lagprofiler.", {
       statKey,
       periodKey,
       scope,
@@ -128,7 +129,7 @@ function buildValues({ statKey, periodKey, formEntry, teamProfiles }) {
     awayProfileMatchType: awayMatchType,
   };
 
-  console.log("[RankingSummary] built values", {
+  logClientBacktestStep("Ranking-översikten beräknar värden.", {
     statKey,
     periodKey,
     scope,
@@ -154,7 +155,9 @@ export default function RankingSummary({
 }) {
   const payload = useMemo(() => {
     if (!formEntry?.homeTeam || !formEntry?.awayTeam) {
-      console.log("[RankingSummary] missing teams, skipping", { formEntry });
+      logClientBacktestStep("Ranking-översikten saknar lag och hoppas över.", {
+        formEntry,
+      });
       return null;
     }
     const periodKey = formEntry?.period ?? "ALL";
@@ -164,7 +167,7 @@ export default function RankingSummary({
       formEntry,
       teamProfiles,
     });
-    console.log("[RankingSummary] payload", {
+    logClientBacktestStep("Ranking-översikten får in data för rendering.", {
       statKey,
       periodKey,
       homeTeam: formEntry.homeTeam,
