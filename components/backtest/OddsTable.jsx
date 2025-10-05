@@ -3,6 +3,16 @@ import { collectEvMetrics } from "./formulas";
 import { formatPercent } from "./utils";
 import { logClientBacktestStep } from "@/lib/backtest/logger";
 
+function formatLineKey(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value.toString();
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  return String(value ?? "");
+}
+
 function findResult(results, predicate) {
   if (!Array.isArray(results)) {
     logClientBacktestStep("OddsTabellen får inga resultat att matcha mot.", { results });
@@ -189,6 +199,7 @@ export default function OddsTable({
       dir,
       value,
     });
+    const lineKey = formatLineKey(line);
     setOddsStore((prev) => {
       const currentOdds = prev?.[teamKey]?.[statKey]?.[scope]?.[period] ?? {};
       const nextStore = {
@@ -201,8 +212,8 @@ export default function OddsTable({
               ...prev?.[teamKey]?.[statKey]?.[scope],
               [period]: {
                 ...currentOdds,
-                [line]: {
-                  ...currentOdds?.[line],
+                [lineKey]: {
+                  ...currentOdds?.[lineKey],
                   [dir]: value,
                 },
               },
@@ -353,7 +364,8 @@ export default function OddsTable({
             const lineResult =
               findResult(results, (res) => res.bet.line === line && res.bet.direction === "över") ??
               findResult(results, (res) => res.bet.line === line && res.bet.direction === "under");
-            const store = oddsStore?.[teamKey]?.[statKey]?.[scope]?.[period]?.[line] ?? {};
+            const lineKey = formatLineKey(line);
+            const store = oddsStore?.[teamKey]?.[statKey]?.[scope]?.[period]?.[lineKey] ?? {};
             logClientBacktestStep("Oddsraden renderas i tabellen.", {
               line,
               store,

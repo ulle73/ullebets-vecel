@@ -91,6 +91,16 @@ function resolveLeagueName(teamName, fallback) {
   return TEAM_TO_LEAGUE.get(key) ?? fallback ?? null;
 }
 
+function formatLineKey(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value.toString();
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  return String(value ?? "");
+}
+
 export default function BacktestPage({ match, className = "" }) {
   const statPatterns = useMemo(() => getStatPatterns(translate), []);
   const [form, setForm] = useState(() => createInitialForm(statPatterns));
@@ -201,8 +211,9 @@ export default function BacktestPage({ match, className = "" }) {
         let statChanged = false;
 
         thresholds.forEach((line) => {
-          if (!periodStore[line]) {
-            periodStore[line] = { over: "", under: "" };
+          const lineKey = formatLineKey(line);
+          if (!periodStore[lineKey]) {
+            periodStore[lineKey] = { over: "", under: "" };
             statChanged = true;
           }
         });
@@ -745,8 +756,9 @@ export default function BacktestPage({ match, className = "" }) {
           const statStore = { ...(teamStore[statKey] ?? {}) };
           const scopeStore = { ...(statStore[scope] ?? {}) };
           const periodStore = { ...(scopeStore[period] ?? {}) };
-          const existing = periodStore[line] ?? { over: "", under: "" };
-          periodStore[line] = {
+          const lineKey = formatLineKey(line);
+          const existing = periodStore[lineKey] ?? { over: "", under: "" };
+          periodStore[lineKey] = {
             over: odds?.over != null ? String(odds.over) : existing.over,
             under: odds?.under != null ? String(odds.under) : existing.under,
           };
