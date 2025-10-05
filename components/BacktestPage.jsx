@@ -10,7 +10,6 @@ import {
   buildBackendUrl,
   buildBacktestApiUrl,
   createInitialForm,
-  getBackendBaseUrl,
   makeTeamKey,
   normalizeTeamName,
   replaceTeamsInForm,
@@ -46,7 +45,7 @@ const STRINGS = {
   form_placeholder: "Form (\"all\" eller antal)",
   neutral_ground: "Neutral plan",
   load_odds: "Ladda odds",
-  paste_unibet_url: "Klistra in Unibet URL",
+  match_id_from_url: "Match-ID (från URL)",
   importance_home: "Hemmalagets importance",
   importance_away: "Bortalagets importance",
   submit_run: "Kör backtest",
@@ -58,7 +57,7 @@ const STRINGS = {
   error_fill_teams: "Välj lag innan du kör backtest.",
   error_fill_odds: "Lägg till minst en lina med odds innan du kör backtest.",
   error_load_ranking: "Kunde inte ladda rankingdata: ",
-  error_unibet_url: "Kunde inte läsa match-id från Unibet URL.",
+  error_unibet_url: "Kunde inte läsa match-id från URL.",
   error_unibet_fetch: "Misslyckades hämta Unibet-odds.",
   error_unibet_map: "Inga odds kunde tolkas från Unibet-svaret.",
 };
@@ -88,11 +87,35 @@ function resolveLeagueName(teamName, fallback) {
   return TEAM_TO_LEAGUE.get(key) ?? fallback ?? null;
 }
 
+function extractMatchIdFromUrl(urlValue) {
+  if (!urlValue) return null;
+  try {
+    const url = new URL(urlValue, "https://example.com");
+    const paramCandidates = ["matchId", "matchid", "match_id", "id"];
+    for (const key of paramCandidates) {
+      const value = url.searchParams.get(key);
+      if (value && /^\d+$/.test(value)) {
+        return value;
+      }
+    }
+    const segments = url.pathname.split("/").filter(Boolean);
+    for (let index = segments.length - 1; index >= 0; index -= 1) {
+      const segment = segments[index];
+      if (/^\d+$/.test(segment)) {
+        return segment;
+      }
+    }
+  } catch (error) {
+    return null;
+  }
+  return null;
+}
+
 export default function BacktestPage({ match, className = "" }) {
   const statPatterns = useMemo(() => getStatPatterns(translate), []);
   const [form, setForm] = useState(() => createInitialForm(statPatterns));
   const [neutralGround, setNeutralGround] = useState(false);
-  const [unibetUrl, setUnibetUrl] = useState("");
+  const [pageUrl, setPageUrl] = useState("");
   const [oddsStore, setOddsStore] = useState({});
   const [resultsMap, setResultsMap] = useState({});
   const [loading, setLoading] = useState(false);
@@ -130,6 +153,22 @@ export default function BacktestPage({ match, className = "" }) {
   }, [statPatterns]);
 
   const results = useMemo(() => Object.values(resultsMap), [resultsMap]);
+
+  const resolvedMatchId = useMemo(() => {
+    const fromUrl = extractMatchIdFromUrl(pageUrl);
+    if (fromUrl) {
+      return fromUrl;
+    }
+    const candidates = [match?.matchId, match?.id, match?._id, match?.match_id];
+    for (const candidate of candidates) {
+      if (candidate == null) continue;
+      const candidateString = String(candidate).trim();
+      if (/^\d+$/.test(candidateString)) {
+        return candidateString;
+      }
+    }
+    return null;
+  }, [match, pageUrl]);
   const resultsForTeam = useMemo(() => {
     if (!currentTeamKey) {
       return results;
@@ -149,6 +188,12 @@ export default function BacktestPage({ match, className = "" }) {
       return false;
     });
   }, [results, currentTeamKey]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setPageUrl(window.location.href);
+    }
+  }, [match]);
 
   useEffect(() => {
     if (!match) {
@@ -417,7 +462,7 @@ export default function BacktestPage({ match, className = "" }) {
             awayTeam,
             matchDate,
             lines,
-            url: unibetUrl,
+            url: pageUrl || null,
           }),
         });
         logClientBacktestStep("Backtestet har sparats framgångsrikt.");
@@ -425,7 +470,7 @@ export default function BacktestPage({ match, className = "" }) {
         logClientBacktestError("Misslyckades spara backtest i backend.", err);
       }
     },
-    [unibetUrl]
+    [pageUrl]
   );
 
   const recalculateBet = useCallback(
@@ -648,19 +693,23 @@ export default function BacktestPage({ match, className = "" }) {
 
   const handleLoadUnibetOdds = async () => {
     logClientBacktestStep(
-      "Användaren laddar in odds från Unibet och begär backend-hämtning.",
-      { unibetUrl }
+      "Användaren laddar in odds från Unibet och begär API-hämtning.",
+      {
+        pageUrl,
+        matchId: resolvedMatchId,
+      }
     );
-    const matchIdMatch = unibetUrl.match(/event\/(\d+)/i);
-    const matchId = matchIdMatch ? matchIdMatch[1] : null;
-    if (!matchId) {
-      logClientBacktestError("Unibet-url saknar match-id och hämtning avbryts.", {
-        unibetUrl,
+    if (!resolvedMatchId) {
+      logClientBacktestError("URL saknar match-id och hämtning avbryts.", {
+        pageUrl,
       });
       setError(translate("error_unibet_url"));
       return;
     }
-    logClientBacktestStep("Match-id extraheras från Unibet-url.", { matchId });
+    logClientBacktestStep("Match-id extraheras från URL.", {
+      matchId: resolvedMatchId,
+      pageUrl,
+    });
     const entry = form[firstStatKey];
     if (!entry?.homeTeam || !entry?.awayTeam) {
       logClientBacktestError("Kan inte hämta Unibet-odds utan lag i formuläret.", {
@@ -672,16 +721,13 @@ export default function BacktestPage({ match, className = "" }) {
 
     setLoading(true);
     setError(null);
-    const backendBaseUrl = getBackendBaseUrl();
-    const backendUrl = buildBackendUrl(`/unibet-odds/${matchId}`);
-    logClientBacktestStep("Backend-url för Unibet-hämtningen fastställs.", {
-      matchId,
-      backendBaseUrl,
-      backendUrl,
-      pageOrigin: typeof window !== "undefined" ? window.location.origin : null,
+    const apiUrl = `/api/unibet-odds/${resolvedMatchId}`;
+    logClientBacktestStep("Frontend anropar internt API för Unibet-odds.", {
+      apiUrl,
+      matchId: resolvedMatchId,
     });
     try {
-      const response = await fetch(backendUrl);
+      const response = await fetch(apiUrl);
       logClientBacktestStep("Svar mottaget från backend för Unibet-odds.", {
         url: response.url,
         status: response.status,
@@ -803,8 +849,8 @@ export default function BacktestPage({ match, className = "" }) {
         "Misslyckades att läsa in odds från Unibet.",
         {
           error: err,
-          backendBaseUrl,
-          backendUrl,
+          apiUrl,
+          pageUrl,
         }
       );
       if (err instanceof Error && err.message) {
@@ -834,16 +880,17 @@ export default function BacktestPage({ match, className = "" }) {
       </div>
 
       <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-        <label className="flex flex-col gap-2 text-sm text-gray-300">
-          <span className="font-medium text-gray-200">{translate("paste_unibet_url")}</span>
-          <input
-            type="url"
-            value={unibetUrl}
-            onChange={(event) => setUnibetUrl(event.target.value)}
-            placeholder="https://www.unibet.com/betting/sports/event/..."
-            className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </label>
+        <div className="flex flex-col gap-2 text-sm text-gray-300">
+          <span className="font-medium text-gray-200">
+            {translate("match_id_from_url")}
+          </span>
+          <div className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100">
+            {resolvedMatchId ?? "–"}
+          </div>
+          {pageUrl ? (
+            <p className="break-all text-xs text-gray-500">{pageUrl}</p>
+          ) : null}
+        </div>
         <button
           type="button"
           onClick={handleLoadUnibetOdds}
