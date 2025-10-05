@@ -1,21 +1,54 @@
-﻿const EV_METRICS = [
+const EV_METRICS = [
+  { key: "evPct", label: "EV (Modell)", shortLabel: "EV Modell" },
   { key: "evPctWithMultiplier", label: "EV (Multiplier)", shortLabel: "EV Mult" },
   { key: "evPctMultifactor", label: "EV (Multifaktor)", shortLabel: "EV Multi" },
   { key: "evPctLeagueAvg", label: "EV (Liga-snitt)", shortLabel: "EV LigaAvg" },
-  { key: "evPct", label: "EV (Modell)", shortLabel: "EV Modell" },
   { key: "legacyEvPct", label: "EV (Legacy)", shortLabel: "EV Legacy" },
 ];
 
+const computeMetric = (result, key) => {
+  const value = result?.[key];
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  return null;
+};
+
 export const DEFAULT_FORMULAS = [
   {
-    id: "league-average",
+    id: "ev-model",
+    label: "EV Modell",
+    metricKey: "evPct",
+    description: "Använder modellens EV.",
+    compute: (result) => computeMetric(result, "evPct"),
+  },
+  {
+    id: "ev-multiplier",
+    label: "EV Multiplier",
+    metricKey: "evPctWithMultiplier",
+    description: "Använder EV justerat med multiplier.",
+    compute: (result) => computeMetric(result, "evPctWithMultiplier"),
+  },
+  {
+    id: "ev-multifactor",
+    label: "EV Multifaktor",
+    metricKey: "evPctMultifactor",
+    description: "Använder multifaktor-varianten av EV.",
+    compute: (result) => computeMetric(result, "evPctMultifactor"),
+  },
+  {
+    id: "ev-league-average",
     label: "EV LigaAvg",
     metricKey: "evPctLeagueAvg",
-    description: "Använder EV från ligans historiska snitt (EV-ligaAVG).",
-    compute: (result) => {
-      const value = result?.evPctLeagueAvg;
-      return typeof value === "number" && Number.isFinite(value) ? value : null;
-    },
+    description: "Använder EV från ligans historiska snitt.",
+    compute: (result) => computeMetric(result, "evPctLeagueAvg"),
+  },
+  {
+    id: "ev-legacy",
+    label: "EV Legacy",
+    metricKey: "legacyEvPct",
+    description: "Använder legacy-EV.",
+    compute: (result) => computeMetric(result, "legacyEvPct"),
   },
 ];
 
@@ -23,18 +56,22 @@ export function computePrimaryFormula(result, formulas = DEFAULT_FORMULAS) {
   for (const formula of formulas) {
     const value = formula.compute(result);
     if (typeof value === "number" && Number.isFinite(value)) {
+      console.log("[Formulas] selected primary formula", { formula: formula.id, value });
       return { formula, value };
     }
   }
+  console.log("[Formulas] no primary formula matched", { result });
   return { formula: formulas[0] ?? null, value: null };
 }
 
 export function collectEvMetrics(result) {
-  return EV_METRICS.map((metric) => {
-    const value = result?.[metric.key];
+  const metrics = EV_METRICS.map((metric) => {
+    const value = computeMetric(result, metric.key);
     return {
       ...metric,
-      value: typeof value === "number" && Number.isFinite(value) ? value : null,
+      value,
     };
   }).filter((metric) => metric.value !== null);
+  console.log("[Formulas] collected EV metrics", metrics);
+  return metrics;
 }
