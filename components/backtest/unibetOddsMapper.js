@@ -39,13 +39,52 @@ function parseDirection(label = "") {
   return /under/i.test(label) ? "under" : "over";
 }
 
+function parseNumeric(value) {
+  if (value == null) return null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const normalized = value.replace(",", ".").trim();
+    if (!normalized) return null;
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function parseFractionalOdds(value) {
+  if (typeof value !== "string") return null;
+  const match = value.trim().match(/^(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);
+  if (!match) return null;
+  const numerator = Number.parseFloat(match[1]);
+  const denominator = Number.parseFloat(match[2]);
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+    return null;
+  }
+  return numerator / denominator + 1;
+}
+
 function parseOdds(outcome) {
   if (outcome == null) return null;
-  if (typeof outcome === "number") return outcome;
-  if (typeof outcome.odds === "number") return outcome.odds;
-  if (typeof outcome.odds?.decimal === "number") return outcome.odds.decimal;
-  if (typeof outcome.decimal === "number") return outcome.decimal;
-  if (typeof outcome.price === "number") return outcome.price;
+  const direct = parseNumeric(outcome);
+  if (direct != null) return direct;
+
+  const oddsValue = parseNumeric(outcome.odds);
+  if (oddsValue != null) return oddsValue;
+
+  const decimalOdds = parseNumeric(outcome.odds?.decimal);
+  if (decimalOdds != null) return decimalOdds;
+
+  const nestedDecimal = parseNumeric(outcome.decimal);
+  if (nestedDecimal != null) return nestedDecimal;
+
+  const priceOdds = parseNumeric(outcome.price);
+  if (priceOdds != null) return priceOdds;
+
+  const fractionalOdds = parseFractionalOdds(outcome.oddsFractional ?? outcome.odds?.fractional);
+  if (fractionalOdds != null) return fractionalOdds;
+
   return null;
 }
 
