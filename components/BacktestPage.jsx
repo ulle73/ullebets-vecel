@@ -94,7 +94,7 @@ export default function BacktestPage({ match, className = "" }) {
   const [historyTooltip, setHistoryTooltip] = useState(null);
   const [historyPosition, setHistoryPosition] = useState({ x: 0, y: 0 });
   const [tooltipThreshold, setTooltipThreshold] = useState(null);
-  const [leagueRankings, setLeagueRankings] = useState(null);
+  const [teamProfiles, setTeamProfiles] = useState(null);
   const [rankingError, setRankingError] = useState(null);
 
   const firstStatKey = useMemo(() => Object.keys(statPatterns)[0], [statPatterns]);
@@ -124,13 +124,29 @@ export default function BacktestPage({ match, className = "" }) {
   }, [statPatterns]);
 
   const results = useMemo(() => Object.values(resultsMap), [resultsMap]);
-  const resultsForTeam = useMemo(
-    () => results.filter((result) => result?.bet?.key?.includes(currentTeamKey)),
-    [results, currentTeamKey]
-  );
+  const resultsForTeam = useMemo(() => {
+    if (!currentTeamKey) {
+      return results;
+    }
+    return results.filter((result) => {
+      const candidateKeys = [
+        result?.teamKey,
+        result?.bet?.teamKey,
+      ].filter(Boolean);
+      if (candidateKeys.some((key) => key === currentTeamKey)) {
+        return true;
+      }
+      const legacyKey = result?.bet?.key;
+      if (legacyKey && legacyKey.includes(currentTeamKey)) {
+        return true;
+      }
+      return false;
+    });
+  }, [results, currentTeamKey]);
 
   useEffect(() => {
     if (!match) {
+      console.log("[Backtest] reset state because no match is selected");
       setForm(createInitialForm(statPatterns));
       setResultsMap({});
       setHistoryTooltip(null);
@@ -139,6 +155,12 @@ export default function BacktestPage({ match, className = "" }) {
     }
     const home = match.homeTeamName ?? "";
     const away = match.awayTeamName ?? "";
+    console.log("[Backtest] match changed", {
+      home,
+      away,
+      matchId: match?.id ?? match?.matchId ?? null,
+      leagueName: match?.leagueName ?? null,
+    });
     setForm((prev) => replaceTeamsInForm(prev, home, away));
     setResultsMap({});
     setHistoryTooltip(null);
@@ -184,36 +206,137 @@ export default function BacktestPage({ match, className = "" }) {
   }, [form, statPatterns, currentTeamKey]);
 
   useEffect(() => {
-    if (!homeLeagueName || !awayLeagueName) return;
-    if (leagueRankings || rankingError) return;
+    if (!homeTeamName || !awayTeamName) {
+      console.log("[Backtest] skipping team profile fetch – missing team names", {
+        homeTeamName,
+        awayTeamName,
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const tasks = [];
+
+    const makeTask = ({ label, team, league, matchType }) => {
+      if (!team || !matchType) return;
+      tasks.push({ label, team, league, matchType });
+    };
+
+    makeTask({ label: "homeTeam:home", team: homeTeamName, league: homeLeagueName, matchType: "home" });
+    makeTask({ label: "homeTeam:away", team: homeTeamName, league: homeLeagueName, matchType: "away" });
+    makeTask({ label: "awayTeam:home", team: awayTeamName, league: awayLeagueName, matchType: "home" });
+    makeTask({ label: "awayTeam:away", team: awayTeamName, league: awayLeagueName, matchType: "away" });
+
+    if (!tasks.length) {
+      console.log("[Backtest] no team profile fetch tasks created", {
+        homeTeamName,
+        awayTeamName,
+      });
+      return;
+    }
 
     let cancelled = false;
-    const load = async () => {
+    console.log("[Backtest] starting team profile fetch", { tasks });
+    setRankingError(null);
+    setTeamProfiles(null);
+
+    const fetchProfile = async ({ label, team, league, matchType }) => {
       try {
-        const response = await fetch(buildBackendUrl("/league_ranking.json"));
+        const params = new URLSearchParams();
+        params.set("team", team);
+        params.set("matchType", matchType);
+        if (league) params.set("league", league);
+        const url = `/api/teamprofiles?${params.toString()}`;
+        console.log("[Backtest] fetching team profile", { label, url, team, league, matchType });
+        const response = await fetch(url, { signal });
         if (!response.ok) {
-          throw new Error(`${response.status} ${response.statusText}`);
+          const error = new Error(`${response.status} ${response.statusText}`);
+          error.response = response;
+          throw error;
         }
-        const data = await response.json();
-        if (!cancelled) {
-          setLeagueRankings(data);
-        }
+        const payload = await response.json();
+        console.log("[Backtest] fetched team profile", {
+          label,
+          team,
+          league,
+          matchType,
+          hasProfile: Boolean(payload?.profile),
+        });
+        return { label, matchType, team, league, payload };
       } catch (err) {
-        if (!cancelled) {
-          console.error("[Backtest] league ranking fetch failed", err);
-          setRankingError(translate("error_load_ranking") + err.message);
+        if (err.name === "AbortError") {
+          console.log("[Backtest] team profile fetch aborted", { label, team, matchType });
+        } else {
+          console.error("[Backtest] team profile fetch failed", {
+            label,
+            team,
+            league,
+            matchType,
+            error: err?.message,
+          });
         }
+        return { label, matchType, team, league, payload: null, error: err };
       }
     };
-    load();
+
+    Promise.all(tasks.map(fetchProfile))
+      .then((entries) => {
+        if (cancelled) {
+          console.log("[Backtest] skipping team profile state update – component unmounted");
+          return;
+        }
+
+        const summary = {
+          homeTeam: { home: null, away: null },
+          awayTeam: { home: null, away: null },
+        };
+
+        const errors = [];
+
+        for (const entry of entries) {
+          const role = entry.label.startsWith("homeTeam") ? "homeTeam" : "awayTeam";
+          if (entry.error || !entry.payload?.profile) {
+            errors.push({
+              role,
+              matchType: entry.matchType,
+              team: entry.team,
+              league: entry.league,
+              error: entry.error?.message ?? "Missing profile",
+            });
+            continue;
+          }
+          summary[role][entry.matchType] = entry.payload.profile;
+        }
+
+        console.log("[Backtest] team profile fetch summary", { summary, errors });
+
+        setTeamProfiles(summary);
+
+        if (errors.length) {
+          setRankingError(
+            `${translate("error_load_ranking")}${errors
+              .map((err) => `${err.team ?? "okänd"} (${err.matchType}): ${err.error}`)
+              .join(", ")}`
+          );
+        }
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        console.error("[Backtest] team profile fetch pipeline failed", err);
+        setRankingError(translate("error_load_ranking") + (err?.message ?? ""));
+      });
+
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [homeLeagueName, awayLeagueName, leagueRankings, rankingError]);
+  }, [homeTeamName, awayTeamName, homeLeagueName, awayLeagueName]);
 
   const handleFormChange = useCallback(
     (statKey, field) => (event) => {
       const rawValue = event.target.value;
+      console.log("[Backtest] form change", { statKey, field, rawValue });
       const value = field.includes("importance")
         ? (() => {
             const parsed = Number.parseInt(rawValue, 10);
@@ -233,31 +356,55 @@ export default function BacktestPage({ match, className = "" }) {
   );
 
   const handleNeutralGround = (event) => {
-    setNeutralGround(event.target.checked);
+    const checked = event.target.checked;
+    console.log("[Backtest] neutral ground toggled", { checked });
+    setNeutralGround(checked);
   };
 
-  const saveBacktest = useCallback(async (lines, homeTeam, awayTeam, matchDate) => {
-    if (!lines?.length) return;
-    try {
-      await fetch(buildBackendUrl("/save-backtest"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          homeTeam,
-          awayTeam,
-          matchDate,
-          lines,
-          url: unibetUrl,
-        }),
+  const saveBacktest = useCallback(
+    async (lines, homeTeam, awayTeam, matchDate) => {
+      if (!lines?.length) {
+        console.log("[Backtest] skipping saveBacktest – no lines to persist");
+        return;
+      }
+      console.log("[Backtest] persisting backtest", {
+        lineCount: lines.length,
+        homeTeam,
+        awayTeam,
+        matchDate,
       });
-    } catch (err) {
-      console.error("[Backtest] Failed to persist backtest", err);
-    }
-  }, [unibetUrl]);
+      try {
+        await fetch(buildBackendUrl("/save-backtest"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            homeTeam,
+            awayTeam,
+            matchDate,
+            lines,
+            url: unibetUrl,
+          }),
+        });
+        console.log("[Backtest] backtest persisted successfully");
+      } catch (err) {
+        console.error("[Backtest] Failed to persist backtest", err);
+      }
+    },
+    [unibetUrl]
+  );
 
   const recalculateBet = useCallback(
     async (statKey, line, direction, oddsValue, scopeOverride, periodOverride) => {
       const entry = form[statKey];
+      console.log("[Backtest] recalculateBet called", {
+        statKey,
+        line,
+        direction,
+        oddsValue,
+        scopeOverride,
+        periodOverride,
+        entry,
+      });
       if (!entry?.homeTeam || !entry?.awayTeam) {
         setError(translate("error_fill_teams"));
         return null;
@@ -277,6 +424,8 @@ export default function BacktestPage({ match, className = "" }) {
         home_importance: entry.home_importance,
         away_importance: entry.away_importance,
       };
+
+      console.log("[Backtest] recalculateBet request payload", body);
 
       const endpointSlug =
         typeof window !== "undefined" && window.location.pathname.includes("backtest-copy")
@@ -298,14 +447,46 @@ export default function BacktestPage({ match, className = "" }) {
           throw new Error(`Serverfel för lina ${line} (${statKey})`);
         }
         const data = await response.json();
+        console.log("[Backtest] recalculateBet response", { statKey, line, direction, data });
+        const evSummary = {
+          evPct: data?.evPct ?? null,
+          evPctWithMultiplier: data?.evPctWithMultiplier ?? null,
+          evPctMultifactor: data?.evPctMultifactor ?? null,
+          evPctLeagueAvg: data?.evPctLeagueAvg ?? null,
+          legacyEvPct: data?.legacyEvPct ?? null,
+          edgePP: data?.edgePP ?? null,
+          edgePPWithMultiplier: data?.edgePPWithMultiplier ?? null,
+          modelProb: data?.modelProb ?? null,
+          empiricalProb: data?.empiricalProb ?? null,
+          blendedProb: data?.blendedProb ?? null,
+          hitsOver: data?.hitsOver ?? null,
+          hitsUnder: data?.hitsUnder ?? null,
+          leagueAvg: data?.leagueAvg ?? null,
+          leagueAvgHistory: data?.leagueAvgHistory ?? null,
+        };
         const scopeUsed = scopeOverride || entry.scope;
         const periodUsed = periodOverride || entry.period;
-        const betKey = `${entry.homeTeam}-${entry.awayTeam}-${statKey}-${line}-${direction}-${scopeUsed}-${periodUsed}-${entry.formMatches}-${neutralGround}`;
+        const teamKey = makeTeamKey(entry.homeTeam, entry.awayTeam);
+        const teamKeySegment =
+          teamKey && teamKey !== "default"
+            ? teamKey
+            : `${entry.homeTeam}-${entry.awayTeam}`.trim() || "default";
+        const betKey = [
+          teamKeySegment,
+          statKey,
+          line,
+          direction,
+          scopeUsed,
+          periodUsed,
+          entry.formMatches,
+          neutralGround ? "neutral" : "regular",
+        ].join("::");
 
         const updatedResult = {
-          ...data,
-          hitsOver: data.hitsOver || "0/0",
-          hitsUnder: data.hitsUnder || "0/0",
+          ...evSummary,
+          hitsOver: evSummary.hitsOver || "0/0",
+          hitsUnder: evSummary.hitsUnder || "0/0",
+          teamKey,
           bet: {
             statKey,
             line,
@@ -316,10 +497,12 @@ export default function BacktestPage({ match, className = "" }) {
             period: periodUsed,
             homeTeam: entry.homeTeam,
             awayTeam: entry.awayTeam,
+            teamKey,
           },
         };
 
         setResultsMap((prev) => ({ ...prev, [betKey]: updatedResult }));
+        console.log("[Backtest] recalculateBet stored result", updatedResult);
         return updatedResult;
       } catch (err) {
         console.error("[Backtest] recalc error", err);
@@ -334,6 +517,7 @@ export default function BacktestPage({ match, className = "" }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    console.log("[Backtest] submit triggered");
     if (!match) {
       setError(translate("error_fill_teams"));
       return;
@@ -378,6 +562,8 @@ export default function BacktestPage({ match, className = "" }) {
       });
     });
 
+    console.log("[Backtest] prepared bets", bets);
+
     if (!bets.length) {
       setError(translate("error_fill_odds"));
       return;
@@ -399,6 +585,7 @@ export default function BacktestPage({ match, className = "" }) {
         )
       );
       const filtered = responses.filter(Boolean);
+      console.log("[Backtest] submit responses", filtered);
       if (filtered.length) {
         setResultsMap((prev) => {
           const next = { ...prev };
@@ -414,6 +601,7 @@ export default function BacktestPage({ match, className = "" }) {
   };
 
   const handleLoadUnibetOdds = async () => {
+    console.log("[Backtest] loadUnibetOdds triggered", { unibetUrl });
     const matchIdMatch = unibetUrl.match(/event\/(\d+)/i);
     const matchId = matchIdMatch ? matchIdMatch[1] : null;
     if (!matchId) {
@@ -434,10 +622,13 @@ export default function BacktestPage({ match, className = "" }) {
         throw new Error(translate("error_unibet_fetch"));
       }
       const data = await response.json();
+      console.log("[Backtest] loadUnibetOdds response", { data });
       const tuples = mapUnibetOdds(data.odds ?? data, entry.homeTeam, entry.awayTeam);
       if (!tuples.length) {
         throw new Error(translate("error_unibet_map"));
       }
+
+      console.log("[Backtest] mapped Unibet odds", tuples);
 
       setOddsStore((prev) => {
         const next = { ...prev };
@@ -457,6 +648,7 @@ export default function BacktestPage({ match, className = "" }) {
           teamStore[statKey] = statStore;
         });
         next[currentTeamKey] = teamStore;
+        console.log("[Backtest] updated odds store", { teamKey: currentTeamKey, teamStore });
         return next;
       });
 
@@ -629,9 +821,8 @@ export default function BacktestPage({ match, className = "" }) {
 
               <RankingSummary
                 statKey={statKey}
-                statPatterns={statPatterns}
                 formEntry={entry}
-                leagueRankings={leagueRankings}
+                teamProfiles={teamProfiles}
                 homeLeagueName={homeLeagueName}
                 awayLeagueName={awayLeagueName}
               />

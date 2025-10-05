@@ -1,27 +1,4 @@
-﻿import { useMemo } from "react";
-
-function pickLeague(leagueRankings, leagueName) {
-  if (!Array.isArray(leagueRankings) || !leagueName) return null;
-  return leagueRankings.find((entry) => entry?.league === leagueName) ?? null;
-}
-
-function getLists(leagueObj, rankKey, periodKey) {
-  const ranking = leagueObj?.ranking?.[rankKey];
-  if (!ranking) return { homeFor: [], homeAgainst: [], awayFor: [], awayAgainst: [] };
-  return {
-    homeFor: ranking.for?.[periodKey] ?? [],
-    homeAgainst: ranking.against?.[periodKey] ?? [],
-    awayFor: ranking.for?.[periodKey] ?? [],
-    awayAgainst: ranking.against?.[periodKey] ?? [],
-  };
-}
-
-function findEntry(list, team, propertyPrefix) {
-  if (!Array.isArray(list) || !team) return {};
-  const entry = list.find((item) => item.team === team) ?? {};
-  if (!propertyPrefix) return entry;
-  return entry;
-}
+import { useMemo } from "react";
 
 function parseRank(rank) {
   const numeric = Number.parseInt(rank, 10);
@@ -54,72 +31,113 @@ function computePercent(value, total) {
   return (value / total) * 100;
 }
 
+function extractStat(profile, direction, statKey, periodKey) {
+  return profile?.statistics?.[direction]?.[statKey]?.[periodKey] ?? null;
+}
+
+function resolveMatchType(scope, teamRole) {
+  if (scope === "home") {
+    return teamRole === "homeTeam" ? "home" : "away";
+  }
+  if (scope === "away") {
+    return teamRole === "homeTeam" ? "away" : "home";
+  }
+  return teamRole === "homeTeam" ? "home" : "away";
+}
+
 function buildShotPercentages({
-  homeLeagueObj,
-  awayLeagueObj,
+  homeProfile,
+  awayProfile,
   periodKey,
   statKey,
   values,
   formEntry,
 }) {
   if (statKey !== "shotsOnGoal") return values;
-  const homeTotal = homeLeagueObj?.ranking?.totalShotsOnGoal;
-  const awayTotal = awayLeagueObj?.ranking?.totalShotsOnGoal;
-  const homeTotalFor = homeTotal?.for?.[periodKey] ?? [];
-  const homeTotalAgainst = homeTotal?.against?.[periodKey] ?? [];
-  const awayTotalFor = awayTotal?.for?.[periodKey] ?? [];
-  const awayTotalAgainst = awayTotal?.against?.[periodKey] ?? [];
-  const homeForTotal = findEntry(homeTotalFor, formEntry.homeTeam);
-  const homeAgainstTotal = findEntry(homeTotalAgainst, formEntry.homeTeam);
-  const awayForTotal = findEntry(awayTotalFor, formEntry.awayTeam);
-  const awayAgainstTotal = findEntry(awayTotalAgainst, formEntry.awayTeam);
+  const homeTotal = homeProfile?.statistics?.for?.totalShotsOnGoal;
+  const awayTotal = awayProfile?.statistics?.for?.totalShotsOnGoal;
+  const homeTotalAgainst = homeProfile?.statistics?.against?.totalShotsOnGoal;
+  const awayTotalAgainst = awayProfile?.statistics?.against?.totalShotsOnGoal;
+  const homeForTotal = homeTotal?.[periodKey] ?? {};
+  const homeAgainstTotal = homeTotalAgainst?.[periodKey] ?? {};
+  const awayForTotal = awayTotal?.[periodKey] ?? {};
+  const awayAgainstTotal = awayTotalAgainst?.[periodKey] ?? {};
   return {
     ...values,
-    homeForPercent: computePercent(values.homeForValue, homeForTotal?.home_adjustedValue ?? homeForTotal?.home_rawValue),
-    homeAgainstPercent: computePercent(values.homeAgainstValue, homeAgainstTotal?.home_adjustedValue ?? homeAgainstTotal?.home_rawValue),
-    awayForPercent: computePercent(values.awayForValue, awayForTotal?.away_adjustedValue ?? awayForTotal?.away_rawValue),
-    awayAgainstPercent: computePercent(values.awayAgainstValue, awayAgainstTotal?.away_adjustedValue ?? awayAgainstTotal?.away_rawValue),
+    homeForPercent: computePercent(
+      values.homeForValue,
+      homeForTotal?.value ?? homeForTotal?.rawValue
+    ),
+    homeAgainstPercent: computePercent(
+      values.homeAgainstValue,
+      homeAgainstTotal?.value ?? homeAgainstTotal?.rawValue
+    ),
+    awayForPercent: computePercent(
+      values.awayForValue,
+      awayForTotal?.value ?? awayForTotal?.rawValue
+    ),
+    awayAgainstPercent: computePercent(
+      values.awayAgainstValue,
+      awayAgainstTotal?.value ?? awayAgainstTotal?.rawValue
+    ),
   };
 }
 
-function buildValues({
-  homeLeagueObj,
-  awayLeagueObj,
-  rankKey,
-  periodKey,
-  statKey,
-  formEntry,
-}) {
-  if (!homeLeagueObj || !awayLeagueObj) {
+function buildValues({ statKey, periodKey, formEntry, teamProfiles }) {
+  if (!formEntry?.homeTeam || !formEntry?.awayTeam) {
     return null;
   }
 
-  const homeLists = getLists(homeLeagueObj, rankKey, periodKey);
-  const awayLists = getLists(awayLeagueObj, rankKey, periodKey);
+  const scope = formEntry.scope ?? "total";
+  const homeMatchType = resolveMatchType(scope, "homeTeam");
+  const awayMatchType = resolveMatchType(scope, "awayTeam");
 
-  const homeForEntry = findEntry(homeLists.homeFor, formEntry.homeTeam);
-  const homeAgainstEntry = findEntry(homeLists.homeAgainst, formEntry.homeTeam);
-  const awayForEntry = findEntry(awayLists.awayFor, formEntry.awayTeam);
-  const awayAgainstEntry = findEntry(awayLists.awayAgainst, formEntry.awayTeam);
+  const homeProfile = teamProfiles?.homeTeam?.[homeMatchType];
+  const awayProfile = teamProfiles?.awayTeam?.[awayMatchType];
+
+  if (!homeProfile && !awayProfile) {
+    console.log("[RankingSummary] missing profiles", {
+      statKey,
+      periodKey,
+      scope,
+      homeProfile: Boolean(homeProfile),
+      awayProfile: Boolean(awayProfile),
+    });
+    return null;
+  }
+
+  const homeFor = extractStat(homeProfile, "for", statKey, periodKey);
+  const homeAgainst = extractStat(homeProfile, "against", statKey, periodKey);
+  const awayFor = extractStat(awayProfile, "for", statKey, periodKey);
+  const awayAgainst = extractStat(awayProfile, "against", statKey, periodKey);
 
   const values = {
-    homeForRank: homeForEntry?.home_rank ?? "-",
-    homeAgainstRank: homeAgainstEntry?.home_rank ?? "-",
-    awayForRank: awayForEntry?.away_rank ?? "-",
-    awayAgainstRank: awayAgainstEntry?.away_rank ?? "-",
-    homeForValue: homeForEntry?.home_adjustedValue ?? homeForEntry?.home_rawValue ?? null,
-    homeAgainstValue: homeAgainstEntry?.home_adjustedValue ?? homeAgainstEntry?.home_rawValue ?? null,
-    awayForValue: awayForEntry?.away_adjustedValue ?? awayForEntry?.away_rawValue ?? null,
-    awayAgainstValue: awayAgainstEntry?.away_adjustedValue ?? awayAgainstEntry?.away_rawValue ?? null,
-    homeForRaw: homeForEntry?.home_rawValue ?? null,
-    homeAgainstRaw: homeAgainstEntry?.home_rawValue ?? null,
-    awayForRaw: awayForEntry?.away_rawValue ?? null,
-    awayAgainstRaw: awayAgainstEntry?.away_rawValue ?? null,
+    homeForRank: homeFor?.rank ?? "-",
+    homeAgainstRank: homeAgainst?.rank ?? "-",
+    awayForRank: awayFor?.rank ?? "-",
+    awayAgainstRank: awayAgainst?.rank ?? "-",
+    homeForValue: homeFor?.value ?? null,
+    homeAgainstValue: homeAgainst?.value ?? null,
+    awayForValue: awayFor?.value ?? null,
+    awayAgainstValue: awayAgainst?.value ?? null,
+    homeForRaw: homeFor?.rawValue ?? null,
+    homeAgainstRaw: homeAgainst?.rawValue ?? null,
+    awayForRaw: awayFor?.rawValue ?? null,
+    awayAgainstRaw: awayAgainst?.rawValue ?? null,
+    homeProfileMatchType: homeMatchType,
+    awayProfileMatchType: awayMatchType,
   };
 
+  console.log("[RankingSummary] built values", {
+    statKey,
+    periodKey,
+    scope,
+    values,
+  });
+
   return buildShotPercentages({
-    homeLeagueObj,
-    awayLeagueObj,
+    homeProfile,
+    awayProfile,
     periodKey,
     statKey,
     values,
@@ -129,28 +147,35 @@ function buildValues({
 
 export default function RankingSummary({
   statKey,
-  statPatterns,
   formEntry,
-  leagueRankings,
+  teamProfiles,
   homeLeagueName,
   awayLeagueName,
 }) {
   const payload = useMemo(() => {
-    if (!formEntry?.homeTeam || !formEntry?.awayTeam) return null;
-    const rankKey = statPatterns?.[statKey]?.rankKey ?? statKey;
+    if (!formEntry?.homeTeam || !formEntry?.awayTeam) {
+      console.log("[RankingSummary] missing teams, skipping", { formEntry });
+      return null;
+    }
     const periodKey = formEntry?.period ?? "ALL";
-    const homeLeagueObj = pickLeague(leagueRankings, homeLeagueName);
-    const awayLeagueObj = pickLeague(leagueRankings, awayLeagueName);
     const values = buildValues({
-      homeLeagueObj,
-      awayLeagueObj,
-      rankKey,
-      periodKey,
       statKey,
+      periodKey,
       formEntry,
+      teamProfiles,
+    });
+    console.log("[RankingSummary] payload", {
+      statKey,
+      periodKey,
+      homeTeam: formEntry.homeTeam,
+      awayTeam: formEntry.awayTeam,
+      homeLeagueName,
+      awayLeagueName,
+      hasTeamProfiles: Boolean(teamProfiles),
+      values,
     });
     return { values, periodKey };
-  }, [formEntry, statKey, statPatterns, leagueRankings, homeLeagueName, awayLeagueName]);
+  }, [formEntry, statKey, teamProfiles, homeLeagueName, awayLeagueName]);
 
   if (!payload?.values) {
     return null;
