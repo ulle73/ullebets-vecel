@@ -1,14 +1,57 @@
-﻿const MARKET_MAP = [
-  { match: /shots on target/i, statKey: "shotsOnGoal" },
-  { match: /total shots/i, statKey: "totalShots" },
-  { match: /corner/i, statKey: "cornerKicks" },
-  { match: /yellow card/i, statKey: "yellowCards" },
-  { match: /throw-in/i, statKey: "throwIns" },
-  { match: /free kick/i, statKey: "freeKicks" },
-  { match: /foul/i, statKey: "fouls" },
-  { match: /tackle/i, statKey: "totalTackle" },
+import { getTeamAliases } from "@/lib/teamNameAliases";
+import { normalizeTeamName } from "./utils";
+
+const MARKET_MAP = [
+  { match: /(shots on target|skott på mål)/i, statKey: "shotsOnGoal" },
+  {
+    match: /(total shots|totala|totalt antal skott(?! på mål))/i,
+    statKey: "totalShots",
+  },
+  { match: /(corner|hörn)/i, statKey: "cornerKicks" },
+  { match: /(yellow card|kort)/i, statKey: "yellowCards" },
+  { match: /(throw[-\s]?in|inkast)/i, statKey: "throwIns" },
+  { match: /(free kick|frispark)/i, statKey: "freeKicks" },
+  { match: /(foul|fouls)/i, statKey: "fouls" },
+  { match: /(tackle|tackling)/i, statKey: "totalTackle" },
   { match: /offside/i, statKey: "offsides" },
 ];
+
+const EMPTY_ALIAS_CONTEXT = { homeAliases: [], awayAliases: [] };
+
+function normalizeAliasText(value) {
+  if (value == null) return "";
+  const text = String(value).trim();
+  if (!text) return "";
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function createAliasList(teamName) {
+  const normalized = normalizeTeamName(teamName);
+  return Array.from(
+    new Set(
+      getTeamAliases(normalized)
+        .map((alias) => normalizeAliasText(alias))
+        .filter(Boolean)
+    )
+  );
+}
+
+function createAliasContext(homeTeam, awayTeam) {
+  return {
+    homeAliases: createAliasList(homeTeam),
+    awayAliases: createAliasList(awayTeam),
+  };
+}
+
+function includesAlias(value, aliases = []) {
+  if (!aliases.length) return false;
+  const normalized = normalizeAliasText(value);
+  if (!normalized) return false;
+  return aliases.some((alias) => normalized.includes(alias));
+}
 
 function inferStatKey(name = "") {
   for (const entry of MARKET_MAP) {
@@ -17,20 +60,22 @@ function inferStatKey(name = "") {
   return null;
 }
 
-function inferScope(name = "") {
+function inferScope(name = "", aliasContext = EMPTY_ALIAS_CONTEXT) {
   if (/home/i.test(name)) return "home";
   if (/away/i.test(name)) return "away";
+  if (includesAlias(name, aliasContext.homeAliases)) return "home";
+  if (includesAlias(name, aliasContext.awayAliases)) return "away";
   return "total";
 }
 
 function inferPeriod(name = "") {
-  if (/1st|first half/i.test(name)) return "1ST";
-  if (/2nd|second half/i.test(name)) return "2ND";
+  if (/1st|first half|första halvlek/i.test(name)) return "1ST";
+  if (/2nd|second half|andra halvlek/i.test(name)) return "2ND";
   return "ALL";
 }
 
 function parseLine(label = "") {
-  const match = label.match(/(\d+(?:[.,]\d+)?)/);
+  const match = String(label).match(/(\d+(?:[.,]\d+)?)/);
   if (!match) return null;
   return Number.parseFloat(match[1].replace(",", "."));
 }
@@ -130,17 +175,42 @@ function mapFromNestedObject(oddsObject) {
   return tuples;
 }
 
-function mapFromMarkets(markets = []) {
+function resolveScopeForOutcome(baseScope, market, outcome, aliasContext = EMPTY_ALIAS_CONTEXT) {
+  if (baseScope !== "total") return baseScope;
+  const { homeAliases, awayAliases } = aliasContext;
+  const candidates = [
+    market?.name,
+    market?.title,
+    market?.marketName,
+    market?.criterion?.label,
+    market?.criterion?.abbreviation,
+    outcome?.label,
+    outcome?.englishLabel,
+    outcome?.participant,
+    outcome?.outcome,
+    outcome?.type,
+  ];
+  if (candidates.some((value) => includesAlias(value, homeAliases))) {
+    return "home";
+  }
+  if (candidates.some((value) => includesAlias(value, awayAliases))) {
+    return "away";
+  }
+  return "total";
+}
+
+function mapFromMarkets(markets = [], aliasContext = EMPTY_ALIAS_CONTEXT) {
   const tuples = [];
   for (const market of markets) {
     if (!market) continue;
     const name = market.name ?? market.title ?? market.marketName ?? "";
     const statKey = inferStatKey(name);
-    const scope = inferScope(name);
-    const period = inferPeriod(name);
     if (!statKey) continue;
+    const period = inferPeriod(name);
+    const baseScope = inferScope(name, aliasContext);
     const outcomes = market.outcomes ?? market.selections ?? [];
-    const grouped = {};
+    const groupedByScope = {};
+
     for (const outcome of outcomes) {
       const label = outcome.label ?? outcome.outcome ?? "";
       const line = parseLine(label ?? outcome.handicap ?? outcome.line);
@@ -148,36 +218,65 @@ function mapFromMarkets(markets = []) {
       const dir = parseDirection(label ?? outcome.type ?? "");
       const odds = parseOdds(outcome);
       if (odds == null) continue;
-      if (!grouped[line]) {
-        grouped[line] = { over: null, under: null };
+      const scope = resolveScopeForOutcome(baseScope, market, outcome, aliasContext);
+      if (!groupedByScope[scope]) {
+        groupedByScope[scope] = {};
       }
-      if (dir === "over") grouped[line].over = odds;
-      else grouped[line].under = odds;
+      if (!groupedByScope[scope][line]) {
+        groupedByScope[scope][line] = { over: null, under: null };
+      }
+      groupedByScope[scope][line][dir] = odds;
     }
-    for (const [lineKey, odds] of Object.entries(grouped)) {
-      const line = Number.parseFloat(lineKey);
-      if (!Number.isFinite(line)) continue;
-      pushTuple(tuples, { statKey, scope, period, line, odds });
+
+    for (const [scope, lines] of Object.entries(groupedByScope)) {
+      for (const [lineKey, odds] of Object.entries(lines ?? {})) {
+        const line = Number.parseFloat(lineKey);
+        if (!Number.isFinite(line)) continue;
+        if (odds?.over == null && odds?.under == null) continue;
+        pushTuple(tuples, { statKey, scope, period, line, odds });
+      }
     }
   }
   return tuples;
 }
 
+function convertObjectToMarkets(objectPayload = {}) {
+  const entries = Object.entries(objectPayload);
+  if (!entries.length) return null;
+  const isMarketLike = entries.every(([, value]) => {
+    if (!value || typeof value !== "object") return false;
+    if (Array.isArray(value.outcomes) || Array.isArray(value.selections)) {
+      return true;
+    }
+    return false;
+  });
+  if (!isMarketLike) return null;
+  return entries.map(([label, value]) => ({
+    name: label,
+    ...value,
+  }));
+}
+
 export function mapUnibetOdds(payload, homeTeam, awayTeam) {
+  const aliasContext = createAliasContext(homeTeam, awayTeam);
   if (!payload) return [];
   if (Array.isArray(payload)) {
     if (payload.every((item) => item?.statKey && item?.scope && item?.period)) {
       return payload;
     }
-    return mapFromMarkets(payload);
+    return mapFromMarkets(payload, aliasContext);
   }
   if (payload?.odds) {
     return mapUnibetOdds(payload.odds, homeTeam, awayTeam);
   }
   if (payload?.markets) {
-    return mapFromMarkets(payload.markets);
+    return mapFromMarkets(payload.markets, aliasContext);
   }
   if (typeof payload === "object") {
+    const markets = convertObjectToMarkets(payload);
+    if (markets) {
+      return mapFromMarkets(markets, aliasContext);
+    }
     return mapFromNestedObject(payload);
   }
   return [];
