@@ -178,6 +178,33 @@ export default function OddsTable({
     return values;
   }, [statPatterns, statKey, scope, period]);
 
+  const storedLines = useMemo(() => {
+    const lines = Object.keys(
+      oddsStore?.[teamKey]?.[statKey]?.[scope]?.[period] ?? {}
+    )
+      .map((value) => Number.parseFloat(value))
+      .filter((value) => Number.isFinite(value));
+    logClientBacktestStep("Oddsstorage innehåller dynamiska linor.", {
+      statKey,
+      scope,
+      period,
+      lines,
+    });
+    return lines;
+  }, [oddsStore, teamKey, statKey, scope, period]);
+
+  const linesToRender = useMemo(() => {
+    const combined = new Set([...(thresholds ?? []), ...(storedLines ?? [])]);
+    const values = Array.from(combined).sort((a, b) => a - b);
+    logClientBacktestStep("Linor som ska renderas i oddstabellen slås ihop.", {
+      statKey,
+      scope,
+      period,
+      values,
+    });
+    return values;
+  }, [thresholds, storedLines, statKey, scope, period]);
+
   const opponentLabel = scope === "home" ? awayTeam : scope === "away" ? homeTeam : "Under";
 
   const updateOddsStore = (line, dir, value) => {
@@ -345,7 +372,7 @@ export default function OddsTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-800">
-          {thresholds.map((line) => {
+          {linesToRender.map((line) => {
             const overEntries = buildEvEntries(line, "över");
             const underEntries = buildEvEntries(line, "under");
             const overTooltip = buildTooltip(line, "över");
