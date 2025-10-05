@@ -168,7 +168,15 @@ export default function OddsTable({
 
   const thresholds = useMemo(() => {
     const pattern = statPatterns?.[statKey];
-    const values = pattern ? pattern.thresholds(scope, period) : [];
+    const baseValues = pattern ? pattern.thresholds(scope, period) : [];
+    const storeLines = Object.keys(
+      oddsStore?.[teamKey]?.[statKey]?.[scope]?.[period] ?? {}
+    )
+      .map((line) => Number.parseFloat(line))
+      .filter((line) => Number.isFinite(line));
+    const values = Array.from(new Set([...baseValues, ...storeLines])).sort(
+      (a, b) => a - b
+    );
     logClientBacktestStep("Tröskelvärdena för statistiken hämtas.", {
       statKey,
       scope,
@@ -176,7 +184,7 @@ export default function OddsTable({
       values,
     });
     return values;
-  }, [statPatterns, statKey, scope, period]);
+  }, [statPatterns, statKey, scope, period, oddsStore, teamKey]);
 
   const opponentLabel = scope === "home" ? awayTeam : scope === "away" ? homeTeam : "Under";
 
