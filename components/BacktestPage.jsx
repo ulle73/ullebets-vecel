@@ -124,10 +124,25 @@ export default function BacktestPage({ match, className = "" }) {
   }, [statPatterns]);
 
   const results = useMemo(() => Object.values(resultsMap), [resultsMap]);
-  const resultsForTeam = useMemo(
-    () => results.filter((result) => result?.bet?.key?.includes(currentTeamKey)),
-    [results, currentTeamKey]
-  );
+  const resultsForTeam = useMemo(() => {
+    if (!currentTeamKey) {
+      return results;
+    }
+    return results.filter((result) => {
+      const candidateKeys = [
+        result?.teamKey,
+        result?.bet?.teamKey,
+      ].filter(Boolean);
+      if (candidateKeys.some((key) => key === currentTeamKey)) {
+        return true;
+      }
+      const legacyKey = result?.bet?.key;
+      if (legacyKey && legacyKey.includes(currentTeamKey)) {
+        return true;
+      }
+      return false;
+    });
+  }, [results, currentTeamKey]);
 
   useEffect(() => {
     if (!match) {
@@ -451,12 +466,27 @@ export default function BacktestPage({ match, className = "" }) {
         };
         const scopeUsed = scopeOverride || entry.scope;
         const periodUsed = periodOverride || entry.period;
-        const betKey = `${entry.homeTeam}-${entry.awayTeam}-${statKey}-${line}-${direction}-${scopeUsed}-${periodUsed}-${entry.formMatches}-${neutralGround}`;
+        const teamKey = makeTeamKey(entry.homeTeam, entry.awayTeam);
+        const teamKeySegment =
+          teamKey && teamKey !== "default"
+            ? teamKey
+            : `${entry.homeTeam}-${entry.awayTeam}`.trim() || "default";
+        const betKey = [
+          teamKeySegment,
+          statKey,
+          line,
+          direction,
+          scopeUsed,
+          periodUsed,
+          entry.formMatches,
+          neutralGround ? "neutral" : "regular",
+        ].join("::");
 
         const updatedResult = {
           ...evSummary,
           hitsOver: evSummary.hitsOver || "0/0",
           hitsUnder: evSummary.hitsUnder || "0/0",
+          teamKey,
           bet: {
             statKey,
             line,
@@ -467,6 +497,7 @@ export default function BacktestPage({ match, className = "" }) {
             period: periodUsed,
             homeTeam: entry.homeTeam,
             awayTeam: entry.awayTeam,
+            teamKey,
           },
         };
 
