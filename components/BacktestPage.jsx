@@ -21,6 +21,7 @@ import {
   logClientBacktestStep,
   resetClientBacktestSteps,
 } from "@/lib/backtest/logger";
+import { areTeamNamesEquivalent } from "@/lib/teamNameAliases";
 import leaguesAndTeams from "@/data/leagues-and-teams.json";
 
 const STRINGS = {
@@ -61,6 +62,8 @@ const STRINGS = {
   error_unibet_url: "Kunde inte läsa match-id från Unibet URL.",
   error_unibet_fetch: "Misslyckades hämta Unibet-odds.",
   error_unibet_map: "Inga odds kunde tolkas från Unibet-svaret.",
+  error_unibet_team_mismatch:
+    "Unibet-matchen stämmer inte överens med de valda lagen.",
 };
 
 const translate = (key) => STRINGS[key] ?? key;
@@ -702,6 +705,22 @@ export default function BacktestPage({ match, className = "" }) {
         meta: data?.meta ?? null,
         keys: Object.keys(data ?? {}),
       });
+      const { homeTeam: unibetHomeTeam, awayTeam: unibetAwayTeam } = data.meta ?? {};
+      const homeMatches =
+        !unibetHomeTeam ||
+        areTeamNamesEquivalent(entry.homeTeam, unibetHomeTeam);
+      const awayMatches =
+        !unibetAwayTeam ||
+        areTeamNamesEquivalent(entry.awayTeam, unibetAwayTeam);
+      if (!homeMatches || !awayMatches) {
+        logClientBacktestError("Unibet-data matchar inte valda lag.", {
+          expectedHome: entry.homeTeam,
+          expectedAway: entry.awayTeam,
+          unibetHomeTeam,
+          unibetAwayTeam,
+        });
+        throw new Error(translate("error_unibet_team_mismatch"));
+      }
       const tuples = mapUnibetOdds(data.odds ?? data, entry.homeTeam, entry.awayTeam);
       if (!tuples.length) {
         logClientBacktestError("Inga odds mappades från Unibet-svaret.", {
