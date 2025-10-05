@@ -1,4 +1,6 @@
-﻿const MARKET_MAP = [
+import { createTeamAliasMatcher } from "@/lib/backtest/teamNameAliases";
+
+const MARKET_MAP = [
   { match: /shots on target/i, statKey: "shotsOnGoal" },
   { match: /total shots/i, statKey: "totalShots" },
   { match: /corner/i, statKey: "cornerKicks" },
@@ -21,6 +23,36 @@ function inferScope(name = "") {
   if (/home/i.test(name)) return "home";
   if (/away/i.test(name)) return "away";
   return "total";
+}
+
+function buildScopeResolver(homeTeam, awayTeam) {
+  const matchHome = homeTeam ? createTeamAliasMatcher(homeTeam) : null;
+  const matchAway = awayTeam ? createTeamAliasMatcher(awayTeam) : null;
+  if (!matchHome && !matchAway) {
+    return (name) => inferScope(name);
+  }
+  return (name = "", outcomes = []) => {
+    const texts = [];
+    if (name) texts.push(name);
+    for (const outcome of outcomes) {
+      if (!outcome) continue;
+      texts.push(
+        outcome.participant,
+        outcome.team,
+        outcome.teamName,
+        outcome.name,
+        outcome.label,
+        outcome.englishLabel,
+        outcome.outcome
+      );
+    }
+    for (const text of texts) {
+      if (!text) continue;
+      if (matchHome && matchHome(text)) return "home";
+      if (matchAway && matchAway(text)) return "away";
+    }
+    return inferScope(name);
+  };
 }
 
 function inferPeriod(name = "") {
@@ -130,16 +162,18 @@ function mapFromNestedObject(oddsObject) {
   return tuples;
 }
 
-function mapFromMarkets(markets = []) {
+function mapFromMarkets(markets = [], scopeResolver = inferScope) {
   const tuples = [];
+  const resolveScope =
+    typeof scopeResolver === "function" ? scopeResolver : inferScope;
   for (const market of markets) {
     if (!market) continue;
     const name = market.name ?? market.title ?? market.marketName ?? "";
     const statKey = inferStatKey(name);
-    const scope = inferScope(name);
     const period = inferPeriod(name);
     if (!statKey) continue;
     const outcomes = market.outcomes ?? market.selections ?? [];
+    const scope = resolveScope(name, outcomes);
     const grouped = {};
     for (const outcome of outcomes) {
       const label = outcome.label ?? outcome.outcome ?? "";
@@ -169,13 +203,15 @@ export function mapUnibetOdds(payload, homeTeam, awayTeam) {
     if (payload.every((item) => item?.statKey && item?.scope && item?.period)) {
       return payload;
     }
-    return mapFromMarkets(payload);
+    const resolveScope = buildScopeResolver(homeTeam, awayTeam);
+    return mapFromMarkets(payload, resolveScope);
   }
   if (payload?.odds) {
     return mapUnibetOdds(payload.odds, homeTeam, awayTeam);
   }
   if (payload?.markets) {
-    return mapFromMarkets(payload.markets);
+    const resolveScope = buildScopeResolver(homeTeam, awayTeam);
+    return mapFromMarkets(payload.markets, resolveScope);
   }
   if (typeof payload === "object") {
     return mapFromNestedObject(payload);
