@@ -18,6 +18,51 @@ const MARKET_MAP = [
 
 const EMPTY_ALIAS_CONTEXT = { homeAliases: [], awayAliases: [] };
 
+const GENERIC_TEAM_TOKENS = new Set([
+  "fc",
+  "cf",
+  "ac",
+  "sc",
+  "afc",
+  "ik",
+  "fk",
+  "hk",
+  "nk",
+  "bk",
+  "if",
+  "ff",
+  "kv",
+  "cd",
+  "sd",
+  "ud",
+  "club",
+  "clube",
+]);
+
+const TOKEN_SYNONYMS = new Map([
+  ["united", ["utd"]],
+  ["saint", ["st"]],
+  ["saints", ["st"]],
+  ["athletic", ["ath"]],
+  ["atletico", ["atl"]],
+  ["internazionale", ["inter"]],
+  ["internacional", ["inter"]],
+]);
+
+function expandTokenVariants(tokens) {
+  const variants = [tokens];
+  tokens.forEach((token, index) => {
+    const options = TOKEN_SYNONYMS.get(token);
+    if (!options) return;
+    options.forEach((option) => {
+      const next = [...tokens];
+      next[index] = option;
+      variants.push(next);
+    });
+  });
+  return variants;
+}
+
 function normalizeAliasText(value) {
   if (value == null) return "";
   const text = String(value).trim();
@@ -30,13 +75,59 @@ function normalizeAliasText(value) {
 
 function createAliasList(teamName) {
   const normalized = normalizeTeamName(teamName);
-  return Array.from(
-    new Set(
-      getTeamAliases(normalized)
-        .map((alias) => normalizeAliasText(alias))
-        .filter(Boolean)
-    )
-  );
+  if (!normalized) return [];
+
+  const baseAliases = new Set();
+  const pushAlias = (value) => {
+    const normalizedAlias = normalizeAliasText(value);
+    if (normalizedAlias) {
+      baseAliases.add(normalizedAlias);
+    }
+  };
+
+  getTeamAliases(normalized).forEach(pushAlias);
+  pushAlias(normalized);
+
+  const variants = new Set();
+
+  const addTokenVariants = (tokens) => {
+    const tokenVariants = expandTokenVariants(tokens);
+    tokenVariants.forEach((variantTokens) => {
+      if (!variantTokens.length) return;
+      variants.add(variantTokens.join(" "));
+      const filtered = variantTokens.filter((token) => token && !GENERIC_TEAM_TOKENS.has(token));
+      if (filtered.length) {
+        variants.add(filtered.join(" "));
+      }
+    });
+  };
+
+  baseAliases.forEach((alias) => {
+    if (!alias) return;
+    variants.add(alias);
+    const sanitizedTokens = alias
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!sanitizedTokens.length) {
+      return;
+    }
+    variants.add(sanitizedTokens.join(" "));
+    addTokenVariants(sanitizedTokens);
+  });
+
+  const normalizedVariants = new Set();
+  variants.forEach((variant) => {
+    const normalizedVariant = normalizeAliasText(variant);
+    if (!normalizedVariant) return;
+    normalizedVariants.add(normalizedVariant);
+    const compact = normalizedVariant.replace(/[^a-z0-9]/g, "");
+    if (compact) {
+      normalizedVariants.add(compact);
+    }
+  });
+
+  return Array.from(normalizedVariants).filter(Boolean);
 }
 
 function createAliasContext(homeTeam, awayTeam) {
@@ -50,7 +141,20 @@ function includesAlias(value, aliases = []) {
   if (!aliases.length) return false;
   const normalized = normalizeAliasText(value);
   if (!normalized) return false;
-  return aliases.some((alias) => normalized.includes(alias));
+  const compact = normalized.replace(/[^a-z0-9]/g, "");
+  return aliases.some((alias) => {
+    if (normalized.includes(alias) || alias.includes(normalized)) {
+      return true;
+    }
+    if (!compact) {
+      return false;
+    }
+    const aliasCompact = alias.replace(/[^a-z0-9]/g, "");
+    if (!aliasCompact) {
+      return false;
+    }
+    return compact.includes(aliasCompact) || aliasCompact.includes(compact);
+  });
 }
 
 function inferStatKey(name = "") {
