@@ -10,6 +10,7 @@ import {
   buildBackendUrl,
   buildBacktestApiUrl,
   createInitialForm,
+  getBackendBaseUrl,
   makeTeamKey,
   normalizeTeamName,
   replaceTeamsInForm,
@@ -653,34 +654,67 @@ export default function BacktestPage({ match, className = "" }) {
     const matchIdMatch = unibetUrl.match(/event\/(\d+)/i);
     const matchId = matchIdMatch ? matchIdMatch[1] : null;
     if (!matchId) {
+      logClientBacktestError("Unibet-url saknar match-id och hämtning avbryts.", {
+        unibetUrl,
+      });
       setError(translate("error_unibet_url"));
       return;
     }
+    logClientBacktestStep("Match-id extraheras från Unibet-url.", { matchId });
     const entry = form[firstStatKey];
     if (!entry?.homeTeam || !entry?.awayTeam) {
+      logClientBacktestError("Kan inte hämta Unibet-odds utan lag i formuläret.", {
+        entry,
+      });
       setError(translate("error_fill_teams"));
       return;
     }
 
     setLoading(true);
     setError(null);
+    const backendBaseUrl = getBackendBaseUrl();
+    const backendUrl = buildBackendUrl(`/unibet-odds/${matchId}`);
+    logClientBacktestStep("Backend-url för Unibet-hämtningen fastställs.", {
+      matchId,
+      backendBaseUrl,
+      backendUrl,
+      pageOrigin: typeof window !== "undefined" ? window.location.origin : null,
+    });
     try {
-      const response = await fetch(buildBackendUrl(`/unibet-odds/${matchId}`));
+      const response = await fetch(backendUrl);
+      logClientBacktestStep("Svar mottaget från backend för Unibet-odds.", {
+        url: response.url,
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+      });
       if (!response.ok) {
+        logClientBacktestError("Backend-svaret för Unibet-odds returnerade felstatus.", {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+        });
         throw new Error(translate("error_unibet_fetch"));
       }
       const data = await response.json();
       logClientBacktestStep("Oddsdata hämtas från backend och förbereds för mapping.", {
-        data,
+        meta: data?.meta ?? null,
+        keys: Object.keys(data ?? {}),
       });
       const tuples = mapUnibetOdds(data.odds ?? data, entry.homeTeam, entry.awayTeam);
       if (!tuples.length) {
+        logClientBacktestError("Inga odds mappades från Unibet-svaret.", {
+          dataPreview: data,
+        });
         throw new Error(translate("error_unibet_map"));
       }
 
       logClientBacktestStep(
         "Odds från Unibet tolkas, mappas till linor och skickas till tabellen.",
-        tuples
+        {
+          tupleCount: tuples.length,
+          sample: tuples.slice(0, 5),
+        }
       );
 
       setOddsStore((prev) => {
@@ -758,10 +792,26 @@ export default function BacktestPage({ match, className = "" }) {
         }
       }
 
+      logClientBacktestStep("Rekalkylerade linor från Unibet sammanställs för sparning.", {
+        linesToSaveCount: linesToSave.length,
+        matchDate,
+      });
+
       await saveBacktest(linesToSave, entry.homeTeam, entry.awayTeam, matchDate);
     } catch (err) {
-      logClientBacktestError("Misslyckades att läsa in odds från Unibet.", err);
-      setError(err.message ?? translate("error_unibet_fetch"));
+      logClientBacktestError(
+        "Misslyckades att läsa in odds från Unibet.",
+        {
+          error: err,
+          backendBaseUrl,
+          backendUrl,
+        }
+      );
+      if (err instanceof Error && err.message) {
+        setError(err.message);
+      } else {
+        setError(translate("error_unibet_fetch"));
+      }
     } finally {
       setLoading(false);
     }
