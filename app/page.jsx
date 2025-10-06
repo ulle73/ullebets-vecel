@@ -6,6 +6,7 @@ import MatchesClient from "./matches-client";
 import { todaySE, tomorrowSE } from "@/lib/utils/date";
 import { getMatchesForDate } from "@/lib/repos/fixtures";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { buildMatchesByDateKey } from "@/lib/utils/apiKeys";
 
 export default async function Page() {
   const today = todaySE();
@@ -16,9 +17,12 @@ export default async function Page() {
     getMatchesForDate(tomorrow),
   ]);
 
+  const todayKey = buildMatchesByDateKey(today);
+  const tomorrowKey = buildMatchesByDateKey(tomorrow);
+
   const fallback = {
-    [`/api/matches/by-date?date=${today}`]: { date: today, items: todayItems },
-    [`/api/matches/by-date?date=${tomorrow}`]: { date: tomorrow, items: tomorrowItems },
+    [todayKey]: { date: today, items: todayItems },
+    [tomorrowKey]: { date: tomorrow, items: tomorrowItems },
   };
 
   return (
@@ -34,7 +38,7 @@ export default async function Page() {
       <SWRConfig value={{ fallback }}>
         <section className="pb-8">
           <ErrorBoundary resetKeys={[today, tomorrow]}>
-            <MatchesClient defaultDate={today} />
+            <MatchesClient defaultDate={today} initialFallback={fallback} />
           </ErrorBoundary>
         </section>
       </SWRConfig>

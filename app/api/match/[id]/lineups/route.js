@@ -436,7 +436,7 @@ export async function GET(_req, context) {
       {
         headers: {
           "content-type": "application/json",
-          "cache-control": "public, s-maxage=1800, stale-while-revalidate=900",
+          "cache-control": "public, s-maxage=1800, stale-while-revalidate=1800",
         },
       }
     );

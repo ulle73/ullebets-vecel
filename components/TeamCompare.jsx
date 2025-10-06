@@ -4,28 +4,34 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import styles from "./TeamCompare.module.css";
+import {
+  buildTeamProfileKeyForMatch,
+  toNumericId,
+} from "@/lib/utils/apiKeys";
+import { fetchTeamProfile } from "@/lib/utils/fetchers";
 
 const DEBUG_TAG = "[TeamCompare]";
 const debug = (...args) => console.log(DEBUG_TAG, ...args);
 const debugError = (...args) => console.error(DEBUG_TAG, ...args);
 
 const fetcher = async (url) => {
+  if (!url) return null;
   debug("fetch:start", { url });
-  const response = await fetch(url);
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    const message = payload?.message || `Request failed with status ${response.status}`;
-    const error = new Error(message);
-    error.status = response.status;
-    debugError("fetch:error", { url, status: response.status, message });
+  try {
+    const json = await fetchTeamProfile(url);
+    debug("fetch:success", {
+      url,
+      hasProfile: Boolean(json?.profile),
+    });
+    return json;
+  } catch (error) {
+    debugError("fetch:error", {
+      url,
+      status: error?.status,
+      message: error?.message,
+    });
     throw error;
   }
-  const json = await response.json();
-  debug("fetch:success", {
-    url,
-    hasProfile: Boolean(json?.profile),
-  });
-  return json;
 };
 
 const PROFILE_STATS = [
@@ -229,14 +235,9 @@ function buildSingleLeagueAverageHint(value, formatter) {
   return `League avg: ${formatter(value)}`;
 }
 
-function normalizeId(value) {
-  const num = Number(value);
-  return Number.isFinite(num) && num > 0 ? num : null;
-}
-
 function buildTeamLogoCandidates(teamId) {
-  const numeric = normalizeId(teamId);
-  if (!numeric) {
+  const numeric = toNumericId(teamId);
+  if (numeric == null) {
     return ["/images/teams/placeholder.png"];
   }
 
@@ -271,41 +272,6 @@ function TeamLogo({ teamId, teamName, size = 48, className }) {
       unoptimized
     />
   );
-}
-
-function buildProfileUrl(match, side) {
-  const matchType = side === "home" ? "home" : "away";
-  const params = new URLSearchParams();
-
-  const leagueId = normalizeId(match?.leagueId ?? match?.raw?.leagueId);
-  const leagueName = match?.leagueName ?? match?.raw?.leagueName ?? null;
-  const teamId = normalizeId(
-    side === "home"
-      ? match?.homeTeamId ?? match?.raw?.homeTeamId
-      : match?.awayTeamId ?? match?.raw?.awayTeamId
-  );
-  const teamName =
-    side === "home"
-      ? match?.homeTeamName ?? match?.raw?.homeTeamName
-      : match?.awayTeamName ?? match?.raw?.awayTeamName;
-  const matchId = match?.matchId ?? match?.id ?? match?.raw?.matchId ?? null;
-
-  if (leagueId != null) params.set("leagueId", String(leagueId));
-  if (leagueName) params.set("league", leagueName);
-  if (teamId != null) params.set("teamId", String(teamId));
-  if (teamName) params.set("team", teamName);
-  params.set("matchType", matchType);
-  if (matchId) params.set("matchId", String(matchId));
-
-  const url = `/api/teamprofiles?${params.toString()}`;
-  debug("buildProfileUrl", {
-    side,
-    url,
-    matchId,
-    leagueId,
-    teamId,
-  });
-  return url;
 }
 
 function extractStatValue(profile, statKey, type = "for", period = "ALL") {
@@ -363,103 +329,40 @@ function renderRankBadge(node) {
 }
 
 function useTeamProfiles(match) {
-  const key = useMemo(() => {
-    if (!match) {
-      debug("useTeamProfiles: no match provided");
-      return null;
-    }
-
-    const matchId = match.matchId ?? match.id;
-    const leagueIdentity =
-      normalizeId(match.leagueId ?? match.raw?.leagueId) ??
-      match.leagueName ??
-      match.raw?.leagueName ??
-      null;
-    const homeIdentity =
-      normalizeId(match.homeTeamId ?? match.raw?.homeTeamId) ??
-      match.homeTeamName ??
-      match.raw?.homeTeamName ??
-      null;
-    const awayIdentity =
-      normalizeId(match.awayTeamId ?? match.raw?.awayTeamId) ??
-      match.awayTeamName ??
-      match.raw?.awayTeamName ??
-      null;
-
-    if (!matchId || !leagueIdentity || !homeIdentity || !awayIdentity) {
-      debug("useTeamProfiles: missing identity", {
-        matchId,
-        leagueIdentity,
-        homeIdentity,
-        awayIdentity,
-      });
-      return null;
-    }
-
-    return [
-      "teamprofiles",
-      String(matchId),
-      String(leagueIdentity),
-      String(homeIdentity),
-      String(awayIdentity),
-    ];
-  }, [
-    match?.matchId,
-    match?.id,
-    match?.leagueId,
-    match?.raw?.leagueId,
-    match?.leagueName,
-    match?.raw?.leagueName,
-    match?.homeTeamId,
-    match?.raw?.homeTeamId,
-    match?.homeTeamName,
-    match?.raw?.homeTeamName,
-    match?.awayTeamId,
-    match?.raw?.awayTeamId,
-    match?.awayTeamName,
-    match?.raw?.awayTeamName,
-  ]);
-
-  const swr = useSWR(
-    key,
-    async () => {
-      debug("useTeamProfiles: fetching", {
-        matchId: match?.matchId ?? match?.id,
-        leagueId: match?.leagueId ?? match?.raw?.leagueId,
-        homeTeamId: match?.homeTeamId ?? match?.raw?.homeTeamId,
-        awayTeamId: match?.awayTeamId ?? match?.raw?.awayTeamId,
-      });
-      const homeUrl = buildProfileUrl(match, "home");
-      const awayUrl = buildProfileUrl(match, "away");
-
-      const [home, away] = await Promise.all([
-        fetcher(homeUrl),
-        fetcher(awayUrl),
-      ]);
-
-      debug("useTeamProfiles: fetched", {
-        matchId: match?.matchId ?? match?.id,
-        homeProfile: Boolean(home?.profile),
-        awayProfile: Boolean(away?.profile),
-      });
-
-      return { home: home?.profile ?? null, away: away?.profile ?? null };
-    },
-    {
-      revalidateOnFocus: false,
-      shouldRetryOnError: false,
-    }
+  const homeKey = useMemo(
+    () => buildTeamProfileKeyForMatch(match, "home"),
+    [match]
+  );
+  const awayKey = useMemo(
+    () => buildTeamProfileKeyForMatch(match, "away"),
+    [match]
   );
 
-  if (!key) {
+  const homeSWR = useSWR(homeKey, fetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    revalidateOnReconnect: false,
+    shouldRetryOnError: false,
+    revalidateOnMount: false,
+  });
+  const awaySWR = useSWR(awayKey, fetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    revalidateOnReconnect: false,
+    shouldRetryOnError: false,
+    revalidateOnMount: false,
+  });
+
+  if (!homeKey && !awayKey) {
+    debug("useTeamProfiles: no valid keys", { matchId: match?.matchId ?? match?.id });
     return { homeProfile: null, awayProfile: null, isLoading: false, error: null };
   }
 
   return {
-    homeProfile: swr.data?.home ?? null,
-    awayProfile: swr.data?.away ?? null,
-    isLoading: swr.isLoading,
-    error: swr.error,
+    homeProfile: homeSWR.data?.profile ?? null,
+    awayProfile: awaySWR.data?.profile ?? null,
+    isLoading: homeSWR.isLoading || awaySWR.isLoading,
+    error: homeSWR.error ?? awaySWR.error ?? null,
   };
 }
 
@@ -493,14 +396,14 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
     PERIOD_OPTIONS.find((option) => option.value === selectedPeriod) ?? PERIOD_OPTIONS[0];
 
   const homeTeamId =
-    normalizeId(
+    toNumericId(
       match?.homeTeamId ??
         match?.raw?.homeTeamId ??
         match?.homeTeam?.id ??
         match?.raw?.homeTeam?.id
     ) ?? null;
   const awayTeamId =
-    normalizeId(
+    toNumericId(
       match?.awayTeamId ??
         match?.raw?.awayTeamId ??
         match?.awayTeam?.id ??
