@@ -117,6 +117,43 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
 
   const matchesKey = date ? buildMatchesByDateKey(date) : null;
 
+  // const { data, error, isLoading } = useSWR(matchesKey, fetchJson, {
+  //   revalidateOnFocus: false,
+  //   revalidateIfStale: false,
+  //   revalidateOnReconnect: false,
+  //   dedupingInterval: 60_000,
+  //   keepPreviousData: true,
+  // });
+
+  //   useEffect(() => {
+  //     if (!data) return;
+  //     debug("matches:data", {
+  //       date,
+  //       items: data.items?.length ?? 0,
+  //     });
+  //   }, [data, date]);
+
+  //   useEffect(() => {
+  //     if (!matchesKey) return;
+  //     if (!matches.length) return;
+  //     let cancelled = false;
+  //     prefetchTeamProfiles(matches).catch((prefetchError) => {
+  //       if (cancelled) return;
+  //       debugError("teamprofiles:prefetch:failure", {
+  //         key: matchesKey,
+  //         message: prefetchError?.message,
+  //       });
+  //     });
+  //     return () => {
+  //       cancelled = true;
+  //     };
+  //   }, [matchesKey, matches, prefetchTeamProfiles]);
+
+  //   if (error) {
+  //     debugError("matches:error", error);
+  //   }
+  
+  
   const { data, error, isLoading } = useSWR(matchesKey, fetchJson, {
     revalidateOnFocus: false,
     revalidateIfStale: false,
@@ -125,33 +162,52 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     keepPreviousData: true,
   });
 
-    useEffect(() => {
-      if (!data) return;
-      debug("matches:data", {
-        date,
-        items: data.items?.length ?? 0,
-      });
-    }, [data, date]);
+  // ⬇️ Flytta UPP dessa två så de kommer innan effekter
+  const items = useMemo(() => data?.items ?? [], [data]);
 
-    useEffect(() => {
-      if (!matchesKey) return;
-      if (!matches.length) return;
-      let cancelled = false;
-      prefetchTeamProfiles(matches).catch((prefetchError) => {
-        if (cancelled) return;
-        debugError("teamprofiles:prefetch:failure", {
-          key: matchesKey,
-          message: prefetchError?.message,
-        });
-      });
-      return () => {
-        cancelled = true;
-      };
-    }, [matchesKey, matches, prefetchTeamProfiles]);
+  const matches = useMemo(() => {
+    const normalized = items.map(normalizeMatch);
+    debug("matches:normalized", {
+      count: normalized.length,
+      sample: normalized.slice(0, 3).map((match) => ({
+        matchId: match.id,
+        leagueId: match.leagueId,
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+      })),
+    });
+    return normalized;
+  }, [items]);
 
-    if (error) {
-      debugError("matches:error", error);
-    }
+  // Nu kan effekterna tryggt referera till matches
+  useEffect(() => {
+    if (!data) return;
+    debug("matches:data", {
+      date,
+      items: data.items?.length ?? 0,
+    });
+  }, [data, date]);
+
+  useEffect(() => {
+    if (!matchesKey) return;
+    if (!matches.length) return;
+    let cancelled = false;
+    prefetchTeamProfiles(matches).catch((prefetchError) => {
+      if (cancelled) return;
+      debugError("teamprofiles:prefetch:failure", {
+        key: matchesKey,
+        message: prefetchError?.message,
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [matchesKey, matches, prefetchTeamProfiles]);
+
+  if (error) {
+    debugError("matches:error", error);
+  }
+
 
     // const allItems = useMemo(() => data?.items ?? [], [data]);
 
@@ -163,21 +219,21 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     //   });
     // }, [allItems, date]);
     
-    const items = useMemo(() => data?.items ?? [], [data]);
+    // const items = useMemo(() => data?.items ?? [], [data]);
 
-    const matches = useMemo(() => {
-      const normalized = items.map(normalizeMatch);
-      debug("matches:normalized", {
-        count: normalized.length,
-        sample: normalized.slice(0, 3).map((match) => ({
-          matchId: match.id,
-          leagueId: match.leagueId,
-          homeTeamId: match.homeTeamId,
-          awayTeamId: match.awayTeamId,
-        })),
-      });
-      return normalized;
-    }, [items]);
+    // const matches = useMemo(() => {
+    //   const normalized = items.map(normalizeMatch);
+    //   debug("matches:normalized", {
+    //     count: normalized.length,
+    //     sample: normalized.slice(0, 3).map((match) => ({
+    //       matchId: match.id,
+    //       leagueId: match.leagueId,
+    //       homeTeamId: match.homeTeamId,
+    //       awayTeamId: match.awayTeamId,
+    //     })),
+    //   });
+    //   return normalized;
+    // }, [items]);
 
     useEffect(() => {
       if (!selectedMatchId) return;
