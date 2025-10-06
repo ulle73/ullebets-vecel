@@ -1,68 +1,35 @@
-  "use client";
+"use client";
 
-  import { useEffect, useMemo, useState } from "react";
-  import useSWR from "swr";
-  import LeagueTables from "@/components/LeagueTables";
-  import TeamCompare from "@/components/TeamCompare";
-  import Lineups from "@/components/Lineups";
-  import BacktestPage from "@/components/BacktestPage";
-  import { normalizeMatch } from "@/components/LeagueTable";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useSWR, { useSWRConfig } from "swr";
+import LeagueTables from "@/components/LeagueTables";
+import TeamCompare from "@/components/TeamCompare";
+import Lineups from "@/components/Lineups";
+import BacktestPage from "@/components/BacktestPage";
+import { normalizeMatch } from "@/components/LeagueTable";
+import {
+  buildMatchesByDateKey,
+  buildMatchDetailsKey,
+  buildTeamProfileKeyForMatch,
+} from "@/lib/utils/apiKeys";
+import {
+  fetchJson,
+  fetchJsonAllow404,
+  fetchTeamProfile,
+} from "@/lib/utils/fetchers";
 
-  const DEBUG_TAG = "[MatchesClient]";
-  const debug = (...args) => console.log(DEBUG_TAG, ...args);
-  const debugError = (...args) => console.error(DEBUG_TAG, ...args);
+const DEBUG_TAG = "[MatchesClient]";
+const debug = (...args) => console.log(DEBUG_TAG, ...args);
+const debugError = (...args) => console.error(DEBUG_TAG, ...args);
 
-  const fetcher = (url) =>
-    fetch(url).then((response) => {
-      if (!response.ok) {
-        const error = new Error(`HTTP ${response.status}`);
-        error.status = response.status;
-        throw error;
-      }
-      return response.json();
-    });
-
-  const detailFetcher = async (url) => {
-    const response = await fetch(url);
-    if (response.status === 404) {
-      debug("details:404", { url });
-      return null;
-    }
-    if (!response.ok) {
-      const error = new Error(`HTTP ${response.status}`);
-      error.status = response.status;
-      throw error;
-    }
-    return response.json();
-  };
-
-  const getTimestamp = (entry) =>
-    Number(
-      entry?.startTimestamp ??
-        entry?.event?.startTimestamp ??
-        entry?.timestamp ??
-        entry?.kickoffTime ??
-        0
-    ) || 0;
-
-  function makeFormatter() {
-    return new Intl.DateTimeFormat("sv-SE", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "Europe/Stockholm",
-    });
-  }
-
-  function ymdSEFromTs(ts) {
-    const date = new Date(ts * 1000);
-    return date.toLocaleDateString("sv-SE", {
-      timeZone: "Europe/Stockholm",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-  }
+function makeFormatter() {
+  return new Intl.DateTimeFormat("sv-SE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Europe/Stockholm",
+  });
+}
 
   function toMatchId(value) {
     if (!value) return null;
@@ -76,19 +43,87 @@
     return null;
   }
 
-  export default function MatchesClient({ defaultDate }) {
-    const [date, setDate] = useState(defaultDate);
-    const [selectedMatchId, setSelectedMatchId] = useState(null);
+export default function MatchesClient({ defaultDate, initialFallback = {} }) {
+  const [date, setDate] = useState(defaultDate);
+  const [selectedMatchId, setSelectedMatchId] = useState(null);
+  const { cache, mutate: globalMutate } = useSWRConfig();
+  const fallbackRef = useRef(initialFallback);
 
-    const { data, error, isLoading } = useSWR(
-      date ? `/api/matches/by-date?date=${date}` : null,
-      fetcher,
-      {
-        revalidateOnFocus: false,
-        dedupingInterval: 60_000,
-        keepPreviousData: true,
+  useEffect(() => {
+    const entries = Object.entries(fallbackRef.current || {});
+    if (!entries.length) return;
+    entries.forEach(([key, value]) => {
+      if (!key) return;
+      const state = cache.get(key);
+      if (!state || state.data === undefined) {
+        globalMutate(key, value, {
+          revalidate: false,
+          populateCache: true,
+        });
       }
-    );
+    });
+  }, [cache, globalMutate]);
+
+  const prefetchTeamProfiles = useCallback(
+    async (matchesToPrefetch) => {
+      if (!Array.isArray(matchesToPrefetch) || !matchesToPrefetch.length) return;
+
+      const keys = new Set();
+      for (const match of matchesToPrefetch) {
+        const homeKey = buildTeamProfileKeyForMatch(match, "home");
+        const awayKey = buildTeamProfileKeyForMatch(match, "away");
+        if (homeKey) keys.add(homeKey);
+        if (awayKey) keys.add(awayKey);
+      }
+
+      const queue = Array.from(keys).filter((key) => {
+        const state = cache.get(key);
+        return !(state && state.data !== undefined);
+      });
+
+      if (!queue.length) return;
+
+      debug("teamprofiles:prefetch:start", { total: queue.length });
+
+      let pointer = 0;
+      const concurrency = Math.min(6, queue.length);
+
+      const worker = async () => {
+        while (pointer < queue.length) {
+          const currentIndex = pointer;
+          pointer += 1;
+          const key = queue[currentIndex];
+          if (!key) continue;
+          try {
+            const data = await fetchTeamProfile(key);
+            await globalMutate(key, data, {
+              revalidate: false,
+              populateCache: true,
+            });
+          } catch (prefetchError) {
+            debugError("teamprofiles:prefetch:error", {
+              key,
+              message: prefetchError?.message,
+            });
+          }
+        }
+      };
+
+      await Promise.all(Array.from({ length: concurrency }, worker));
+      debug("teamprofiles:prefetch:done", { total: queue.length });
+    },
+    [cache, globalMutate]
+  );
+
+  const matchesKey = date ? buildMatchesByDateKey(date) : null;
+
+  const { data, error, isLoading } = useSWR(matchesKey, fetchJson, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 60_000,
+    keepPreviousData: true,
+  });
 
     useEffect(() => {
       if (!data) return;
@@ -97,6 +132,22 @@
         items: data.items?.length ?? 0,
       });
     }, [data, date]);
+
+    useEffect(() => {
+      if (!matchesKey) return;
+      if (!matches.length) return;
+      let cancelled = false;
+      prefetchTeamProfiles(matches).catch((prefetchError) => {
+        if (cancelled) return;
+        debugError("teamprofiles:prefetch:failure", {
+          key: matchesKey,
+          message: prefetchError?.message,
+        });
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [matchesKey, matches, prefetchTeamProfiles]);
 
     if (error) {
       debugError("matches:error", error);
@@ -143,18 +194,20 @@
     const formatter = useMemo(makeFormatter, []);
     const formatTime = (ts) => (ts ? formatter.format(new Date(ts * 1000)) : "—");
 
+    const matchDetailsKey = selectedMatchId
+      ? buildMatchDetailsKey(selectedMatchId)
+      : null;
+
     const {
       data: matchDetails,
       error: matchError,
       isLoading: isMatchLoading,
-    } = useSWR(
-      selectedMatchId ? `/api/match/${selectedMatchId}` : null,
-      detailFetcher,
-      {
-        shouldRetryOnError: false,
-        revalidateOnFocus: false,
-      }
-    );
+    } = useSWR(matchDetailsKey, fetchJsonAllow404, {
+      shouldRetryOnError: false,
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      revalidateOnReconnect: false,
+    });
 
     useEffect(() => {
       if (!selectedMatchId) return;

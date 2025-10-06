@@ -2,17 +2,8 @@
 
 import { useMemo } from "react";
 import useSWR from "swr";
-
-const fetcher = async (url) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    const message = `HTTP ${response.status}`;
-    const error = new Error(message);
-    error.status = response.status;
-    throw error;
-  }
-  return response.json();
-};
+import { buildLineupsKey } from "@/lib/utils/apiKeys";
+import { fetchJson } from "@/lib/utils/fetchers";
 
 const GOALKEEPER_TOKENS = ["gk", "goalkeeper", "keeper", "målvakt", "portero"];
 const DEFENDER_TOKENS = ["cb", "rb", "lb", "def", "back", "df", "försvar", "defender"];
@@ -416,8 +407,10 @@ export default function Lineups({ match, isLoading, className = "" }) {
     error,
     isLoading: isLineupsLoading,
     mutate,
-  } = useSWR(matchId ? `/api/match/${matchId}/lineups` : null, fetcher, {
+  } = useSWR(matchId ? buildLineupsKey(matchId) : null, fetchJson, {
     revalidateOnFocus: false,
+    revalidateIfStale: false,
+    revalidateOnReconnect: false,
     shouldRetryOnError: false,
   });
 
