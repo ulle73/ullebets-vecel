@@ -66,7 +66,9 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
 
   const prefetchTeamProfiles = useCallback(
     async (matchesToPrefetch) => {
-      if (!Array.isArray(matchesToPrefetch) || !matchesToPrefetch.length) return;
+      if (!Array.isArray(matchesToPrefetch) || !matchesToPrefetch.length) {
+        return;
+      }
 
       const keys = new Set();
       for (const match of matchesToPrefetch) {
@@ -76,12 +78,24 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
         if (awayKey) keys.add(awayKey);
       }
 
-      const queue = Array.from(keys).filter((key) => {
+      if (!keys.size) {
+        return;
+      }
+
+      const queue = [];
+      keys.forEach((key) => {
         const state = cache.get(key);
-        return !(state && state.data !== undefined);
+        const hasCache = Boolean(state && state.data !== undefined);
+        debug("teamprofiles:prefetch:key", { key, hasCache });
+        if (!hasCache) {
+          queue.push(key);
+        }
       });
 
-      if (!queue.length) return;
+      if (!queue.length) {
+        debug("teamprofiles:prefetch:all-cached", { total: keys.size });
+        return;
+      }
 
       debug("teamprofiles:prefetch:start", { total: queue.length });
 
@@ -188,17 +202,33 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     });
   }, [data, date]);
 
+  const prefetchInFlightRef = useRef(Promise.resolve());
+
   useEffect(() => {
-    if (!matchesKey) return;
-    if (!matches.length) return;
+    if (!matchesKey || !matches.length) {
+      prefetchInFlightRef.current = Promise.resolve();
+      return;
+    }
     let cancelled = false;
-    prefetchTeamProfiles(matches).catch((prefetchError) => {
-      if (cancelled) return;
-      debugError("teamprofiles:prefetch:failure", {
-        key: matchesKey,
-        message: prefetchError?.message,
-      });
-    });
+    const basePromise = prefetchTeamProfiles(matches);
+    if (basePromise instanceof Promise) {
+      prefetchInFlightRef.current = basePromise
+        .catch((prefetchError) => {
+          if (cancelled) return;
+          debugError("teamprofiles:prefetch:failure", {
+            key: matchesKey,
+            message: prefetchError?.message,
+          });
+        })
+        .finally(() => {
+          if (!cancelled) {
+            debug("teamprofiles:prefetch:cycle-complete", { key: matchesKey });
+          }
+        });
+    } else {
+      prefetchInFlightRef.current = Promise.resolve();
+    }
+
     return () => {
       cancelled = true;
     };
@@ -327,7 +357,21 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
         payload,
         resolvedId,
       });
-      setSelectedMatchId(resolvedId);
+      const matchForSelection = matches.find((match) => match.id === resolvedId);
+      const completionPromise = matchForSelection
+        ? prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
+            debugError("teamprofiles:prefetch:on-select", {
+              matchId: resolvedId,
+              message: prefetchError?.message,
+            });
+          })
+        : prefetchInFlightRef.current;
+
+      Promise.resolve(completionPromise)
+        .catch(() => {})
+        .finally(() => {
+          setSelectedMatchId(resolvedId);
+        });
     };
 
     const showDetails = Boolean(selectedMatchSummary);

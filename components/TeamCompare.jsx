@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import styles from "./TeamCompare.module.css";
 import {
   buildTeamProfileKeyForMatch,
@@ -329,6 +329,7 @@ function renderRankBadge(node) {
 }
 
 function useTeamProfiles(match) {
+  const { cache } = useSWRConfig();
   const homeKey = useMemo(
     () => buildTeamProfileKeyForMatch(match, "home"),
     [match]
@@ -337,6 +338,20 @@ function useTeamProfiles(match) {
     () => buildTeamProfileKeyForMatch(match, "away"),
     [match]
   );
+
+  useEffect(() => {
+    if (!homeKey && !awayKey) return;
+    const homeState = homeKey ? cache.get(homeKey) : undefined;
+    const awayState = awayKey ? cache.get(awayKey) : undefined;
+    debug("useTeamProfiles:keys", {
+      home: homeKey
+        ? { key: homeKey, hasCache: homeState?.data !== undefined }
+        : null,
+      away: awayKey
+        ? { key: awayKey, hasCache: awayState?.data !== undefined }
+        : null,
+    });
+  }, [cache, homeKey, awayKey]);
 
   const homeSWR = useSWR(homeKey, fetcher, {
     revalidateOnFocus: false,
