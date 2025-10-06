@@ -238,8 +238,8 @@ export default function BacktestPage({ match, className = "" }) {
     const makeTask = ({ label, team, league, matchType }) => {
       if (!team || !matchType) return;
       const url = buildTeamProfileKey({
-        teamName: team,
-        leagueName: league,
+        team,
+        league,
         matchType,
       });
       if (!url) return;

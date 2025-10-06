@@ -417,8 +417,9 @@ function normalizeResponse(raw) {
   return { lineups, confirmed };
 }
 
-export async function GET(_req, context) {
-  const matchId = context?.params?.id;
+export async function GET(_req, contextPromise) {
+  const { params } = await contextPromise;
+  const matchId = params?.id;
   if (!matchId) {
     return new Response("Missing match id", { status: 400 });
   }

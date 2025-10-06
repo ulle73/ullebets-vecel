@@ -4,8 +4,8 @@ const asArray = (v) =>
   Array.isArray(v) ? v :
   (Array.isArray(v?.shots) ? v.shots : []); // om shotmap har form { shots: [...] }
 
-export async function GET(_req, context) {
-  const { params } = context;
+export async function GET(_req, contextPromise) {
+  const { params } = await contextPromise;
   const matchId = params?.id;
   if (!matchId) {
     return new Response("Missing id", { status: 400 });
@@ -44,7 +44,7 @@ export async function GET(_req, context) {
   return new Response(JSON.stringify(res), {
     headers: {
       "content-type": "application/json",
-      "cache-control": "public, s-maxage=60, stale-while-revalidate=300",
+      "cache-control": "public, s-maxage=86400, stale-while-revalidate=86400",
     },
   });
 }
