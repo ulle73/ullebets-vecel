@@ -1,6 +1,3 @@
-// // scripts/fetch-and-import-fixtures.js
-// // Hämtar fixtures för ett datum → sparar JSON → importerar direkt till Mongo (collection: "match-for-date")
-
 // import fs from "fs/promises";
 // import { existsSync } from "fs";
 // import path from "path";
@@ -64,7 +61,34 @@
 // }
 
 // function formatSourceWithKey(source, apiKey) {
-//   return apiKey ? `${source} [${apiKey.slice(0, 6)}…]` : source;
+//   return apiKey ? `${source} [${String(apiKey).slice(0, 6)}…]` : source || "okänd";
+// }
+
+// // summera apiCallStats till { ok, fail } och även per-källa
+// function sumStats(stats = {}) {
+//   let ok = 0, fail = 0;
+//   const perSource = new Map(); // source -> { ok, fail }
+//   for (const [src, obj] of Object.entries(stats)) {
+//     const o = Number(obj?.ok || 0);
+//     const f = Number(obj?.fail || 0);
+//     ok += o; fail += f;
+//     perSource.set(src, { ok: o, fail: f });
+//   }
+//   return { ok, fail, perSource };
+// }
+
+// function diffStats(prev, next) {
+//   const ok = Math.max(0, (next.ok || 0) - (prev.ok || 0));
+//   const fail = Math.max(0, (next.fail || 0) - (prev.fail || 0));
+//   // grov källa: välj den källa som ökade mest i ok+fail
+//   let by = "n/a";
+//   let bestDelta = -1;
+//   for (const [src, cur] of next.perSource.entries()) {
+//     const p = prev.perSource.get(src) || { ok: 0, fail: 0 };
+//     const delta = (cur.ok - p.ok) + (cur.fail - p.fail);
+//     if (delta > bestDelta) { bestDelta = delta; by = src; }
+//   }
+//   return { ok, fail, by };
 // }
 
 // // ---------- main ----------
@@ -78,23 +102,23 @@
 //   }
 //   const dateStr = ymdUTC(targetDate);
 
-//   // Läs ligor/lag (från projektroten – exakt som du önskade)
-//   const leaguesPath = path.resolve(process.cwd(),"data", "leagues-and-teams.json");
+//   // Läs ligor/lag
+//   const leaguesPath = path.resolve(process.cwd(), "data", "leagues-and-teams.json");
 //   if (!existsSync(leaguesPath)) {
-//     console.error("❌ Hittar inte leagues-and-teams.json i projektroten.");
+//     console.error("❌ Hittar inte data/leagues-and-teams.json.");
 //     process.exit(1);
 //   }
 //   const leagues = JSON.parse(await fs.readFile(leaguesPath, "utf-8"));
 //   const categoryPlan = buildCategoryPlan(leagues); // [[categoryId, Set(leagueIds)]...]
 
-//   // RapidAPI keys (samma upplägg)
+//   // RapidAPI keys
 //   const rapidApiKeys = (process.env.RAPIDAPI_KEYS || process.env.RAPIDAPI_KEY || "")
 //     .split(",")
 //     .map((s) => s.trim())
 //     .filter(Boolean);
 //   const rapidApiState = { index: 0, failures: 0 };
 
-//   // Puppeteer för cookies/UA (som i dina scripts)
+//   // Puppeteer (cookies/UA)
 //   const browser = await puppeteer.launch({ headless: "new" });
 //   const page = await browser.newPage();
 //   await page.setUserAgent(
@@ -107,27 +131,34 @@
 //     rapidApiKeys,
 //     rapidApiState,
 //     page,
-//     apiCallStats: {},
+//     apiCallStats: {}, // för att mäta ok/fail per källa
 //     logger: console,
 //   };
 
-//   const aggregatedSources = new Map(); // categoryId -> {source, apiKey}
+//   const aggregatedSources = new Map(); // categoryId|global -> {source, apiKey}
 //   const allMatches = [];
 //   let totalCalls = 0;
 
-//   // Samma beslut: om inga kategorier finns i JSON → tillåt global endpoint
+//   const fetchReports = []; // för detalj-loggning
+
+//   // Om inga kategorier finns i JSON → tillåt global endpoint
 //   const includeGlobalEndpoint = categoryPlan.length === 0;
+
+//   const beforeAll = sumStats(context.apiCallStats);
 
 //   if (categoryPlan.length === 0) {
 //     console.log(`ℹ️ Hämtar matcher för ${dateStr} med global endpoint (inga kategorier i JSON).`);
+
+//     const prev = sumStats(context.apiCallStats);
 //     const scheduled = await fetchScheduledMatches(dateStr, context, {
 //       categoryId: 1,
 //       includeGlobalEndpoint,
 //     });
-//     totalCalls += scheduled?.calls || 0;
+//     const next = sumStats(context.apiCallStats);
+//     const delta = diffStats(prev, next);
 
+//     totalCalls += scheduled?.calls || 0;
 //     const arr = Array.isArray(scheduled?.matches) ? scheduled.matches : [];
-//     console.log(`✅ Global: ${arr.length} matcher (källa: ${formatSourceWithKey(scheduled?.source || "okänd", scheduled?.apiKey || null)})`);
 
 //     const allowedLeagueIds = new Set(
 //       Object.values(leagues)
@@ -139,38 +170,46 @@
 //       : arr;
 
 //     allMatches.push(...filtered);
-//     aggregatedSources.set("global", { source: scheduled?.source || null, apiKey: scheduled?.apiKey || null });
+//     aggregatedSources.set("global", { source: scheduled?.source || delta.by || "okänd", apiKey: scheduled?.apiKey || null });
+
+//     const srcLabel = formatSourceWithKey(scheduled?.source || delta.by, scheduled?.apiKey);
+//     console.log(`✅ Global: matches=${filtered.length}, calls=${scheduled?.calls ?? 0}, ok=${delta.ok}, fail=${delta.fail}, via=${srcLabel}`);
+//     fetchReports.push({ label: "global", matches: filtered.length, calls: scheduled?.calls ?? 0, ok: delta.ok, fail: delta.fail, via: srcLabel });
 //   } else {
 //     console.log(`📅 ${dateStr} – kategorier: ${categoryPlan.map(([c]) => c).join(", ")}`);
 //     for (const [categoryId, leagueSet] of categoryPlan) {
-//       const leagueList = Array.from(leagueSet).join(", ");
-//       console.log(`ℹ️ categoryId ${categoryId} (ligor: ${leagueList})`);
-
+//       const prev = sumStats(context.apiCallStats);
 //       const scheduled = await fetchScheduledMatches(dateStr, context, {
 //         categoryId,
-//         includeGlobalEndpoint, // samma policy
+//         includeGlobalEndpoint,
 //       });
+//       const next = sumStats(context.apiCallStats);
+//       const delta = diffStats(prev, next);
+
 //       totalCalls += scheduled?.calls || 0;
-
 //       const arr = Array.isArray(scheduled?.matches) ? scheduled.matches : [];
-//       console.log(
-//         `✅  categoryId ${categoryId}: ${arr.length} matcher (källa: ${formatSourceWithKey(
-//           scheduled?.source || "okänd",
-//           scheduled?.apiKey || null
-//         )})`
-//       );
-
-//       aggregatedSources.set(categoryId, { source: scheduled?.source || null, apiKey: scheduled?.apiKey || null });
 
 //       const filtered = arr.filter((e) => leagueSet.has(extractEventLeagueId(e)));
 //       allMatches.push(...filtered);
+//       aggregatedSources.set(String(categoryId), { source: scheduled?.source || delta.by || "okänd", apiKey: scheduled?.apiKey || null });
+
+//       const srcLabel = formatSourceWithKey(scheduled?.source || delta.by, scheduled?.apiKey);
+//       console.log(
+//         `✅ categoryId=${categoryId}: matches=${filtered.length}, calls=${scheduled?.calls ?? 0}, ok=${delta.ok}, fail=${delta.fail}, via=${srcLabel}`
+//       );
+//       fetchReports.push({ label: `cat:${categoryId}`, matches: filtered.length, calls: scheduled?.calls ?? 0, ok: delta.ok, fail: delta.fail, via: srcLabel });
 //     }
 //   }
 
 //   await browser.close();
 
-//   console.log(`🎯 Återstår efter filter: ${allMatches.length} matcher.`);
-//   console.log(`📦 Sparar JSON-dump …`);
+//   const afterAll = sumStats(context.apiCallStats);
+//   const totalOk = afterAll.ok - beforeAll.ok;
+//   const totalFail = afterAll.fail - beforeAll.fail;
+
+//   console.log("—".repeat(72));
+//   console.log(`🎯 Totalt efter filter: ${allMatches.length} matcher.`);
+//   console.log(`📦 Sparar JSON …`);
 
 //   const outDir = path.resolve(process.cwd(), "matches-for-date");
 //   await fs.mkdir(outDir, { recursive: true });
@@ -186,18 +225,28 @@
 //     date: dateStr,
 //     savedAt: new Date().toISOString(),
 //     calls: totalCalls,
+//     successes: totalOk,
+//     failures: totalFail,
 //     sources,
 //     matches: allMatches, // exakt "matches"
 //   };
 
 //   await fs.writeFile(outPath, JSON.stringify(payload, null, 2), "utf-8");
 //   console.log(`✅ Sparat: ${outPath}`);
-//   console.log(`ℹ️ Totala API-anrop: ${totalCalls}`);
+//   console.log("—".repeat(72));
+//   console.log("📊 Sammanfattning per fetch:");
+//   for (const r of fetchReports) {
+//     console.log(
+//       `  • ${r.label.padEnd(10)} matches=${String(r.matches).padStart(4)}  calls=${String(r.calls).padStart(3)}  ok=${String(r.ok).padStart(3)}  fail=${String(r.fail).padStart(3)}  via=${r.via}`
+//     );
+//   }
+//   console.log("—".repeat(72));
+//   console.log(`Σ calls=${totalCalls}  ok=${totalOk}  fail=${totalFail}`);
 
 //   // ===== AUTOMATISK IMPORT TILL DB =====
 //   console.log("🗄  Importerar i databasen …");
 //   const DB = process.env.MONGODB_DB || "app";
-//   const COL = "match-for-date"; // <-- enligt önskemål
+//   const COL = "match-for-date"; // önskat namn
 //   const client = await clientPromise;
 //   const col = client.db(DB).collection(COL);
 
@@ -205,6 +254,8 @@
 //     date: payload.date,
 //     savedAt: payload.savedAt,
 //     calls: payload.calls,
+//     successes: payload.successes,
+//     failures: payload.failures,
 //     sources: payload.sources,
 //     matches: Array.isArray(payload.matches) ? payload.matches : [],
 //   };
@@ -229,10 +280,6 @@
 //   process.exit(1);
 // });
 
-
-// scripts/fetch-and-import-fixtures.js
-// Hämtar fixtures för ett datum → sparar JSON → importerar direkt till Mongo (collection: "match-for-date")
-
 import fs from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
@@ -240,6 +287,7 @@ import puppeteer from "puppeteer";
 import { fileURLToPath } from "url";
 import { clientPromise } from "../lib/db.js";
 import { fetchScheduledMatches } from "../rapidApi/scheduled-matches.js";
+import { spawn } from "child_process"; // ← TILLAGT
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -258,7 +306,11 @@ const parseYmdStrict = (s) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
   const [y, m, d] = s.split("-").map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
-  return dt.getUTCFullYear() === y && (dt.getUTCMonth() + 1) === m && dt.getUTCDate() === d ? dt : null;
+  return dt.getUTCFullYear() === y &&
+    dt.getUTCMonth() + 1 === m &&
+    dt.getUTCDate() === d
+    ? dt
+    : null;
 };
 
 const toNumber = (v) => {
@@ -271,7 +323,8 @@ function buildCategoryPlan(leaguesJson) {
   const map = new Map();
   for (const [, info] of Object.entries(leaguesJson || {})) {
     const catId = toNumber(info?.categoryId);
-    const leagueId = toNumber(info?.leagueId) ?? toNumber(info?.uniqueTournamentId);
+    const leagueId =
+      toNumber(info?.leagueId) ?? toNumber(info?.uniqueTournamentId);
     if (catId === null || leagueId === null) continue;
     if (!map.has(catId)) map.set(catId, new Set());
     map.get(catId).add(leagueId);
@@ -296,17 +349,21 @@ function extractEventLeagueId(e) {
 }
 
 function formatSourceWithKey(source, apiKey) {
-  return apiKey ? `${source} [${String(apiKey).slice(0, 6)}…]` : source || "okänd";
+  return apiKey
+    ? `${source} [${String(apiKey).slice(0, 6)}…]`
+    : source || "okänd";
 }
 
 // summera apiCallStats till { ok, fail } och även per-källa
 function sumStats(stats = {}) {
-  let ok = 0, fail = 0;
+  let ok = 0,
+    fail = 0;
   const perSource = new Map(); // source -> { ok, fail }
   for (const [src, obj] of Object.entries(stats)) {
     const o = Number(obj?.ok || 0);
     const f = Number(obj?.fail || 0);
-    ok += o; fail += f;
+    ok += o;
+    fail += f;
     perSource.set(src, { ok: o, fail: f });
   }
   return { ok, fail, perSource };
@@ -320,16 +377,58 @@ function diffStats(prev, next) {
   let bestDelta = -1;
   for (const [src, cur] of next.perSource.entries()) {
     const p = prev.perSource.get(src) || { ok: 0, fail: 0 };
-    const delta = (cur.ok - p.ok) + (cur.fail - p.fail);
-    if (delta > bestDelta) { bestDelta = delta; by = src; }
+    const delta = cur.ok - p.ok + (cur.fail - p.fail);
+    if (delta > bestDelta) {
+      bestDelta = delta;
+      by = src;
+    }
   }
   return { ok, fail, by };
+}
+
+// —— TILLAGT: kör samma script för ett specifikt datum (child process) ——
+async function runSelfForDate(dateStr) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [__filename, dateStr], {
+      stdio: "inherit",
+    });
+    child.on("exit", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Child exited with code ${code} for ${dateStr}`));
+    });
+    child.on("error", reject);
+  });
 }
 
 // ---------- main ----------
 async function main() {
   const args = process.argv.slice(2);
   const dateArg = args[0]; // "YYYY-MM-DD" (valfritt)
+
+  // —— TILLAGT: stöd för intervall "YYYY-MM-DD-YYYY-MM-DD" ——
+  if (dateArg && /^\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}$/.test(dateArg)) {
+    const startStr = dateArg.slice(0, 10);
+    const endStr = dateArg.slice(11);
+    const start = parseYmdStrict(startStr);
+    const end = parseYmdStrict(endStr);
+    if (!start || !end || start > end) {
+      console.error(
+        "❌ Ogiltigt intervall. Använd YYYY-MM-DD-YYYY-MM-DD (start ≤ slut)."
+      );
+      process.exit(1);
+    }
+    // Loopa dagar inkl. slutdatum
+    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+      const s = ymdUTC(d);
+      console.log(
+        `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+      );
+      console.log(`▶ Kör datum: ${s}`);
+      await runSelfForDate(s);
+    }
+    return; // klart (allt redan skickat till DB av barnprocesserna)
+  }
+
   const targetDate = dateArg ? parseYmdStrict(dateArg) : new Date(); // default: idag (UTC)
   if (!targetDate) {
     console.error("❌ Ogiltigt datum. Använd YYYY-MM-DD.");
@@ -338,7 +437,11 @@ async function main() {
   const dateStr = ymdUTC(targetDate);
 
   // Läs ligor/lag
-  const leaguesPath = path.resolve(process.cwd(), "data", "leagues-and-teams.json");
+  const leaguesPath = path.resolve(
+    process.cwd(),
+    "data",
+    "leagues-and-teams.json"
+  );
   if (!existsSync(leaguesPath)) {
     console.error("❌ Hittar inte data/leagues-and-teams.json.");
     process.exit(1);
@@ -347,7 +450,11 @@ async function main() {
   const categoryPlan = buildCategoryPlan(leagues); // [[categoryId, Set(leagueIds)]...]
 
   // RapidAPI keys
-  const rapidApiKeys = (process.env.RAPIDAPI_KEYS || process.env.RAPIDAPI_KEY || "")
+  const rapidApiKeys = (
+    process.env.RAPIDAPI_KEYS ||
+    process.env.RAPIDAPI_KEY ||
+    ""
+  )
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -359,7 +466,9 @@ async function main() {
   await page.setUserAgent(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36"
   );
-  await page.goto("https://www.sofascore.com/", { waitUntil: "domcontentloaded" });
+  await page.goto("https://www.sofascore.com/", {
+    waitUntil: "domcontentloaded",
+  });
   await sleep(500);
 
   const context = {
@@ -382,7 +491,9 @@ async function main() {
   const beforeAll = sumStats(context.apiCallStats);
 
   if (categoryPlan.length === 0) {
-    console.log(`ℹ️ Hämtar matcher för ${dateStr} med global endpoint (inga kategorier i JSON).`);
+    console.log(
+      `ℹ️ Hämtar matcher för ${dateStr} med global endpoint (inga kategorier i JSON).`
+    );
 
     const prev = sumStats(context.apiCallStats);
     const scheduled = await fetchScheduledMatches(dateStr, context, {
@@ -405,13 +516,32 @@ async function main() {
       : arr;
 
     allMatches.push(...filtered);
-    aggregatedSources.set("global", { source: scheduled?.source || delta.by || "okänd", apiKey: scheduled?.apiKey || null });
+    aggregatedSources.set("global", {
+      source: scheduled?.source || delta.by || "okänd",
+      apiKey: scheduled?.apiKey || null,
+    });
 
-    const srcLabel = formatSourceWithKey(scheduled?.source || delta.by, scheduled?.apiKey);
-    console.log(`✅ Global: matches=${filtered.length}, calls=${scheduled?.calls ?? 0}, ok=${delta.ok}, fail=${delta.fail}, via=${srcLabel}`);
-    fetchReports.push({ label: "global", matches: filtered.length, calls: scheduled?.calls ?? 0, ok: delta.ok, fail: delta.fail, via: srcLabel });
+    const srcLabel = formatSourceWithKey(
+      scheduled?.source || delta.by,
+      scheduled?.apiKey
+    );
+    console.log(
+      `✅ Global: matches=${filtered.length}, calls=${
+        scheduled?.calls ?? 0
+      }, ok=${delta.ok}, fail=${delta.fail}, via=${srcLabel}`
+    );
+    fetchReports.push({
+      label: "global",
+      matches: filtered.length,
+      calls: scheduled?.calls ?? 0,
+      ok: delta.ok,
+      fail: delta.fail,
+      via: srcLabel,
+    });
   } else {
-    console.log(`📅 ${dateStr} – kategorier: ${categoryPlan.map(([c]) => c).join(", ")}`);
+    console.log(
+      `📅 ${dateStr} – kategorier: ${categoryPlan.map(([c]) => c).join(", ")}`
+    );
     for (const [categoryId, leagueSet] of categoryPlan) {
       const prev = sumStats(context.apiCallStats);
       const scheduled = await fetchScheduledMatches(dateStr, context, {
@@ -424,15 +554,32 @@ async function main() {
       totalCalls += scheduled?.calls || 0;
       const arr = Array.isArray(scheduled?.matches) ? scheduled.matches : [];
 
-      const filtered = arr.filter((e) => leagueSet.has(extractEventLeagueId(e)));
-      allMatches.push(...filtered);
-      aggregatedSources.set(String(categoryId), { source: scheduled?.source || delta.by || "okänd", apiKey: scheduled?.apiKey || null });
-
-      const srcLabel = formatSourceWithKey(scheduled?.source || delta.by, scheduled?.apiKey);
-      console.log(
-        `✅ categoryId=${categoryId}: matches=${filtered.length}, calls=${scheduled?.calls ?? 0}, ok=${delta.ok}, fail=${delta.fail}, via=${srcLabel}`
+      const filtered = arr.filter((e) =>
+        leagueSet.has(extractEventLeagueId(e))
       );
-      fetchReports.push({ label: `cat:${categoryId}`, matches: filtered.length, calls: scheduled?.calls ?? 0, ok: delta.ok, fail: delta.fail, via: srcLabel });
+      allMatches.push(...filtered);
+      aggregatedSources.set(String(categoryId), {
+        source: scheduled?.source || delta.by || "okänd",
+        apiKey: scheduled?.apiKey || null,
+      });
+
+      const srcLabel = formatSourceWithKey(
+        scheduled?.source || delta.by,
+        scheduled?.apiKey
+      );
+      console.log(
+        `✅ categoryId=${categoryId}: matches=${filtered.length}, calls=${
+          scheduled?.calls ?? 0
+        }, ok=${delta.ok}, fail=${delta.fail}, via=${srcLabel}`
+      );
+      fetchReports.push({
+        label: `cat:${categoryId}`,
+        matches: filtered.length,
+        calls: scheduled?.calls ?? 0,
+        ok: delta.ok,
+        fail: delta.fail,
+        via: srcLabel,
+      });
     }
   }
 
@@ -472,7 +619,11 @@ async function main() {
   console.log("📊 Sammanfattning per fetch:");
   for (const r of fetchReports) {
     console.log(
-      `  • ${r.label.padEnd(10)} matches=${String(r.matches).padStart(4)}  calls=${String(r.calls).padStart(3)}  ok=${String(r.ok).padStart(3)}  fail=${String(r.fail).padStart(3)}  via=${r.via}`
+      `  • ${r.label.padEnd(10)} matches=${String(r.matches).padStart(
+        4
+      )}  calls=${String(r.calls).padStart(3)}  ok=${String(r.ok).padStart(
+        3
+      )}  fail=${String(r.fail).padStart(3)}  via=${r.via}`
     );
   }
   console.log("—".repeat(72));
@@ -505,10 +656,25 @@ async function main() {
   await col.createIndex({ _id: 1 });
   await col.createIndex({ "full.0.date": 1 });
   await col.createIndex({ "full.0.matches.id": 1 });
+  
+  
+  try {
+    await page.close();
+  } catch {}
 
   console.log(`✅ Import klart: ${DB}.${COL} (_id=${payload.date})`);
   await client.close(true);
 }
+
+
+setTimeout(() => {
+  const hs = process._getActiveHandles();
+  console.log(
+    "🧵 Active handles:",
+    hs.map((h) => h && h.constructor && h.constructor.name)
+  );
+}, 1000);
+
 
 main().catch((e) => {
   console.error("❌ fetch-and-import-fixtures error:", e);
