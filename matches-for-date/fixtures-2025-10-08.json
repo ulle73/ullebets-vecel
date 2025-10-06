@@ -1,7 +1,7 @@
 {
   "date": "2025-10-08",
-  "savedAt": "2025-10-06T19:56:33.916Z",
-  "calls": 14,
+  "savedAt": "2025-10-06T21:20:18.975Z",
+  "calls": 15,
   "successes": 0,
   "failures": 0,
   "sources": [
@@ -28,12 +28,12 @@
     {
       "categoryId": "31",
       "source": "scheduled-matches:rapid",
-      "apiKey": "d26361d6a1msh55def5349c5e57dp1eaee1jsn74e247833a6e"
+      "apiKey": "adb090d6e6msh09b5af9b62cab53p18ec97jsnf66f393501ab"
     },
     {
       "categoryId": "32",
       "source": "scheduled-matches:rapid",
-      "apiKey": "adb090d6e6msh09b5af9b62cab53p18ec97jsnf66f393501ab"
+      "apiKey": "9ccda5724cmsh62c63c5c9b7bbb4p1a2637jsnfbfacc616c38"
     }
   ],
   "matches": [
@@ -228,200 +228,6 @@
       },
       "slug": "atletico-mineiro-sport-recife",
       "startTimestamp": 1759960800,
-      "finalResultOnly": false,
-      "feedLocked": true,
-      "isEditor": false
-    },
-    {
-      "tournament": {
-        "name": "Brasileirão Betano",
-        "slug": "brasileirao-serie-a",
-        "category": {
-          "name": "Brazil",
-          "slug": "brazil",
-          "sport": {
-            "name": "Football",
-            "slug": "football",
-            "id": 1
-          },
-          "id": 13,
-          "country": {
-            "alpha2": "BR",
-            "alpha3": "BRA",
-            "name": "Brazil",
-            "slug": "brazil"
-          },
-          "flag": "brazil",
-          "alpha2": "BR",
-          "fieldTranslations": {
-            "nameTranslation": {
-              "ar": "البرازيل"
-            },
-            "shortNameTranslation": {}
-          }
-        },
-        "uniqueTournament": {
-          "name": "Brasileirão Betano",
-          "slug": "brasileirao-serie-a",
-          "primaryColorHex": "#C7FF00",
-          "secondaryColorHex": "#969696",
-          "category": {
-            "name": "Brazil",
-            "slug": "brazil",
-            "sport": {
-              "name": "Football",
-              "slug": "football",
-              "id": 1
-            },
-            "id": 13,
-            "country": {
-              "alpha2": "BR",
-              "alpha3": "BRA",
-              "name": "Brazil",
-              "slug": "brazil"
-            },
-            "flag": "brazil",
-            "alpha2": "BR",
-            "fieldTranslations": {
-              "nameTranslation": {
-                "ar": "البرازيل"
-              },
-              "shortNameTranslation": {}
-            }
-          },
-          "userCount": 315595,
-          "id": 325,
-          "country": {},
-          "hasPerformanceGraphFeature": true,
-          "hasEventPlayerStatistics": true,
-          "displayInverseHomeAwayTeams": false,
-          "fieldTranslations": {
-            "nameTranslation": {
-              "ar": "بطولة بيتانو البرازيلية",
-              "hi": "ब्राज़ीलेइराओ बेटानो",
-              "bn": "ব্রাসিলিরাও বেতানো"
-            },
-            "shortNameTranslation": {}
-          }
-        },
-        "priority": 505,
-        "isGroup": false,
-        "isLive": false,
-        "id": 83,
-        "fieldTranslations": {
-          "nameTranslation": {
-            "ar": "الدوري البرازيلي الممتاز بيتانو",
-            "hi": "ब्रासिलेइराओ बेटानो",
-            "bn": "ব্রাসিলিরাও বেতানো"
-          },
-          "shortNameTranslation": {}
-        }
-      },
-      "season": {
-        "name": "Brasileiro Serie A 2025",
-        "year": "2025",
-        "editor": false,
-        "id": 72034
-      },
-      "roundInfo": {
-        "round": 13
-      },
-      "customId": "lOsHOi",
-      "status": {
-        "code": 0,
-        "description": "Not started",
-        "type": "notstarted"
-      },
-      "homeTeam": {
-        "id": 21982,
-        "country": {
-          "alpha2": "BR",
-          "alpha3": "BRA",
-          "name": "Brazil",
-          "slug": "brazil"
-        },
-        "name": "Mirassol",
-        "slug": "mirassol",
-        "shortName": "Mirassol",
-        "gender": "M",
-        "sport": {
-          "name": "Football",
-          "slug": "football",
-          "id": 1
-        },
-        "userCount": 56549,
-        "nameCode": "MIR",
-        "disabled": false,
-        "national": false,
-        "type": 0,
-        "subTeams": [],
-        "teamColors": {
-          "primary": "#e8c728",
-          "secondary": "#174c30",
-          "text": "#174c30"
-        },
-        "fieldTranslations": {
-          "nameTranslation": {
-            "ar": "ميراسول"
-          },
-          "shortNameTranslation": {
-            "ar": "ميراسول"
-          }
-        }
-      },
-      "awayTeam": {
-        "id": 1961,
-        "country": {
-          "alpha2": "BR",
-          "alpha3": "BRA",
-          "name": "Brazil",
-          "slug": "brazil"
-        },
-        "name": "Fluminense",
-        "slug": "fluminense",
-        "shortName": "Fluminense",
-        "gender": "M",
-        "sport": {
-          "name": "Football",
-          "slug": "football",
-          "id": 1
-        },
-        "userCount": 346141,
-        "nameCode": "FLU",
-        "disabled": false,
-        "national": false,
-        "type": 0,
-        "subTeams": [],
-        "teamColors": {
-          "primary": "#660000",
-          "secondary": "#006633",
-          "text": "#006633"
-        },
-        "fieldTranslations": {
-          "nameTranslation": {
-            "ar": "فلومينينسي",
-            "ru": "Флуминенсе"
-          },
-          "shortNameTranslation": {
-            "ar": "فلومينينسي"
-          }
-        }
-      },
-      "homeScore": {},
-      "awayScore": {},
-      "time": {},
-      "changes": {
-        "changeTimestamp": 0
-      },
-      "hasGlobalHighlights": false,
-      "crowdsourcingDataDisplayEnabled": false,
-      "id": 14689171,
-      "varInProgress": {
-        "homeTeam": false,
-        "awayTeam": false
-      },
-      "slug": "mirassol-fluminense",
-      "startTimestamp": 1759968000,
       "finalResultOnly": false,
       "feedLocked": true,
       "isEditor": false
