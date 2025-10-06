@@ -456,13 +456,12 @@ function normalizeAliasText(value) {
 
 function createAliasList(teamName) {
   const normalized = normalizeTeamName(teamName);
-  return Array.from(
-    new Set(
-      getTeamAliases(normalized)
-        .map((alias) => normalizeAliasText(alias))
-        .filter(Boolean)
-    )
-  );
+  const aliases = getTeamAliases(normalized);
+  const normalizedAliases = aliases
+    .concat(normalized ? [normalized] : [])
+    .map((alias) => normalizeAliasText(alias))
+    .filter(Boolean);
+  return Array.from(new Set(normalizedAliases));
 }
 
 function createAliasContext(homeTeam, awayTeam) {
@@ -488,17 +487,47 @@ function inferStatKey(name = "") {
   return null;
 }
 
-function inferScope(name = "", aliasContext = EMPTY_ALIAS_CONTEXT) {
+function inferScope(market = {}, aliasContext = EMPTY_ALIAS_CONTEXT) {
+  const name =
+    market?.name ?? market?.title ?? market?.marketName ?? market?.label ?? "";
+
   if (/home/i.test(name)) return "home";
   if (/away/i.test(name)) return "away";
+
+  const criterionTexts = [
+    market?.criterion?.label,
+    market?.criterion?.abbreviation,
+    market?.criterion?.name,
+  ];
+
   if (includesAlias(name, aliasContext.homeAliases)) return "home";
   if (includesAlias(name, aliasContext.awayAliases)) return "away";
+
+  if (criterionTexts.some((value) => includesAlias(value, aliasContext.homeAliases))) {
+    return "home";
+  }
+  if (criterionTexts.some((value) => includesAlias(value, aliasContext.awayAliases))) {
+    return "away";
+  }
+
   return "total";
 }
 
-function inferPeriod(name = "") {
-  if (/1st|first half|första halvlek/i.test(name)) return "1ST";
-  if (/2nd|second half|andra halvlek/i.test(name)) return "2ND";
+function inferPeriod(market = {}) {
+  const name =
+    market?.name ?? market?.title ?? market?.marketName ?? market?.label ?? "";
+  const criterionTexts = [
+    market?.criterion?.label,
+    market?.criterion?.abbreviation,
+    market?.criterion?.name,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const text = `${name} ${criterionTexts}`.trim();
+
+  if (/1st|first half|första halvlek/i.test(text)) return "1ST";
+  if (/2nd|second half|andra halvlek/i.test(text)) return "2ND";
   return "ALL";
 }
 
@@ -541,19 +570,23 @@ function parseNumeric(value) {
 
 function parseLineFromText(value) {
   if (value == null) return null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
   if (typeof value === "string") {
-    // Ignorera 1/2 som kommer från "1st/2nd/first/second"
     if (/(^|\b)(1st|2nd|first|second)\b/i.test(value)) return null;
 
-    const m = value.match(/(\d+(?:[.,]\d+)?)/);
-    if (m) {
-      const parsed = Number.parseFloat(m[1].replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : null;
+    const match = value.match(/[-+]?\d+(?:[.,]\d+)?/);
+    if (match) {
+      const parsed = Number.parseFloat(match[0].replace(",", "."));
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
     }
+
     const numeric = Number.parseFloat(value.replace(",", "."));
     return Number.isFinite(numeric) ? numeric : null;
   }
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
   return null;
 }
 
@@ -710,6 +743,7 @@ function resolveScopeForOutcome(
     market?.marketName ||
     market?.criterion?.label ||
     market?.criterion?.abbreviation ||
+    market?.criterion?.name ||
     "";
 
   const {
@@ -739,6 +773,18 @@ function resolveScopeForOutcome(
   if (includesAlias(name, homeAliases)) return "home";
   if (includesAlias(name, awayAliases)) return "away";
 
+  const criterionTexts = [
+    market?.criterion?.label,
+    market?.criterion?.abbreviation,
+    market?.criterion?.name,
+  ];
+  if (criterionTexts.some((value) => includesAlias(value, homeAliases))) {
+    return "home";
+  }
+  if (criterionTexts.some((value) => includesAlias(value, awayAliases))) {
+    return "away";
+  }
+
   // 3) Fallback: outcome-fält (ibland skriver feeden Home/Away där)
   const candidates = [
     outcome?.label,
@@ -746,6 +792,7 @@ function resolveScopeForOutcome(
     outcome?.participant, // ofta "N/A" här, men testa ändå
     outcome?.outcome,
     outcome?.type,
+    outcome?.team,
   ];
   if (candidates.some((v) => includesAlias(v, homeAliases))) return "home";
   if (candidates.some((v) => includesAlias(v, awayAliases))) return "away";
@@ -760,8 +807,8 @@ function mapFromMarkets(markets = [], aliasContext = EMPTY_ALIAS_CONTEXT) {
     const name = market.name ?? market.title ?? market.marketName ?? "";
     const statKey = inferStatKey(name);
     if (!statKey) continue;
-    const period = inferPeriod(name);
-    const baseScope = inferScope(name, aliasContext);
+    const period = inferPeriod(market);
+    const baseScope = inferScope(market, aliasContext);
     const outcomes = market.outcomes ?? market.selections ?? [];
     const groupedByScope = {};
 
