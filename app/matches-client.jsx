@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import LeagueTables from "@/components/LeagueTables";
 import TeamCompare from "@/components/TeamCompare";
+import DayInsights from "@/components/DayInsights";
 import Lineups from "@/components/Lineups";
 import BacktestPage from "@/components/BacktestPage";
 import { normalizeMatch } from "@/components/LeagueTable";
@@ -46,6 +47,7 @@ function makeFormatter() {
 export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const [date, setDate] = useState(defaultDate);
   const [selectedMatchId, setSelectedMatchId] = useState(null);
+  const [teamProfilesVersion, setTeamProfilesVersion] = useState(0);
   const { cache, mutate: globalMutate } = useSWRConfig();
   const fallbackRef = useRef(initialFallback);
 
@@ -114,6 +116,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
               revalidate: false,
               populateCache: true,
             });
+            setTeamProfilesVersion((prev) => prev + 1);
           } catch (prefetchError) {
             debugError("teamprofiles:prefetch:error", {
               key,
@@ -126,7 +129,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
       await Promise.all(Array.from({ length: concurrency }, worker));
       debug("teamprofiles:prefetch:done", { total: queue.length });
     },
-    [cache, globalMutate]
+    [cache, globalMutate, setTeamProfilesVersion]
   );
 
   const matchesKey = date ? buildMatchesByDateKey(date) : null;
@@ -401,11 +404,19 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
               matchesCount={matches.length}
             />
 
-            <TeamCompare
-              match={mergedMatch}
-              isLoading={isMatchLoading}
-              error={matchError}
+            <DayInsights
+              date={date}
+              items={items}
+              profilesVersion={teamProfilesVersion}
             />
+
+            {showDetails ? (
+              <TeamCompare
+                match={mergedMatch}
+                isLoading={isMatchLoading}
+                error={matchError}
+              />
+            ) : null}
 
             {showDetails ? (
               <Lineups match={mergedMatch} isLoading={isMatchLoading} />

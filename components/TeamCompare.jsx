@@ -34,7 +34,7 @@ const fetcher = async (url) => {
   }
 };
 
-const PROFILE_STATS = [
+export const PROFILE_STATS = [
   { key: "expectedGoals", label: "Expected Goals" },
   { key: "totalShotsOnGoal", label: "Total Shots" },
   { key: "shotsOnGoal", label: "Shots on Target" },
@@ -93,7 +93,7 @@ const NUMBER_FORMATTERS = {
   }),
 };
 
-function formatValue(value, { isPercentage = false } = {}) {
+export function formatValue(value, { isPercentage = false } = {}) {
   if (value == null || Number.isNaN(value)) {
     return "—";
   }
