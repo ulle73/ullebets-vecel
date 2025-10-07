@@ -33,6 +33,18 @@ const PERIODS = [
   { value: "2ND", label: "Andra halvlek" },
 ];
 
+const PERIOD_FILTERS = [
+  { value: "any", label: "Alla perioder" },
+  ...PERIODS,
+];
+
+const SCOPE_FILTERS = [
+  { value: "all", label: "Alla" },
+  { value: "total", label: "Totalt" },
+  { value: "home", label: "Hemmalaget" },
+  { value: "away", label: "Bortalaget" },
+];
+
 /* -------------------------------- Helpers -------------------------------- */
 
 const toNum = (v) => {
@@ -79,6 +91,17 @@ function normalizePairScore(avgPair, leagueMax, mode) {
   if (mode === "over") raw = (max - s) / (max - min); // lägre medelpar bättre
   else raw = (s - min) / (max - min); // högre medelpar bättre
   return Math.round(raw * 1000) / 10; // 1 decimal
+}
+
+function adjustSinglePairForComparison(pairSum, leagueMax) {
+  if (!Number.isFinite(pairSum)) return null;
+  const L = toNum(leagueMax) ?? 20;
+  const mean = L + 1;
+  const adjusted = mean + (pairSum - mean) / Math.SQRT2;
+  const min = 2;
+  const max = 2 * L;
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  return clamp(adjusted, min, max);
 }
 
 function badgeForAvgPair(avgPair, leagueMax, mode) {
@@ -147,10 +170,21 @@ function RowAvg({ r, mode }) {
   const ha = r.homePair.againstValue != null ? formatStatValue(r.statKey, r.homePair.againstValue) : "—";
   const af = r.awayPair.forValue != null ? formatStatValue(r.statKey, r.awayPair.forValue) : "—";
   const aa = r.awayPair.againstValue != null ? formatStatValue(r.statKey, r.awayPair.againstValue) : "—";
-  const denom =
-    r.leagueMax && mode === "under"
-      ? `${r.avgPair.toFixed(2)}/${(2 * r.leagueMax).toFixed(0)}`
-      : r.avgPair.toFixed(2);
+
+  const highlightHome = r.primaryPair === "home" || r.primaryPair === "both";
+  const highlightAway = r.primaryPair === "away" || r.primaryPair === "both";
+
+  const decimals = r.scope === "total" ? 2 : 0;
+  const baseValue = Number.isFinite(r.basisValue) ? r.basisValue : null;
+  const basisDisplay = baseValue == null
+    ? "—"
+    : mode === "under" && r.leagueMax
+      ? `${baseValue.toFixed(decimals)}/${(2 * r.leagueMax).toFixed(0)}`
+      : baseValue.toFixed(decimals);
+  const adjustedDisplay =
+    r.scope !== "total" && Number.isFinite(r.scoreBasis)
+      ? r.scoreBasis.toFixed(1)
+      : null;
 
   return (
     <li className="flex items-start justify-between rounded border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm">
@@ -166,6 +200,9 @@ function RowAvg({ r, mode }) {
           <span>
             {r.statLabel} · {r.period}
           </span>
+          <span className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+            {r.scopeLabel}
+          </span>
           {r.leagueName ? (
             <span className="rounded bg-gray-100 px-2 py-0.5">{r.leagueName}</span>
           ) : null}
@@ -174,17 +211,20 @@ function RowAvg({ r, mode }) {
           ) : null}
         </div>
 
-        <div className="mt-1 text-[11px] text-gray-600">
-          <div>
-            H-par: FOR <b>#{r.homePair.forRank}</b> ({hf}) + AGAINST{" "}
-            <b>#{r.homePair.againstRank}</b> ({ha}) = <b>{r.homePair.sum}</b>
+        <div className="mt-1 space-y-0.5 text-[11px] text-gray-600">
+          <div className={highlightHome ? "font-semibold text-gray-900" : undefined}>
+            H-par: FOR <b>#{r.homePair.forRank}</b> ({hf}) + AGAINST <b>#{r.homePair.againstRank}</b> ({ha}) = <b>{r.homePair.sum}</b>
+          </div>
+          <div className={highlightAway ? "font-semibold text-gray-900" : undefined}>
+            B-par: FOR <b>#{r.awayPair.forRank}</b> ({af}) + AGAINST <b>#{r.awayPair.againstRank}</b> ({aa}) = <b>{r.awayPair.sum}</b>
           </div>
           <div>
-            B-par: FOR <b>#{r.awayPair.forRank}</b> ({af}) + AGAINST{" "}
-            <b>#{r.awayPair.againstRank}</b> ({aa}) = <b>{r.awayPair.sum}</b>
-          </div>
-          <div>
-            Medelpar: <b>{denom}</b>
+            {r.basisLabel}: <b>{basisDisplay}</b>
+            {adjustedDisplay ? (
+              <span className="ml-2 text-[10px] font-normal text-gray-500">
+                (justerad för total-jämförelse: {adjustedDisplay})
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -200,7 +240,8 @@ function RowAvg({ r, mode }) {
 
 export default function BestMatchups({ date, items, profilesVersion = 0 }) {
   const { cache } = useSWRConfig();
-  const [period, setPeriod] = useState(PERIODS[0].value);
+  const [periodFilter, setPeriodFilter] = useState(PERIOD_FILTERS[0].value);
+  const [scopeFilter, setScopeFilter] = useState(SCOPE_FILTERS[0].value);
   const [leagueFilter, setLeagueFilter] = useState("all");
   const [onlyTopBadges, setOnlyTopBadges] = useState(false);
 
@@ -282,64 +323,105 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
       const leagueMax = toNum(leagueSizeMap.get(lgKey)) ?? 20;
 
       for (const { key: statKey, label } of STATS_FOR_VIEW) {
-        const hf = readRank(p.home.profile, "for", statKey, period);
-        const ha = readRank(p.home.profile, "against", statKey, period);
-        const af = readRank(p.away.profile, "for", statKey, period);
-        const aa = readRank(p.away.profile, "against", statKey, period);
-        if (![hf, ha, af, aa].every(Number.isFinite)) continue;
+        for (const { value: periodKey } of PERIODS) {
+          const hf = readRank(p.home.profile, "for", statKey, periodKey);
+          const ha = readRank(p.home.profile, "against", statKey, periodKey);
+          const af = readRank(p.away.profile, "for", statKey, periodKey);
+          const aa = readRank(p.away.profile, "against", statKey, periodKey);
+          if (![hf, ha, af, aa].every(Number.isFinite)) continue;
 
-        // två par
-        const sumHome = hf + aa; // H_for + A_against
-        const sumAway = af + ha; // A_for + H_against
-        const avgPair = (sumHome + sumAway) / 2;
+          const sumHome = hf + aa;
+          const sumAway = af + ha;
+          const avgPair = (sumHome + sumAway) / 2;
 
-        const overScore = normalizePairScore(avgPair, leagueMax, "over");
-        const underScore = normalizePairScore(avgPair, leagueMax, "under");
-        const overBadge = badgeForAvgPair(avgPair, leagueMax, "over");
-        const underBadge = badgeForAvgPair(avgPair, leagueMax, "under");
+          const rowCommon = {
+            matchId: p.matchId,
+            leagueName: p.leagueName,
+            statKey,
+            statLabel: label,
+            period: periodKey,
+            leagueMax,
+            matchLabel: `${p.home.name} vs ${p.away.name}`,
+            homePair: {
+              forRank: hf,
+              forValue: readValue(p.home.profile, "for", statKey, periodKey),
+              againstRank: aa,
+              againstValue: readValue(p.away.profile, "against", statKey, periodKey),
+              sum: sumHome,
+            },
+            awayPair: {
+              forRank: af,
+              forValue: readValue(p.away.profile, "for", statKey, periodKey),
+              againstRank: ha,
+              againstValue: readValue(p.home.profile, "against", statKey, periodKey),
+              sum: sumAway,
+            },
+          };
 
-        const rowCommon = {
-          matchId: p.matchId,
-          leagueName: p.leagueName,
-          statKey,
-          statLabel: label,
-          period,
-          leagueMax,
-          matchLabel: `${p.home.name} vs ${p.away.name}`,
-          avgPair,
-          homePair: {
-            forRank: hf,
-            forValue: readValue(p.home.profile, "for", statKey, period),
-            againstRank: aa,
-            againstValue: readValue(p.away.profile, "against", statKey, period),
-            sum: sumHome,
-          },
-          awayPair: {
-            forRank: af,
-            forValue: readValue(p.away.profile, "for", statKey, period),
-            againstRank: ha,
-            againstValue: readValue(p.home.profile, "against", statKey, period),
-            sum: sumAway,
-          },
-        };
+          const pushRows = (
+            scope,
+            basisValue,
+            basisLabel,
+            scopeLabel,
+            primaryPair,
+            scoreBasisOverride = null,
+          ) => {
+            const scoreBasis =
+              scope === "total"
+                ? basisValue
+                : scoreBasisOverride ?? adjustSinglePairForComparison(basisValue, leagueMax);
+            const overScore = normalizePairScore(scoreBasis, leagueMax, "over");
+            const underScore = normalizePairScore(scoreBasis, leagueMax, "under");
+            const overBadge = badgeForAvgPair(scoreBasis, leagueMax, "over");
+            const underBadge = badgeForAvgPair(scoreBasis, leagueMax, "under");
 
-        accOver.push({ ...rowCommon, score: overScore, badge: overBadge });
-        accUnder.push({ ...rowCommon, score: underScore, badge: underBadge });
+            const shared = {
+              ...rowCommon,
+              scope,
+              scopeLabel,
+              basisValue,
+              scoreBasis,
+              basisLabel,
+              primaryPair,
+            };
+
+            accOver.push({ ...shared, score: overScore, badge: overBadge });
+            accUnder.push({ ...shared, score: underScore, badge: underBadge });
+          };
+
+          pushRows("total", avgPair, "Medelpar", "Totalt", "both");
+          pushRows("home", sumHome, "Parsumma", `Hemmalag – ${p.home.name}`, "home");
+          pushRows("away", sumAway, "Parsumma", `Bortalag – ${p.away.name}`, "away");
+        }
       }
     }
 
-    // filtrering
     const byLeague = (r) => leagueFilter === "all" || r.leagueName === leagueFilter;
     const byBadge =
       (r) =>
         !onlyTopBadges ||
         (r.badge && (r.badge.tone === "perfect" || r.badge.tone === "almost"));
+    const byScope = (r) => scopeFilter === "all" || r.scope === scopeFilter;
+    const byPeriod = (r) => periodFilter === "any" || r.period === periodFilter;
 
-    const over = accOver.filter((r) => byLeague(r) && byBadge(r)).sort((a, b) => b.score - a.score).slice(0, 20);
-    const under = accUnder.filter((r) => byLeague(r) && byBadge(r)).sort((a, b) => b.score - a.score).slice(0, 20);
+    const over = accOver
+      .filter((r) => byLeague(r) && byBadge(r) && byScope(r) && byPeriod(r))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20);
+    const under = accUnder
+      .filter((r) => byLeague(r) && byBadge(r) && byScope(r) && byPeriod(r))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20);
 
     return { overRows: over, underRows: under };
-  }, [pairs, period, leagueSizeMap, leagueFilter, onlyTopBadges]);
+  }, [
+    pairs,
+    leagueSizeMap,
+    leagueFilter,
+    onlyTopBadges,
+    scopeFilter,
+    periodFilter,
+  ]);
 
   /* ---------------------------------- UI ---------------------------------- */
   return (
@@ -348,11 +430,22 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
         <h2 className="text-lg font-semibold text-gray-900">Div2 – Bästa matchups</h2>
         <p className="mt-1 text-xs text-gray-500">
           Beräkning använder <b>båda riktningarna</b> (H_for+A_against & A_for+H_against) och tar
-          <b> medelvärdet</b>. Över: minimera medelparet. Under: maximera medelparet.
+          <b> medelvärdet</b>. För renodlade hemma-/bortalagsscope dras parsumman ihop mot samma
+          spridning som totalen så att poängen går att jämföra rättvist. Över: minimera medelparet.
+          Under: maximera medelparet.
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <FilterChips options={PERIODS} value={period} onChange={setPeriod} />
+          <FilterChips
+            options={SCOPE_FILTERS}
+            value={scopeFilter}
+            onChange={setScopeFilter}
+          />
+          <FilterChips
+            options={PERIOD_FILTERS}
+            value={periodFilter}
+            onChange={setPeriodFilter}
+          />
 
           <div className="flex items-center gap-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -393,7 +486,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
             {overRows.length ? (
               <ol className="space-y-2">
                 {overRows.map((r) => (
-                  <RowAvg key={`o:${r.matchId}:${r.statKey}:${r.period}`} r={r} mode="over" />
+                  <RowAvg key={`o:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`} r={r} mode="over" />
                 ))}
               </ol>
             ) : (
@@ -413,7 +506,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
             {underRows.length ? (
               <ol className="space-y-2">
                 {underRows.map((r) => (
-                  <RowAvg key={`u:${r.matchId}:${r.statKey}:${r.period}`} r={r} mode="under" />
+                  <RowAvg key={`u:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`} r={r} mode="under" />
                 ))}
               </ol>
             ) : (
