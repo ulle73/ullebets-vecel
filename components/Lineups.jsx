@@ -1,9 +1,372 @@
 "use client";
 
-import { useMemo } from "react";
-import useSWR from "swr";
+import { useEffect, useMemo, useRef, useState } from "react";
+import useSWR, { useSWRConfig } from "swr";
 import { buildLineupsKey } from "@/lib/utils/apiKeys";
 import { fetchJson } from "@/lib/utils/fetchers";
+
+const MARKET_DEFAULT = "1x2";
+const MAX_CLOSING_ODDS_ENTRIES = 5;
+const closingOddsRequests = new Map();
+
+function safeGetCache(cache, key) {
+  if (!cache || !key) return undefined;
+  try {
+    return cache.get(key);
+  } catch (error) {
+    console.warn("[closing-odds] cache read failed", error);
+    return undefined;
+  }
+}
+
+function toDecimalOdds(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return null;
+    return Number(value.toFixed(2));
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().replace(/,/g, ".");
+    if (!normalized) return null;
+    const match = normalized.match(/-?\d+(?:\.\d+)?/);
+    if (!match) return null;
+    const parsed = Number.parseFloat(match[0]);
+    return Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : null;
+  }
+  return null;
+}
+
+function normalizeClosingOddsEntries(payload) {
+  if (payload === undefined) {
+    return undefined;
+  }
+  const entries = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.entries)
+    ? payload.entries
+    : null;
+  if (!entries) {
+    return null;
+  }
+
+  const normalized = entries
+    .map((entry) => {
+      if (!entry) return null;
+      const market = (entry.market || MARKET_DEFAULT).toLowerCase();
+      if (market !== MARKET_DEFAULT) return null;
+
+      const oddsSource = entry.odds || entry.values || entry.closing || entry.closingOdds;
+      if (!oddsSource || typeof oddsSource !== "object") {
+        return null;
+      }
+
+      const home = toDecimalOdds(
+        oddsSource.home ?? oddsSource.Home ?? oddsSource["1"] ?? oddsSource.one ?? oddsSource.homeWin
+      );
+      const draw = toDecimalOdds(
+        oddsSource.draw ?? oddsSource.Draw ?? oddsSource["X"] ?? oddsSource["x"] ?? oddsSource.tie
+      );
+      const away = toDecimalOdds(
+        oddsSource.away ?? oddsSource.Away ?? oddsSource["2"] ?? oddsSource.two ?? oddsSource.awayWin
+      );
+
+      if ([home, draw, away].filter((value) => typeof value === "number").length < 2) {
+        return null;
+      }
+
+      const rawTimestamp = entry.timestamp ?? entry.kickoff ?? entry.date ?? null;
+      const timestampMs = rawTimestamp ? new Date(rawTimestamp).getTime() : null;
+
+      return {
+        matchId: entry.matchId != null ? String(entry.matchId) : null,
+        timestamp: rawTimestamp && Number.isFinite(timestampMs) ? new Date(timestampMs).toISOString() : null,
+        timestampMs: Number.isFinite(timestampMs) ? timestampMs : null,
+        market: MARKET_DEFAULT,
+        side: entry.side === "away" ? "away" : "home",
+        opponent: {
+          teamId:
+            entry.opponent?.teamId != null
+              ? Number.parseInt(entry.opponent.teamId, 10) || entry.opponent.teamId
+              : null,
+          name: entry.opponent?.name ?? null,
+        },
+        odds: { home, draw, away },
+        winner: entry.winner ?? entry.result ?? null,
+      };
+    })
+    .filter(Boolean);
+
+  normalized.sort((a, b) => {
+    const ta = a.timestampMs ?? 0;
+    const tb = b.timestampMs ?? 0;
+    return tb - ta;
+  });
+
+  return normalized.slice(0, MAX_CLOSING_ODDS_ENTRIES);
+}
+
+function useTeamClosingOddsHistory({ matchId, teamId, market = MARKET_DEFAULT }) {
+  const { cache } = useSWRConfig();
+  const [state, setState] = useState(() => ({
+    status: teamId ? "loading" : "idle",
+    entries: [],
+    error: null,
+    source: null,
+  }));
+
+  const cacheKey = useMemo(
+    () => (teamId ? `team:${teamId}:odds:closing:${market}` : null),
+    [teamId, market]
+  );
+  const requestKey = useMemo(
+    () => (teamId ? `${matchId ?? "no-match"}:${teamId}:${market}` : null),
+    [matchId, teamId, market]
+  );
+  const abortedRef = useRef(false);
+
+  useEffect(() => {
+    abortedRef.current = false;
+    if (!teamId || !cacheKey || !requestKey) {
+      setState({ status: "idle", entries: [], error: null, source: null });
+      return () => {
+        abortedRef.current = true;
+      };
+    }
+
+    const cachedRaw = safeGetCache(cache, cacheKey);
+    const normalizedCache = normalizeClosingOddsEntries(cachedRaw);
+
+    if (Array.isArray(normalizedCache)) {
+      setState({
+        status: normalizedCache.length ? "success" : "empty",
+        entries: normalizedCache,
+        error: null,
+        source: "cache",
+      });
+      return () => {
+        abortedRef.current = true;
+      };
+    }
+
+    setState({ status: "loading", entries: [], error: null, source: null });
+
+    let active = true;
+
+    const run = async () => {
+      try {
+        let requestPromise = closingOddsRequests.get(requestKey);
+        if (!requestPromise) {
+          const url = `/api/team-odds/closing?teamId=${encodeURIComponent(
+            teamId
+          )}&market=${encodeURIComponent(market)}&limit=${MAX_CLOSING_ODDS_ENTRIES}`;
+          const fetchPromise = fetch(url).then((res) => {
+            if (!res.ok) {
+              const error = new Error(`Failed to fetch closing odds: ${res.status}`);
+              error.status = res.status;
+              throw error;
+            }
+            return res.json();
+          });
+          requestPromise = fetchPromise
+            .then((result) => {
+              closingOddsRequests.delete(requestKey);
+              return result;
+            })
+            .catch((error) => {
+              closingOddsRequests.delete(requestKey);
+              throw error;
+            });
+          closingOddsRequests.set(requestKey, requestPromise);
+        }
+
+        const data = await requestPromise;
+        if (!active || abortedRef.current) {
+          return;
+        }
+
+        const normalized = normalizeClosingOddsEntries(data);
+        const entries = Array.isArray(normalized) ? normalized : [];
+        const status = entries.length ? "success" : "empty";
+
+        setState({ status, entries, error: null, source: "network" });
+
+        if (cache && cacheKey) {
+          cache.set(cacheKey, {
+            entries,
+            fetchedAt: Date.now(),
+            teamId,
+            market,
+          });
+        }
+      } catch (error) {
+        if (!active || abortedRef.current) {
+          return;
+        }
+        console.error("[closing-odds] fetch error", error);
+        setState({ status: "error", entries: [], error, source: "network" });
+      }
+    };
+
+    run();
+
+    return () => {
+      active = false;
+      abortedRef.current = true;
+    };
+  }, [cache, cacheKey, market, matchId, requestKey, teamId]);
+
+  return state;
+}
+
+function formatOddsValue(value) {
+  if (typeof value === "number") {
+    return value.toFixed(2);
+  }
+  return "–";
+}
+
+function resolveResultBadge(entry) {
+  if (!entry?.winner) {
+    return null;
+  }
+  if (entry.winner === "draw") {
+    return { label: "D", tone: "text-amber-700", title: "Oavgjort" };
+  }
+  if (entry.winner === entry.side) {
+    return { label: "W", tone: "text-emerald-700", title: "Vinst" };
+  }
+  return { label: "L", tone: "text-rose-600", title: "Förlust" };
+}
+
+function TeamOddsList({ title, teamName, state }) {
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat("sv-SE", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }),
+    []
+  );
+
+  let body = null;
+
+  if (state.status === "loading") {
+    body = (
+      <p className="text-xs text-gray-500">
+        Hämtar closing odds…
+      </p>
+    );
+  } else if (state.status === "error" || state.status === "idle" || state.status === "empty") {
+    body = (
+      <p className="text-xs font-medium text-gray-500">
+        saknas
+      </p>
+    );
+  } else if (state.entries.length === 0) {
+    body = (
+      <p className="text-xs font-medium text-gray-500">
+        saknas
+      </p>
+    );
+  } else {
+    body = (
+      <ul className="mt-3 space-y-3">
+        {state.entries.map((entry) => {
+          const opponentLabel = entry.opponent?.name || "Okänt motstånd";
+          const when = entry.timestamp
+            ? dateFormatter.format(new Date(entry.timestamp))
+            : "Okänt datum";
+          const role = entry.side === "home" ? "Hemma" : "Borta";
+          const teamOdds = entry.side === "home" ? entry.odds.home : entry.odds.away;
+          const opponentOdds = entry.side === "home" ? entry.odds.away : entry.odds.home;
+          const drawOdds = entry.odds.draw;
+          const badge = resolveResultBadge(entry);
+          return (
+            <li
+              key={entry.matchId ?? `${entry.timestamp ?? ""}-${entry.side}`}
+              className="rounded-lg border border-emerald-100 bg-white/80 p-3 shadow-sm"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{opponentLabel}</p>
+                  <p className="text-[11px] text-gray-500">{when} · {role}</p>
+                </div>
+                {badge ? (
+                  <span
+                    className={`text-xs font-semibold ${badge.tone}`}
+                    title={badge.title}
+                  >
+                    {badge.label}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] font-medium text-gray-600">
+                <div className="rounded border border-emerald-100 bg-emerald-50/60 px-2 py-1 text-center">
+                  <p className="text-[10px] uppercase tracking-wide text-emerald-700">Lag</p>
+                  <p className="text-sm text-gray-900">{formatOddsValue(teamOdds)}</p>
+                </div>
+                <div className="rounded border border-emerald-100 bg-emerald-50/40 px-2 py-1 text-center">
+                  <p className="text-[10px] uppercase tracking-wide text-emerald-700">X</p>
+                  <p className="text-sm text-gray-900">{formatOddsValue(drawOdds)}</p>
+                </div>
+                <div className="rounded border border-emerald-100 bg-emerald-50/60 px-2 py-1 text-center">
+                  <p className="text-[10px] uppercase tracking-wide text-emerald-700">Motst</p>
+                  <p className="text-sm text-gray-900">{formatOddsValue(opponentOdds)}</p>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-emerald-100/60 bg-white/70 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">{title}</p>
+          <p className="text-sm font-semibold text-gray-900">{teamName || "Okänt lag"}</p>
+        </div>
+        {state.status === "loading" ? (
+          <span className="text-[11px] text-gray-500">…</span>
+        ) : null}
+      </div>
+      <div className="mt-2">{body}</div>
+    </div>
+  );
+}
+
+function ClosingOddsSection({ match }) {
+  const matchId = match?.matchId ?? match?.id ?? null;
+  const homeTeamId = match?.homeTeamId ?? match?.homeTeam?.id ?? null;
+  const awayTeamId = match?.awayTeamId ?? match?.awayTeam?.id ?? null;
+  const homeTeamName = match?.homeTeamName ?? match?.homeTeam?.name ?? match?.homeTeam?.shortName ?? null;
+  const awayTeamName = match?.awayTeamName ?? match?.awayTeam?.name ?? match?.awayTeam?.shortName ?? null;
+
+  const homeState = useTeamClosingOddsHistory({ matchId, teamId: homeTeamId, market: MARKET_DEFAULT });
+  const awayState = useTeamClosingOddsHistory({ matchId, teamId: awayTeamId, market: MARKET_DEFAULT });
+
+  if (!homeTeamId && !awayTeamId) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-900">
+          Closing odds (1X2)
+        </h3>
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <TeamOddsList title="Hemma" teamName={homeTeamName} state={homeState} />
+        <TeamOddsList title="Borta" teamName={awayTeamName} state={awayState} />
+      </div>
+    </div>
+  );
+}
 
 const GOALKEEPER_TOKENS = ["gk", "goalkeeper", "keeper", "målvakt", "portero"];
 const DEFENDER_TOKENS = ["cb", "rb", "lb", "def", "back", "df", "försvar", "defender"];
@@ -498,6 +861,7 @@ export default function Lineups({ match, isLoading, className = "" }) {
             Uppdatera
           </button>
         </div>
+        <ClosingOddsSection match={match} />
         <CombinedPitch homeLineup={homeLineup} awayLineup={awayLineup} />
         <div className="grid gap-6 lg:grid-cols-2">
           {homeLineup ? (
