@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import LeagueTables from "@/components/LeagueTables";
 import TeamCompare from "@/components/TeamCompare";
-import DayInsights from "@/components/DayInsights";
+import DayInsights from "@/components/DayInsights-copy";
 import Lineups from "@/components/Lineups";
 import BacktestPage from "@/components/BacktestPage";
 import { normalizeMatch } from "@/components/LeagueTable";
@@ -404,11 +404,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
               matchesCount={matches.length}
             />
 
-            <DayInsights
-              date={date}
-              items={items}
-              profilesVersion={teamProfilesVersion}
-            />
+            
 
             {showDetails ? (
               <TeamCompare
@@ -416,7 +412,11 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
                 isLoading={isMatchLoading}
                 error={matchError}
               />
-            ) : null}
+            ) : <DayInsights
+              date={date}
+              items={items}
+              profilesVersion={teamProfilesVersion}
+            />}
 
             {showDetails ? (
               <Lineups match={mergedMatch} isLoading={isMatchLoading} />
