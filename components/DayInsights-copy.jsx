@@ -93,6 +93,17 @@ function normalizePairScore(avgPair, leagueMax, mode) {
   return Math.round(raw * 1000) / 10; // 1 decimal
 }
 
+function adjustSinglePairForComparison(pairSum, leagueMax) {
+  if (!Number.isFinite(pairSum)) return null;
+  const L = toNum(leagueMax) ?? 20;
+  const mean = L + 1;
+  const adjusted = mean + (pairSum - mean) / Math.SQRT2;
+  const min = 2;
+  const max = 2 * L;
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  return clamp(adjusted, min, max);
+}
+
 function badgeForAvgPair(avgPair, leagueMax, mode) {
   const L = toNum(leagueMax) ?? 20;
   const min = 2;
@@ -170,6 +181,10 @@ function RowAvg({ r, mode }) {
     : mode === "under" && r.leagueMax
       ? `${baseValue.toFixed(decimals)}/${(2 * r.leagueMax).toFixed(0)}`
       : baseValue.toFixed(decimals);
+  const adjustedDisplay =
+    r.scope !== "total" && Number.isFinite(r.scoreBasis)
+      ? r.scoreBasis.toFixed(1)
+      : null;
 
   return (
     <li className="flex items-start justify-between rounded border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm">
@@ -205,6 +220,11 @@ function RowAvg({ r, mode }) {
           </div>
           <div>
             {r.basisLabel}: <b>{basisDisplay}</b>
+            {adjustedDisplay ? (
+              <span className="ml-2 text-[10px] font-normal text-gray-500">
+                (justerad för total-jämförelse: {adjustedDisplay})
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -338,17 +358,29 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
             },
           };
 
-          const pushRows = (scope, basisValue, basisLabel, scopeLabel, primaryPair) => {
-            const overScore = normalizePairScore(basisValue, leagueMax, "over");
-            const underScore = normalizePairScore(basisValue, leagueMax, "under");
-            const overBadge = badgeForAvgPair(basisValue, leagueMax, "over");
-            const underBadge = badgeForAvgPair(basisValue, leagueMax, "under");
+          const pushRows = (
+            scope,
+            basisValue,
+            basisLabel,
+            scopeLabel,
+            primaryPair,
+            scoreBasisOverride = null,
+          ) => {
+            const scoreBasis =
+              scope === "total"
+                ? basisValue
+                : scoreBasisOverride ?? adjustSinglePairForComparison(basisValue, leagueMax);
+            const overScore = normalizePairScore(scoreBasis, leagueMax, "over");
+            const underScore = normalizePairScore(scoreBasis, leagueMax, "under");
+            const overBadge = badgeForAvgPair(scoreBasis, leagueMax, "over");
+            const underBadge = badgeForAvgPair(scoreBasis, leagueMax, "under");
 
             const shared = {
               ...rowCommon,
               scope,
               scopeLabel,
               basisValue,
+              scoreBasis,
               basisLabel,
               primaryPair,
             };
@@ -398,7 +430,9 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
         <h2 className="text-lg font-semibold text-gray-900">Div2 – Bästa matchups</h2>
         <p className="mt-1 text-xs text-gray-500">
           Beräkning använder <b>båda riktningarna</b> (H_for+A_against & A_for+H_against) och tar
-          <b> medelvärdet</b>. Över: minimera medelparet. Under: maximera medelparet.
+          <b> medelvärdet</b>. För renodlade hemma-/bortalagsscope dras parsumman ihop mot samma
+          spridning som totalen så att poängen går att jämföra rättvist. Över: minimera medelparet.
+          Under: maximera medelparet.
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
