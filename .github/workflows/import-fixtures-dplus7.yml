@@ -31,9 +31,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # (Valfritt) Hotfix om axios saknas i lockfile
       - name: Hotfix - install axios (missing in lockfile)
         run: |
           npm install --no-save axios@^1
+
+      # Installera lib:ar som Chrome kräver på ubuntu-latest
+      - name: Install system deps for Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 libxss1 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+            libdrm2 libxkbcommon0 libxcomposite1 libxrandr2 libgbm1 \
+            libgtk-3-0 libasound2
+
+      # Patcha Puppeteer launch så den kör utan sandbox i CI
+      - name: Patch puppeteer launch flags (no-sandbox on CI)
+        run: |
+          sed -i "s/puppeteer.launch({ headless: \\\"new\\\" })/puppeteer.launch({ headless: \\\"new\\\", args: ['--no-sandbox','--disable-setuid-sandbox'] })/g" scripts/fetch-and-import-fixtures.js
 
       - name: Compute D+7 (UTC)
         id: dates
