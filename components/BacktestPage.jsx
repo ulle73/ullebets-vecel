@@ -7,10 +7,8 @@ import RankingSummary from "./backtest/RankingSummary";
 import HistoryTooltip from "./backtest/HistoryTooltip";
 import { getStatPatterns } from "./backtest/statPatterns";
 import {
-  buildBackendUrl,
   buildBacktestApiUrl,
   createInitialForm,
-  getBackendBaseUrl,
   makeTeamKey,
   normalizeTeamName,
   replaceTeamsInForm,
@@ -412,7 +410,7 @@ export default function BacktestPage({ match, className = "" }) {
         matchDate,
       });
       try {
-        await fetch(buildBackendUrl("/save-backtest"), {
+        await fetch(buildBacktestApiUrl("save"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -675,7 +673,7 @@ export default function BacktestPage({ match, className = "" }) {
 
     setLoading(true);
     setError(null);
-    const backendBaseUrl = getBackendBaseUrl();
+    const backendBaseUrl = "";
     const backendUrl = `/api/unibet-odds/${matchId}`;
 
     logClientBacktestStep("Backend-url för Unibet-hämtningen fastställs.", {
