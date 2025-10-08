@@ -2,6 +2,8 @@
   totalShots: {
     displayName: t("stat_total_shots"),
     rankKey: "totalShotsOnGoal",
+    keys: ["totalshots", "totalshotsongoal"],
+    names: ["total shots"],
     thresholds: (scope, period) => {
       if (scope === "total") {
         if (period === "ALL")
@@ -18,6 +20,8 @@
   },
   shotsOnGoal: {
     displayName: t("stat_total_shots_on_target"),
+    keys: ["shotsongoal"],
+    names: ["shots on goal", "shots on target"],
     thresholds: (scope, period) => {
       if (scope === "total") {
         if (period === "ALL") return [4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5];
@@ -33,6 +37,8 @@
   },
   cornerKicks: {
     displayName: t("stat_corner_kicks"),
+    keys: ["cornerkicks"],
+    names: ["corner kicks", "corners"],
     thresholds: (scope, period) => {
       if (scope === "total") {
         if (period === "ALL") return [5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 15.5];
@@ -48,6 +54,8 @@
   },
   yellowCards: {
     displayName: t("stat_yellow_cards"),
+    keys: ["yellowcards"],
+    names: ["yellow cards"],
     thresholds: (scope, period) => {
       if (scope === "total") {
         if (period === "ALL") return [3.5, 4.5, 5.5, 6.5, 7.5, 8.5];
@@ -63,6 +71,8 @@
   },
   throwIns: {
     displayName: t("stat_throw_ins"),
+    keys: ["throwins"],
+    names: ["throw-ins"],
     thresholds: (scope, period) => {
       if (scope === "total") {
         if (period === "ALL") return [25.5, 26.5, 27.5, 28.5, 29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 35.5, 36.5, 37.5, 38.5, 39.5, 40.5];
@@ -78,6 +88,8 @@
   },
   freeKicks: {
     displayName: t("stat_free_kicks"),
+    keys: ["freekicks"],
+    names: ["free kicks"],
     thresholds: (scope, period) => {
       if (scope === "total") {
         if (period === "ALL")
@@ -96,6 +108,8 @@
   },
   fouls: {
     displayName: t("stat_fouls"),
+    keys: ["fouls"],
+    names: ["fouls"],
     thresholds: (scope, period) => {
       if (scope === "total") {
         if (period === "ALL")
@@ -112,6 +126,8 @@
   },
   totalTackle: {
     displayName: t("stat_tackles"),
+    keys: ["totaltackle", "tackles"],
+    names: ["tackles", "total tackles"],
     thresholds: (scope, period) => {
       if (scope === "total") {
         if (period === "ALL")
@@ -128,6 +144,8 @@
   },
   offsides: {
     displayName: t("stat_offsides"),
+    keys: ["offsides"],
+    names: ["offsides"],
     thresholds: (scope, period) => {
       if (scope === "total") {
         if (period === "ALL") return [2.5, 3.5, 4.5, 5.5, 6.5];
