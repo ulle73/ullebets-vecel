@@ -1,36 +1,40 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import PositiveEvTable from "./backtest/PositiveEvTable";
-import OddsTable from "./backtest/OddsTable";
-import RankingSummary from "./backtest/RankingSummary";
-import HistoryTooltip from "./backtest/HistoryTooltip";
+import mapUnibetOdds from "./backtest/unibetOddsMapper";
 import { getStatPatterns } from "./backtest/statPatterns";
-import {
-  buildBackendUrl,
-  buildBacktestApiUrl,
-  createInitialForm,
-  getBackendBaseUrl,
-  makeTeamKey,
-  normalizeTeamName,
-  replaceTeamsInForm,
-} from "./backtest/utils";
-import { mapUnibetOdds } from "./backtest/unibetOddsMapper";
-import {
-  logClientBacktestError,
-  logClientBacktestStep,
-  resetClientBacktestSteps,
-} from "@/lib/backtest/logger";
-import { areTeamNamesEquivalent, getTeamAliases } from "@/lib/teamNameAliases";
-import leaguesAndTeams from "@/data/leagues-and-teams.json";
-import { buildTeamProfileKey } from "@/lib/utils/apiKeys";
 
-const STRINGS = {
-  backtest_title: "Backtest",
-  select_match_placeholder: "Välj en match för att se backtest.",
-  loading_placeholder: "Hämtar backtest…",
-  backtest_description: "Analysera odds och EV för valda matcher.",
-  stat_total_shots: "Totalt antal skott",
+const translations = {
+  title: "Backtest",
+  load_odds: "Ladda Unibet-odds",
+  calculate_all: "Kör backtest",
+  neutral_ground: "Neutral plan",
+  unibet_placeholder: "Klistra in Unibet-url eller event-id",
+  scope_total: "Totalt",
+  scope_home: "Hemmalag",
+  scope_away: "Bortalag",
+  period_match: "Hela matchen",
+  period_first_half: "Första halvlek",
+  period_second_half: "Andra halvlek",
+  form_all: "Alla matcher",
+  form_label: "Form (antal matcher eller 'all')",
+  over: "Över",
+  under: "Under",
+  odds: "Odds",
+  ev_percent: "EV%",
+  stat: "Statistik",
+  team: "Lag",
+  period: "Period",
+  direction: "Spel",
+  value: "Värde",
+  positive_ev_header: "Alla +EV",
+  home_importance: "Hemmalagets importance",
+  away_importance: "Bortalagets importance",
+  loading: "Hämtar…",
+  error_generic: "Något gick fel",
+  error_missing_odds: "Fyll i odds innan du kör backtest",
+  error_invalid_odds: "Ogiltigt odds",
+  stat_total_shots: "Totala skott",
   stat_total_shots_on_target: "Skott på mål",
   stat_corner_kicks: "Hörnor",
   stat_yellow_cards: "Gula kort",
@@ -38,1019 +42,671 @@ const STRINGS = {
   stat_free_kicks: "Frisparkar",
   stat_fouls: "Fouls",
   stat_tackles: "Tacklingar",
-  stat_offsides: "Offsides",
-  scope_total: "Totalt",
-  scope_home: "Hemma",
-  scope_away: "Borta",
-  period_match: "Hela matchen",
-  period_first_half: "Första halvlek",
-  period_second_half: "Andra halvlek",
-  form_placeholder: "Form (\"all\" eller antal)",
-  neutral_ground: "Neutral plan",
-  load_odds: "Ladda odds",
-  paste_unibet_url: "Klistra in Unibet URL",
-  importance_home: "Hemmalagets importance",
-  importance_away: "Bortalagets importance",
-  submit_run: "Kör backtest",
-  submit_running: "Kör…",
-  over: "Över",
-  under: "Under",
-  home: "Hemma",
-  away: "Borta",
-  error_fill_teams: "Välj lag innan du kör backtest.",
-  error_fill_odds: "Lägg till minst en lina med odds innan du kör backtest.",
-  error_load_ranking: "Kunde inte ladda rankingdata: ",
-  error_unibet_url: "Kunde inte läsa match-id från Unibet URL.",
-  error_unibet_fetch: "Misslyckades hämta Unibet-odds.",
-  error_unibet_map: "Inga odds kunde tolkas från Unibet-svaret.",
-  error_unibet_team_mismatch:
-    "Unibet-matchen stämmer inte överens med de valda lagen.",
+  stat_offsides: "Offside",
 };
 
-const translate = (key) => STRINGS[key] ?? key;
-
-const LABELS = {
-  over: translate("over"),
-  under: translate("under"),
-};
-
-const TEAM_TO_LEAGUE = (() => {
-  const map = new Map();
-  Object.entries(leaguesAndTeams).forEach(([leagueName, leagueInfo]) => {
-    (leagueInfo?.teams ?? []).forEach((team) => {
-      if (team?.name) {
-        map.set(team.name.toLowerCase(), leagueName);
-      }
-    });
-  });
-  return map;
-})();
-
-function resolveLeagueName(teamName, fallback) {
-  if (!teamName) return fallback ?? null;
-  const key = normalizeTeamName(teamName).toLowerCase();
-  return TEAM_TO_LEAGUE.get(key) ?? fallback ?? null;
+function useTranslation() {
+  const t = useCallback((key) => translations[key] ?? key, []);
+  return { t };
 }
 
-export default function BacktestPage({ match, className = "" }) {
-  const statPatterns = useMemo(() => getStatPatterns(translate), []);
-  const [form, setForm] = useState(() => createInitialForm(statPatterns));
-  const [neutralGround, setNeutralGround] = useState(false);
+function createInitialForm(statPatterns, match) {
+  const homeTeam = match?.homeTeamName || "";
+  const awayTeam = match?.awayTeamName || "";
+  return Object.keys(statPatterns).reduce((acc, statKey) => {
+    acc[statKey] = {
+      statKey,
+      scope: "total",
+      period: "ALL",
+      formMatches: "all",
+      homeTeam,
+      awayTeam,
+      home_importance: 5,
+      away_importance: 5,
+    };
+    return acc;
+  }, {});
+}
+
+function ensureThresholds(store, statPatterns, form, teamKey) {
+  const next = { ...store };
+  if (!next[teamKey]) next[teamKey] = {};
+
+  for (const [statKey, config] of Object.entries(form)) {
+    const pattern = statPatterns[statKey];
+    if (!pattern) continue;
+    const scope = config.scope;
+    const period = config.period;
+    const thresholds = pattern.thresholds(scope, period) || [];
+
+    if (!next[teamKey][statKey]) next[teamKey][statKey] = {};
+    if (!next[teamKey][statKey][scope]) next[teamKey][statKey][scope] = {};
+    if (!next[teamKey][statKey][scope][period]) {
+      next[teamKey][statKey][scope][period] = {};
+    }
+
+    const bucket = { ...next[teamKey][statKey][scope][period] };
+    thresholds.forEach((line) => {
+      if (!bucket[line]) bucket[line] = { over: "", under: "" };
+    });
+    next[teamKey][statKey][scope][period] = bucket;
+  }
+
+  return next;
+}
+
+function createBetKey({
+  homeTeam,
+  awayTeam,
+  statKey,
+  scope,
+  period,
+  line,
+  direction,
+  formMatches,
+  neutralGround,
+}) {
+  return [
+    homeTeam,
+    awayTeam,
+    statKey,
+    scope,
+    period,
+    line,
+    direction,
+    formMatches,
+    neutralGround,
+  ]
+    .map((part) => String(part ?? ""))
+    .join("::");
+}
+
+function resolvePrimaryEv(result) {
+  if (!result) return { primaryEv: null, primaryLabel: null };
+  const order = [
+    ["evPctWithMultiplier", "EV (multiplier)"],
+    ["evPctMultifactor", "EV (multifaktor)"],
+    ["evPctLeagueAvg", "EV (liga)"],
+    ["evPct", "EV (modell)"],
+    ["legacyEvPct", "EV (legacy)"],
+  ];
+  for (const [key, label] of order) {
+    const value = result[key];
+    if (typeof value === "number") {
+      return { primaryEv: value, primaryLabel: label };
+    }
+  }
+  return { primaryEv: null, primaryLabel: null };
+}
+
+function formatPeriodLabel(period, t) {
+  if (period === "1ST") return t("period_first_half");
+  if (period === "2ND") return t("period_second_half");
+  return t("period_match");
+}
+
+function formatScope(scope, home, away, t) {
+  if (scope === "home") return home || t("scope_home");
+  if (scope === "away") return away || t("scope_away");
+  return t("scope_total");
+}
+
+async function postBacktest(body) {
+  const res = await fetch("/api/backtest", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    const message = payload?.message || `${res.status}`;
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+export default function BacktestPage({ match }) {
+  const { t } = useTranslation();
+  const statPatterns = useMemo(() => getStatPatterns(t), [t]);
+  const [form, setForm] = useState(() => createInitialForm(statPatterns, match));
   const [unibetUrl, setUnibetUrl] = useState("");
-  const [oddsStore, setOddsStore] = useState({});
+  const [neutralGround, setNeutralGround] = useState(false);
+  const [oddsStore, setOddsStore] = useState({ default: {} });
   const [resultsMap, setResultsMap] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [historyTooltip, setHistoryTooltip] = useState(null);
-  const [historyPosition, setHistoryPosition] = useState({ x: 0, y: 0 });
-  const [tooltipThreshold, setTooltipThreshold] = useState(null);
-  const [teamProfiles, setTeamProfiles] = useState(null);
-  const [rankingError, setRankingError] = useState(null);
 
-  const firstStatKey = useMemo(() => Object.keys(statPatterns)[0], [statPatterns]);
-  const homeTeamName = match?.homeTeamName ?? "";
-  const awayTeamName = match?.awayTeamName ?? "";
-
-  const homeLeagueName = useMemo(
-    () => resolveLeagueName(homeTeamName, match?.leagueName),
-    [homeTeamName, match?.leagueName]
-  );
-  const awayLeagueName = useMemo(
-    () => resolveLeagueName(awayTeamName, match?.leagueName),
-    [awayTeamName, match?.leagueName]
-  );
-
-  const currentTeamKey = useMemo(() => {
-    const entry = form[firstStatKey];
-    return entry ? makeTeamKey(entry.homeTeam, entry.awayTeam) : "default";
-  }, [form, firstStatKey]);
-
-  const statLabels = useMemo(() => {
-    const labels = {};
-    Object.entries(statPatterns).forEach(([key, config]) => {
-      labels[key] = config.displayName;
-    });
-    return labels;
-  }, [statPatterns]);
-
-  const results = useMemo(() => Object.values(resultsMap), [resultsMap]);
-  const resultsForTeam = useMemo(() => {
-    if (!currentTeamKey) {
-      return results;
-    }
-    return results.filter((result) => {
-      const candidateKeys = [
-        result?.teamKey,
-        result?.bet?.teamKey,
-      ].filter(Boolean);
-      if (candidateKeys.some((key) => key === currentTeamKey)) {
-        return true;
-      }
-      const legacyKey = result?.bet?.key;
-      if (legacyKey && legacyKey.includes(currentTeamKey)) {
-        return true;
-      }
-      return false;
-    });
-  }, [results, currentTeamKey]);
+  const homeTeam = match?.homeTeamName || form[Object.keys(form)[0]]?.homeTeam || "";
+  const awayTeam = match?.awayTeamName || form[Object.keys(form)[0]]?.awayTeam || "";
+  const teamKey = homeTeam && awayTeam ? `${homeTeam}-${awayTeam}` : "default";
 
   useEffect(() => {
-    if (!match) {
-      resetClientBacktestSteps("Ingen match vald");
-      logClientBacktestStep("Formuläret nollställs eftersom ingen match är vald.");
-      setForm(createInitialForm(statPatterns));
-      setResultsMap({});
-      setHistoryTooltip(null);
-      setTooltipThreshold(null);
-      return;
-    }
-    const home = match.homeTeamName ?? "";
-    const away = match.awayTeamName ?? "";
-    resetClientBacktestSteps(`${home || "?"} vs ${away || "?"}`, {
-      matchId: match?.id ?? match?.matchId ?? null,
-      leagueName: match?.leagueName ?? null,
-      home,
-      away,
-    });
-    logClientBacktestStep("Matchdata tas emot och skickas till formuläret.", {
-      home,
-      away,
-      matchId: match?.id ?? match?.matchId ?? null,
-      leagueName: match?.leagueName ?? null,
-    });
-    setForm((prev) => replaceTeamsInForm(prev, home, away));
-    setResultsMap({});
-    setHistoryTooltip(null);
-    setTooltipThreshold(null);
-  }, [match, statPatterns]);
-
-  useEffect(() => {
-    if (!currentTeamKey) return;
-    setOddsStore((prev) => {
-      if (!prev) return {};
+    setForm((prev) => {
       const next = { ...prev };
-      const teamStore = { ...(next[currentTeamKey] ?? {}) };
-      let hasChanges = false;
-
-      Object.entries(statPatterns).forEach(([statKey, pattern]) => {
-        const entry = form[statKey];
-        if (!entry) return;
-        const thresholds = pattern.thresholds(entry.scope, entry.period);
-        const statStore = { ...(teamStore[statKey] ?? {}) };
-        const scopeStore = { ...(statStore[entry.scope] ?? {}) };
-        const periodStore = { ...(scopeStore[entry.period] ?? {}) };
-        let statChanged = false;
-
-        thresholds.forEach((line) => {
-          if (!periodStore[line]) {
-            periodStore[line] = { over: "", under: "" };
-            statChanged = true;
-          }
-        });
-
-        if (statChanged) {
-          scopeStore[entry.period] = periodStore;
-          statStore[entry.scope] = scopeStore;
-          teamStore[statKey] = statStore;
-          hasChanges = true;
-        }
-      });
-
-      if (!hasChanges) return prev;
-      next[currentTeamKey] = teamStore;
+      for (const statKey of Object.keys(next)) {
+        next[statKey] = {
+          ...next[statKey],
+          homeTeam: match?.homeTeamName || next[statKey].homeTeam,
+          awayTeam: match?.awayTeamName || next[statKey].awayTeam,
+        };
+      }
       return next;
     });
-  }, [form, statPatterns, currentTeamKey]);
+  }, [match?.homeTeamName, match?.awayTeamName]);
 
   useEffect(() => {
-    if (!homeTeamName || !awayTeamName) {
-      logClientBacktestStep("Hoppar över hämtning av lagprofiler eftersom lag saknas.", {
-        homeTeamName,
-        awayTeamName,
-      });
-      return;
-    }
+    setOddsStore((prev) => ensureThresholds(prev, statPatterns, form, teamKey));
+  }, [form, statPatterns, teamKey]);
 
-    const controller = new AbortController();
-    const signal = controller.signal;
-    const tasks = [];
+  const statNames = useMemo(
+    () => ({
+      totalShots: t("stat_total_shots"),
+      totalShotsOnGoal: t("stat_total_shots"),
+      shotsOnGoal: t("stat_total_shots_on_target"),
+      cornerKicks: t("stat_corner_kicks"),
+      yellowCards: t("stat_yellow_cards"),
+      throwIns: t("stat_throw_ins"),
+      freeKicks: t("stat_free_kicks"),
+      fouls: t("stat_fouls"),
+      totalTackle: t("stat_tackles"),
+      offsides: t("stat_offsides"),
+    }),
+    [t]
+  );
 
-    const makeTask = ({ label, team, league, matchType }) => {
-      if (!team || !matchType) return;
-      const url = buildTeamProfileKey({
-        team,
-        league,
-        matchType,
-      });
-      if (!url) return;
-      tasks.push({ label, team, league, matchType, url });
-    };
+  const results = useMemo(() => Object.values(resultsMap), [resultsMap]);
 
-    makeTask({ label: "homeTeam:home", team: homeTeamName, league: homeLeagueName, matchType: "home" });
-    makeTask({ label: "homeTeam:away", team: homeTeamName, league: homeLeagueName, matchType: "away" });
-    makeTask({ label: "awayTeam:home", team: awayTeamName, league: awayLeagueName, matchType: "home" });
-    makeTask({ label: "awayTeam:away", team: awayTeamName, league: awayLeagueName, matchType: "away" });
-
-    if (!tasks.length) {
-      logClientBacktestStep("Inga uppgifter skapades för lagprofilshämtning.", {
-        homeTeamName,
-        awayTeamName,
-      });
-      return;
-    }
-
-    let cancelled = false;
-    logClientBacktestStep("Lagprofiler beställs från /api/teamprofiles för backtest.", {
-      tasks,
-    });
-    setRankingError(null);
-    setTeamProfiles(null);
-
-    const fetchProfile = async ({ label, team, league, matchType, url }) => {
-      try {
-        logClientBacktestStep("Lagprofil hämtas från databasen via API och skickas vidare.", {
-          label,
-          url,
-          team,
-          league,
-          matchType,
-        });
-        const response = await fetch(url, { signal });
-        if (!response.ok) {
-          const error = new Error(`${response.status} ${response.statusText}`);
-          error.response = response;
-          throw error;
-        }
-        const payload = await response.json();
-        logClientBacktestStep("Lagprofil mottagen, tolkad och ställs i kö för RankingSummary.", {
-          label,
-          team,
-          league,
-          matchType,
-          hasProfile: Boolean(payload?.profile),
-        });
-        return { label, matchType, team, league, payload };
-      } catch (err) {
-        if (err.name === "AbortError") {
-          logClientBacktestStep("Hämtning av lagprofil avbruten.", {
-            label,
-            team,
-            matchType,
-          });
-        } else {
-          logClientBacktestError("Fel vid hämtning av lagprofil.", {
-            label,
-            team,
-            league,
-            matchType,
-            error: err?.message,
-          });
-        }
-        return { label, matchType, team, league, payload: null, error: err };
-      }
-    };
-
-    Promise.all(tasks.map(fetchProfile))
-      .then((entries) => {
-        if (cancelled) {
-          logClientBacktestStep("Ingen uppdatering av lagprofiler eftersom komponenten avmonterats.");
-          return;
-        }
-
-        const summary = {
-          homeTeam: { home: null, away: null },
-          awayTeam: { home: null, away: null },
-        };
-
-        const errors = [];
-
-        for (const entry of entries) {
-          const role = entry.label.startsWith("homeTeam") ? "homeTeam" : "awayTeam";
-          if (entry.error || !entry.payload?.profile) {
-            errors.push({
-              role,
-              matchType: entry.matchType,
-              team: entry.team,
-              league: entry.league,
-              error: entry.error?.message ?? "Missing profile",
-            });
-            continue;
-          }
-          summary[role][entry.matchType] = entry.payload.profile;
-        }
-
-        logClientBacktestStep(
-          "Lagprofilerna sparas och skickas vidare till RankingSummary och tabellerna.",
-          {
-            summary,
-            errors,
-          }
-        );
-
-        setTeamProfiles(summary);
-
-        if (errors.length) {
-          setRankingError(
-            `${translate("error_load_ranking")}${errors
-              .map((err) => `${err.team ?? "okänd"} (${err.matchType}): ${err.error}`)
-              .join(", ")}`
-          );
-        }
+  const positiveResults = useMemo(() => {
+    return results
+      .map((result) => {
+        const { primaryEv, primaryLabel } = resolvePrimaryEv(result);
+        return { ...result, primaryEv, primaryLabel };
       })
-      .catch((err) => {
-        if (err?.name === "AbortError") return;
-        logClientBacktestError("Fel i kedjan för att hämta lagprofiler.", err);
-        setRankingError(translate("error_load_ranking") + (err?.message ?? ""));
-      });
+      .filter((r) => typeof r.primaryEv === "number" && r.primaryEv > 0)
+      .sort((a, b) => b.primaryEv - a.primaryEv);
+  }, [results]);
 
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [homeTeamName, awayTeamName, homeLeagueName, awayLeagueName]);
-
-  const handleFormChange = useCallback(
-    (statKey, field) => (event) => {
-      const rawValue = event.target.value;
-      logClientBacktestStep("Formuläret uppdateras av användaren.", {
-        statKey,
-        field,
-        rawValue,
+  const handleOddsChange = useCallback(
+    (statKey, scope, period, line, direction) => (event) => {
+      const value = event.target.value;
+      setOddsStore((prev) => {
+        const next = { ...prev };
+        if (!next[teamKey]) next[teamKey] = {};
+        if (!next[teamKey][statKey]) next[teamKey][statKey] = {};
+        if (!next[teamKey][statKey][scope]) next[teamKey][statKey][scope] = {};
+        if (!next[teamKey][statKey][scope][period]) {
+          next[teamKey][statKey][scope][period] = {};
+        }
+        const bucket = {
+          ...(next[teamKey][statKey][scope][period][line] || { over: "", under: "" }),
+        };
+        bucket[direction] = value;
+        next[teamKey][statKey][scope][period][line] = bucket;
+        return next;
       });
-      const value = field.includes("importance")
-        ? (() => {
-            const parsed = Number.parseInt(rawValue, 10);
-            if (!Number.isFinite(parsed)) return form[statKey][field];
-            return Math.min(10, Math.max(1, parsed));
-          })()
-        : rawValue;
-      setForm((prev) => ({
-        ...prev,
-        [statKey]: {
-          ...prev[statKey],
-          [field]: value,
-        },
-      }));
     },
-    [form]
+    [teamKey]
   );
 
-  const handleNeutralGround = (event) => {
-    const checked = event.target.checked;
-    logClientBacktestStep("Neutral plan ändras.", { checked });
-    setNeutralGround(checked);
-  };
-
-  const saveBacktest = useCallback(
-    async (lines, homeTeam, awayTeam, matchDate) => {
-      if (!lines?.length) {
-        logClientBacktestStep("Inga backtestlinor att spara skickas.");
-        return;
-      }
-      logClientBacktestStep("Backtest skickas till backendens lagrings-endpoint.", {
-        lineCount: lines.length,
-        homeTeam,
-        awayTeam,
-        matchDate,
-      });
-      try {
-        await fetch(buildBackendUrl("/save-backtest"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            homeTeam,
-            awayTeam,
-            matchDate,
-            lines,
-            url: unibetUrl,
-          }),
-        });
-        logClientBacktestStep("Backtestet har sparats framgångsrikt.");
-      } catch (err) {
-        logClientBacktestError("Misslyckades spara backtest i backend.", err);
-      }
-    },
-    [unibetUrl]
-  );
+  const handleFormChange = useCallback((statKey, field) => (event) => {
+    const value = event.target.value;
+    setForm((prev) => ({
+      ...prev,
+      [statKey]: { ...prev[statKey], [field]: field.includes("importance") ? Number(value) : value },
+    }));
+  }, []);
 
   const recalculateBet = useCallback(
-    async (statKey, line, direction, oddsValue, scopeOverride, periodOverride) => {
-      const entry = form[statKey];
-      logClientBacktestStep("En lina skickas till servern för expected value-beräkning.", {
-        statKey,
-        line,
-        direction,
-        oddsValue,
-        scopeOverride,
-        periodOverride,
-        entry,
-      });
-      if (!entry?.homeTeam || !entry?.awayTeam) {
-        setError(translate("error_fill_teams"));
+    async ({ statKey, line, direction, scope, period, oddsValue }) => {
+      const config = form[statKey];
+      if (!config?.homeTeam || !config?.awayTeam) {
+        setError(t("error_generic"));
         return null;
       }
-
+      const numericOdds =
+        oddsValue === undefined || oddsValue === null || oddsValue === ""
+          ? null
+          : Number(oddsValue);
+      if (!Number.isFinite(numericOdds) || numericOdds <= 1) {
+        setError(t("error_invalid_odds"));
+        return null;
+      }
       const body = {
-        homeTeam: entry.homeTeam,
-        awayTeam: entry.awayTeam,
-        over: direction === "över",
+        action: "expected-value",
+        homeTeam: config.homeTeam,
+        awayTeam: config.awayTeam,
+        over: direction === "over",
         line,
-        scope: scopeOverride || entry.scope,
+        scope,
         stat: statKey,
-        period: periodOverride || entry.period,
-        form: entry.formMatches,
-        odds: oddsValue,
+        period,
+        form: config.formMatches,
+        odds: numericOdds,
         neutralGround,
-        home_importance: entry.home_importance,
-        away_importance: entry.away_importance,
+        home_importance: config.home_importance,
+        away_importance: config.away_importance,
       };
-
-      logClientBacktestStep(
-        "Payload för expected value skickas till /api/backtest/expected-value.",
-        body
-      );
-
-      const endpointSlug =
-        typeof window !== "undefined" && window.location.pathname.includes("backtest-copy")
-          ? "expected-value-copy"
-          : "expected-value";
-
-      const url = buildBacktestApiUrl(endpointSlug);
-
+      const betKey = createBetKey({
+        homeTeam: config.homeTeam,
+        awayTeam: config.awayTeam,
+        statKey,
+        scope,
+        period,
+        line,
+        direction,
+        formMatches: config.formMatches,
+        neutralGround,
+      });
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-          credentials: "include",
-        });
-        if (!response.ok) {
-          throw new Error(`Serverfel för lina ${line} (${statKey})`);
-        }
-        const data = await response.json();
-        logClientBacktestStep("Svar från expected value-beräkningen tas emot och tolkas.", {
-          statKey,
-          line,
-          direction,
-          data,
-        });
-        const evSummary = {
-          evPct: data?.evPct ?? null,
-          evPctWithMultiplier: data?.evPctWithMultiplier ?? null,
-          evPctMultifactor: data?.evPctMultifactor ?? null,
-          evPctLeagueAvg: data?.evPctLeagueAvg ?? null,
-          legacyEvPct: data?.legacyEvPct ?? null,
-          edgePP: data?.edgePP ?? null,
-          edgePPWithMultiplier: data?.edgePPWithMultiplier ?? null,
-          modelProb: data?.modelProb ?? null,
-          empiricalProb: data?.empiricalProb ?? null,
-          blendedProb: data?.blendedProb ?? null,
-          hitsOver: data?.hitsOver ?? null,
-          hitsUnder: data?.hitsUnder ?? null,
-          leagueAvg: data?.leagueAvg ?? null,
-          leagueAvgHistory: data?.leagueAvgHistory ?? null,
-        };
-        const scopeUsed = scopeOverride || entry.scope;
-        const periodUsed = periodOverride || entry.period;
-        const teamKey = makeTeamKey(entry.homeTeam, entry.awayTeam);
-        const teamKeySegment =
-          teamKey && teamKey !== "default"
-            ? teamKey
-            : `${entry.homeTeam}-${entry.awayTeam}`.trim() || "default";
-        const betKey = [
-          teamKeySegment,
-          statKey,
-          line,
-          direction,
-          scopeUsed,
-          periodUsed,
-          entry.formMatches,
-          neutralGround ? "neutral" : "regular",
-        ].join("::");
-
-        const updatedResult = {
-          ...evSummary,
-          hitsOver: evSummary.hitsOver || "0/0",
-          hitsUnder: evSummary.hitsUnder || "0/0",
-          teamKey,
+        const data = await postBacktest(body);
+        const result = {
+          ...data,
           bet: {
             statKey,
             line,
             direction,
-            odds: oddsValue,
+            scope,
+            period,
+            odds: numericOdds,
+            homeTeam: config.homeTeam,
+            awayTeam: config.awayTeam,
             key: betKey,
-            scope: scopeUsed,
-            period: periodUsed,
-            homeTeam: entry.homeTeam,
-            awayTeam: entry.awayTeam,
-            teamKey,
           },
         };
-
-        setResultsMap((prev) => ({ ...prev, [betKey]: updatedResult }));
-        logClientBacktestStep(
-          "Beräknat resultat sparas lokalt och skickas till tabellerna.",
-          updatedResult
-        );
-        return updatedResult;
+        setResultsMap((prev) => ({ ...prev, [betKey]: result }));
+        return result;
       } catch (err) {
-        logClientBacktestError("Beräkningen av expected value misslyckades.", err);
-        setError(err.message);
+        setError(err.message || t("error_generic"));
         return null;
       } finally {
         setLoading(false);
       }
     },
-    [form, neutralGround]
+    [form, neutralGround, t]
   );
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    logClientBacktestStep("Användaren kör ett backtest manuellt och triggar API-anrop.");
-    if (!match) {
-      setError(translate("error_fill_teams"));
-      return;
-    }
-    const primary = form[firstStatKey];
-    if (!primary?.homeTeam || !primary?.awayTeam) {
-      setError(translate("error_fill_teams"));
-      return;
-    }
-
-    const bets = Object.keys(statPatterns).flatMap((statKey) => {
-      const entry = form[statKey];
-      const statOdds =
-        oddsStore[currentTeamKey]?.[statKey]?.[entry.scope]?.[entry.period] ?? {};
-      return Object.entries(statOdds).flatMap(([lineKey, odds]) => {
-        const line = Number.parseFloat(lineKey);
-        if (!Number.isFinite(line)) return [];
-        const candidates = [];
-        if (odds.over) {
-          candidates.push({
-            statKey,
-            line,
-            direction: "över",
-            odds: odds.over,
-            scope: entry.scope,
-            period: entry.period,
-            formEntry: entry,
-          });
+  const handleCalculateAll = useCallback(async () => {
+    const bets = [];
+    const current = oddsStore[teamKey] || {};
+    for (const [statKey, scopes] of Object.entries(current)) {
+      const cfg = form[statKey];
+      if (!cfg) continue;
+      for (const [scope, periods] of Object.entries(scopes)) {
+        for (const [period, lines] of Object.entries(periods)) {
+          for (const [line, odds] of Object.entries(lines)) {
+            const numericLine = Number(line);
+            if (odds?.over) {
+              bets.push({
+                statKey,
+                scope,
+                period,
+                line: numericLine,
+                direction: "over",
+                oddsValue: Number(odds.over),
+              });
+            }
+            if (odds?.under) {
+              bets.push({
+                statKey,
+                scope,
+                period,
+                line: numericLine,
+                direction: "under",
+                oddsValue: Number(odds.under),
+              });
+            }
+          }
         }
-        if (odds.under) {
-          candidates.push({
-            statKey,
-            line,
-            direction: "under",
-            odds: odds.under,
-            scope: entry.scope,
-            period: entry.period,
-            formEntry: entry,
-          });
-        }
-        return candidates;
-      });
-    });
-
-    logClientBacktestStep("Alla linor för backtest sammanställs och skickas i en batch.", bets);
-
+      }
+    }
     if (!bets.length) {
-      setError(translate("error_fill_odds"));
+      setError(t("error_missing_odds"));
       return;
     }
-
     setLoading(true);
     setError(null);
     try {
-      const responses = await Promise.all(
-        bets.map((bet) =>
-          recalculateBet(
-            bet.statKey,
-            bet.line,
-            bet.direction,
-            bet.odds,
-            bet.scope,
-            bet.period
-          )
-        )
+      const promises = bets.map((bet) =>
+        recalculateBet(bet).catch(() => null)
       );
-      const filtered = responses.filter(Boolean);
-      logClientBacktestStep("Svar från manuellt backtest tas emot och sprids till komponenterna.", filtered);
-      if (filtered.length) {
-        setResultsMap((prev) => {
-          const next = { ...prev };
-          filtered.forEach((result) => {
-            next[result.bet.key] = result;
-          });
-          return next;
-        });
-      }
+      await Promise.all(promises);
     } finally {
       setLoading(false);
     }
-  };
+  }, [form, oddsStore, recalculateBet, teamKey]);
 
-  const handleLoadUnibetOdds = async () => {
-    logClientBacktestStep(
-      "Användaren laddar in odds från Unibet och begär backend-hämtning.",
-      { unibetUrl }
-    );
-    const matchIdMatch = unibetUrl.match(/event\/(\d+)/i);
-    const matchId = matchIdMatch ? matchIdMatch[1] : null;
-    if (!matchId) {
-      logClientBacktestError("Unibet-url saknar match-id och hämtning avbryts.", {
-        unibetUrl,
-      });
-      setError(translate("error_unibet_url"));
-      return;
-    }
-    logClientBacktestStep("Match-id extraheras från Unibet-url.", { matchId });
-    const entry = form[firstStatKey];
-    if (!entry?.homeTeam || !entry?.awayTeam) {
-      logClientBacktestError("Kan inte hämta Unibet-odds utan lag i formuläret.", {
-        entry,
-      });
-      setError(translate("error_fill_teams"));
-      return;
-    }
-
+  const handleLoadOdds = useCallback(async () => {
+    if (!unibetUrl) return;
     setLoading(true);
     setError(null);
-    const backendBaseUrl = getBackendBaseUrl();
-    const backendUrl = `/api/unibet-odds/${matchId}`;
-
-    logClientBacktestStep("Backend-url för Unibet-hämtningen fastställs.", {
-      matchId,
-      backendBaseUrl,
-      backendUrl,
-      pageOrigin: typeof window !== "undefined" ? window.location.origin : null,
-    });
     try {
-      const response = await fetch(backendUrl);
-      logClientBacktestStep("Svar mottaget från backend för Unibet-odds.", {
-        url: response.url,
-        status: response.status,
-        ok: response.ok,
-        statusText: response.statusText,
-      });
-      if (!response.ok) {
-        logClientBacktestError("Backend-svaret för Unibet-odds returnerade felstatus.", {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url,
-        });
-        throw new Error(translate("error_unibet_fetch"));
-      }
-      const data = await response.json();
-      logClientBacktestStep("Oddsdata hämtas från backend och förbereds för mapping.", {
-        meta: data?.meta ?? null,
-        keys: Object.keys(data ?? {}),
-      });
-      const { homeTeam: unibetHomeTeam, awayTeam: unibetAwayTeam } = data.meta ?? {};
-      const homeMatches =
-        !unibetHomeTeam ||
-        areTeamNamesEquivalent(entry.homeTeam, unibetHomeTeam);
-      const awayMatches =
-        !unibetAwayTeam ||
-        areTeamNamesEquivalent(entry.awayTeam, unibetAwayTeam);
-      if (!homeMatches || !awayMatches) {
-        logClientBacktestError("Unibet-data matchar inte valda lag.", {
-          expectedHome: entry.homeTeam,
-          expectedAway: entry.awayTeam,
-          unibetHomeTeam,
-          unibetAwayTeam,
-        });
-        throw new Error(translate("error_unibet_team_mismatch"));
-      }
-      // const tuples = mapUnibetOdds(data.odds ?? data, entry.homeTeam, entry.awayTeam);
-      const aliasContext = {
- homeTeam: entry.homeTeam,
-        awayTeam: entry.awayTeam,
-          homeAliases: getTeamAliases(entry.homeTeam), // <-- använd din aliaslista
-           awayAliases: getTeamAliases(entry.awayTeam),
-           };
-    const tuples = mapUnibetOdds(
-       data.odds ?? data,
-       entry.homeTeam,
-        entry.awayTeam,
-        aliasContext
-      );
-      
-      if (!tuples.length) {
-        logClientBacktestError("Inga odds mappades från Unibet-svaret.", {
-          dataPreview: data,
-        });
-        throw new Error(translate("error_unibet_map"));
-      }
-
-      logClientBacktestStep(
-        "Odds från Unibet tolkas, mappas till linor och skickas till tabellen.",
-        {
-          tupleCount: tuples.length,
-          sample: tuples.slice(0, 5),
-        }
-      );
-      
-      console.log("MAPPED TUPLES (preview)",
-        tuples.slice(0, 15).map(t => ({
-          statKey: t.statKey, scope: t.scope, period: t.period, line: t.line, odds: t.odds
-        }))
-      );
-
-
+      const data = await postBacktest({ action: "unibet-odds", url: unibetUrl });
+      const tuples = mapUnibetOdds(data.odds, homeTeam, awayTeam);
       setOddsStore((prev) => {
         const next = { ...prev };
-        const teamStore = { ...(next[currentTeamKey] ?? {}) };
-        tuples.forEach(({ statKey, scope, period, line, odds }) => {
-          if (!statPatterns[statKey]) return;
-          const statStore = { ...(teamStore[statKey] ?? {}) };
-          const scopeStore = { ...(statStore[scope] ?? {}) };
-          const periodStore = { ...(scopeStore[period] ?? {}) };
-          const existing = periodStore[line] ?? { over: "", under: "" };
-          periodStore[line] = {
-            over: odds?.over != null ? String(odds.over) : existing.over,
-            under: odds?.under != null ? String(odds.under) : existing.under,
+        if (!next[teamKey]) next[teamKey] = {};
+        for (const tuple of tuples) {
+          const { statKey, scope, period, line, odds } = tuple;
+          if (!next[teamKey][statKey]) next[teamKey][statKey] = {};
+          if (!next[teamKey][statKey][scope]) next[teamKey][statKey][scope] = {};
+          const lineStore = {
+            ...(next[teamKey][statKey][scope][period]?.[line] || {
+              over: "",
+              under: "",
+            }),
           };
-          scopeStore[period] = periodStore;
-          statStore[scope] = scopeStore;
-          teamStore[statKey] = statStore;
-        });
-        next[currentTeamKey] = teamStore;
-        logClientBacktestStep("Oddslistan uppdateras med nya värden.", {
-          teamKey: currentTeamKey,
-          teamStore,
-        });
+          if (odds.over != null) lineStore.over = odds.over;
+          if (odds.under != null) lineStore.under = odds.under;
+          if (!next[teamKey][statKey][scope][period]) {
+            next[teamKey][statKey][scope][period] = {};
+          }
+          next[teamKey][statKey][scope][period][line] = lineStore;
+        }
         return next;
       });
-
-      const matchDate = data.meta?.eventDate
-        ? new Date(data.meta.eventDate).toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10);
-      const linesToSave = [];
-
-      for (const { statKey, scope, period, line, odds } of tuples) {
-        if (odds?.over) {
-          const result = await recalculateBet(statKey, line, "över", odds.over, scope, period);
-          if (result) {
-            linesToSave.push({
-              statKey: result.bet.statKey,
-              line: result.bet.line,
-              condition: result.bet.direction,
-              period: result.bet.period,
-              scope: result.bet.scope,
-              odds: result.bet.odds,
-              value: result.evPctLeagueAvg ?? null,
-              evPctLeagueAvg: result.evPctLeagueAvg ?? null,
-              evPctMultifactor: result.evPctMultifactor ?? null,
-              evPctWithMultiplier: result.evPctWithMultiplier ?? null,
-              evPct: result.evPct ?? null,
-              legacyEvPct: result.legacyEvPct ?? null,
-              homeTeam: result.bet.homeTeam,
-              awayTeam: result.bet.awayTeam,
-            });
-          }
-        }
-        if (odds?.under) {
-          const result = await recalculateBet(statKey, line, "under", odds.under, scope, period);
-          if (result) {
-            linesToSave.push({
-              statKey: result.bet.statKey,
-              line: result.bet.line,
-              condition: result.bet.direction,
-              period: result.bet.period,
-              scope: result.bet.scope,
-              odds: result.bet.odds,
-              value: result.evPctLeagueAvg ?? null,
-              evPctLeagueAvg: result.evPctLeagueAvg ?? null,
-              evPctMultifactor: result.evPctMultifactor ?? null,
-              evPctWithMultiplier: result.evPctWithMultiplier ?? null,
-              evPct: result.evPct ?? null,
-              legacyEvPct: result.legacyEvPct ?? null,
-              homeTeam: result.bet.homeTeam,
-              awayTeam: result.bet.awayTeam,
-            });
-          }
-        }
-      }
-
-      logClientBacktestStep("Rekalkylerade linor från Unibet sammanställs för sparning.", {
-        linesToSaveCount: linesToSave.length,
-        matchDate,
-      });
-
-      await saveBacktest(linesToSave, entry.homeTeam, entry.awayTeam, matchDate);
     } catch (err) {
-      logClientBacktestError(
-        "Misslyckades att läsa in odds från Unibet.",
-        {
-          error: err,
-          backendBaseUrl,
-          backendUrl,
-        }
-      );
-      if (err instanceof Error && err.message) {
-        setError(err.message);
-      } else {
-        setError(translate("error_unibet_fetch"));
-      }
+      setError(err.message || t("error_generic"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [homeTeam, awayTeam, teamKey, t, unibetUrl]);
 
-  const containerClass = [
-    "flex h-full flex-col rounded-lg border border-gray-800 bg-gray-950 text-gray-100 shadow-lg",
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  return (
+    <section className="rounded-lg bg-slate-900 p-4 text-slate-100 shadow">
+      <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">{t("title")}</h2>
+          {homeTeam && awayTeam ? (
+            <p className="text-sm text-slate-300">
+              {homeTeam} vs {awayTeam}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={neutralGround}
+              onChange={(event) => setNeutralGround(event.target.checked)}
+            />
+            {t("neutral_ground")}
+          </label>
+        </div>
+      </header>
 
-  const bodyContent = match ? (
-    <div className="flex-1 overflow-y-auto p-5">
-      <div className="mb-6 flex flex-col gap-2">
-        <h2 className="text-2xl font-semibold text-gray-100">
-          {match.homeTeamName} vs {match.awayTeamName}
-        </h2>
-        <p className="text-sm text-gray-400">{translate("backtest_description")}</p>
-      </div>
-
-      <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-        <label className="flex flex-col gap-2 text-sm text-gray-300">
-          <span className="font-medium text-gray-200">{translate("paste_unibet_url")}</span>
-          <input
-            type="url"
-            value={unibetUrl}
-            onChange={(event) => setUnibetUrl(event.target.value)}
-            placeholder="https://www.unibet.com/betting/sports/event/..."
-            className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </label>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input
+          className="flex-1 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm"
+          placeholder={t("unibet_placeholder")}
+          value={unibetUrl}
+          onChange={(event) => setUnibetUrl(event.target.value)}
+        />
         <button
           type="button"
-          onClick={handleLoadUnibetOdds}
-          className="inline-flex items-center justify-center rounded-md border border-blue-500 px-4 py-2 text-sm font-semibold text-blue-200 transition hover:bg-blue-500/10"
+          onClick={handleLoadOdds}
+          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500"
           disabled={loading}
         >
-          {translate("load_odds")}
+          {t("load_odds")}
         </button>
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-md border border-gray-800 bg-gray-900 px-4 py-3">
-        <label className="flex items-center gap-3 text-sm text-gray-200">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 text-sm">
+          <span>{t("home_importance")}</span>
           <input
-            type="checkbox"
-            checked={neutralGround}
-            onChange={handleNeutralGround}
-            className="h-4 w-4 rounded border-gray-600 bg-gray-900 text-blue-500 focus:ring-blue-500"
+            type="range"
+            min={1}
+            max={10}
+            value={form[Object.keys(form)[0]]?.home_importance ?? 5}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              setForm((prev) => {
+                const next = { ...prev };
+                for (const key of Object.keys(next)) {
+                  next[key] = { ...next[key], home_importance: value };
+                }
+                return next;
+              });
+            }}
           />
-          <span>{translate("neutral_ground")}</span>
         </label>
-
-        <div className="flex flex-wrap items-center gap-6 text-sm text-gray-200">
-          <label className="flex flex-col gap-1">
-            <span>{translate("importance_home")}</span>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              value={form[firstStatKey].home_importance}
-              onChange={handleFormChange(firstStatKey, "home_importance")}
-              className="h-2 w-48 cursor-pointer appearance-none rounded bg-gradient-to-r from-blue-900 to-blue-500"
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span>{translate("importance_away")}</span>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              value={form[firstStatKey].away_importance}
-              onChange={handleFormChange(firstStatKey, "away_importance")}
-              className="h-2 w-48 cursor-pointer appearance-none rounded bg-gradient-to-r from-blue-900 to-blue-500"
-            />
-          </label>
-        </div>
+        <label className="flex flex-col gap-1 text-sm">
+          <span>{t("away_importance")}</span>
+          <input
+            type="range"
+            min={1}
+            max={10}
+            value={form[Object.keys(form)[0]]?.away_importance ?? 5}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              setForm((prev) => {
+                const next = { ...prev };
+                for (const key of Object.keys(next)) {
+                  next[key] = { ...next[key], away_importance: value };
+                }
+                return next;
+              });
+            }}
+          />
+        </label>
       </div>
 
-      {rankingError ? (
-        <div className="mb-4 rounded-md border border-red-700 bg-red-950/60 px-4 py-3 text-sm text-red-200">
-          {rankingError}
-        </div>
-      ) : null}
-
-      <PositiveEvTable results={resultsForTeam} statLabels={statLabels} />
-
-      <form onSubmit={handleSubmit} className="mt-6 space-y-10">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
         <button
-          type="submit"
+          type="button"
+          onClick={handleCalculateAll}
+          className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500"
           disabled={loading}
-          className="inline-flex items-center justify-center rounded-md border border-blue-500 px-5 py-2 text-sm font-semibold text-blue-200 transition hover:bg-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? translate("submit_running") : translate("submit_run")}
+          {loading ? t("loading") : t("calculate_all")}
         </button>
-
-        {Object.keys(statPatterns).map((statKey) => {
-          const entry = form[statKey];
-          const statResults = resultsForTeam.filter(
-            (result) =>
-              result.bet.statKey === statKey &&
-              result.bet.scope === entry.scope &&
-              result.bet.period === entry.period
-          );
-
-          return (
-            <section key={statKey} className="rounded-lg border border-gray-800 bg-gray-900 px-4 py-5 shadow-inner">
-              <header className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-100">
-                  {statPatterns[statKey].displayName}
-                </h3>
-              </header>
-
-              <RankingSummary
-                statKey={statKey}
-                formEntry={entry}
-                teamProfiles={teamProfiles}
-                homeLeagueName={homeLeagueName}
-                awayLeagueName={awayLeagueName}
-              />
-
-              <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-gray-200">
-                <select
-                  value={entry.scope}
-                  onChange={handleFormChange(statKey, "scope")}
-                  className="rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="total">{translate("scope_total")}</option>
-                  <option value="home">{entry.homeTeam || translate("home")}</option>
-                  <option value="away">{entry.awayTeam || translate("away")}</option>
-                </select>
-                <select
-                  value={entry.period}
-                  onChange={handleFormChange(statKey, "period")}
-                  className="rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="ALL">{translate("period_match")}</option>
-                  <option value="1ST">{translate("period_first_half")}</option>
-                  <option value="2ND">{translate("period_second_half")}</option>
-                </select>
-                <input
-                  value={entry.formMatches}
-                  onChange={handleFormChange(statKey, "formMatches")}
-                  placeholder={translate("form_placeholder")}
-                  className="w-48 rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
-              <OddsTable
-                statKey={statKey}
-                scope={entry.scope}
-                period={entry.period}
-                teamKey={currentTeamKey}
-                homeTeam={entry.homeTeam}
-                awayTeam={entry.awayTeam}
-                oddsStore={oddsStore}
-                setOddsStore={setOddsStore}
-                results={statResults}
-                onRecalculate={recalculateBet}
-                neutralGround={neutralGround}
-                setHistoryTooltip={setHistoryTooltip}
-                setHistoryPosition={setHistoryPosition}
-                setTooltipThreshold={setTooltipThreshold}
-                statPatterns={statPatterns}
-                labels={LABELS}
-              />
-            </section>
-          );
-        })}
-      </form>
+      </div>
 
       {error ? (
-        <div className="mt-6 rounded-md border border-red-700 bg-red-950/60 px-4 py-3 text-sm text-red-200">
+        <div className="mb-4 rounded border border-red-500/40 bg-red-900/40 px-3 py-2 text-sm text-red-200">
           {error}
         </div>
       ) : null}
-    </div>
-  ) : (
-    <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-400">
-      {translate("select_match_placeholder")}
-    </div>
-  );
 
-  return (
-    <div className={containerClass}>
-      <div className="border-b border-gray-800 px-5 py-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-300">
-          {translate("backtest_title")}
-        </h2>
+      {positiveResults.length ? (
+        <div className="mb-6 rounded border border-emerald-500/30 bg-emerald-900/20 p-3">
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-200">
+            {t("positive_ev_header")}
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-xs">
+              <thead className="text-slate-300">
+                <tr>
+                  <th className="px-2 py-1">{t("stat")}</th>
+                  <th className="px-2 py-1">{t("team")}</th>
+                  <th className="px-2 py-1">{t("period")}</th>
+                  <th className="px-2 py-1">{t("direction")}</th>
+                  <th className="px-2 py-1">{t("odds")}</th>
+                  <th className="px-2 py-1">{t("value")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {positiveResults.map((result) => (
+                  <tr key={result.bet.key} className="border-t border-slate-700">
+                    <td className="px-2 py-1">{statNames[result.bet.statKey] || result.bet.statKey}</td>
+                    <td className="px-2 py-1">
+                      {formatScope(result.bet.scope, result.bet.homeTeam, result.bet.awayTeam, t)}
+                    </td>
+                    <td className="px-2 py-1">
+                      {formatPeriodLabel(result.bet.period, t)}
+                    </td>
+                    <td className="px-2 py-1">
+                      {result.bet.direction === "over" ? t("over") : t("under")} {result.bet.line}
+                    </td>
+                    <td className="px-2 py-1">{result.bet.odds}</td>
+                    <td className="px-2 py-1">
+                      {result.primaryEv?.toFixed(1)}%
+                      {result.primaryLabel ? ` (${result.primaryLabel})` : ""}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="space-y-6">
+        {Object.keys(statPatterns).map((statKey) => {
+          const cfg = form[statKey];
+          const thresholds = statPatterns[statKey].thresholds(cfg.scope, cfg.period) || [];
+          const statOdds = oddsStore[teamKey]?.[statKey]?.[cfg.scope]?.[cfg.period] || {};
+          return (
+            <div key={statKey} className="rounded border border-slate-700/60 p-3">
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-sm font-semibold">
+                  {statNames[statKey] || statKey}
+                </h3>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <select
+                    value={cfg.scope}
+                    onChange={handleFormChange(statKey, "scope")}
+                    className="rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
+                  >
+                    <option value="total">{t("scope_total")}</option>
+                    <option value="home">{homeTeam || t("scope_home")}</option>
+                    <option value="away">{awayTeam || t("scope_away")}</option>
+                  </select>
+                  <select
+                    value={cfg.period}
+                    onChange={handleFormChange(statKey, "period")}
+                    className="rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
+                  >
+                    <option value="ALL">{t("period_match")}</option>
+                    <option value="1ST">{t("period_first_half")}</option>
+                    <option value="2ND">{t("period_second_half")}</option>
+                  </select>
+                  <input
+                    value={cfg.formMatches}
+                    onChange={handleFormChange(statKey, "formMatches")}
+                    className="w-28 rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
+                    placeholder={t("form_label")}
+                  />
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-xs">
+                  <thead className="text-slate-300">
+                    <tr>
+                      <th className="px-2 py-1">Lina</th>
+                      <th className="px-2 py-1">{t("over")}</th>
+                      <th className="px-2 py-1">{t("ev_percent")}</th>
+                      <th className="px-2 py-1">{t("under")}</th>
+                      <th className="px-2 py-1">{t("ev_percent")}</th>
+                      <th className="px-2 py-1"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {thresholds.map((line) => {
+                      const odds = statOdds[line] || { over: "", under: "" };
+                      const overKey = createBetKey({
+                        homeTeam,
+                        awayTeam,
+                        statKey,
+                        scope: cfg.scope,
+                        period: cfg.period,
+                        line,
+                        direction: "over",
+                        formMatches: cfg.formMatches,
+                        neutralGround,
+                      });
+                      const underKey = createBetKey({
+                        homeTeam,
+                        awayTeam,
+                        statKey,
+                        scope: cfg.scope,
+                        period: cfg.period,
+                        line,
+                        direction: "under",
+                        formMatches: cfg.formMatches,
+                        neutralGround,
+                      });
+                      const overResult = resultsMap[overKey];
+                      const underResult = resultsMap[underKey];
+                      const overEv = resolvePrimaryEv(overResult).primaryEv;
+                      const underEv = resolvePrimaryEv(underResult).primaryEv;
+                      return (
+                        <tr key={line} className="border-t border-slate-700/60">
+                          <td className="px-2 py-1">{line}</td>
+                          <td className="px-2 py-1">
+                            <input
+                              type="number"
+                              className="w-20 rounded border border-slate-600 bg-slate-950 px-2 py-1"
+                              step="0.01"
+                              value={odds.over}
+                              onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "over")}
+                            />
+                          </td>
+                          <td className="px-2 py-1 text-emerald-300">
+                            {typeof overEv === "number" ? `${overEv.toFixed(1)}%` : "–"}
+                          </td>
+                          <td className="px-2 py-1">
+                            <input
+                              type="number"
+                              className="w-20 rounded border border-slate-600 bg-slate-950 px-2 py-1"
+                              step="0.01"
+                              value={odds.under}
+                              onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "under")}
+                            />
+                          </td>
+                          <td className="px-2 py-1 text-emerald-300">
+                            {typeof underEv === "number" ? `${underEv.toFixed(1)}%` : "–"}
+                          </td>
+                          <td className="px-2 py-1">
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                className="rounded bg-blue-700 px-2 py-1 text-[11px] hover:bg-blue-600"
+                                onClick={() =>
+                                  recalculateBet({
+                                    statKey,
+                                    line,
+                                    direction: "over",
+                                    scope: cfg.scope,
+                                    period: cfg.period,
+                                    oddsValue: odds.over ? Number(odds.over) : null,
+                                  })
+                                }
+                              >
+                                {t("over")}
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded bg-blue-700 px-2 py-1 text-[11px] hover:bg-blue-600"
+                                onClick={() =>
+                                  recalculateBet({
+                                    statKey,
+                                    line,
+                                    direction: "under",
+                                    scope: cfg.scope,
+                                    period: cfg.period,
+                                    oddsValue: odds.under ? Number(odds.under) : null,
+                                  })
+                                }
+                              >
+                                {t("under")}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })}
       </div>
-      {bodyContent}
-      <HistoryTooltip
-        content={historyTooltip}
-        position={historyPosition}
-        threshold={tooltipThreshold}
-      />
-    </div>
+    </section>
   );
 }
-
