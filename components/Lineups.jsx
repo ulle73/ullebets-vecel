@@ -5,6 +5,7 @@ import useSWR from "swr";
 import TeamOddsHistory from "@/components/TeamOddsHistory";
 import { buildLineupsKey } from "@/lib/utils/apiKeys";
 import { fetchJson } from "@/lib/utils/fetchers";
+import RecentClosingOdds from "@/components/RecentClosingOdds";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
@@ -641,12 +642,14 @@ export default function Lineups({ match, isLoading, className = "" }) {
           Lineups
         </h2>
       </div>
-      <div className="flex flex-1 min-h-0 flex-col">
-        <TeamOddsHistory
-          match={match}
-          className="flex-1 basis-[30%] min-h-0 border-b border-gray-100"
-        />
-        <div className="flex flex-[2] min-h-0 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div
+          className="flex min-h-0 flex-1 basis-0 border-b border-gray-100"
+          style={{ flex: "1 1 30%", minHeight: "30vh" }}
+        >
+          <RecentClosingOdds match={match} className="h-full w-full" />
+        </div>
+        <div className="flex min-h-0 flex-[2] basis-0 flex-col">
           {content}
         </div>
       </div>
