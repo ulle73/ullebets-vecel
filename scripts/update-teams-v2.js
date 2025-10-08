@@ -1328,7 +1328,7 @@
 
 //   console.log(`📅 Dagar att bearbeta: ${datesToProcess.join(", ")}`);
 
-//   const browser = await puppeteer.launch({ headless: "new" });
+//   const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--no-zygote","--no-first-run"] });
 //   const page = await browser.newPage();
 //   await page.setUserAgent(
 //     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36"
@@ -1752,7 +1752,7 @@
 //   console.log("⏳ Startar om 10 s … (Ctrl+C för att avbryta)");
 //   await sleep(10_000);
 
-//   const browser = await puppeteer.launch({ headless: "new" });
+//   const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--no-zygote","--no-first-run"] });
 //   const page = await browser.newPage();
 //   await page.setUserAgent(
 //     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36"
@@ -3347,7 +3347,7 @@ if (leagues && typeof leagues === "object") {
 
   console.log(`📅 Dagar att bearbeta: ${datesToProcess.join(", ")}`);
 
-  const browser = await puppeteer.launch({ headless: "new" });
+  const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--no-zygote","--no-first-run"] });
   const page = await browser.newPage();
   await page.setUserAgent(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36"
@@ -3878,7 +3878,7 @@ async function main() {
     console.log("⏳ Startar om 10 s … (Ctrl+C för att avbryta)");
     await sleep(10_000);
 
-    const browser = await puppeteer.launch({ headless: "new" });
+    const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--no-zygote","--no-first-run"] });
     const page = await browser.newPage();
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36"
