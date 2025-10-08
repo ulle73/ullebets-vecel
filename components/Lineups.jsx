@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
+import TeamOddsHistory from "@/components/TeamOddsHistory";
 import { buildLineupsKey } from "@/lib/utils/apiKeys";
 import { fetchJson } from "@/lib/utils/fetchers";
 import RecentClosingOdds from "@/components/RecentClosingOdds";
