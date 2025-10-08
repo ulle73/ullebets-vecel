@@ -1,0 +1,71 @@
+ .positive-ev-table {
+   width: 100%;
+   border-collapse: collapse;
+ }
+
+ .positive-ev-table th,
+ .positive-ev-table td {
+   text-align: left;
+   padding: 4px;
+ }
+
+/* Mobilanpassning */
+@media screen and (max-width: 768px) {
+  /* Formulär: mindre avstånd */
+  form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  /* Sektioner för varje stat */
+  form > div {
+    margin-bottom: 16px !important;
+  }
+
+  /* Flex‐raden med selects och input */
+  form > div > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  /* Gör selects och textfält fullbredd */
+  select,
+  input[type="number"] {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Tabell: kompakt och scrollbar vid behov */
+  table {
+    font-size: 0.85em !important;
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+  th, td {
+    padding: 4px !important;
+  }
+
+  /* Knappen: fullbredd */
+  button[type="submit"] {
+    width: 100% !important;
+    padding: 12px !important;
+  }
+
+  /* Rubriker och textstorlek */
+  h1 {
+    font-size: 1.4em !important;
+  }
+  h2 {
+    font-size: 1.2em !important;
+    margin-bottom: 8px !important;
+    text-align: center !important;
+  }
+
+  /* Felmeddelande */
+  p[style*="color: #b91c1c"] {
+    font-size: 0.9em !important;
+  }
+}
