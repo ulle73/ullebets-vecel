@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapUnibetOdds from "./backtest/unibetOddsMapper";
 import { getStatPatterns } from "./backtest/statPatterns";
+import { computeHistoryStats } from "./backtest/historyCalculator";
 
 const translations = {
   title: "Backtest",
@@ -49,6 +50,7 @@ const translations = {
   ev_league_avg_label: "EV (liga)",
   ev_model_label: "EV (modell)",
   ev_legacy_label: "EV (legacy)",
+  conceded: "conceded",
 };
 
 function useTranslation() {
@@ -161,8 +163,50 @@ function getEvEntries(result, t) {
   return entries;
 }
 
-function getHitSummary(result, direction, t) {
+function getHitSummary(result, direction, t, options = {}) {
   if (!result) return { label: "–", tooltip: "" };
+  const { scope = "total", opponentLabel } = options;
+
+  const formatEntry = (entry, labelText) => {
+    if (!entry) return null;
+    const made = Number(entry.hits ?? 0);
+    const total = Number(entry.total ?? 0);
+    if (Number.isFinite(total) && total > 0 && Number.isFinite(made) && made >= 0) {
+      const pct = ((made / total) * 100).toFixed(1);
+      return {
+        label: `${made}/${total} (${pct}%)`,
+        tooltip: `${labelText}: ${made}/${total} matcher (${pct}%)`,
+      };
+    }
+    if (Number.isFinite(made) && Number.isFinite(total)) {
+      return {
+        label: `${made}/${total}`,
+        tooltip: `${labelText}: ${made}/${total} matcher`,
+      };
+    }
+    return null;
+  };
+
+  if (result.history) {
+    const labelText =
+      direction === "over"
+        ? t("over")
+        : scope === "total"
+        ? t("under")
+        : opponentLabel || t("under");
+    const entry =
+      direction === "over"
+        ? result.history.over
+        : scope === "total"
+        ? result.history.under ?? result.history.over
+        : result.history.opponent ?? result.history.under;
+    const formatted = formatEntry(entry, labelText);
+    if (formatted) {
+      return formatted;
+    }
+  }
+
+  const rawLabel = direction === "over" ? t("over") : scope === "total" ? t("under") : opponentLabel || t("under");
   const raw = direction === "over" ? result.hitsOver : result.hitsUnder;
   if (!raw) return { label: "–", tooltip: "" };
 
@@ -173,13 +217,13 @@ function getHitSummary(result, direction, t) {
     const pct = ((made / total) * 100).toFixed(1);
     return {
       label: `${made}/${total} (${pct}%)`,
-      tooltip: `${direction === "over" ? t("over") : t("under")}: ${made}/${total} matcher (${pct}%)`,
+      tooltip: `${rawLabel}: ${made}/${total} matcher (${pct}%)`,
     };
   }
 
   return {
     label: String(raw),
-    tooltip: `${direction === "over" ? t("over") : t("under")}: ${raw}`,
+    tooltip: `${rawLabel}: ${raw}`,
   };
 }
 
@@ -334,8 +378,22 @@ export default function BacktestPage({ match }) {
       setError(null);
       try {
         const data = await postBacktest(body);
+        const history = computeHistoryStats({
+          homeMatches: data.homeMatches,
+          awayMatches: data.awayMatches,
+          statPatterns,
+          statKey,
+          scope,
+          period,
+          line,
+          formMatches: config.formMatches,
+          neutralGround,
+          homeTeam: config.homeTeam,
+          awayTeam: config.awayTeam,
+        });
         const result = {
           ...data,
+          history,
           bet: {
             statKey,
             line,
@@ -357,7 +415,7 @@ export default function BacktestPage({ match }) {
         setLoading(false);
       }
     },
-    [form, neutralGround, t]
+    [form, neutralGround, statPatterns, t]
   );
 
   const scheduleRecalculate = useCallback(
@@ -730,14 +788,26 @@ export default function BacktestPage({ match }) {
                       const underResult = resultsMap[underKey];
                       const overEntries = getEvEntries(overResult, t);
                       const underEntries = getEvEntries(underResult, t);
-                      const overHistory = getHitSummary(overResult, "over", t);
-                      const underHistory = getHitSummary(underResult, "under", t);
+                      const concededLabel = t("conceded");
                       const historyOpponentLabel =
                         cfg.scope === "home"
-                          ? awayTeam || t("scope_away")
+                          ? `${awayTeam || t("scope_away")} ${concededLabel}`.trim()
                           : cfg.scope === "away"
-                          ? homeTeam || t("scope_home")
+                          ? `${homeTeam || t("scope_home")} ${concededLabel}`.trim()
                           : t("under");
+                      const overHistory = getHitSummary(overResult || underResult, "over", t, {
+                        scope: cfg.scope,
+                        opponentLabel: historyOpponentLabel,
+                      });
+                      const underHistory = getHitSummary(
+                        cfg.scope === "total" ? underResult || overResult : overResult || underResult,
+                        "under",
+                        t,
+                        {
+                          scope: cfg.scope,
+                          opponentLabel: historyOpponentLabel,
+                        }
+                      );
                       return (
                         <tr key={line} className="align-top">
                           <td className="px-3 py-3 text-sm font-medium text-slate-100">{line}</td>
