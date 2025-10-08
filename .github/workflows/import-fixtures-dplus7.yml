@@ -1,0 +1,41 @@
+name: Import fixtures (D+7 only)
+
+on:
+  schedule:
+    - cron: "0 5 * * *"   # 05:00 UTC dagligen
+  workflow_dispatch: {}
+
+concurrency:
+  group: import-fixtures-dplus7
+  cancel-in-progress: false
+
+jobs:
+  run-script:
+    name: Fetch fixtures for D+7
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+      RAPIDAPI_KEYS: ${{ secrets.RAPIDAPI_KEYS }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compute D+7 (UTC)
+        id: dates
+        run: echo "TARGET=$(date -u -d '+7 days' +%F)" >> $GITHUB_OUTPUT
+
+      - name: Run fixtures import script for D+7
+        run: |
+          echo "▶ Kör fixtures-script för ${{ steps.dates.outputs.TARGET }}"
+          node scripts/fetch-and-import-fixtures.js "${{ steps.dates.outputs.TARGET }}"
