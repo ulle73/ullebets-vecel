@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { buildLineupsKey } from "@/lib/utils/apiKeys";
 import { fetchJson } from "@/lib/utils/fetchers";
+import RecentClosingOdds from "@/components/RecentClosingOdds";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
@@ -640,7 +641,17 @@ export default function Lineups({ match, isLoading, className = "" }) {
           Lineups
         </h2>
       </div>
-      {content}
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div
+          className="flex min-h-0 flex-1 basis-0 border-b border-gray-100"
+          style={{ flex: "1 1 30%", minHeight: "30vh" }}
+        >
+          <RecentClosingOdds match={match} className="h-full w-full" />
+        </div>
+        <div className="flex min-h-0 flex-[2] basis-0 flex-col">
+          {content}
+        </div>
+      </div>
     </div>
   );
 }
