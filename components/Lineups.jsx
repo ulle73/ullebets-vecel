@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
+import TeamOddsHistory from "@/components/TeamOddsHistory";
 import { buildLineupsKey } from "@/lib/utils/apiKeys";
 import { fetchJson } from "@/lib/utils/fetchers";
 
@@ -640,7 +641,15 @@ export default function Lineups({ match, isLoading, className = "" }) {
           Lineups
         </h2>
       </div>
-      {content}
+      <div className="flex flex-1 min-h-0 flex-col">
+        <TeamOddsHistory
+          match={match}
+          className="flex-1 basis-[30%] min-h-0 border-b border-gray-100"
+        />
+        <div className="flex flex-[2] min-h-0 flex-col overflow-hidden">
+          {content}
+        </div>
+      </div>
     </div>
   );
 }
