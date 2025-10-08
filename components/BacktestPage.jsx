@@ -277,7 +277,13 @@ export default function BacktestPage({ match, className = "" }) {
 
     const makeTask = ({ label, team, league, matchType }) => {
       if (!team || !matchType) return;
-      tasks.push({ label, team, league, matchType });
+      const url = buildTeamProfileKey({
+        team,
+        league,
+        matchType,
+      });
+      if (!url) return;
+      tasks.push({ label, team, league, matchType, url });
     };
 
     makeTask({ label: "homeTeam:home", team: homeTeamName, league: homeLeagueName, matchType: "home" });
@@ -300,13 +306,8 @@ export default function BacktestPage({ match, className = "" }) {
     setRankingError(null);
     setTeamProfiles(null);
 
-    const fetchProfile = async ({ label, team, league, matchType }) => {
+    const fetchProfile = async ({ label, team, league, matchType, url }) => {
       try {
-        const params = new URLSearchParams();
-        params.set("team", team);
-        params.set("matchType", matchType);
-        if (league) params.set("league", league);
-        const url = `/api/teamprofiles?${params.toString()}`;
         logClientBacktestStep("Lagprofil hämtas från databasen via API och skickas vidare.", {
           label,
           url,

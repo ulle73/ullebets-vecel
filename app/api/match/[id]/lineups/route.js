@@ -44,8 +44,56 @@ function buildUrlWithParams(baseUrl, params) {
   return `${baseUrl}${joiner}${query}`;
 }
 
+// async function tryRapidWithKeys(buildConfig, label) {
+//   let lastError = null;
+//   for (let attempt = 0; attempt < rapidApiKeys.length; attempt += 1) {
+//     const keyIndex = (rapidApiState.index + attempt) % rapidApiKeys.length;
+//     const apiKey = rapidApiKeys[keyIndex];
+//     const config = buildConfig(apiKey);
+//     const url = buildUrlWithParams(config.url, config.params);
+
+//     try {
+//       const result = await fetchJson(url, {
+//         method: config.method || "GET",
+//         headers: {
+//           "x-rapidapi-key": apiKey,
+//           ...("host" in config ? { "x-rapidapi-host": config.host } : {}),
+//           ...(config.headers || {}),
+//         },
+//       });
+
+//       if (result.ok) {
+//         rapidApiState.index = (keyIndex + 1) % rapidApiKeys.length;
+//         console.log(
+//           `VIP lineups: hämtade via ${label} (key ...${apiKey.slice(-4)})`
+//         );
+//         return { success: true, data: result.data, provider: label, apiKey };
+//       }
+
+//       if (result.status === 404) {
+//         lastError = new Error(`${label}: Not found`);
+//       } else {
+//         lastError = new Error(
+//           `${label}: Unexpected response status ${result.status}`
+//         );
+//       }
+//       console.warn(
+//         `VIP lineups: ${label} key ...${apiKey.slice(-4)} returned HTTP ${result.status}`
+//       );
+//     } catch (error) {
+//       lastError = error;
+//       console.warn(
+//         `VIP lineups: ${label} key ...${apiKey.slice(-4)} failed – ${error?.message ?? error}`
+//       );
+//     }
+//   }
+
+//   return { success: false, data: null, provider: label, error: lastError };
+// }
+
 async function tryRapidWithKeys(buildConfig, label) {
   let lastError = null;
+
   for (let attempt = 0; attempt < rapidApiKeys.length; attempt += 1) {
     const keyIndex = (rapidApiState.index + attempt) % rapidApiKeys.length;
     const apiKey = rapidApiKeys[keyIndex];
@@ -58,11 +106,14 @@ async function tryRapidWithKeys(buildConfig, label) {
         headers: {
           "x-rapidapi-key": apiKey,
           ...("host" in config ? { "x-rapidapi-host": config.host } : {}),
+          accept: "application/json",
+          "user-agent": "Mozilla/5.0",
           ...(config.headers || {}),
         },
       });
 
       if (result.ok) {
+        // rotera bara index vid lyckad träff
         rapidApiState.index = (keyIndex + 1) % rapidApiKeys.length;
         console.log(
           `VIP lineups: hämtade via ${label} (key ...${apiKey.slice(-4)})`
@@ -70,20 +121,37 @@ async function tryRapidWithKeys(buildConfig, label) {
         return { success: true, data: result.data, provider: label, apiKey };
       }
 
+      // --- NYTT: hantering per status ---
       if (result.status === 404) {
-        lastError = new Error(`${label}: Not found`);
-      } else {
-        lastError = new Error(
-          `${label}: Unexpected response status ${result.status}`
+        // 404 betyder nästan alltid fel ID-namespace hos providern → att byta nyckel hjälper inte.
+        console.warn(
+          `VIP lineups: ${label} returned 404 – stoppar nyckel-rotation för denna provider. Body: ${String(
+            result.raw
+          ).slice(0, 180)}`
         );
+        return {
+          success: false,
+          data: null,
+          provider: label,
+          error: new Error(`${label}: 404 Not Found`),
+        };
       }
+
+    
+
+      // Övriga 4xx/5xx: logga råkropp, prova nästa nyckel
+      lastError = new Error(`${label}: HTTP ${result.status}`);
       console.warn(
-        `VIP lineups: ${label} key ...${apiKey.slice(-4)} returned HTTP ${result.status}`
+        `VIP lineups: ${label} key ...${apiKey.slice(-4)} HTTP ${
+          result.status
+        } – ${String(result.raw).slice(0, 180)}`
       );
     } catch (error) {
       lastError = error;
       console.warn(
-        `VIP lineups: ${label} key ...${apiKey.slice(-4)} failed – ${error?.message ?? error}`
+        `VIP lineups: ${label} key ...${apiKey.slice(-4)} failed – ${
+          error?.message ?? error
+        }`
       );
     }
   }
@@ -417,8 +485,9 @@ function normalizeResponse(raw) {
   return { lineups, confirmed };
 }
 
-export async function GET(_req, context) {
-  const matchId = context?.params?.id;
+export async function GET(_req, contextPromise) {
+  const { params } = await contextPromise;
+  const matchId = params?.id;
   if (!matchId) {
     return new Response("Missing match id", { status: 400 });
   }
@@ -436,7 +505,7 @@ export async function GET(_req, context) {
       {
         headers: {
           "content-type": "application/json",
-          "cache-control": "public, s-maxage=1800, stale-while-revalidate=900",
+          "cache-control": "public, s-maxage=1800, stale-while-revalidate=1800",
         },
       }
     );

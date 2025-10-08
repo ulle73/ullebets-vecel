@@ -1,18 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
+import { buildLineupsKey } from "@/lib/utils/apiKeys";
+import { fetchJson } from "@/lib/utils/fetchers";
 
-const fetcher = async (url) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    const message = `HTTP ${response.status}`;
-    const error = new Error(message);
-    error.status = response.status;
-    throw error;
-  }
-  return response.json();
-};
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 
 const GOALKEEPER_TOKENS = ["gk", "goalkeeper", "keeper", "målvakt", "portero"];
 const DEFENDER_TOKENS = ["cb", "rb", "lb", "def", "back", "df", "försvar", "defender"];
@@ -237,6 +231,47 @@ mode: "around",      // eller "between"
   return result;
 }
 
+function parseMatchStartTimestamp(match) {
+  if (!match || typeof match !== "object") return null;
+
+  const candidates = [
+    match.startTimestamp,
+    match.event?.startTimestamp,
+    match.timestamp,
+    match.kickoffTime,
+    match.startTime,
+  ];
+
+  for (const value of candidates) {
+    if (value == null) continue;
+
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) continue;
+
+    // Heuristic: treat values below unix ms threshold as seconds.
+    const milliseconds =
+      numericValue > 1e12 ? numericValue : Math.round(numericValue * 1000);
+    if (Number.isFinite(milliseconds)) {
+      return milliseconds;
+    }
+  }
+
+  if (typeof match.date === "string") {
+    const parsed = Date.parse(match.date);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function isWithinOneDay(matchStartMs, referenceTimeMs) {
+  if (!matchStartMs || !Number.isFinite(matchStartMs)) return true;
+  const diff = Math.abs(matchStartMs - referenceTimeMs);
+  return diff <= ONE_DAY_MS;
+}
+
 function toComparable(value) {
   if (value == null) return null;
   return String(value).trim().toLowerCase();
@@ -411,15 +446,65 @@ function resolveBadgeClass(side) {
 export default function Lineups({ match, isLoading, className = "" }) {
   const matchId = match?.matchId ?? match?.id ?? null;
 
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  const matchStartTimestamp = useMemo(
+    () => parseMatchStartTimestamp(match),
+    [match]
+  );
+
+  useEffect(() => {
+    if (!matchStartTimestamp) return undefined;
+
+    setCurrentTime(Date.now());
+    const intervalId = setInterval(
+      () => setCurrentTime(Date.now()),
+      THIRTY_MINUTES_MS
+    );
+    return () => clearInterval(intervalId);
+  }, [matchStartTimestamp]);
+
+  const withinFetchWindow = isWithinOneDay(matchStartTimestamp, currentTime);
+  const shouldFetchLineups = Boolean(matchId && withinFetchWindow);
+
+  const swrOptions = useMemo(
+    () => ({
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      revalidateOnReconnect: false,
+      shouldRetryOnError: false,
+      dedupingInterval: 5 * 60 * 1000,
+      refreshInterval: (latestData) => {
+        if (!shouldFetchLineups || !matchStartTimestamp) return 0;
+
+        const current = Date.now();
+        if (!isWithinOneDay(matchStartTimestamp, current)) return 0;
+        if (matchStartTimestamp <= current) return 0;
+        if (latestData?.confirmed) return 0;
+
+        return THIRTY_MINUTES_MS;
+      },
+    }),
+    [matchStartTimestamp, shouldFetchLineups]
+  );
+
   const {
     data,
     error,
     isLoading: isLineupsLoading,
     mutate,
-  } = useSWR(matchId ? `/api/match/${matchId}/lineups` : null, fetcher, {
-    revalidateOnFocus: false,
-    shouldRetryOnError: false,
-  });
+  } = useSWR(shouldFetchLineups ? buildLineupsKey(matchId) : null, fetchJson, swrOptions);
+
+  const handleManualRefresh = () => {
+    if (shouldFetchLineups) {
+      void mutate();
+    }
+  };
+
+  const isOutsideFetchWindow = Boolean(match && matchId && !withinFetchWindow);
+  const isFutureMatch = matchStartTimestamp
+    ? matchStartTimestamp > currentTime
+    : null;
 
   const loading = isLoading || isLineupsLoading;
 
@@ -453,6 +538,14 @@ export default function Lineups({ match, isLoading, className = "" }) {
     content = (
       <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-400">
         Välj en match för att se laguppställning.
+      </div>
+    );
+  } else if (isOutsideFetchWindow) {
+    content = (
+      <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-gray-500">
+        {isFutureMatch === false
+          ? "Laguppställningar sparas i upp till 24 timmar efter matchstart."
+          : "Laguppställningar blir tillgängliga tidigast 24 timmar före matchstart."}
       </div>
     );
   } else if (loading) {
@@ -499,12 +592,13 @@ export default function Lineups({ match, isLoading, className = "" }) {
           </div>
           <button
             type="button"
-            onClick={() => mutate()}
-            className="rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-800"
-          >
-            Uppdatera
-          </button>
-        </div>
+          onClick={handleManualRefresh}
+          disabled={!shouldFetchLineups}
+          className="rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+        >
+          Uppdatera
+        </button>
+      </div>
         <CombinedPitch homeLineup={homeLineup} awayLineup={awayLineup} />
         <div className="grid gap-6 lg:grid-cols-2">
           {homeLineup ? (
