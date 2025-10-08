@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapUnibetOdds from "./backtest/unibetOddsMapper";
 import { getStatPatterns } from "./backtest/statPatterns";
 
@@ -43,6 +43,12 @@ const translations = {
   stat_fouls: "Fouls",
   stat_tackles: "Tacklingar",
   stat_offsides: "Offside",
+  history: "Historik",
+  ev_multiplier_label: "EV (multiplikator)",
+  ev_multifactor_label: "EV (multifaktor)",
+  ev_league_avg_label: "EV (liga)",
+  ev_model_label: "EV (modell)",
+  ev_legacy_label: "EV (legacy)",
 };
 
 function useTranslation() {
@@ -139,6 +145,44 @@ function resolvePrimaryEv(result) {
   return { primaryEv: null, primaryLabel: null };
 }
 
+function getEvEntries(result, t) {
+  if (!result) return [];
+  const entries = [];
+  const add = (value, label) => {
+    if (typeof value === "number") {
+      entries.push({ value, label });
+    }
+  };
+  add(result.evPctWithMultiplier, t("ev_multiplier_label"));
+  add(result.evPctMultifactor, t("ev_multifactor_label"));
+  add(result.evPctLeagueAvg, t("ev_league_avg_label"));
+  add(result.evPct, t("ev_model_label"));
+  add(result.legacyEvPct, t("ev_legacy_label"));
+  return entries;
+}
+
+function getHitSummary(result, direction, t) {
+  if (!result) return { label: "–", tooltip: "" };
+  const raw = direction === "over" ? result.hitsOver : result.hitsUnder;
+  if (!raw) return { label: "–", tooltip: "" };
+
+  const [madeStr, totalStr] = String(raw).split("/");
+  const made = Number(madeStr);
+  const total = Number(totalStr);
+  if (Number.isFinite(made) && Number.isFinite(total) && total > 0) {
+    const pct = ((made / total) * 100).toFixed(1);
+    return {
+      label: `${made}/${total} (${pct}%)`,
+      tooltip: `${direction === "over" ? t("over") : t("under")}: ${made}/${total} matcher (${pct}%)`,
+    };
+  }
+
+  return {
+    label: String(raw),
+    tooltip: `${direction === "over" ? t("over") : t("under")}: ${raw}`,
+  };
+}
+
 function formatPeriodLabel(period, t) {
   if (period === "1ST") return t("period_first_half");
   if (period === "2ND") return t("period_second_half");
@@ -175,6 +219,7 @@ export default function BacktestPage({ match }) {
   const [resultsMap, setResultsMap] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const recalcTimers = useRef({});
 
   const homeTeam = match?.homeTeamName || form[Object.keys(form)[0]]?.homeTeam || "";
   const awayTeam = match?.awayTeamName || form[Object.keys(form)[0]]?.awayTeam || "";
@@ -197,6 +242,16 @@ export default function BacktestPage({ match }) {
   useEffect(() => {
     setOddsStore((prev) => ensureThresholds(prev, statPatterns, form, teamKey));
   }, [form, statPatterns, teamKey]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(recalcTimers.current).forEach((timeoutId) => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      });
+    };
+  }, []);
 
   const statNames = useMemo(
     () => ({
@@ -225,28 +280,6 @@ export default function BacktestPage({ match }) {
       .filter((r) => typeof r.primaryEv === "number" && r.primaryEv > 0)
       .sort((a, b) => b.primaryEv - a.primaryEv);
   }, [results]);
-
-  const handleOddsChange = useCallback(
-    (statKey, scope, period, line, direction) => (event) => {
-      const value = event.target.value;
-      setOddsStore((prev) => {
-        const next = { ...prev };
-        if (!next[teamKey]) next[teamKey] = {};
-        if (!next[teamKey][statKey]) next[teamKey][statKey] = {};
-        if (!next[teamKey][statKey][scope]) next[teamKey][statKey][scope] = {};
-        if (!next[teamKey][statKey][scope][period]) {
-          next[teamKey][statKey][scope][period] = {};
-        }
-        const bucket = {
-          ...(next[teamKey][statKey][scope][period][line] || { over: "", under: "" }),
-        };
-        bucket[direction] = value;
-        next[teamKey][statKey][scope][period][line] = bucket;
-        return next;
-      });
-    },
-    [teamKey]
-  );
 
   const handleFormChange = useCallback((statKey, field) => (event) => {
     const value = event.target.value;
@@ -325,6 +358,61 @@ export default function BacktestPage({ match }) {
       }
     },
     [form, neutralGround, t]
+  );
+
+  const scheduleRecalculate = useCallback(
+    (statKey, scope, period, line, direction, rawValue) => {
+      const timerKey = `${statKey}-${scope}-${period}-${line}-${direction}`;
+      if (recalcTimers.current[timerKey]) {
+        clearTimeout(recalcTimers.current[timerKey]);
+      }
+
+      if (rawValue === "" || rawValue === null) {
+        delete recalcTimers.current[timerKey];
+        return;
+      }
+
+      const numericOdds = Number(rawValue);
+      if (!Number.isFinite(numericOdds) || numericOdds <= 1) {
+        delete recalcTimers.current[timerKey];
+        return;
+      }
+
+      recalcTimers.current[timerKey] = setTimeout(() => {
+        recalculateBet({
+          statKey,
+          line,
+          direction,
+          scope,
+          period,
+          oddsValue: numericOdds,
+        });
+      }, 700);
+    },
+    [recalculateBet]
+  );
+
+  const handleOddsChange = useCallback(
+    (statKey, scope, period, line, direction) => (event) => {
+      const value = event.target.value;
+      setOddsStore((prev) => {
+        const next = { ...prev };
+        if (!next[teamKey]) next[teamKey] = {};
+        if (!next[teamKey][statKey]) next[teamKey][statKey] = {};
+        if (!next[teamKey][statKey][scope]) next[teamKey][statKey][scope] = {};
+        if (!next[teamKey][statKey][scope][period]) {
+          next[teamKey][statKey][scope][period] = {};
+        }
+        const bucket = {
+          ...(next[teamKey][statKey][scope][period][line] || { over: "", under: "" }),
+        };
+        bucket[direction] = value;
+        next[teamKey][statKey][scope][period][line] = bucket;
+        return next;
+      });
+      scheduleRecalculate(statKey, scope, period, line, direction, value);
+    },
+    [scheduleRecalculate, teamKey]
   );
 
   const handleCalculateAll = useCallback(async () => {
@@ -594,18 +682,26 @@ export default function BacktestPage({ match }) {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-xs">
-                  <thead className="text-slate-300">
+                <table className="min-w-full text-left text-xs text-slate-200">
+                  <thead className="bg-slate-900/40 text-[11px] uppercase tracking-wide text-slate-400">
                     <tr>
-                      <th className="px-2 py-1">Lina</th>
-                      <th className="px-2 py-1">{t("over")}</th>
-                      <th className="px-2 py-1">{t("ev_percent")}</th>
-                      <th className="px-2 py-1">{t("under")}</th>
-                      <th className="px-2 py-1">{t("ev_percent")}</th>
-                      <th className="px-2 py-1"></th>
+                      <th className="px-3 py-2 font-medium text-slate-300">Lina</th>
+                      <th className="px-3 py-2 font-medium text-slate-300">
+                        {t("over")} ({t("odds")})
+                      </th>
+                      <th className="px-3 py-2 font-medium text-slate-300">
+                        EV % ({t("over")})
+                      </th>
+                      <th className="px-3 py-2 font-medium text-slate-300">
+                        {t("under")} ({t("odds")})
+                      </th>
+                      <th className="px-3 py-2 font-medium text-slate-300">
+                        EV % ({t("under")})
+                      </th>
+                      <th className="px-3 py-2 font-medium text-slate-300">{t("history")}</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-800">
                     {thresholds.map((line) => {
                       const odds = statOdds[line] || { over: "", under: "" };
                       const overKey = createBetKey({
@@ -632,69 +728,95 @@ export default function BacktestPage({ match }) {
                       });
                       const overResult = resultsMap[overKey];
                       const underResult = resultsMap[underKey];
-                      const overEv = resolvePrimaryEv(overResult).primaryEv;
-                      const underEv = resolvePrimaryEv(underResult).primaryEv;
+                      const overEntries = getEvEntries(overResult, t);
+                      const underEntries = getEvEntries(underResult, t);
+                      const overHistory = getHitSummary(overResult, "over", t);
+                      const underHistory = getHitSummary(underResult, "under", t);
+                      const historyOpponentLabel =
+                        cfg.scope === "home"
+                          ? awayTeam || t("scope_away")
+                          : cfg.scope === "away"
+                          ? homeTeam || t("scope_home")
+                          : t("under");
                       return (
-                        <tr key={line} className="border-t border-slate-700/60">
-                          <td className="px-2 py-1">{line}</td>
-                          <td className="px-2 py-1">
+                        <tr key={line} className="align-top">
+                          <td className="px-3 py-3 text-sm font-medium text-slate-100">{line}</td>
+                          <td className="px-3 py-3">
                             <input
                               type="number"
-                              className="w-20 rounded border border-slate-600 bg-slate-950 px-2 py-1"
+                              className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-2 text-xs font-medium text-slate-100 focus:border-slate-400 focus:outline-none focus:ring-0"
                               step="0.01"
                               value={odds.over}
+                              placeholder={t("over")}
+                              title={overHistory.tooltip || undefined}
                               onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "over")}
                             />
                           </td>
-                          <td className="px-2 py-1 text-emerald-300">
-                            {typeof overEv === "number" ? `${overEv.toFixed(1)}%` : "–"}
+                          <td className="px-3 py-3">
+                            {overEntries.length ? (
+                              <div className="flex flex-col gap-1">
+                                {overEntries.map((entry, idx) => (
+                                  <div key={idx} className="flex items-baseline gap-2">
+                                    <span
+                                      className={`font-semibold ${
+                                        entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                      }`}
+                                    >
+                                      {entry.value.toFixed(1)}%
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-wide text-slate-400">
+                                      {entry.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-500">–</span>
+                            )}
                           </td>
-                          <td className="px-2 py-1">
+                          <td className="px-3 py-3">
                             <input
                               type="number"
-                              className="w-20 rounded border border-slate-600 bg-slate-950 px-2 py-1"
+                              className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-2 text-xs font-medium text-slate-100 focus:border-slate-400 focus:outline-none focus:ring-0"
                               step="0.01"
                               value={odds.under}
+                              placeholder={t("under")}
+                              title={underHistory.tooltip || undefined}
                               onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "under")}
                             />
                           </td>
-                          <td className="px-2 py-1 text-emerald-300">
-                            {typeof underEv === "number" ? `${underEv.toFixed(1)}%` : "–"}
+                          <td className="px-3 py-3">
+                            {underEntries.length ? (
+                              <div className="flex flex-col gap-1">
+                                {underEntries.map((entry, idx) => (
+                                  <div key={idx} className="flex items-baseline gap-2">
+                                    <span
+                                      className={`font-semibold ${
+                                        entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                      }`}
+                                    >
+                                      {entry.value.toFixed(1)}%
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-wide text-slate-400">
+                                      {entry.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-500">–</span>
+                            )}
                           </td>
-                          <td className="px-2 py-1">
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                className="rounded bg-blue-700 px-2 py-1 text-[11px] hover:bg-blue-600"
-                                onClick={() =>
-                                  recalculateBet({
-                                    statKey,
-                                    line,
-                                    direction: "over",
-                                    scope: cfg.scope,
-                                    period: cfg.period,
-                                    oddsValue: odds.over ? Number(odds.over) : null,
-                                  })
-                                }
-                              >
-                                {t("over")}
-                              </button>
-                              <button
-                                type="button"
-                                className="rounded bg-blue-700 px-2 py-1 text-[11px] hover:bg-blue-600"
-                                onClick={() =>
-                                  recalculateBet({
-                                    statKey,
-                                    line,
-                                    direction: "under",
-                                    scope: cfg.scope,
-                                    period: cfg.period,
-                                    oddsValue: odds.under ? Number(odds.under) : null,
-                                  })
-                                }
-                              >
-                                {t("under")}
-                              </button>
+                          <td className="px-3 py-3">
+                            <div className="space-y-1 text-[11px] text-slate-300">
+                              <div className="cursor-help" title={overHistory.tooltip || undefined}>
+                                {t("over")}:
+                                <span className="ml-1 font-medium text-slate-100">{overHistory.label}</span>
+                              </div>
+                              <div className="cursor-help" title={underHistory.tooltip || undefined}>
+                                {historyOpponentLabel}:
+                                <span className="ml-1 font-medium text-slate-100">{underHistory.label}</span>
+                              </div>
                             </div>
                           </td>
                         </tr>
