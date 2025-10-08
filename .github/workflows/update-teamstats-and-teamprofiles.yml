@@ -1,4 +1,4 @@
-name: update-teamstats-and-teamprofiles
+name: Update teamstats (yesterday) & generate profiles
 
 on:
   workflow_dispatch:
@@ -8,22 +8,21 @@ on:
         required: false
         default: "false"
         type: choice
-        options:
-          - "false"
-          - "true"
+        options: ["false", "true"]
 
 concurrency:
   group: teamstats
   cancel-in-progress: false
 
 jobs:
-  import:
-    name: Import teamstats data
+  run:
+    name: update-teams-v2.js --yesterday → import → generate
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
       MONGODB_DB: ${{ secrets.MONGODB_DB }}
+      RAPIDAPI_KEYS: ${{ secrets.RAPIDAPI_KEYS }}
       SKIP_GENERATE: ${{ github.event.inputs.skip_generate_profiles || 'false' }}
     steps:
       - name: Check out repository
@@ -38,12 +37,62 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Import teamstats JSON files
+      # Hotfix om axios saknas i lockfile (så ditt rapidApi/http-helpers funkar)
+      - name: Install axios if missing
+        run: |
+          node -e "try{require('axios');process.exit(0)}catch(e){process.exit(1)}" || npm i --no-save axios@^1
+
+      # Krävs för Puppeteer/Chrome i GitHub Actions
+      - name: Install Chrome deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgbm1 \
+            libnss3 \
+            libatk-bridge2.0-0 \
+            libx11-xcb1 \
+            libxcb-dri3-0 \
+            libxcb1 \
+            libxdamage1 \
+            libxfixes3 \
+            libxcomposite1 \
+            libxrandr2 \
+            libxi6 \
+            libcups2 \
+            libxkbcommon0 \
+            libdrm2 \
+            libasound2t64
+
+      # ⚠️ Viktigt: ditt script måste starta Puppeteer med no-sandbox-flaggor.
+      # Om du redan har args i koden är denna env bara dokumentation.
+      - name: Run update-teams-v2.js --yesterday
+        env:
+          # bara info – din kod måste själv ange args i puppeteer.launch
+          PUPPETEER_INFO: "--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --no-zygote --no-first-run"
+        run: |
+          echo "▶ Kör update-teams-v2.js --yesterday"
+          node scripts/update-teams-v2.js --yesterday
+
+      # Kolla om skriptet faktiskt skrev några json-filer
+      - name: Check for data/teamstats
+        id: has_teamstats
+        run: |
+          if [ -d "data/teamstats" ] && find data/teamstats -type f -name "*.json" -print -quit | grep -q .; then
+            echo "present=true" >> $GITHUB_OUTPUT
+            echo "✅ Hittade teamstats-filer."
+          else
+            echo "present=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Inga teamstats-filer hittades; hoppar import/generate."
+          fi
+
+      - name: Import teamstats into MongoDB
+        if: steps.has_teamstats.outputs.present == 'true'
         run: node scripts/import-teamstats.js
 
       - name: Generate team profiles
-        if: env.SKIP_GENERATE != 'true'
+        if: steps.has_teamstats.outputs.present == 'true' && env.SKIP_GENERATE != 'true'
         run: node scripts/generate-teamprofiles.js
 
       - name: Check MongoDB counts
+        if: steps.has_teamstats.outputs.present == 'true'
         run: node scripts/check-teamstats-count.js
