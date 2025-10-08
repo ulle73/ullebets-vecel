@@ -7,10 +7,8 @@ import RankingSummary from "./backtest/RankingSummary";
 import HistoryTooltip from "./backtest/HistoryTooltip";
 import { getStatPatterns } from "./backtest/statPatterns";
 import {
-  buildBackendUrl,
   buildBacktestApiUrl,
   createInitialForm,
-  getBackendBaseUrl,
   makeTeamKey,
   normalizeTeamName,
   replaceTeamsInForm,
@@ -22,7 +20,6 @@ import {
   resetClientBacktestSteps,
 } from "@/lib/backtest/logger";
 import { areTeamNamesEquivalent, getTeamAliases } from "@/lib/teamNameAliases";
-import leaguesAndTeams from "@/data/leagues-and-teams.json";
 
 const STRINGS = {
   backtest_title: "Backtest",
@@ -73,9 +70,9 @@ const LABELS = {
   under: translate("under"),
 };
 
-const TEAM_TO_LEAGUE = (() => {
+function buildTeamLeagueMap(leagues = {}) {
   const map = new Map();
-  Object.entries(leaguesAndTeams).forEach(([leagueName, leagueInfo]) => {
+  Object.entries(leagues).forEach(([leagueName, leagueInfo]) => {
     (leagueInfo?.teams ?? []).forEach((team) => {
       if (team?.name) {
         map.set(team.name.toLowerCase(), leagueName);
@@ -83,12 +80,14 @@ const TEAM_TO_LEAGUE = (() => {
     });
   });
   return map;
-})();
+}
 
-function resolveLeagueName(teamName, fallback) {
+const EMPTY_TEAM_LEAGUE_MAP = new Map();
+
+function resolveLeagueName(teamName, fallback, teamLeagueMap = EMPTY_TEAM_LEAGUE_MAP) {
   if (!teamName) return fallback ?? null;
   const key = normalizeTeamName(teamName).toLowerCase();
-  return TEAM_TO_LEAGUE.get(key) ?? fallback ?? null;
+  return teamLeagueMap.get(key) ?? fallback ?? null;
 }
 
 export default function BacktestPage({ match, className = "" }) {
@@ -105,18 +104,19 @@ export default function BacktestPage({ match, className = "" }) {
   const [tooltipThreshold, setTooltipThreshold] = useState(null);
   const [teamProfiles, setTeamProfiles] = useState(null);
   const [rankingError, setRankingError] = useState(null);
+  const [teamLeagueMap, setTeamLeagueMap] = useState(() => new Map());
 
   const firstStatKey = useMemo(() => Object.keys(statPatterns)[0], [statPatterns]);
   const homeTeamName = match?.homeTeamName ?? "";
   const awayTeamName = match?.awayTeamName ?? "";
 
   const homeLeagueName = useMemo(
-    () => resolveLeagueName(homeTeamName, match?.leagueName),
-    [homeTeamName, match?.leagueName]
+    () => resolveLeagueName(homeTeamName, match?.leagueName, teamLeagueMap),
+    [homeTeamName, match?.leagueName, teamLeagueMap]
   );
   const awayLeagueName = useMemo(
-    () => resolveLeagueName(awayTeamName, match?.leagueName),
-    [awayTeamName, match?.leagueName]
+    () => resolveLeagueName(awayTeamName, match?.leagueName, teamLeagueMap),
+    [awayTeamName, match?.leagueName, teamLeagueMap]
   );
 
   const currentTeamKey = useMemo(() => {
@@ -152,6 +152,59 @@ export default function BacktestPage({ match, className = "" }) {
       return false;
     });
   }, [results, currentTeamKey]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
+    logClientBacktestStep(
+      "Ligadata hämtas från /api/leagues-and-teams för att matcha lag mot ligor."
+    );
+
+    const loadLeagues = async () => {
+      try {
+        const response = await fetch("/api/leagues-and-teams", {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const payload = await response.json();
+        const leaguesData =
+          payload?.leagues ??
+          payload?.data ??
+          (payload && typeof payload === "object" ? payload : {});
+        const map = buildTeamLeagueMap(leaguesData ?? {});
+        if (cancelled) {
+          logClientBacktestStep(
+            "Ligadata ignoreras eftersom komponenten har avmonterats."
+          );
+          return;
+        }
+        setTeamLeagueMap(map);
+        logClientBacktestStep(
+          "Kartläggning mellan lag och liga uppdaterad utifrån databasen.",
+          {
+            leagueCount: Object.keys(leaguesData ?? {}).length,
+            teamCount: map.size,
+          }
+        );
+      } catch (error) {
+        if (error?.name === "AbortError") {
+          logClientBacktestStep("Ligahämtning avbröts.");
+          return;
+        }
+        logClientBacktestError("Misslyckades hämta ligadata från API.", error);
+      }
+    };
+
+    loadLeagues();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (!match) {
@@ -405,14 +458,16 @@ export default function BacktestPage({ match, className = "" }) {
         logClientBacktestStep("Inga backtestlinor att spara skickas.");
         return;
       }
+      const endpoint = buildBacktestApiUrl("save");
       logClientBacktestStep("Backtest skickas till backendens lagrings-endpoint.", {
         lineCount: lines.length,
         homeTeam,
         awayTeam,
         matchDate,
+        endpoint,
       });
       try {
-        await fetch(buildBackendUrl("/save-backtest"), {
+        await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -675,12 +730,10 @@ export default function BacktestPage({ match, className = "" }) {
 
     setLoading(true);
     setError(null);
-    const backendBaseUrl = getBackendBaseUrl();
     const backendUrl = `/api/unibet-odds/${matchId}`;
 
     logClientBacktestStep("Backend-url för Unibet-hämtningen fastställs.", {
       matchId,
-      backendBaseUrl,
       backendUrl,
       pageOrigin: typeof window !== "undefined" ? window.location.origin : null,
     });
