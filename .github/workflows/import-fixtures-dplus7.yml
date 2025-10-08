@@ -11,50 +11,45 @@ concurrency:
 
 jobs:
   run-script:
-    name: Fetch fixtures for D+7
+    name: Fetch fixtures for D+7 (Puppeteer container)
     runs-on: ubuntu-latest
     timeout-minutes: 45
+
     env:
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
       MONGODB_DB: ${{ secrets.MONGODB_DB }}
       RAPIDAPI_KEYS: ${{ secrets.RAPIDAPI_KEYS }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      # (Valfritt) Hotfix om axios saknas i lockfile
-      - name: Hotfix - install axios (missing in lockfile)
-        run: |
-          npm install --no-save axios@^1
-
-      # Installera lib:ar som Chrome kräver på ubuntu-latest
-      - name: Install system deps for Chrome
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libnss3 libxss1 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
-            libdrm2 libxkbcommon0 libxcomposite1 libxrandr2 libgbm1 \
-            libgtk-3-0 libasound2
-
-      # Patcha Puppeteer launch så den kör utan sandbox i CI
-      - name: Patch puppeteer launch flags (no-sandbox on CI)
-        run: |
-          sed -i "s/puppeteer.launch({ headless: \\\"new\\\" })/puppeteer.launch({ headless: \\\"new\\\", args: ['--no-sandbox','--disable-setuid-sandbox'] })/g" scripts/fetch-and-import-fixtures.js
-
+      # Räkna fram D+7 och exponera som env TARGET
       - name: Compute D+7 (UTC)
-        id: dates
-        run: echo "TARGET=$(date -u -d '+7 days' +%F)" >> $GITHUB_OUTPUT
+        run: echo "TARGET=$(date -u -d '+7 days' +%F)" >> $GITHUB_ENV
 
-      - name: Run fixtures import script for D+7
-        run: |
-          echo "▶ Kör fixtures-script för ${{ steps.dates.outputs.TARGET }}"
-          node scripts/fetch-and-import-fixtures.js "${{ steps.dates.outputs.TARGET }}"
+      # Kör allt inne i Puppeteer-containern (Chrome + Node redan klart)
+      - name: Run import in Puppeteer container
+        uses: tj-actions/docker-run@v2
+        with:
+          image: ghcr.io/puppeteer/puppeteer:21.3.8
+          name: puppeteer-chrome
+          # Mounta workspace, sätt working dir och för in våra env-nycklar
+          options: >-
+            --init
+            -v ${{ github.workspace }}:${{ github.workspace }}
+            -w ${{ github.workspace }}
+            -e MONGODB_URI=${{ env.MONGODB_URI }}
+            -e MONGODB_DB=${{ env.MONGODB_DB }}
+            -e RAPIDAPI_KEYS=${{ env.RAPIDAPI_KEYS }}
+            -e TARGET=${{ env.TARGET }}
+          args: >
+            bash -lc "
+              node -v &&
+              npm -v &&
+              npm ci &&
+              # (Hotfix) om axios saknas i lockfile: installera utan att påverka repo
+              (node -e \"try{require('axios');console.log('axios ok')}catch(e){process.exit(1)}\" || npm i --no-save axios@^1) &&
+              echo '▶ Kör fixtures-script för' \"$TARGET\" &&
+              node scripts/fetch-and-import-fixtures.js \"$TARGET\"
+            "
