@@ -1,139 +1,193 @@
 import { NextResponse } from "next/server";
+
 import { computeExpectedValue } from "@/lib/backtest/engine";
 import {
-  fetchTeamMatches,
   fetchLeaguesAndTeams,
+  fetchTeamMatches,
 } from "@/lib/backtest/data";
-import { logServerBacktestError, logServerBacktestStep } from "@/lib/backtest/logger";
+import {
+  logServerBacktestError,
+  logServerBacktestStep,
+  resetServerBacktestSteps,
+} from "@/lib/backtest/logger";
 
-const UNIBET_BASE_URL =
-  "https://eu1.offering-api.kambicdn.com/offering/v2018/ubse/betoffer/event";
+const JSON_HEADERS = {
+  "cache-control": "no-store",
+};
 
-function json(data, init = {}) {
-  return NextResponse.json(data, init);
-}
-
-function parseJsonBody(body) {
-  if (!body || typeof body !== "object") {
-    return {};
+function parseUnibetMatchId(body) {
+  if (!body) return null;
+  if (body.matchId) {
+    const trimmed = String(body.matchId).trim();
+    if (trimmed) return trimmed;
   }
-  return body;
-}
-
-function extractAction(body) {
-  const { action } = body || {};
-  return typeof action === "string" ? action.toLowerCase() : null;
-}
-
-function extractUnibetEventId(input) {
-  if (!input) return null;
-  const str = String(input);
-  const match = str.match(/event\/(\d+)/i);
-  if (match) return match[1];
-  const numeric = str.match(/\d+/);
-  return numeric ? numeric[0] : null;
-}
-
-async function fetchUnibetOdds(eventId) {
-  if (!eventId) {
-    throw new Error("Missing Unibet event id");
+  if (body.url || body.unibetUrl) {
+    const source = String(body.url || body.unibetUrl);
+    const match = source.match(/event\/(\d+)/i);
+    if (match) return match[1];
   }
-  const url = `${UNIBET_BASE_URL}/${eventId}.json?lang=sv_SE&market=SE&client_id=2&channel_id=1&includeParticipants=true`;
-  const res = await fetch(url, {
-    next: { revalidate: 300 },
+  return null;
+}
+
+async function handleExpectedValue(body = {}) {
+  resetServerBacktestSteps("expected-value");
+  const result = await computeExpectedValue(body);
+  return NextResponse.json(result, { headers: JSON_HEADERS });
+}
+
+async function handleInitialize(body = {}) {
+  const homeTeam = body.homeTeam;
+  const awayTeam = body.awayTeam;
+
+  if (!homeTeam || !awayTeam) {
+    return NextResponse.json(
+      { error: "Missing homeTeam or awayTeam" },
+      { status: 400 }
+    );
+  }
+
+  logServerBacktestStep("Initierar backtest-datahämtning", {
+    homeTeam,
+    awayTeam,
   });
-  if (!res.ok) {
-    throw new Error(`Unibet request failed with status ${res.status}`);
-  }
-  return res.json();
-}
 
-async function handleExpectedValue(body) {
-  const params = { ...body };
-  delete params.action;
-  const result = await computeExpectedValue(params);
-
-  const [homeMatches, awayMatches] = await Promise.all([
-    params.homeTeam ? fetchTeamMatches(params.homeTeam, "home") : Promise.resolve([]),
-    params.awayTeam ? fetchTeamMatches(params.awayTeam, "away") : Promise.resolve([]),
+  const [homeHome, homeAway, awayHome, awayAway, leagues] = await Promise.all([
+    fetchTeamMatches(homeTeam, "home"),
+    fetchTeamMatches(homeTeam, "away"),
+    fetchTeamMatches(awayTeam, "home"),
+    fetchTeamMatches(awayTeam, "away"),
+    fetchLeaguesAndTeams(),
   ]);
 
-  return {
-    ...result,
-    homeMatches,
-    awayMatches,
-  };
-}
-
-async function handleUnibetOdds(body) {
-  const eventId = extractUnibetEventId(body?.eventId || body?.url || body?.unibetUrl);
-  if (!eventId) {
-    throw new Error("Kunde inte läsa event-id från Unibet-url");
-  }
-  const payload = await fetchUnibetOdds(eventId);
-  return {
-    eventId,
-    meta: {
-      eventDate: payload?.event?.start,
-      name: payload?.event?.name,
+  const payload = {
+    leagues: leagues || null,
+    matches: {
+      home: {
+        home: homeHome,
+        away: homeAway,
+      },
+      away: {
+        home: awayHome,
+        away: awayAway,
+      },
     },
-    odds: payload?.betOffers || [],
   };
+
+  return NextResponse.json(payload, { headers: JSON_HEADERS });
 }
 
-async function handleTeamStats(body) {
-  const { teamName, matchType = "home" } = body || {};
-  if (!teamName) {
-    throw new Error("teamName krävs");
+function toDecimalOdds(outcome) {
+  if (!outcome) return null;
+  if (typeof outcome.odds === "object" && outcome.odds?.decimal) {
+    const num = Number(outcome.odds.decimal);
+    return Number.isFinite(num) ? num.toFixed(2) : null;
   }
-  const matches = await fetchTeamMatches(teamName, matchType);
-  return {
-    teamName,
-    matchType,
-    matches,
-  };
+  if (outcome.oddsDecimal != null) {
+    const num = Number(outcome.oddsDecimal);
+    return Number.isFinite(num) ? num.toFixed(2) : null;
+  }
+  if (outcome.oddsFractional) {
+    const [num, denom] = String(outcome.oddsFractional)
+      .split("/")
+      .map(Number);
+    if (Number.isFinite(num) && Number.isFinite(denom) && denom !== 0) {
+      return (num / denom + 1).toFixed(2);
+    }
+  }
+  if (outcome.oddsAmerican) {
+    const american = Number(outcome.oddsAmerican);
+    if (Number.isFinite(american)) {
+      if (american >= 100) {
+        return (american / 100 + 1).toFixed(2);
+      }
+      if (american <= -100) {
+        return (100 / Math.abs(american) + 1).toFixed(2);
+      }
+    }
+  }
+  return null;
 }
 
-async function handleLeagues() {
-  const leagues = await fetchLeaguesAndTeams();
-  return { leagues };
+async function handleUnibetOdds(body = {}) {
+  const matchId = parseUnibetMatchId(body);
+  if (!matchId) {
+    return NextResponse.json(
+      { error: "Missing Unibet match id" },
+      { status: 400 }
+    );
+  }
+
+  const url = `https://eu1.offering-api.kambicdn.com/offering/v2018/ubse/betoffer/event/${matchId}.json?lang=sv_SE&market=SE&client_id=2&channel_id=1&includeParticipants=true`;
+
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    return NextResponse.json(
+      { error: `Unibet request failed with status ${response.status}` },
+      { status: response.status }
+    );
+  }
+
+  const data = await response.json();
+  const event = Array.isArray(data.events) ? data.events[0] || {} : {};
+
+  const meta = {
+    homeTeam: event.homeName || "",
+    awayTeam: event.awayName || "",
+    eventDate: event.start || null,
+  };
+
+  const odds = {};
+  for (const offer of data.betOffers || []) {
+    const label = offer?.criterion?.label;
+    if (!label) continue;
+
+    const outcomes = [];
+    for (const outcome of offer.outcomes || []) {
+      const formattedLine =
+        typeof outcome.line === "number"
+          ? (outcome.line / 1000).toFixed(3)
+          : "x";
+      const decimalOdds = toDecimalOdds(outcome);
+      outcomes.push({
+        participant: outcome.participant || null,
+        label: outcome.englishLabel || outcome.label || null,
+        line: formattedLine,
+        odds: decimalOdds,
+      });
+    }
+
+    if (outcomes.length) {
+      odds[label] = { outcomes };
+    }
+  }
+
+  return NextResponse.json({ meta, odds }, { headers: JSON_HEADERS });
 }
 
 export async function POST(req) {
   try {
-    const body = parseJsonBody(await req.json().catch(() => null));
-    const action = extractAction(body);
+    const body = await req.json();
+    const action = body?.action ?? "expectedValue";
 
-    if (!action) {
-      return json({ message: "Missing action" }, { status: 400 });
+    if (action === "expectedValue") {
+      return await handleExpectedValue(body);
+    }
+    if (action === "initialize") {
+      return await handleInitialize(body);
+    }
+    if (action === "unibetOdds") {
+      return await handleUnibetOdds(body);
     }
 
-    switch (action) {
-      case "expected-value": {
-        logServerBacktestStep("API: expected value", body);
-        const result = await handleExpectedValue(body);
-        return json(result);
-      }
-      case "unibet-odds": {
-        logServerBacktestStep("API: unibet odds", body);
-        const odds = await handleUnibetOdds(body);
-        return json(odds);
-      }
-      case "team-stats": {
-        logServerBacktestStep("API: team stats", body);
-        const stats = await handleTeamStats(body);
-        return json(stats);
-      }
-      case "leagues": {
-        logServerBacktestStep("API: leagues", body);
-        const leagues = await handleLeagues();
-        return json(leagues);
-      }
-      default:
-        return json({ message: `Unknown action '${action}'` }, { status: 400 });
-    }
+    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   } catch (error) {
-    logServerBacktestError("API error", { message: error?.message });
-    return json({ message: error?.message || "Server error" }, { status: 500 });
+    logServerBacktestError("Fel i backtest-route", {
+      message: error?.message,
+      stack: error?.stack,
+    });
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }
