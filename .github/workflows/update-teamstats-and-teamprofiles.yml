@@ -24,6 +24,9 @@ jobs:
       MONGODB_DB: ${{ secrets.MONGODB_DB }}
       RAPIDAPI_KEYS: ${{ secrets.RAPIDAPI_KEYS }}
       SKIP_GENERATE: ${{ github.event.inputs.skip_generate_profiles || 'false' }}
+      # 👇 Tvinga skriptet att skriva till repo-mappar (Linux-vänligt)
+      TEAMSTATS_DIR: ${{ github.workspace }}/data/teamstats
+      PUBLIC_TEAMSTATS_DIR: ${{ github.workspace }}/public/teamstats
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -37,12 +40,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Hotfix om axios saknas i lockfile (så ditt rapidApi/http-helpers funkar)
       - name: Install axios if missing
         run: |
           node -e "try{require('axios');process.exit(0)}catch(e){process.exit(1)}" || npm i --no-save axios@^1
 
-      # Krävs för Puppeteer/Chrome i GitHub Actions
       - name: Install Chrome deps
         run: |
           sudo apt-get update
@@ -63,26 +64,22 @@ jobs:
             libdrm2 \
             libasound2t64
 
-      # ⚠️ Viktigt: ditt script måste starta Puppeteer med no-sandbox-flaggor.
-      # Om du redan har args i koden är denna env bara dokumentation.
       - name: Run update-teams-v2.js --yesterday
         env:
-          # bara info – din kod måste själv ange args i puppeteer.launch
           PUPPETEER_INFO: "--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --no-zygote --no-first-run"
         run: |
           echo "▶ Kör update-teams-v2.js --yesterday"
           node scripts/update-teams-v2.js --yesterday
 
-      # Kolla om skriptet faktiskt skrev några json-filer
       - name: Check for data/teamstats
         id: has_teamstats
         run: |
-          if [ -d "data/teamstats" ] && find data/teamstats -type f -name "*.json" -print -quit | grep -q .; then
+          if [ -d "$TEAMSTATS_DIR" ] && find "$TEAMSTATS_DIR" -type f -name "*.json" -print -quit | grep -q .; then
             echo "present=true" >> $GITHUB_OUTPUT
-            echo "✅ Hittade teamstats-filer."
+            echo "✅ Hittade teamstats-filer i $TEAMSTATS_DIR"
           else
             echo "present=false" >> $GITHUB_OUTPUT
-            echo "⏭️ Inga teamstats-filer hittades; hoppar import/generate."
+            echo "⏭️ Inga teamstats-filer hittades i $TEAMSTATS_DIR; hoppar import/generate."
           fi
 
       - name: Import teamstats into MongoDB
