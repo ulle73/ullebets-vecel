@@ -2,7 +2,7 @@ name: Import fixtures (D+7 only)
 
 on:
   schedule:
-    - cron: "0 5 * * *"   # 05:00 UTC every day
+    - cron: "0 5 * * *"   # 05:00 UTC daily
   workflow_dispatch: {}
 
 concurrency:
@@ -24,25 +24,33 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install Puppeteer system libraries
+      - name: Install Puppeteer system libraries (handle Ubuntu 24.04 t64)
+        shell: bash
         run: |
+          set -euo pipefail
           sudo apt-get update
-          # minimal needed for headless chromium on ubuntu runners
-          sudo apt-get install -y \
-            libgbm1 \
-            libnss3 \
-            libxss1 \
-            libasound2 \
-            libatk-bridge2.0-0 \
-            libgtk-3-0 \
-            libcups2 \
-            libx11-xcb1 \
-            libxcomposite1 \
-            libxdamage1 \
-            libxfixes3 \
-            libxrandr2 \
-            libpangocairo-1.0-0 \
+
+          # Try install standard packages
+          BASE_PKGS=(
+            libnss3
+            libxss1
+            libatk-bridge2.0-0
+            libgtk-3-0
+            libcups2
+            libx11-xcb1
+            libxcomposite1
+            libxdamage1
+            libxfixes3
+            libxrandr2
+            libpangocairo-1.0-0
             xdg-utils
+          )
+          sudo apt-get install -y --no-install-recommends "${BASE_PKGS[@]}"
+
+          # Packages that may be renamed to *t64 on Ubuntu 24.04
+          # Try non-t64 first, then fall back to t64
+          sudo apt-get install -y --no-install-recommends libgbm1 || sudo apt-get install -y --no-install-recommends libgbm1t64
+          sudo apt-get install -y --no-install-recommends libasound2 || sudo apt-get install -y --no-install-recommends libasound2t64
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -53,13 +61,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # (Hotfix) if axios isn't in your lockfile, install it without touching repo
+      # Hotfix if axios is missing in lockfile/repo (keeps repo clean)
       - name: Ensure axios is present
         run: node -e "try{require('axios');process.exit(0)}catch(e){process.exit(1)}" || npm i --no-save axios@^1
 
       - name: Compute D+7 (UTC)
         id: dates
-        run: echo "TARGET=$(date -u -d '+7 days' +%F)" >> $GITHUB_OUTPUT
+        run: echo "TARGET=$(date -u -d '+7 days' +%F)" >> "$GITHUB_OUTPUT"
 
       - name: Run fixtures import script for D+7
         env:
