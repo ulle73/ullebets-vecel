@@ -31,9 +31,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Axios hotfix – behövs om axios saknas i package.json/lock
-      - name: Hotfix: install axios (missing in lockfile)
-        run: npm i --no-save axios@^1
+      - name: Hotfix - install axios (missing in lockfile)
+        run: |
+          npm install --no-save axios@^1
 
       - name: Compute D+7 (UTC)
         id: dates
