@@ -22,7 +22,6 @@ import {
   resetClientBacktestSteps,
 } from "@/lib/backtest/logger";
 import { areTeamNamesEquivalent, getTeamAliases } from "@/lib/teamNameAliases";
-import leaguesAndTeams from "@/data/leagues-and-teams.json";
 
 const STRINGS = {
   backtest_title: "Backtest",
@@ -73,22 +72,22 @@ const LABELS = {
   under: translate("under"),
 };
 
-const TEAM_TO_LEAGUE = (() => {
+function buildTeamToLeagueMap(leagues = {}) {
   const map = new Map();
-  Object.entries(leaguesAndTeams).forEach(([leagueName, leagueInfo]) => {
+  Object.entries(leagues).forEach(([leagueName, leagueInfo]) => {
     (leagueInfo?.teams ?? []).forEach((team) => {
       if (team?.name) {
-        map.set(team.name.toLowerCase(), leagueName);
+        map.set(normalizeTeamName(team.name).toLowerCase(), leagueName);
       }
     });
   });
   return map;
-})();
+}
 
-function resolveLeagueName(teamName, fallback) {
+function resolveLeagueName(teamName, fallback, teamToLeagueMap) {
   if (!teamName) return fallback ?? null;
   const key = normalizeTeamName(teamName).toLowerCase();
-  return TEAM_TO_LEAGUE.get(key) ?? fallback ?? null;
+  return teamToLeagueMap.get(key) ?? fallback ?? null;
 }
 
 export default function BacktestPage({ match, className = "" }) {
@@ -105,19 +104,61 @@ export default function BacktestPage({ match, className = "" }) {
   const [tooltipThreshold, setTooltipThreshold] = useState(null);
   const [teamProfiles, setTeamProfiles] = useState(null);
   const [rankingError, setRankingError] = useState(null);
+  const [leaguesData, setLeaguesData] = useState(null);
+
+  const teamToLeagueMap = useMemo(
+    () => buildTeamToLeagueMap(leaguesData ?? {}),
+    [leaguesData]
+  );
 
   const firstStatKey = useMemo(() => Object.keys(statPatterns)[0], [statPatterns]);
   const homeTeamName = match?.homeTeamName ?? "";
   const awayTeamName = match?.awayTeamName ?? "";
+  const matchLeagueName = match?.leagueName ?? null;
 
   const homeLeagueName = useMemo(
-    () => resolveLeagueName(homeTeamName, match?.leagueName),
-    [homeTeamName, match?.leagueName]
+    () => resolveLeagueName(homeTeamName, matchLeagueName, teamToLeagueMap),
+    [homeTeamName, matchLeagueName, teamToLeagueMap]
   );
   const awayLeagueName = useMemo(
-    () => resolveLeagueName(awayTeamName, match?.leagueName),
-    [awayTeamName, match?.leagueName]
+    () => resolveLeagueName(awayTeamName, matchLeagueName, teamToLeagueMap),
+    [awayTeamName, matchLeagueName, teamToLeagueMap]
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadLeagues() {
+      try {
+        logClientBacktestStep("Ligadata hämtas från API.");
+        const response = await fetch("/api/leagues-and-teams", {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Misslyckades hämta ligor: ${response.status}`);
+        }
+        const data = await response.json();
+        if (!cancelled) {
+          logClientBacktestStep("Ligadata har laddats in.", {
+            leagueCount: data ? Object.keys(data).length : 0,
+          });
+          setLeaguesData(data ?? {});
+        }
+      } catch (err) {
+        if (cancelled) return;
+        logClientBacktestError("Misslyckades hämta ligadata.", err);
+        setLeaguesData({});
+      }
+    }
+
+    loadLeagues();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
 
   const currentTeamKey = useMemo(() => {
     const entry = form[firstStatKey];
