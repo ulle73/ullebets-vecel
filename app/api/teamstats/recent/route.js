@@ -7,6 +7,21 @@ const MAX_LIMIT = 10;
 const DEFAULT_LIMIT = 5;
 const MAX_DEPTH = 6;
 
+function parseFractionalOddsString(value) {
+  if (typeof value !== "string") return null;
+  const match = value
+    .trim()
+    .match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)$/);
+  if (!match) return null;
+  const numerator = Number(match[1]);
+  const denominator = Number(match[2]);
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+    return null;
+  }
+  const decimal = numerator / denominator + 1;
+  return Number.isFinite(decimal) ? decimal : null;
+}
+
 function toNumber(value) {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : null;
@@ -14,10 +29,11 @@ function toNumber(value) {
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) return null;
-    const normalized = trimmed.replace(
-      /,/g,
-      "."
-    );
+    const normalized = trimmed.replace(/,/g, ".");
+    const fractional = parseFractionalOddsString(normalized);
+    if (fractional != null) {
+      return fractional;
+    }
     const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : null;
   }
@@ -46,6 +62,9 @@ function parseOddsNumber(value, depth = 0) {
     value.coeff,
     value.current,
     value.closing,
+    value.fractional,
+    value.fractionalValue,
+    value.initialFractionalValue,
   ];
   for (const candidate of candidates) {
     const parsed = parseOddsNumber(candidate, depth + 1);
