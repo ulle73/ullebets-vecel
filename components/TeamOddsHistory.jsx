@@ -279,7 +279,7 @@ export default function TeamOddsHistory({ match, className = "" }) {
           Hämtar hem- och bortastatistik från databasen.
         </p>
       </div>
-      <div className="flex flex-1 gap-3 overflow-hidden px-4 py-3">
+      <div className="flex flex-1 min-h-0 gap-3 overflow-hidden px-4 py-3">
         <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
           <TeamOddsTable
             teamName={homeTeamName}
@@ -288,7 +288,7 @@ export default function TeamOddsHistory({ match, className = "" }) {
             error={homeOdds.error}
           />
         </div>
-        <div className="flex min-h-0 flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+        <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
           <TeamOddsTable
             teamName={awayTeamName}
             data={awayOdds.data}
