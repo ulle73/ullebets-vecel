@@ -26,8 +26,8 @@ export default async function Page() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="px-4 pt-6 pb-2 sm:px-6">
+    <main className="flex h-screen flex-col overflow-hidden bg-gray-50">
+      <header className="flex-none px-4 pt-6 pb-2 sm:px-6">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">Matcher</h1>
         <p className="mt-1 text-sm text-gray-600">
           Prefetch: <code className="bg-gray-100 px-1 py-0.5 rounded">{today}</code> &nbsp;och&nbsp;
@@ -36,7 +36,7 @@ export default async function Page() {
       </header>
 
       <SWRConfig value={{ fallback }}>
-        <section className="pb-8">
+        <section className="flex-1 overflow-hidden pb-6">
           <ErrorBoundary resetKeys={[today, tomorrow]}>
             <MatchesClient defaultDate={today} initialFallback={fallback} />
           </ErrorBoundary>

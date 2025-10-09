@@ -22,7 +22,7 @@ export default function LeagueTables({
     : `Matcher: ${matchesCount}`;
 
   const containerClass = [
-    "flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
+    "flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm",
     className,
   ]
     .filter(Boolean)
@@ -35,17 +35,19 @@ export default function LeagueTables({
           Dagens matcher
         </h2>
       </div>
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 min-h-0 flex-col overflow-hidden p-4">
         <div className="mb-4 flex items-center gap-3">
           <DatePicker value={date} onChange={onDateChange} />
           <div className="text-xs text-gray-500">{statusLabel}</div>
         </div>
-        <LeagueTable
-          items={items}
-          formatTime={formatTime}
-          onSelectMatch={onSelectMatch}
-          selectedMatchId={selectedMatchId}
-        />
+        <div className="flex-1 min-h-0 overflow-auto pr-1">
+          <LeagueTable
+            items={items}
+            formatTime={formatTime}
+            onSelectMatch={onSelectMatch}
+            selectedMatchId={selectedMatchId}
+          />
+        </div>
       </div>
     </div>
   );

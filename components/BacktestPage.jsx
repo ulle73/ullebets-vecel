@@ -253,7 +253,7 @@ async function postBacktest(body) {
   return res.json();
 }
 
-export default function BacktestPage({ match }) {
+export default function BacktestPage({ match, className = "" }) {
   const { t } = useTranslation();
   const statPatterns = useMemo(() => getStatPatterns(t), [t]);
   const [form, setForm] = useState(() => createInitialForm(statPatterns, match));
@@ -559,8 +559,15 @@ export default function BacktestPage({ match }) {
     }
   }, [homeTeam, awayTeam, teamKey, t, unibetUrl]);
 
+  const containerClassName = [
+    "flex h-full min-h-0 flex-col overflow-hidden rounded-lg bg-slate-900 p-4 text-slate-100 shadow",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <section className="rounded-lg bg-slate-900 p-4 text-slate-100 shadow">
+    <section className={containerClassName}>
       <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold">{t("title")}</h2>
@@ -582,322 +589,325 @@ export default function BacktestPage({ match }) {
           </label>
         </div>
       </header>
-
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input
-          className="flex-1 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm"
-          placeholder={t("unibet_placeholder")}
-          value={unibetUrl}
-          onChange={(event) => setUnibetUrl(event.target.value)}
-        />
-        <button
-          type="button"
-          onClick={handleLoadOdds}
-          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500"
-          disabled={loading}
-        >
-          {t("load_odds")}
-        </button>
-      </div>
-
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm">
-          <span>{t("home_importance")}</span>
-          <input
-            type="range"
-            min={1}
-            max={10}
-            value={form[Object.keys(form)[0]]?.home_importance ?? 5}
-            onChange={(event) => {
-              const value = Number(event.target.value);
-              setForm((prev) => {
-                const next = { ...prev };
-                for (const key of Object.keys(next)) {
-                  next[key] = { ...next[key], home_importance: value };
-                }
-                return next;
-              });
-            }}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>{t("away_importance")}</span>
-          <input
-            type="range"
-            min={1}
-            max={10}
-            value={form[Object.keys(form)[0]]?.away_importance ?? 5}
-            onChange={(event) => {
-              const value = Number(event.target.value);
-              setForm((prev) => {
-                const next = { ...prev };
-                for (const key of Object.keys(next)) {
-                  next[key] = { ...next[key], away_importance: value };
-                }
-                return next;
-              });
-            }}
-          />
-        </label>
-      </div>
-
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
-        <button
-          type="button"
-          onClick={handleCalculateAll}
-          className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500"
-          disabled={loading}
-        >
-          {loading ? t("loading") : t("calculate_all")}
-        </button>
-      </div>
-
-      {error ? (
-        <div className="mb-4 rounded border border-red-500/40 bg-red-900/40 px-3 py-2 text-sm text-red-200">
-          {error}
-        </div>
-      ) : null}
-
-      {positiveResults.length ? (
-        <div className="mb-6 rounded border border-emerald-500/30 bg-emerald-900/20 p-3">
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-200">
-            {t("positive_ev_header")}
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-xs">
-              <thead className="text-slate-300">
-                <tr>
-                  <th className="px-2 py-1">{t("stat")}</th>
-                  <th className="px-2 py-1">{t("team")}</th>
-                  <th className="px-2 py-1">{t("period")}</th>
-                  <th className="px-2 py-1">{t("direction")}</th>
-                  <th className="px-2 py-1">{t("odds")}</th>
-                  <th className="px-2 py-1">{t("value")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {positiveResults.map((result) => (
-                  <tr key={result.bet.key} className="border-t border-slate-700">
-                    <td className="px-2 py-1">{statNames[result.bet.statKey] || result.bet.statKey}</td>
-                    <td className="px-2 py-1">
-                      {formatScope(result.bet.scope, result.bet.homeTeam, result.bet.awayTeam, t)}
-                    </td>
-                    <td className="px-2 py-1">
-                      {formatPeriodLabel(result.bet.period, t)}
-                    </td>
-                    <td className="px-2 py-1">
-                      {result.bet.direction === "over" ? t("over") : t("under")} {result.bet.line}
-                    </td>
-                    <td className="px-2 py-1">{result.bet.odds}</td>
-                    <td className="px-2 py-1">
-                      {result.primaryEv?.toFixed(1)}%
-                      {result.primaryLabel ? ` (${result.primaryLabel})` : ""}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="flex-1 min-h-0 overflow-auto pr-1">
+        <div className="space-y-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input
+              className="flex-1 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm"
+              placeholder={t("unibet_placeholder")}
+              value={unibetUrl}
+              onChange={(event) => setUnibetUrl(event.target.value)}
+            />
+            <button
+              type="button"
+              onClick={handleLoadOdds}
+              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500"
+              disabled={loading}
+            >
+              {t("load_odds")}
+            </button>
           </div>
-        </div>
-      ) : null}
 
-      <div className="space-y-6">
-        {Object.keys(statPatterns).map((statKey) => {
-          const cfg = form[statKey];
-          const thresholds = statPatterns[statKey].thresholds(cfg.scope, cfg.period) || [];
-          const statOdds = oddsStore[teamKey]?.[statKey]?.[cfg.scope]?.[cfg.period] || {};
-          return (
-            <div key={statKey} className="rounded border border-slate-700/60 p-3">
-              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-sm font-semibold">
-                  {statNames[statKey] || statKey}
-                </h3>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <select
-                    value={cfg.scope}
-                    onChange={handleFormChange(statKey, "scope")}
-                    className="rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
-                  >
-                    <option value="total">{t("scope_total")}</option>
-                    <option value="home">{homeTeam || t("scope_home")}</option>
-                    <option value="away">{awayTeam || t("scope_away")}</option>
-                  </select>
-                  <select
-                    value={cfg.period}
-                    onChange={handleFormChange(statKey, "period")}
-                    className="rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
-                  >
-                    <option value="ALL">{t("period_match")}</option>
-                    <option value="1ST">{t("period_first_half")}</option>
-                    <option value="2ND">{t("period_second_half")}</option>
-                  </select>
-                  <input
-                    value={cfg.formMatches}
-                    onChange={handleFormChange(statKey, "formMatches")}
-                    className="w-28 rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
-                    placeholder={t("form_label")}
-                  />
-                </div>
-              </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span>{t("home_importance")}</span>
+              <input
+                type="range"
+                min={1}
+                max={10}
+                value={form[Object.keys(form)[0]]?.home_importance ?? 5}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setForm((prev) => {
+                    const next = { ...prev };
+                    for (const key of Object.keys(next)) {
+                      next[key] = { ...next[key], home_importance: value };
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span>{t("away_importance")}</span>
+              <input
+                type="range"
+                min={1}
+                max={10}
+                value={form[Object.keys(form)[0]]?.away_importance ?? 5}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setForm((prev) => {
+                    const next = { ...prev };
+                    for (const key of Object.keys(next)) {
+                      next[key] = { ...next[key], away_importance: value };
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </label>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+            <button
+              type="button"
+              onClick={handleCalculateAll}
+              className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500"
+              disabled={loading}
+            >
+              {loading ? t("loading") : t("calculate_all")}
+            </button>
+          </div>
+
+          {error ? (
+            <div className="rounded border border-red-500/40 bg-red-900/40 px-3 py-2 text-sm text-red-200">
+              {error}
+            </div>
+          ) : null}
+
+          {positiveResults.length ? (
+            <div className="rounded border border-emerald-500/30 bg-emerald-900/20 p-3">
+              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-200">
+                {t("positive_ev_header")}
+              </h3>
               <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-xs text-slate-200">
-                  <thead className="bg-slate-900/40 text-[11px] uppercase tracking-wide text-slate-400">
+                <table className="min-w-full text-left text-xs">
+                  <thead className="text-slate-300">
                     <tr>
-                      <th className="px-3 py-2 font-medium text-slate-300">Lina</th>
-                      <th className="px-3 py-2 font-medium text-slate-300">
-                        {t("over")} ({t("odds")})
-                      </th>
-                      <th className="px-3 py-2 font-medium text-slate-300">
-                        EV % ({t("over")})
-                      </th>
-                      <th className="px-3 py-2 font-medium text-slate-300">
-                        {t("under")} ({t("odds")})
-                      </th>
-                      <th className="px-3 py-2 font-medium text-slate-300">
-                        EV % ({t("under")})
-                      </th>
-                      <th className="px-3 py-2 font-medium text-slate-300">{t("history")}</th>
+                      <th className="px-2 py-1">{t("stat")}</th>
+                      <th className="px-2 py-1">{t("team")}</th>
+                      <th className="px-2 py-1">{t("period")}</th>
+                      <th className="px-2 py-1">{t("direction")}</th>
+                      <th className="px-2 py-1">{t("odds")}</th>
+                      <th className="px-2 py-1">{t("value")}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800">
-                    {thresholds.map((line) => {
-                      const odds = statOdds[line] || { over: "", under: "" };
-                      const overKey = createBetKey({
-                        homeTeam,
-                        awayTeam,
-                        statKey,
-                        scope: cfg.scope,
-                        period: cfg.period,
-                        line,
-                        direction: "over",
-                        formMatches: cfg.formMatches,
-                        neutralGround,
-                      });
-                      const underKey = createBetKey({
-                        homeTeam,
-                        awayTeam,
-                        statKey,
-                        scope: cfg.scope,
-                        period: cfg.period,
-                        line,
-                        direction: "under",
-                        formMatches: cfg.formMatches,
-                        neutralGround,
-                      });
-                      const overResult = resultsMap[overKey];
-                      const underResult = resultsMap[underKey];
-                      const overEntries = getEvEntries(overResult, t);
-                      const underEntries = getEvEntries(underResult, t);
-                      const concededLabel = t("conceded");
-                      const historyOpponentLabel =
-                        cfg.scope === "home"
-                          ? `${awayTeam || t("scope_away")} ${concededLabel}`.trim()
-                          : cfg.scope === "away"
-                          ? `${homeTeam || t("scope_home")} ${concededLabel}`.trim()
-                          : t("under");
-                      const overHistory = getHitSummary(overResult || underResult, "over", t, {
-                        scope: cfg.scope,
-                        opponentLabel: historyOpponentLabel,
-                      });
-                      const underHistory = getHitSummary(
-                        cfg.scope === "total" ? underResult || overResult : overResult || underResult,
-                        "under",
-                        t,
-                        {
-                          scope: cfg.scope,
-                          opponentLabel: historyOpponentLabel,
-                        }
-                      );
-                      return (
-                        <tr key={line} className="align-top">
-                          <td className="px-3 py-3 text-sm font-medium text-slate-100">{line}</td>
-                          <td className="px-3 py-3">
-                            <input
-                              type="number"
-                              className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-2 text-xs font-medium text-slate-100 focus:border-slate-400 focus:outline-none focus:ring-0"
-                              step="0.01"
-                              value={odds.over}
-                              placeholder={t("over")}
-                              title={overHistory.tooltip || undefined}
-                              onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "over")}
-                            />
-                          </td>
-                          <td className="px-3 py-3">
-                            {overEntries.length ? (
-                              <div className="flex flex-col gap-1">
-                                {overEntries.map((entry, idx) => (
-                                  <div key={idx} className="flex items-baseline gap-2">
-                                    <span
-                                      className={`font-semibold ${
-                                        entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
-                                      }`}
-                                    >
-                                      {entry.value.toFixed(1)}%
-                                    </span>
-                                    <span className="text-[10px] uppercase tracking-wide text-slate-400">
-                                      {entry.label}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-slate-500">–</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-3">
-                            <input
-                              type="number"
-                              className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-2 text-xs font-medium text-slate-100 focus:border-slate-400 focus:outline-none focus:ring-0"
-                              step="0.01"
-                              value={odds.under}
-                              placeholder={t("under")}
-                              title={underHistory.tooltip || undefined}
-                              onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "under")}
-                            />
-                          </td>
-                          <td className="px-3 py-3">
-                            {underEntries.length ? (
-                              <div className="flex flex-col gap-1">
-                                {underEntries.map((entry, idx) => (
-                                  <div key={idx} className="flex items-baseline gap-2">
-                                    <span
-                                      className={`font-semibold ${
-                                        entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
-                                      }`}
-                                    >
-                                      {entry.value.toFixed(1)}%
-                                    </span>
-                                    <span className="text-[10px] uppercase tracking-wide text-slate-400">
-                                      {entry.label}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-slate-500">–</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              <div className="cursor-help" title={overHistory.tooltip || undefined}>
-                                {t("over")}:
-                                <span className="ml-1 font-medium text-slate-100">{overHistory.label}</span>
-                              </div>
-                              <div className="cursor-help" title={underHistory.tooltip || undefined}>
-                                {historyOpponentLabel}:
-                                <span className="ml-1 font-medium text-slate-100">{underHistory.label}</span>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                  <tbody>
+                    {positiveResults.map((result) => (
+                      <tr key={result.bet.key} className="border-t border-slate-700">
+                        <td className="px-2 py-1">{statNames[result.bet.statKey] || result.bet.statKey}</td>
+                        <td className="px-2 py-1">
+                          {formatScope(result.bet.scope, result.bet.homeTeam, result.bet.awayTeam, t)}
+                        </td>
+                        <td className="px-2 py-1">
+                          {formatPeriodLabel(result.bet.period, t)}
+                        </td>
+                        <td className="px-2 py-1">
+                          {result.bet.direction === "over" ? t("over") : t("under")} {result.bet.line}
+                        </td>
+                        <td className="px-2 py-1">{result.bet.odds}</td>
+                        <td className="px-2 py-1">
+                          {result.primaryEv?.toFixed(1)}%
+                          {result.primaryLabel ? ` (${result.primaryLabel})` : ""}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             </div>
-          );
-        })}
+          ) : null}
+
+          <div className="space-y-6">
+            {Object.keys(statPatterns).map((statKey) => {
+              const cfg = form[statKey];
+              const thresholds = statPatterns[statKey].thresholds(cfg.scope, cfg.period) || [];
+              const statOdds = oddsStore[teamKey]?.[statKey]?.[cfg.scope]?.[cfg.period] || {};
+              return (
+                <div key={statKey} className="rounded border border-slate-700/60 p-3">
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="text-sm font-semibold">
+                      {statNames[statKey] || statKey}
+                    </h3>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <select
+                        value={cfg.scope}
+                        onChange={handleFormChange(statKey, "scope")}
+                        className="rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
+                      >
+                        <option value="total">{t("scope_total")}</option>
+                        <option value="home">{homeTeam || t("scope_home")}</option>
+                        <option value="away">{awayTeam || t("scope_away")}</option>
+                      </select>
+                      <select
+                        value={cfg.period}
+                        onChange={handleFormChange(statKey, "period")}
+                        className="rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
+                      >
+                        <option value="ALL">{t("period_match")}</option>
+                        <option value="1ST">{t("period_first_half")}</option>
+                        <option value="2ND">{t("period_second_half")}</option>
+                      </select>
+                      <input
+                        value={cfg.formMatches}
+                        onChange={handleFormChange(statKey, "formMatches")}
+                        className="w-28 rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
+                        placeholder={t("form_label")}
+                      />
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-left text-xs text-slate-200">
+                      <thead className="bg-slate-900/40 text-[11px] uppercase tracking-wide text-slate-400">
+                        <tr>
+                          <th className="px-3 py-2 font-medium text-slate-300">Lina</th>
+                          <th className="px-3 py-2 font-medium text-slate-300">
+                            {t("over")} ({t("odds")})
+                          </th>
+                          <th className="px-3 py-2 font-medium text-slate-300">
+                            EV % ({t("over")})
+                          </th>
+                          <th className="px-3 py-2 font-medium text-slate-300">
+                            {t("under")} ({t("odds")})
+                          </th>
+                          <th className="px-3 py-2 font-medium text-slate-300">
+                            EV % ({t("under")})
+                          </th>
+                          <th className="px-3 py-2 font-medium text-slate-300">{t("history")}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {thresholds.map((line) => {
+                          const odds = statOdds[line] || { over: "", under: "" };
+                          const overKey = createBetKey({
+                            homeTeam,
+                            awayTeam,
+                            statKey,
+                            scope: cfg.scope,
+                            period: cfg.period,
+                            line,
+                            direction: "over",
+                            formMatches: cfg.formMatches,
+                            neutralGround,
+                          });
+                          const underKey = createBetKey({
+                            homeTeam,
+                            awayTeam,
+                            statKey,
+                            scope: cfg.scope,
+                            period: cfg.period,
+                            line,
+                            direction: "under",
+                            formMatches: cfg.formMatches,
+                            neutralGround,
+                          });
+                          const overResult = resultsMap[overKey];
+                          const underResult = resultsMap[underKey];
+                          const overEntries = getEvEntries(overResult, t);
+                          const underEntries = getEvEntries(underResult, t);
+                          const concededLabel = t("conceded");
+                          const historyOpponentLabel =
+                            cfg.scope === "home"
+                              ? `${awayTeam || t("scope_away")} ${concededLabel}`.trim()
+                              : cfg.scope === "away"
+                              ? `${homeTeam || t("scope_home")} ${concededLabel}`.trim()
+                              : t("under");
+                          const overHistory = getHitSummary(overResult || underResult, "over", t, {
+                            scope: cfg.scope,
+                            opponentLabel: historyOpponentLabel,
+                          });
+                          const underHistory = getHitSummary(
+                            cfg.scope === "total" ? underResult || overResult : overResult || underResult,
+                            "under",
+                            t,
+                            {
+                              scope: cfg.scope,
+                              opponentLabel: historyOpponentLabel,
+                            }
+                          );
+                          return (
+                            <tr key={line} className="align-top">
+                              <td className="px-3 py-3 text-sm font-medium text-slate-100">{line}</td>
+                              <td className="px-3 py-3">
+                                <input
+                                  type="number"
+                                  className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-2 text-xs font-medium text-slate-100 focus:border-slate-400 focus:outline-none focus:ring-0"
+                                  step="0.01"
+                                  value={odds.over}
+                                  placeholder={t("over")}
+                                  title={overHistory.tooltip || undefined}
+                                  onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "over")}
+                                />
+                              </td>
+                              <td className="px-3 py-3">
+                                {overEntries.length ? (
+                                  <div className="flex flex-col gap-1">
+                                    {overEntries.map((entry, idx) => (
+                                      <div key={idx} className="flex items-baseline gap-2">
+                                        <span
+                                          className={`font-semibold ${
+                                            entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                          }`}
+                                        >
+                                          {entry.value.toFixed(1)}%
+                                        </span>
+                                        <span className="text-[10px] uppercase tracking-wide text-slate-400">
+                                          {entry.label}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-500">–</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-3">
+                                <input
+                                  type="number"
+                                  className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-2 text-xs font-medium text-slate-100 focus:border-slate-400 focus:outline-none focus:ring-0"
+                                  step="0.01"
+                                  value={odds.under}
+                                  placeholder={t("under")}
+                                  title={underHistory.tooltip || undefined}
+                                  onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "under")}
+                                />
+                              </td>
+                              <td className="px-3 py-3">
+                                {underEntries.length ? (
+                                  <div className="flex flex-col gap-1">
+                                    {underEntries.map((entry, idx) => (
+                                      <div key={idx} className="flex items-baseline gap-2">
+                                        <span
+                                          className={`font-semibold ${
+                                            entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                          }`}
+                                        >
+                                          {entry.value.toFixed(1)}%
+                                        </span>
+                                        <span className="text-[10px] uppercase tracking-wide text-slate-400">
+                                          {entry.label}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-500">–</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-3">
+                                <div className="space-y-1 text-[11px] text-slate-300">
+                                  <div className="cursor-help" title={overHistory.tooltip || undefined}>
+                                    {t("over")}:
+                                    <span className="ml-1 font-medium text-slate-100">{overHistory.label}</span>
+                                  </div>
+                                  <div className="cursor-help" title={underHistory.tooltip || undefined}>
+                                    {historyOpponentLabel}:
+                                    <span className="ml-1 font-medium text-slate-100">{underHistory.label}</span>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </section>
   );

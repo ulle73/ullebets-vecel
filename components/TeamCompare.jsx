@@ -444,7 +444,7 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
   }, [combinedError]);
 
   const containerClass = [
-    "flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
+    "flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm",
     className,
   ]
     .filter(Boolean)
@@ -896,7 +896,7 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
 
   return (
     <div className={containerClass}>
-      <div className="flex-1 overflow-auto p-4">{renderBody()}</div>
+      <div className="flex-1 min-h-0 overflow-auto p-4">{renderBody()}</div>
     </div>
   );
 }

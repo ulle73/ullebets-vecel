@@ -387,11 +387,13 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     const gridRowClass = "auto-rows-[minmax(0,1fr)]";
 
     return (
-      <div className="w-full">
+      <div className="flex h-full w-full flex-col overflow-hidden">
         <div
-          className={`mx-auto w-full ${containerPaddingClass} pb-6 ${containerWidthClass}`}
+          className={`mx-auto flex h-full w-full flex-1 flex-col ${containerPaddingClass} pb-6 ${containerWidthClass}`}
         >
-          <div className={`grid gap-4 ${gridColumnsClass} ${gridRowClass}`}>
+          <div
+            className={`grid flex-1 min-h-0 gap-4 ${gridColumnsClass} ${gridRowClass}`}
+          >
             <LeagueTables
               date={date}
               onDateChange={setDate}
@@ -402,27 +404,38 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
               isLoading={isLoading}
               error={error}
               matchesCount={matches.length}
+              className="min-h-0"
             />
 
-            
+
 
             {showDetails ? (
               <TeamCompare
                 match={mergedMatch}
                 isLoading={isMatchLoading}
                 error={matchError}
+                className="min-h-0"
               />
-            ) : <DayInsights
-              date={date}
-              items={items}
-              profilesVersion={teamProfilesVersion}
-            />}
+            ) : (
+              <DayInsights
+                date={date}
+                items={items}
+                profilesVersion={teamProfilesVersion}
+                className="min-h-0"
+              />
+            )}
 
             {showDetails ? (
-              <Lineups match={mergedMatch} isLoading={isMatchLoading} />
+              <Lineups
+                match={mergedMatch}
+                isLoading={isMatchLoading}
+                className="min-h-0"
+              />
             ) : null}
 
-            {showDetails ? <BacktestPage match={mergedMatch} /> : null}
+            {showDetails ? (
+              <BacktestPage match={mergedMatch} className="min-h-0" />
+            ) : null}
           </div>
         </div>
       </div>
