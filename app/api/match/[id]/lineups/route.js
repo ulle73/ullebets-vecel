@@ -167,18 +167,7 @@ async function fetchEventLineups(matchId) {
   let lastError = null;
 
   if (rapidApiKeys.length > 0) {
-    const primary = await tryRapidWithKeys(
-      (apiKey) => ({
-        method: "GET",
-        url: `https://sportapi7.p.rapidapi.com/api/v1/event/${matchId}/lineups`,
-        host: "sportapi7.p.rapidapi.com",
-      }),
-      providers.sportapi7
-    );
-    if (primary.success) {
-      return { ...primary };
-    }
-    lastError = primary.error;
+    
 
     const secondary = await tryRapidWithKeys(
       () => ({
@@ -207,6 +196,20 @@ async function fetchEventLineups(matchId) {
       return { ...tertiary };
     }
     lastError = tertiary.error;
+    
+    const primary = await tryRapidWithKeys(
+      (apiKey) => ({
+        method: "GET",
+        url: `https://sportapi7.p.rapidapi.com/api/v1/event/${matchId}/lineups`,
+        host: "sportapi7.p.rapidapi.com",
+      }),
+      providers.sportapi7
+    );
+    if (primary.success) {
+      return { ...primary };
+    }
+    lastError = primary.error;
+    
   }
 
   try {

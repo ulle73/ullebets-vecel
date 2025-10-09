@@ -34,3 +34,18 @@ body {
 html {
   font-size: 12px;
 }
+
+
+* {
+  scrollbar-width: none;          /* hide scrollbar */
+  -ms-overflow-style: none;       /* IE/Edge legacy */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* WebKit (Chrome, Safari, new Edge, Opera) */
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+

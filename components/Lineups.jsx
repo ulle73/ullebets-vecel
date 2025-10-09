@@ -607,11 +607,11 @@ export default function Lineups({ match, isLoading, className = "" }) {
           Uppdatera
         </button>
       </div>
-        <div className="min-h-0 ">
+        <div className="flex-none">
           <CombinedPitch
             homeLineup={homeLineup}
             awayLineup={awayLineup}
-            className="max-h-full "
+            // className="max-h-full "
           />
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
