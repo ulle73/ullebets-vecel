@@ -496,12 +496,26 @@ export default function Lineups({ match, isLoading, className = "" }) {
     [matchStartTimestamp, shouldFetchLineups]
   );
 
+  const kickoffParam = useMemo(() => {
+    if (!Number.isFinite(matchStartTimestamp)) return null;
+    return Math.trunc(matchStartTimestamp);
+  }, [matchStartTimestamp]);
+
+  const lineupsKey = useMemo(() => {
+    if (!shouldFetchLineups) return null;
+    const params = {};
+    if (kickoffParam) {
+      params.kickoff = kickoffParam;
+    }
+    return buildLineupsKey(matchId, params);
+  }, [shouldFetchLineups, matchId, kickoffParam]);
+
   const {
     data,
     error,
     isLoading: isLineupsLoading,
     mutate,
-  } = useSWR(shouldFetchLineups ? buildLineupsKey(matchId) : null, fetchJson, swrOptions);
+  } = useSWR(lineupsKey, fetchJson, swrOptions);
 
   const handleManualRefresh = () => {
     if (shouldFetchLineups) {
