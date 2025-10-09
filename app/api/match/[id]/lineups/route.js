@@ -322,6 +322,110 @@ async function loadPersistedLineups({ matchId, kickoffMs }) {
   return null;
 }
 
+// async function persistLineupsSnapshot({
+//   matchId,
+//   kickoffMs,
+//   lineups,
+//   confirmed,
+//   provider,
+//   raw,
+//   fetchedAtIso,
+//   fetchedAtMs,
+// }) {
+//   if (!matchId) {
+//     return false;
+//   }
+
+//   const candidates = toMatchIdCandidates(matchId);
+//   if (!candidates.values.length) {
+//     return false;
+//   }
+
+//   const normalizedLineups = Array.isArray(lineups) ? lineups : [];
+//   const snapshot = omitUndefinedEntries({
+//     matchId: candidates.primaryString ?? String(matchId),
+//     confirmed: confirmed ?? null,
+//     provider: provider ?? null,
+//     fetchedAt: fetchedAtIso ?? null,
+//     fetchedAtMs: fetchedAtMs ?? null,
+//     kickoffMs: Number.isFinite(kickoffMs) ? Math.trunc(kickoffMs) : null,
+//     lineups: normalizedLineups,
+//     raw: raw ?? null,
+//   });
+
+//   const setDoc = omitUndefinedEntries({
+//     "full.0.matches.$[match].lineups": normalizedLineups,
+//     "full.0.matches.$[match].lineupsConfirmed": confirmed ?? null,
+//     "full.0.matches.$[match].lineupsProvider": provider ?? null,
+//     "full.0.matches.$[match].lineupsFetchedAt": fetchedAtIso ?? null,
+//     "full.0.matches.$[match].lineupsFetchedAtMs": fetchedAtMs ?? null,
+//     "full.0.matches.$[match].lineupsKickoffMs": Number.isFinite(kickoffMs)
+//       ? Math.trunc(kickoffMs)
+//       : null,
+//     "full.0.matches.$[match].lineupsSnapshot": snapshot,
+//     "full.0.matches.$[match].lineupsRaw": raw ?? null,
+//   });
+
+//   if (!Object.keys(setDoc).length) {
+//     return false;
+//   }
+
+//   const client = await clientPromise;
+//   const collection = client.db(DB_NAME).collection(MATCHES_COLLECTION);
+
+//   const dateKey = formatUtcDate(kickoffMs);
+//   const baseFilter = dateKey ? { _id: dateKey } : {};
+//   const updateDoc = { $set: setDoc };
+
+//   const valueList = candidates.values;
+//   const paths = [
+//     { queryField: "full.0.matches.id", arrayField: "match.id" },
+//     { queryField: "full.0.matches.matchId", arrayField: "match.matchId" },
+//     { queryField: "full.0.matches.event.id", arrayField: "match.event.id" },
+//   ];
+
+//   for (const path of paths) {
+//     if (!valueList.length) {
+//       continue;
+//     }
+//     const filter = {
+//       ...baseFilter,
+//       [path.queryField]: { $in: valueList },
+//     };
+    
+//  console.log("JOOOOOOOOOOOOOOOOOOONAS!!!!! lineups:persist-try", {
+//    db: DB_NAME,
+//    coll: MATCHES_COLLECTION,
+//    dateKey,
+//    queryField: path.queryField,
+//    arrayField: path.arrayField,
+//    sampleIds: valueList.slice(0, 3),
+//  });
+    
+    
+//     const result = await collection.updateOne(filter, updateDoc, {
+//       arrayFilters: [{ [path.arrayField]: { $in: valueList } }],
+//     });
+    
+    
+    
+       
+
+//        console.log("JOOOOOOOOOOOOOOOONAS!!!! lineups:persist-result", {
+//          matched: result.matchedCount,
+//          modified: result.modifiedCount,
+//        });
+       
+       
+       
+//     if (result.matchedCount > 0) {
+//       return true;
+//     }
+//   }
+
+//   return false;
+// }
+
 async function persistLineupsSnapshot({
   matchId,
   kickoffMs,
@@ -332,16 +436,13 @@ async function persistLineupsSnapshot({
   fetchedAtIso,
   fetchedAtMs,
 }) {
-  if (!matchId) {
-    return false;
-  }
+  if (!matchId) return false;
 
   const candidates = toMatchIdCandidates(matchId);
-  if (!candidates.values.length) {
-    return false;
-  }
+  if (!candidates.values.length) return false;
 
   const normalizedLineups = Array.isArray(lineups) ? lineups : [];
+
   const snapshot = omitUndefinedEntries({
     matchId: candidates.primaryString ?? String(matchId),
     confirmed: confirmed ?? null,
@@ -353,55 +454,90 @@ async function persistLineupsSnapshot({
     raw: raw ?? null,
   });
 
-  const setDoc = omitUndefinedEntries({
-    "full.0.matches.$[match].lineups": normalizedLineups,
-    "full.0.matches.$[match].lineupsConfirmed": confirmed ?? null,
-    "full.0.matches.$[match].lineupsProvider": provider ?? null,
-    "full.0.matches.$[match].lineupsFetchedAt": fetchedAtIso ?? null,
-    "full.0.matches.$[match].lineupsFetchedAtMs": fetchedAtMs ?? null,
-    "full.0.matches.$[match].lineupsKickoffMs": Number.isFinite(kickoffMs)
-      ? Math.trunc(kickoffMs)
-      : null,
-    "full.0.matches.$[match].lineupsSnapshot": snapshot,
-    "full.0.matches.$[match].lineupsRaw": raw ?? null,
-  });
-
-  if (!Object.keys(setDoc).length) {
-    return false;
-  }
-
   const client = await clientPromise;
   const collection = client.db(DB_NAME).collection(MATCHES_COLLECTION);
 
+  // 1) Försök hitta rätt dokument (först via datum-nyckel, annars hela coll)
   const dateKey = formatUtcDate(kickoffMs);
-  const baseFilter = dateKey ? { _id: dateKey } : {};
-  const updateDoc = { $set: setDoc };
+  const baseFilters =  [];
+  if (dateKey) baseFilters.push({ _id: dateKey });
+  baseFilters.push({}); // collection-wide fallback
 
-  const valueList = candidates.values;
-  const paths = [
-    { queryField: "full.0.matches.id", arrayField: "match.id" },
-    { queryField: "full.0.matches.matchId", arrayField: "match.matchId" },
-    { queryField: "full.0.matches.event.id", arrayField: "match.event.id" },
-  ];
+  for (const base of baseFilters) {
+    const doc = await collection.findOne(
+      { ...base },
+      { projection: { _id: 1, full: 1 } }
+    );
 
-  for (const path of paths) {
-    if (!valueList.length) {
+    if (!doc?.full?.[0]?.matches || !Array.isArray(doc.full[0].matches)) {
       continue;
     }
-    const filter = {
-      ...baseFilter,
-      [path.queryField]: { $in: valueList },
-    };
-    const result = await collection.updateOne(filter, updateDoc, {
-      arrayFilters: [{ [path.arrayField]: { $in: valueList } }],
+
+    const matches = doc.full[0].matches;
+
+    // 2) Hitta matchindex i JS (tål både number och string)
+    const idSet = new Set(
+      candidates.values.map((v) =>
+        typeof v === "number" && Number.isFinite(v)
+          ? String(Math.trunc(v))
+          : String(v)
+      )
+    );
+
+    const idx = matches.findIndex((m) => {
+      const cand = [m?.id, m?.matchId, m?.event?.id]
+        .filter((x) => x !== undefined && x !== null)
+        .map((x) =>
+          typeof x === "number" && Number.isFinite(x)
+            ? String(Math.trunc(x))
+            : String(x)
+        );
+      return cand.some((c) => idSet.has(c));
     });
-    if (result.matchedCount > 0) {
-      return true;
+
+    if (idx < 0) {
+      // fel dokument – testa nästa baseFilter
+      continue;
     }
+
+    // 3) Skriv exakt mot indexerad sökväg (inga arrayFilters behövs)
+    const p = `full.0.matches.${idx}`;
+
+    const setDoc = omitUndefinedEntries({
+      [`${p}.lineups`]: normalizedLineups,
+      [`${p}.lineupsConfirmed`]: confirmed ?? null,
+      [`${p}.lineupsProvider`]: provider ?? null,
+      [`${p}.lineupsFetchedAt`]: fetchedAtIso ?? null,
+      [`${p}.lineupsFetchedAtMs`]: fetchedAtMs ?? null,
+      [`${p}.lineupsKickoffMs`]: Number.isFinite(kickoffMs)
+        ? Math.trunc(kickoffMs)
+        : null,
+      [`${p}.lineupsSnapshot`]: snapshot,
+      [`${p}.lineupsRaw`]: raw ?? null,
+    });
+
+    const res = await collection.updateOne({ _id: doc._id }, { $set: setDoc });
+
+    console.log("lineups:persist:indexed-write", {
+      _id: doc._id,
+      matchIndex: idx,
+      matched: res.matchedCount,
+      modified: res.modifiedCount,
+      wroteKeys: Object.keys(setDoc),
+    });
+
+    return res.matchedCount > 0 ? res.modifiedCount > 0 || true : false;
   }
+
+  console.log("lineups:persist:no-match-found", {
+    triedDateKey: dateKey ?? null,
+    matchIdCandidates: candidates.values.slice(0, 5),
+  });
 
   return false;
 }
+
+
 
 const providers = {
   sportapi7: "rapid(sportapi7)",
@@ -826,6 +962,35 @@ function normalizeLineup(lineup) {
   };
 }
 
+// function collectLineupEntries(raw) {
+//   const results = [];
+//   const pushEntries = (entries) => {
+//     if (!Array.isArray(entries)) return;
+//     for (const entry of entries) {
+//       if (entry) results.push(entry);
+//     }
+//   };
+
+//   pushEntries(raw?.lineups);
+//   pushEntries(raw?.teamLineups);
+//   pushEntries(raw?.data?.lineups);
+//   pushEntries(raw?.data?.teamLineups);
+//   pushEntries(raw?.data?.data);
+
+//   if (raw?.home && raw?.away) {
+//     results.push(raw.home);
+//     results.push(raw.away);
+//   }
+//   if (raw?.data?.home && raw?.data?.away) {
+//     results.push(raw.data.home);
+//     results.push(raw.data.away);
+//   }
+//   if (raw?.lineup) {
+//     pushEntries(raw.lineup.home ? [raw.lineup.home, raw.lineup.away] : raw.lineup);
+//   }
+//   return results;
+// }
+
 function collectLineupEntries(raw) {
   const results = [];
   const pushEntries = (entries) => {
@@ -835,25 +1000,39 @@ function collectLineupEntries(raw) {
     }
   };
 
+  // Arrays
   pushEntries(raw?.lineups);
   pushEntries(raw?.teamLineups);
   pushEntries(raw?.data?.lineups);
   pushEntries(raw?.data?.teamLineups);
   pushEntries(raw?.data?.data);
 
-  if (raw?.home && raw?.away) {
-    results.push(raw.home);
-    results.push(raw.away);
-  }
-  if (raw?.data?.home && raw?.data?.away) {
-    results.push(raw.data.home);
-    results.push(raw.data.away);
-  }
+  // Objekt med home/away under olika nycklar
+  const maybePushHomeAway = (obj) => {
+    if (obj?.home && obj?.away) {
+      results.push(obj.home);
+      results.push(obj.away);
+    }
+  };
+  maybePushHomeAway(raw);
+  maybePushHomeAway(raw?.data);
+  maybePushHomeAway(raw?.lineups);
+  maybePushHomeAway(raw?.data?.lineups);
+  maybePushHomeAway(raw?.lineup);
+  maybePushHomeAway(raw?.data?.lineup);
+
+  // SofaScore vissa varianter har lineup.home/lineup.away
   if (raw?.lineup) {
-    pushEntries(raw.lineup.home ? [raw.lineup.home, raw.lineup.away] : raw.lineup);
+    const l = raw.lineup;
+    if (Array.isArray(l)) pushEntries(l);
+    else if (l.home && l.away) {
+      results.push(l.home, l.away);
+    }
   }
+
   return results;
 }
+
 
 function extractLineupsConfirmed(response) {
   const candidates = [
@@ -1094,7 +1273,6 @@ export async function GET(req, contextPromise) {
           matchId: String(matchId),
           kickoffMs: resolvedKickoff ?? null,
           kickoffDate:
-            typeof resolvedKickoff === "number" &&
             Number.isFinite(resolvedKickoff)
               ? formatUtcDate(kickoffMs)
               : null,
@@ -1147,6 +1325,12 @@ export async function GET(req, contextPromise) {
         kickoffMs: resolvedKickoff ?? null,
       });
     }
+    
+    console.log("lineups:persist-try", {
+      dateKey,
+      paths: paths.map((p) => p.queryField),
+      values: valueList.slice(0, 3),
+    });
 
     return NextResponse.json(
       { message: "Kunde inte hämta laguppställning" },
