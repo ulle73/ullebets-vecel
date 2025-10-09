@@ -133,7 +133,7 @@ function ScoreChip({ score, mode }) {
 }
 function Badge({ badge }) {
   if (!badge) return null;
-  const base = "ml-2 rounded px-2 py-0.5 text-[11px] font-semibold";
+  const base = "ml-2 rounded px-2 py-0.5 text-[8.25px] font-semibold";
   const tone =
     badge.tone === "perfect"
       ? "bg-yellow-200 text-yellow-900"
@@ -200,18 +200,18 @@ function RowAvg({ r, mode }) {
           <span>
             {r.statLabel} · {r.period}
           </span>
-          <span className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+          <span className="rounded bg-blue-50 px-2 py-0.5 text-[8.25px] font-semibold text-blue-700">
             {r.scopeLabel}
           </span>
           {r.leagueName ? (
             <span className="rounded bg-gray-100 px-2 py-0.5">{r.leagueName}</span>
           ) : null}
           {mode === "under" && r.leagueMax ? (
-            <span className="text-[11px] text-gray-400">maxrank={r.leagueMax}</span>
+            <span className="text-[8.25px] text-gray-400">maxrank={r.leagueMax}</span>
           ) : null}
         </div>
 
-        <div className="mt-1 space-y-0.5 text-[11px] text-gray-600">
+        <div className="mt-1 space-y-0.5 text-[8.25px] text-gray-600">
           <div className={highlightHome ? "font-semibold text-gray-900" : undefined}>
             H-par: FOR <b>#{r.homePair.forRank}</b> ({hf}) + AGAINST <b>#{r.homePair.againstRank}</b> ({ha}) = <b>{r.homePair.sum}</b>
           </div>
@@ -221,7 +221,7 @@ function RowAvg({ r, mode }) {
           <div>
             {r.basisLabel}: <b>{basisDisplay}</b>
             {adjustedDisplay ? (
-              <span className="ml-2 text-[10px] font-normal text-gray-500">
+              <span className="ml-2 text-[7.5px] font-normal text-gray-500">
                 (justerad för total-jämförelse: {adjustedDisplay})
               </span>
             ) : null}
@@ -425,7 +425,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
 
   /* ---------------------------------- UI ---------------------------------- */
   return (
-    <div className="flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className="flex h-full min-h-0 flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="border-b border-gray-100 px-4 py-3">
         <h2 className="text-lg font-semibold text-gray-900">Div2 – Bästa matchups</h2>
         <p className="mt-1 text-xs text-gray-500">
@@ -478,7 +478,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
 
       <div className="grid flex-1 grid-cols-1 gap-3 border-t border-gray-100 px-4 py-4 lg:grid-cols-2">
         {/* Över */}
-        <div className="flex min-h-[200px] flex-col">
+        <div className="flex min-h-[150px] flex-col">
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-700">
             Över – topp 20
           </h3>
@@ -498,7 +498,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
         </div>
 
         {/* Under */}
-        <div className="flex min-h-[200px] flex-col">
+        <div className="flex min-h-[150px] flex-col">
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-purple-700">
             Under – topp 20
           </h3>

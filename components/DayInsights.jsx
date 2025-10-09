@@ -269,7 +269,7 @@
     const isWarmup = profilesCount === 0;
 
     return (
-      <div className="flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="flex h-full min-h-0 flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
         <div className="border-b border-gray-100 px-4 py-3">
           <h2 className="text-lg font-semibold text-gray-900">Div2 – Dagens spaning</h2>
           <p className="mt-1 text-xs text-gray-500">
@@ -322,13 +322,13 @@
         </div>
 
         <div className="grid flex-1 grid-cols-1 gap-3 border-t border-gray-100 px-4 py-4 lg:grid-cols-2">
-          <div className="flex min-h-[200px] flex-col">
+          <div className="flex min-h-[150px] flex-col">
             <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
               Top 10 i dag
             </h3>
             <div className="flex-1 overflow-auto pr-1">{renderList(topPoints)}</div>
           </div>
-          <div className="flex min-h-[200px] flex-col">
+          <div className="flex min-h-[150px] flex-col">
             <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-red-600">
               Botten 10 i dag
             </h3>
