@@ -26,40 +26,50 @@ const SIX_HOURS_MS = 6 * HOUR_MS;
 
 const DB_NAME = process.env.MONGODB_DB || "app";
 const MATCHES_COLLECTION = "match-for-date";
-const STOCKHOLM_TIME_ZONE = "Europe/Stockholm";
+// const STOCKHOLM_TIME_ZONE = "Europe/Stockholm";
 
-const stockholmDateFormatter = new Intl.DateTimeFormat("sv-SE", {
-  timeZone: STOCKHOLM_TIME_ZONE,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
+// const stockholmDateFormatter = new Intl.DateTimeFormat("sv-SE", {
+//   timeZone: STOCKHOLM_TIME_ZONE,
+//   year: "numeric",
+//   month: "2-digit",
+//   day: "2-digit",
+// });
 
-function formatStockholmDate(ms) {
-  if (!Number.isFinite(ms)) {
-    return null;
-  }
+// function formatStockholmDate(ms) {
+//   if (!Number.isFinite(ms)) {
+//     return null;
+//   }
 
-  const date = new Date(ms);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
+//   const date = new Date(ms);
+//   if (Number.isNaN(date.getTime())) {
+//     return null;
+//   }
 
-  const parts = stockholmDateFormatter.formatToParts(date);
-  let year;
-  let month;
-  let day;
+//   const parts = stockholmDateFormatter.formatToParts(date);
+//   let year;
+//   let month;
+//   let day;
 
-  for (const part of parts) {
-    if (part.type === "year") year = part.value;
-    else if (part.type === "month") month = part.value;
-    else if (part.type === "day") day = part.value;
-  }
+//   for (const part of parts) {
+//     if (part.type === "year") year = part.value;
+//     else if (part.type === "month") month = part.value;
+//     else if (part.type === "day") day = part.value;
+//   }
 
-  if (year && month && day) {
-    return `${year}-${month}-${day}`;
-  }
-  return null;
+//   if (year && month && day) {
+//     return `${year}-${month}-${day}`;
+//   }
+//   return null;
+// }
+
+function formatUtcDate(ms) {
+  if (!Number.isFinite(ms)) return null;
+  const d = new Date(ms);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function toMatchIdCandidates(matchId) {
@@ -246,7 +256,7 @@ async function loadPersistedLineups({ matchId, kickoffMs }) {
     const client = await clientPromise;
     const collection = client.db(DB_NAME).collection(MATCHES_COLLECTION);
 
-    const dateKey = formatStockholmDate(kickoffMs);
+    const dateKey = formatUtcDate(kickoffMs);
     const baseFilter = dateKey ? { _id: dateKey } : {};
     const projections = {
       projection: {
@@ -363,7 +373,7 @@ async function persistLineupsSnapshot({
   const client = await clientPromise;
   const collection = client.db(DB_NAME).collection(MATCHES_COLLECTION);
 
-  const dateKey = formatStockholmDate(kickoffMs);
+  const dateKey = formatUtcDate(kickoffMs);
   const baseFilter = dateKey ? { _id: dateKey } : {};
   const updateDoc = { $set: setDoc };
 
@@ -1083,10 +1093,11 @@ export async function GET(req, contextPromise) {
         console.warn("lineups:persist-miss", {
           matchId: String(matchId),
           kickoffMs: resolvedKickoff ?? null,
-          kickoffDate: typeof resolvedKickoff === "number" &&
+          kickoffDate:
+            typeof resolvedKickoff === "number" &&
             Number.isFinite(resolvedKickoff)
-            ? formatStockholmDate(resolvedKickoff)
-            : null,
+              ? formatUtcDate(kickoffMs)
+              : null,
           reason: "match-not-found",
         });
       }
