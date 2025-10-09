@@ -193,8 +193,8 @@ function TeamOddsTable({ teamName, data, loading, error }) {
   } else {
     content = (
       <div className="flex-1 overflow-auto">
-        <table className="min-w-full table-fixed text-left text-[11px] text-gray-600">
-          <thead className="sticky top-0 bg-gray-50 text-[10px] uppercase tracking-wide text-gray-500">
+        <table className="min-w-full table-fixed text-left text-[8.25px] text-gray-600">
+          <thead className="sticky top-0 bg-gray-50 text-[7.5px] uppercase tracking-wide text-gray-500">
             <tr>
               <th className="w-20 px-2 py-1 font-semibold">Datum</th>
               <th className="px-2 py-1 font-semibold">Motstånd</th>
@@ -233,13 +233,13 @@ function TeamOddsTable({ teamName, data, loading, error }) {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between px-2 pb-1">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+        <p className="text-[8.25px] font-semibold uppercase tracking-wide text-gray-500">
           {teamName || "Ingen match"}
         </p>
         {partialError ? (
-          <span className="text-[10px] text-amber-600">Delvis data</span>
+          <span className="text-[7.5px] text-amber-600">Delvis data</span>
         ) : null}
       </div>
       {content}
@@ -263,7 +263,7 @@ export default function TeamOddsHistory({ match, className = "" }) {
   const awayOdds = useTeamOdds(awayTeamName);
 
   const containerClass = [
-    "flex h-full flex-col bg-gray-50/60",
+    "flex h-full min-h-0 flex-col bg-gray-50/60",
     className,
   ]
     .filter(Boolean)
@@ -275,7 +275,7 @@ export default function TeamOddsHistory({ match, className = "" }) {
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-600">
           Senaste 5 closing odds
         </h3>
-        <p className="text-[11px] text-gray-500">
+        <p className="text-[8.25px] text-gray-500">
           Hämtar hem- och bortastatistik från databasen.
         </p>
       </div>

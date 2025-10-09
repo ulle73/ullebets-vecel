@@ -333,10 +333,10 @@ function PlayerMarker({ player, badgeClass }) {
       </div>
       <div className="mt-1 whitespace-nowrap px-2 text-center text-xs font-medium text-white drop-shadow">
         {formatPlayerName(player)}
-        {player.captain ? <span className="ml-1 text-[10px]">©</span> : null}
+        {player.captain ? <span className="ml-1 text-[7.5px]">©</span> : null}
       </div>
       {player.rating != null ? (
-        <div className="text-[11px] font-semibold text-emerald-100">
+        <div className="text-[8.25px] font-semibold text-emerald-100">
           {player.rating}
         </div>
       ) : null}
@@ -400,7 +400,7 @@ function SubstitutesList({ players }) {
               {jersey ? <span className="text-gray-400">#{jersey}</span> : null}
               {position ? <span className="text-gray-400">{position}</span> : null}
               {player.rating != null ? (
-                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[7.5px] font-semibold text-emerald-700">
                   {player.rating}
                 </span>
               ) : null}
@@ -628,7 +628,7 @@ export default function Lineups({ match, isLoading, className = "" }) {
   }
 
   const containerClass = [
-    "flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
+    "flex h-full min-h-0 flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
     className,
   ]
     .filter(Boolean)

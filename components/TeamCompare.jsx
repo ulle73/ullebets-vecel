@@ -444,7 +444,7 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
   }, [combinedError]);
 
   const containerClass = [
-    "flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
+    "flex h-full min-h-0 flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
     className,
   ]
     .filter(Boolean)

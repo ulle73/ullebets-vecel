@@ -19,22 +19,18 @@
   }
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
 }
-
 
 html {
-  zoom: 0.75;
-}
-
-@supports not (zoom: 0.75) {
-  body {
-    transform: scale(0.75);
-    transform-origin: top left;
-    width: calc(100% / 0.75);
-    height: calc(100% / 0.75);
-  }
+  font-size: 12px;
 }
