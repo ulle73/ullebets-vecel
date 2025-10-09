@@ -253,7 +253,7 @@ async function postBacktest(body) {
   return res.json();
 }
 
-export default function BacktestPage({ match }) {
+export default function BacktestPage({ match, className = "" }) {
   const { t } = useTranslation();
   const statPatterns = useMemo(() => getStatPatterns(t), [t]);
   const [form, setForm] = useState(() => createInitialForm(statPatterns, match));
@@ -559,48 +559,59 @@ export default function BacktestPage({ match }) {
     }
   }, [homeTeam, awayTeam, teamKey, t, unibetUrl]);
 
+  const containerClass = [
+    "flex h-full min-h-0 flex-col overflow-hidden rounded-lg bg-slate-900 text-slate-100 shadow",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <section className="rounded-lg bg-slate-900 p-4 text-slate-100 shadow">
-      <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">{t("title")}</h2>
-          {homeTeam && awayTeam ? (
-            <p className="text-sm text-slate-300">
-              {homeTeam} vs {awayTeam}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              className="h-4 w-4"
-              checked={neutralGround}
-              onChange={(event) => setNeutralGround(event.target.checked)}
-            />
-            {t("neutral_ground")}
-          </label>
+    <section className={containerClass}>
+      <header className="flex-none border-b border-slate-800 px-4 py-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">{t("title")}</h2>
+            {homeTeam && awayTeam ? (
+              <p className="text-sm text-slate-300">
+                {homeTeam} vs {awayTeam}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={neutralGround}
+                onChange={(event) => setNeutralGround(event.target.checked)}
+              />
+              {t("neutral_ground")}
+            </label>
+          </div>
         </div>
       </header>
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input
-          className="flex-1 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm"
-          placeholder={t("unibet_placeholder")}
-          value={unibetUrl}
-          onChange={(event) => setUnibetUrl(event.target.value)}
-        />
-        <button
-          type="button"
-          onClick={handleLoadOdds}
-          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500"
-          disabled={loading}
-        >
-          {t("load_odds")}
-        </button>
-      </div>
+      <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
+        <div className="space-y-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input
+              className="flex-1 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm"
+              placeholder={t("unibet_placeholder")}
+              value={unibetUrl}
+              onChange={(event) => setUnibetUrl(event.target.value)}
+            />
+            <button
+              type="button"
+              onClick={handleLoadOdds}
+              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500"
+              disabled={loading}
+            >
+              {t("load_odds")}
+            </button>
+          </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span>{t("home_importance")}</span>
           <input
@@ -641,7 +652,7 @@ export default function BacktestPage({ match }) {
         </label>
       </div>
 
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
         <button
           type="button"
           onClick={handleCalculateAll}
@@ -653,13 +664,13 @@ export default function BacktestPage({ match }) {
       </div>
 
       {error ? (
-        <div className="mb-4 rounded border border-red-500/40 bg-red-900/40 px-3 py-2 text-sm text-red-200">
+        <div className="rounded border border-red-500/40 bg-red-900/40 px-3 py-2 text-sm text-red-200">
           {error}
         </div>
       ) : null}
 
       {positiveResults.length ? (
-        <div className="mb-6 rounded border border-emerald-500/30 bg-emerald-900/20 p-3">
+        <div className="rounded border border-emerald-500/30 bg-emerald-900/20 p-3">
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-200">
             {t("positive_ev_header")}
           </h3>
@@ -898,6 +909,8 @@ export default function BacktestPage({ match }) {
             </div>
           );
         })}
+      </div>
+        </div>
       </div>
     </section>
   );

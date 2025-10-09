@@ -387,42 +387,61 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     const gridRowClass = "auto-rows-[minmax(0,1fr)]";
 
     return (
-      <div className="w-full">
+      <div className="flex h-full w-full flex-col">
         <div
-          className={`mx-auto w-full ${containerPaddingClass} pb-6 ${containerWidthClass}`}
+          className={`mx-auto flex h-full w-full flex-col ${containerPaddingClass} pb-6 ${containerWidthClass}`}
         >
-          <div className={`grid gap-4 ${gridColumnsClass} ${gridRowClass}`}>
-            <LeagueTables
-              date={date}
-              onDateChange={setDate}
-              items={items}
-              formatTime={formatTime}
-              onSelectMatch={handleSelectMatch}
-              selectedMatchId={selectedMatchId}
-              isLoading={isLoading}
-              error={error}
-              matchesCount={matches.length}
-            />
-
-            
-
-            {showDetails ? (
-              <TeamCompare
-                match={mergedMatch}
-                isLoading={isMatchLoading}
-                error={matchError}
+          <div
+            className={`grid h-full min-h-0 gap-4 ${gridColumnsClass} ${gridRowClass}`}
+          >
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
+              <LeagueTables
+                date={date}
+                onDateChange={setDate}
+                items={items}
+                formatTime={formatTime}
+                onSelectMatch={handleSelectMatch}
+                selectedMatchId={selectedMatchId}
+                isLoading={isLoading}
+                error={error}
+                matchesCount={matches.length}
+                className="min-h-0"
               />
-            ) : <DayInsights
-              date={date}
-              items={items}
-              profilesVersion={teamProfilesVersion}
-            />}
+            </div>
+
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
+              {showDetails ? (
+                <TeamCompare
+                  match={mergedMatch}
+                  isLoading={isMatchLoading}
+                  error={matchError}
+                  className="min-h-0"
+                />
+              ) : (
+                <DayInsights
+                  date={date}
+                  items={items}
+                  profilesVersion={teamProfilesVersion}
+                  className="min-h-0"
+                />
+              )}
+            </div>
 
             {showDetails ? (
-              <Lineups match={mergedMatch} isLoading={isMatchLoading} />
+              <div className="flex h-full min-h-0 flex-col overflow-hidden">
+                <Lineups
+                  match={mergedMatch}
+                  isLoading={isMatchLoading}
+                  className="min-h-0"
+                />
+              </div>
             ) : null}
 
-            {showDetails ? <BacktestPage match={mergedMatch} /> : null}
+            {showDetails ? (
+              <div className="flex h-full min-h-0 flex-col overflow-hidden">
+                <BacktestPage match={mergedMatch} className="min-h-0" />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
