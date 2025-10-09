@@ -36,7 +36,7 @@ export default async function Page() {
       </header>
 
       <SWRConfig value={{ fallback }}>
-        <section className="flex-1 overflow-hidden pb-8">
+        <section className="flex-1 overflow-hidden">
           <ErrorBoundary resetKeys={[today, tomorrow]}>
             <MatchesClient defaultDate={today} initialFallback={fallback} />
           </ErrorBoundary>
