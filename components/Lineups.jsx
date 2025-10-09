@@ -344,7 +344,7 @@ function PlayerMarker({ player, badgeClass }) {
   );
 }
 
-function CombinedPitch({ homeLineup, awayLineup }) {
+function CombinedPitch({ homeLineup, awayLineup, className = "" }) {
   const homePlayers = useMemo(
     () => buildPitchPlayers(homeLineup?.starters ?? [], homeLineup?.formation, "top"),
     [homeLineup]
@@ -361,8 +361,15 @@ function CombinedPitch({ homeLineup, awayLineup }) {
   const homeBadge = resolveBadgeClass("home");
   const awayBadge = resolveBadgeClass("away");
 
+  const containerClass = [
+    "relative isolate w-full overflow-hidden rounded-2xl border border-emerald-700 shadow-lg",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className="relative isolate w-full overflow-hidden rounded-2xl border border-emerald-700 shadow-lg">
+    <div className={containerClass}>
       <div className="relative w-full pb-[150%]">
         <div className="absolute inset-0 bg-[url('/images/pitch4.png')] bg-cover bg-center" />
         {[homePlayers, awayPlayers].map((group, index) =>
@@ -576,7 +583,7 @@ export default function Lineups({ match, isLoading, className = "" }) {
     );
   } else {
     content = (
-      <div className="flex flex-1 flex-col gap-6 p-6">
+      <div className="flex flex-1 min-h-0 flex-col gap-6 p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-500">Status</p>
@@ -600,7 +607,13 @@ export default function Lineups({ match, isLoading, className = "" }) {
           Uppdatera
         </button>
       </div>
-        <CombinedPitch homeLineup={homeLineup} awayLineup={awayLineup} />
+        <div className="min-h-0">
+          <CombinedPitch
+            homeLineup={homeLineup}
+            awayLineup={awayLineup}
+            className="max-h-full overflow-y-auto"
+          />
+        </div>
         <div className="grid gap-6 lg:grid-cols-2">
           {homeLineup ? (
             <TeamLineup
