@@ -607,11 +607,11 @@ export default function Lineups({ match, isLoading, className = "" }) {
           Uppdatera
         </button>
       </div>
-        <div className="min-h-0">
+        <div className="min-h-0 ">
           <CombinedPitch
             homeLineup={homeLineup}
             awayLineup={awayLineup}
-            className="max-h-full overflow-y-auto"
+            className="max-h-full "
           />
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
@@ -657,9 +657,9 @@ export default function Lineups({ match, isLoading, className = "" }) {
       <div className="flex flex-1 min-h-0 flex-col">
         <TeamOddsHistory
           match={match}
-          className="flex-[0_0_35%] min-h-0 border-b border-gray-100"
+          className="flex-[0_0_31.5%] min-h-0 border-b border-gray-100"
         />
-        <div className="flex flex-[2] min-h-0 flex-col">
+        <div className="flex flex-[2] min-h-0 flex-col overflow-y-auto overscroll-contain pr-2">
           {content}
         </div>
       </div>
