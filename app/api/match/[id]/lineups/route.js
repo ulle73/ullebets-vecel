@@ -1,4 +1,6 @@
+import { NextResponse } from "next/server";
 import puppeteer from "puppeteer";
+import clientPromise from "@/lib/mongo";
 
 export const runtime = "nodejs";
 
@@ -8,6 +10,388 @@ const rapidApiKeys = (process.env.RAPIDAPI_KEYS || process.env.RAPIDAPI_KEY || "
   .filter(Boolean);
 
 const rapidApiState = { index: 0 };
+
+const CACHE_SYMBOL = Symbol.for("ullebets.lineups.cache");
+const lineupsCache = globalThis[CACHE_SYMBOL] ?? new Map();
+globalThis[CACHE_SYMBOL] = lineupsCache;
+
+const INFLIGHT_SYMBOL = Symbol.for("ullebets.lineups.inflight");
+const inFlightFetches = globalThis[INFLIGHT_SYMBOL] ?? new Map();
+globalThis[INFLIGHT_SYMBOL] = inFlightFetches;
+
+const TEN_MINUTES_MS = 10 * 60 * 1000;
+const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const SIX_HOURS_MS = 6 * HOUR_MS;
+
+const DB_NAME = process.env.MONGODB_DB || "app";
+const MATCHES_COLLECTION = "match-for-date";
+const STOCKHOLM_TIME_ZONE = "Europe/Stockholm";
+
+const stockholmDateFormatter = new Intl.DateTimeFormat("sv-SE", {
+  timeZone: STOCKHOLM_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function formatStockholmDate(ms) {
+  if (!Number.isFinite(ms)) {
+    return null;
+  }
+
+  const date = new Date(ms);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const parts = stockholmDateFormatter.formatToParts(date);
+  let year;
+  let month;
+  let day;
+
+  for (const part of parts) {
+    if (part.type === "year") year = part.value;
+    else if (part.type === "month") month = part.value;
+    else if (part.type === "day") day = part.value;
+  }
+
+  if (year && month && day) {
+    return `${year}-${month}-${day}`;
+  }
+  return null;
+}
+
+function toMatchIdCandidates(matchId) {
+  const values = new Set();
+  let primaryString = null;
+
+  if (typeof matchId === "string") {
+    const trimmed = matchId.trim();
+    if (trimmed) {
+      values.add(trimmed);
+      primaryString = trimmed;
+      const numeric = Number(trimmed);
+      if (Number.isFinite(numeric)) {
+        values.add(numeric);
+      }
+    }
+  } else if (Number.isFinite(matchId)) {
+    const truncated = Math.trunc(matchId);
+    values.add(truncated);
+    const asString = String(truncated);
+    values.add(asString);
+    primaryString = asString;
+  } else if (matchId != null) {
+    const asString = String(matchId);
+    if (asString) {
+      values.add(asString);
+      primaryString = asString;
+      const numeric = Number(asString);
+      if (Number.isFinite(numeric)) {
+        values.add(numeric);
+      }
+    }
+  }
+
+  const allValues = Array.from(values);
+  const numbers = allValues.filter((value) => typeof value === "number");
+  const strings = allValues.filter((value) => typeof value === "string");
+
+  if (!primaryString) {
+    if (strings.length) {
+      primaryString = strings[0];
+    } else if (numbers.length) {
+      primaryString = String(numbers[0]);
+    }
+  }
+
+  return {
+    values: allValues,
+    numbers,
+    strings,
+    primaryString,
+  };
+}
+
+function omitUndefinedEntries(object) {
+  const entries = Object.entries(object);
+  const result = {};
+  for (const [key, value] of entries) {
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+function parsePersistedTimestamp(value, fallbackMs = null) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+  if (typeof value === "string" && value.trim()) {
+    const ms = Date.parse(value);
+    if (Number.isFinite(ms)) {
+      return ms;
+    }
+  }
+  if (fallbackMs != null && Number.isFinite(fallbackMs)) {
+    return Math.trunc(fallbackMs);
+  }
+  return null;
+}
+
+function resolvePersistedLineups(match) {
+  if (!match || typeof match !== "object") {
+    return null;
+  }
+
+  const snapshot = match.lineupsSnapshot;
+  const rawLineups = Array.isArray(match.lineups)
+    ? match.lineups
+    : Array.isArray(snapshot?.lineups)
+      ? snapshot.lineups
+      : [];
+
+  const confirmed =
+    typeof match.lineupsConfirmed === "boolean"
+      ? match.lineupsConfirmed
+      : typeof snapshot?.confirmed === "boolean"
+        ? snapshot.confirmed
+        : null;
+
+  const provider = match.lineupsProvider ?? snapshot?.provider ?? null;
+
+  const fetchedAtMs =
+    parsePersistedTimestamp(match.lineupsFetchedAtMs) ??
+    parsePersistedTimestamp(match.lineupsFetchedAt, snapshot?.fetchedAtMs);
+
+  const kickoffMs =
+    parsePersistedTimestamp(match.lineupsKickoffMs) ??
+    parsePersistedTimestamp(snapshot?.kickoffMs);
+
+  const fetchedAtIso =
+    typeof match.lineupsFetchedAt === "string" && match.lineupsFetchedAt.trim()
+      ? match.lineupsFetchedAt
+      : typeof snapshot?.fetchedAt === "string" && snapshot.fetchedAt.trim()
+        ? snapshot.fetchedAt
+        : fetchedAtMs
+          ? new Date(fetchedAtMs).toISOString()
+          : null;
+
+  return {
+    payload: {
+      matchId: match.matchId ?? snapshot?.matchId ?? null,
+      provider,
+      confirmed,
+      lineups: rawLineups,
+      fetchedAt: fetchedAtIso,
+      fetchedAtMs: fetchedAtMs ?? null,
+      kickoffMs: kickoffMs ?? null,
+    },
+    confirmed,
+    fetchedAtMs: fetchedAtMs ?? null,
+    kickoffMs: kickoffMs ?? null,
+  };
+}
+
+function matchIncludesCandidate(match, candidates) {
+  if (!match || !candidates?.values?.length) {
+    return false;
+  }
+
+  const candidateSet = new Set(
+    candidates.values.map((value) =>
+      typeof value === "number" && Number.isFinite(value) ? String(Math.trunc(value)) : String(value)
+    )
+  );
+
+  const fields = [
+    match.id,
+    match.matchId,
+    match.event?.id,
+    match.event?.matchId,
+    match.raw?.id,
+    match.raw?.matchId,
+    match.lineupsSnapshot?.matchId,
+  ];
+
+  for (const field of fields) {
+    if (field == null) continue;
+    const normalized =
+      typeof field === "number" && Number.isFinite(field)
+        ? String(Math.trunc(field))
+        : typeof field === "string"
+          ? field.trim()
+          : String(field ?? "").trim();
+    if (normalized && candidateSet.has(normalized)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function loadPersistedLineups({ matchId, kickoffMs }) {
+  if (!matchId) {
+    return null;
+  }
+
+  const candidates = toMatchIdCandidates(matchId);
+  if (!candidates.values.length) {
+    return null;
+  }
+
+  try {
+    const client = await clientPromise;
+    const collection = client.db(DB_NAME).collection(MATCHES_COLLECTION);
+
+    const dateKey = formatStockholmDate(kickoffMs);
+    const baseFilter = dateKey ? { _id: dateKey } : {};
+    const projections = {
+      projection: {
+        _id: 1,
+        "full.0.matches": 1,
+      },
+    };
+
+    const paths = [
+      "full.0.matches.id",
+      "full.0.matches.matchId",
+      "full.0.matches.event.id",
+    ];
+
+    for (const path of paths) {
+      const filter = {
+        ...baseFilter,
+        [path]: { $in: candidates.values },
+      };
+
+      const doc = await collection.findOne(filter, projections);
+      if (!doc) {
+        continue;
+      }
+
+      const matches = doc?.full?.[0]?.matches;
+      if (!Array.isArray(matches)) {
+        continue;
+      }
+
+      for (const match of matches) {
+        if (!matchIncludesCandidate(match, candidates)) {
+          continue;
+        }
+        const resolved = resolvePersistedLineups(match);
+        if (resolved) {
+          const normalizedPayload = {
+            ...resolved.payload,
+            matchId: String(matchId),
+            kickoffMs:
+              resolved.kickoffMs ??
+              parsePersistedTimestamp(match.timestamp) ??
+              parsePersistedTimestamp(match.kickoff, kickoffMs) ??
+              (Number.isFinite(kickoffMs) ? Math.trunc(kickoffMs) : null),
+          };
+
+          return {
+            payload: normalizedPayload,
+            confirmed: resolved.confirmed,
+            fetchedAtMs: resolved.fetchedAtMs,
+            kickoffMs: normalizedPayload.kickoffMs ?? null,
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.error("lineups:load-persisted-error", {
+      matchId: String(matchId),
+      message: error?.message ?? String(error),
+    });
+  }
+
+  return null;
+}
+
+async function persistLineupsSnapshot({
+  matchId,
+  kickoffMs,
+  lineups,
+  confirmed,
+  provider,
+  raw,
+  fetchedAtIso,
+  fetchedAtMs,
+}) {
+  if (!matchId) {
+    return false;
+  }
+
+  const candidates = toMatchIdCandidates(matchId);
+  if (!candidates.values.length) {
+    return false;
+  }
+
+  const normalizedLineups = Array.isArray(lineups) ? lineups : [];
+  const snapshot = omitUndefinedEntries({
+    matchId: candidates.primaryString ?? String(matchId),
+    confirmed: confirmed ?? null,
+    provider: provider ?? null,
+    fetchedAt: fetchedAtIso ?? null,
+    fetchedAtMs: fetchedAtMs ?? null,
+    kickoffMs: Number.isFinite(kickoffMs) ? Math.trunc(kickoffMs) : null,
+    lineups: normalizedLineups,
+    raw: raw ?? null,
+  });
+
+  const setDoc = omitUndefinedEntries({
+    "full.0.matches.$[match].lineups": normalizedLineups,
+    "full.0.matches.$[match].lineupsConfirmed": confirmed ?? null,
+    "full.0.matches.$[match].lineupsProvider": provider ?? null,
+    "full.0.matches.$[match].lineupsFetchedAt": fetchedAtIso ?? null,
+    "full.0.matches.$[match].lineupsFetchedAtMs": fetchedAtMs ?? null,
+    "full.0.matches.$[match].lineupsKickoffMs": Number.isFinite(kickoffMs)
+      ? Math.trunc(kickoffMs)
+      : null,
+    "full.0.matches.$[match].lineupsSnapshot": snapshot,
+    "full.0.matches.$[match].lineupsRaw": raw ?? null,
+  });
+
+  if (!Object.keys(setDoc).length) {
+    return false;
+  }
+
+  const client = await clientPromise;
+  const collection = client.db(DB_NAME).collection(MATCHES_COLLECTION);
+
+  const dateKey = formatStockholmDate(kickoffMs);
+  const baseFilter = dateKey ? { _id: dateKey } : {};
+  const updateDoc = { $set: setDoc };
+
+  const valueList = candidates.values;
+  const paths = [
+    { queryField: "full.0.matches.id", arrayField: "match.id" },
+    { queryField: "full.0.matches.matchId", arrayField: "match.matchId" },
+    { queryField: "full.0.matches.event.id", arrayField: "match.event.id" },
+  ];
+
+  for (const path of paths) {
+    if (!valueList.length) {
+      continue;
+    }
+    const filter = {
+      ...baseFilter,
+      [path.queryField]: { $in: valueList },
+    };
+    const result = await collection.updateOne(filter, updateDoc, {
+      arrayFilters: [{ [path.arrayField]: { $in: valueList } }],
+    });
+    if (result.matchedCount > 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 const providers = {
   sportapi7: "rapid(sportapi7)",
@@ -488,35 +872,274 @@ function normalizeResponse(raw) {
   return { lineups, confirmed };
 }
 
-export async function GET(_req, contextPromise) {
+function parseKickoffMs(value) {
+  if (value == null) return null;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value > 1e12 ? Math.trunc(value) : Math.trunc(value * 1000);
+  }
+  if (typeof value === "string" && value.trim()) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      return numeric > 1e12 ? Math.trunc(numeric) : Math.trunc(numeric * 1000);
+    }
+  }
+  return null;
+}
+
+function shouldRefetchLineups(entry, now, kickoffMs) {
+  if (!entry) {
+    return true;
+  }
+
+  if (!entry.payload) {
+    const lastAttempt = entry.lastPolledAt ?? entry.fetchedAt;
+    if (!Number.isFinite(lastAttempt)) {
+      return true;
+    }
+    return now - lastAttempt >= TEN_MINUTES_MS;
+  }
+
+  const age = now - entry.fetchedAt;
+  if (!Number.isFinite(age) || age < 0) {
+    return true;
+  }
+
+  if (entry.confirmed === true) {
+    return age > SIX_HOURS_MS;
+  }
+
+  const timeUntilKickoff = kickoffMs != null ? kickoffMs - now : null;
+
+  if (timeUntilKickoff != null && timeUntilKickoff <= 0) {
+    const nextPollAt = (entry.lastPolledAt ?? entry.fetchedAt) + TEN_MINUTES_MS;
+    return now >= nextPollAt;
+  }
+
+  if (timeUntilKickoff != null && timeUntilKickoff <= HOUR_MS) {
+    const nextPollAt = (entry.lastPolledAt ?? entry.fetchedAt) + TEN_MINUTES_MS;
+    return now >= nextPollAt;
+  }
+
+  return age > THIRTY_MINUTES_MS;
+}
+
+function buildResponseHeaders(cacheState, confirmed, { stale = false } = {}) {
+  const headers = {
+    "cache-control": stale
+      ? "public, s-maxage=0, must-revalidate"
+      : "public, s-maxage=300, stale-while-revalidate=120",
+    "x-lineups-cache": cacheState,
+  };
+
+  if (confirmed === true) {
+    headers["x-lineups-confirmed"] = "true";
+  } else if (confirmed === false) {
+    headers["x-lineups-confirmed"] = "false";
+  }
+
+  if (stale) {
+    headers["x-lineups-cache-stale"] = "true";
+  }
+
+  return headers;
+}
+
+export async function GET(req, contextPromise) {
   const { params } = await contextPromise;
   const matchId = params?.id;
   if (!matchId) {
-    return new Response("Missing match id", { status: 400 });
+    return NextResponse.json({ message: "Missing match id" }, { status: 400 });
   }
 
-  try {
+  const url = new URL(req.url);
+  const kickoffMs = parseKickoffMs(url.searchParams.get("kickoff"));
+  const cacheKey = String(matchId);
+  const now = Date.now();
+  let existingEntry = lineupsCache.get(cacheKey) ?? null;
+
+  if (!existingEntry?.payload) {
+    const persisted = await loadPersistedLineups({
+      matchId,
+      kickoffMs,
+    });
+    if (persisted?.payload) {
+      const persistedFetchedAt =
+        persisted.fetchedAtMs != null && Number.isFinite(persisted.fetchedAtMs)
+          ? Math.trunc(persisted.fetchedAtMs)
+          : now;
+      existingEntry = {
+        payload: {
+          ...persisted.payload,
+          kickoffMs: persisted.kickoffMs ?? persisted.payload.kickoffMs ?? null,
+          fetchedAt: persisted.payload.fetchedAt ??
+            (persistedFetchedAt ? new Date(persistedFetchedAt).toISOString() : null),
+          fetchedAtMs: persisted.payload.fetchedAtMs ?? persistedFetchedAt ?? null,
+        },
+        confirmed: persisted.confirmed ?? null,
+        fetchedAt: persistedFetchedAt,
+        lastPolledAt: persistedFetchedAt,
+        kickoffMs:
+          persisted.kickoffMs ??
+          persisted.payload.kickoffMs ??
+          (Number.isFinite(kickoffMs) ? Math.trunc(kickoffMs) : null),
+      };
+      lineupsCache.set(cacheKey, existingEntry);
+    }
+  }
+
+  const resolvedKickoff =
+    (Number.isFinite(kickoffMs) ? Math.trunc(kickoffMs) : null) ??
+    (Number.isFinite(existingEntry?.kickoffMs) ? Math.trunc(existingEntry.kickoffMs) : null);
+
+  if (existingEntry) {
+    existingEntry.kickoffMs = resolvedKickoff;
+  }
+
+  const needsRefresh = shouldRefetchLineups(existingEntry, now, resolvedKickoff);
+
+  if (!needsRefresh && existingEntry?.payload) {
+    return NextResponse.json(existingEntry.payload, {
+      headers: buildResponseHeaders("hit", existingEntry.confirmed),
+    });
+  }
+
+  const inflight = inFlightFetches.get(cacheKey);
+  if (inflight) {
+    try {
+      const payload = await inflight;
+      const latestEntry = lineupsCache.get(cacheKey) ?? existingEntry;
+      const confirmed = latestEntry?.confirmed ?? payload?.confirmed ?? null;
+      return NextResponse.json(payload, {
+        headers: buildResponseHeaders("hit", confirmed),
+      });
+    } catch (error) {
+      inFlightFetches.delete(cacheKey);
+      console.error("lineups:inflight-error", error);
+      if (existingEntry) {
+        existingEntry.lastPolledAt = now;
+      }
+      if (existingEntry?.payload) {
+        return NextResponse.json(existingEntry.payload, {
+          headers: buildResponseHeaders("stale", existingEntry.confirmed, {
+            stale: true,
+          }),
+        });
+      }
+      if (!existingEntry) {
+        lineupsCache.set(cacheKey, {
+          payload: null,
+          confirmed: null,
+          fetchedAt: now,
+          lastPolledAt: now,
+          kickoffMs: resolvedKickoff ?? null,
+        });
+      }
+      return NextResponse.json(
+        { message: "Kunde inte hämta laguppställning" },
+        { status: 502 }
+      );
+    }
+  }
+
+  if (existingEntry) {
+    existingEntry.lastPolledAt = now;
+  }
+
+  const fetchPromise = (async () => {
     const result = await fetchEventLineups(matchId);
     const normalized = normalizeResponse(result.data);
-    return new Response(
-      JSON.stringify({
-        matchId: String(matchId),
-        provider: result.provider,
-        confirmed: normalized.confirmed,
+    const fetchedAtMs = Date.now();
+    const fetchedAtIso = new Date(fetchedAtMs).toISOString();
+    const payload = {
+      matchId: String(matchId),
+      provider: result.provider,
+      confirmed: normalized.confirmed,
+      lineups: normalized.lineups,
+      fetchedAt: fetchedAtIso,
+      fetchedAtMs,
+      kickoffMs: resolvedKickoff ?? null,
+    };
+
+    lineupsCache.set(cacheKey, {
+      payload,
+      confirmed: normalized.confirmed ?? null,
+      fetchedAt: fetchedAtMs,
+      lastPolledAt: fetchedAtMs,
+      kickoffMs: resolvedKickoff ?? null,
+    });
+
+    try {
+      const persisted = await persistLineupsSnapshot({
+        matchId,
+        kickoffMs: resolvedKickoff ?? null,
         lineups: normalized.lineups,
-      }),
-      {
-        headers: {
-          "content-type": "application/json",
-          "cache-control": "public, s-maxage=1800, stale-while-revalidate=1800",
-        },
+        confirmed: normalized.confirmed ?? null,
+        provider: result.provider ?? null,
+        raw: result.data ?? null,
+        fetchedAtIso,
+        fetchedAtMs,
+      });
+      if (!persisted) {
+        console.warn("lineups:persist-miss", {
+          matchId: String(matchId),
+          kickoffMs: resolvedKickoff ?? null,
+          kickoffDate: typeof resolvedKickoff === "number" &&
+            Number.isFinite(resolvedKickoff)
+            ? formatStockholmDate(resolvedKickoff)
+            : null,
+          reason: "match-not-found",
+        });
       }
-    );
+    } catch (persistError) {
+      console.error("lineups:persist-error", {
+        matchId: String(matchId),
+        message: persistError?.message ?? String(persistError),
+      });
+    }
+
+    return payload;
+  })();
+
+  inFlightFetches.set(cacheKey, fetchPromise);
+
+  try {
+    const payload = await fetchPromise;
+    inFlightFetches.delete(cacheKey);
+    return NextResponse.json(payload, {
+      headers: buildResponseHeaders(
+        existingEntry ? "updated" : "miss",
+        payload.confirmed ?? null
+      ),
+    });
   } catch (error) {
+    inFlightFetches.delete(cacheKey);
     console.error("lineups:error", error);
-    return new Response(
-      JSON.stringify({ message: "Kunde inte hämta laguppställning" }),
-      { status: 502, headers: { "content-type": "application/json" } }
+
+    if (existingEntry) {
+      existingEntry.lastPolledAt = now;
+    }
+
+    if (existingEntry?.payload) {
+      return NextResponse.json(existingEntry.payload, {
+        headers: buildResponseHeaders("stale", existingEntry.confirmed, {
+          stale: true,
+        }),
+      });
+    }
+
+    if (!existingEntry) {
+      lineupsCache.set(cacheKey, {
+        payload: null,
+        confirmed: null,
+        fetchedAt: now,
+        lastPolledAt: now,
+        kickoffMs: resolvedKickoff ?? null,
+      });
+    }
+
+    return NextResponse.json(
+      { message: "Kunde inte hämta laguppställning" },
+      { status: 502 }
     );
   }
 }
