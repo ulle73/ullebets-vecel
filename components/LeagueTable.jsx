@@ -32,6 +32,47 @@ function toPositiveInt(value) {
   return Number.isFinite(num) && num > 0 ? num : null;
 }
 
+function toScoreValue(value) {
+  if (value == null) return null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const resolved = toScoreValue(item);
+      if (resolved !== null) return resolved;
+    }
+    return null;
+  }
+  if (typeof value === "object") {
+    const keys = [
+      "current",
+      "display",
+      "total",
+      "normaltime",
+      "normalTime",
+      "regular",
+      "fullTime",
+      "ft",
+      "value",
+      "main",
+      "score",
+    ];
+    for (const key of keys) {
+      if (!(key in value)) continue;
+      const resolved = toScoreValue(value[key]);
+      if (resolved !== null) return resolved;
+    }
+  }
+  return null;
+}
+
 function normalizeMatch(item) {
   const id = String(
     pick(
@@ -87,6 +128,52 @@ function normalizeMatch(item) {
     "—"
   );
 
+  const homeScore = toScoreValue(
+    pick(
+      item,
+      [
+        "homeScore",
+        "homeScore.current",
+        "homeScore.display",
+        "homeScore.total",
+        "event.homeScore",
+        "event.homeScore.current",
+        "event.homeScore.display",
+        "event.homeScore.total",
+        "score.home",
+        "scores.home",
+        "event.score.home",
+        "event.scores.home",
+        "result.home",
+        "event.result.home",
+      ],
+      null
+    )
+  );
+
+  const awayScore = toScoreValue(
+    pick(
+      item,
+      [
+        "awayScore",
+        "awayScore.current",
+        "awayScore.display",
+        "awayScore.total",
+        "event.awayScore",
+        "event.awayScore.current",
+        "event.awayScore.display",
+        "event.awayScore.total",
+        "score.away",
+        "scores.away",
+        "event.score.away",
+        "event.scores.away",
+        "result.away",
+        "event.result.away",
+      ],
+      null
+    )
+  );
+
   const timestampRaw = pick(
     item,
     ["startTimestamp", "event.startTimestamp", "timestamp", "kickoffTime"],
@@ -106,6 +193,8 @@ function normalizeMatch(item) {
     awayTeamId,
     timestamp: safeTimestamp,
     raw: item,
+    homeScore,
+    awayScore,
   };
 }
 
@@ -250,9 +339,7 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
                 <div className={styles.tableHeaderRow}>
                   <span>Tid</span>
                   <span>Hemmalag</span>
-                  <span>
-                    <span className={styles.srOnly}>VS</span>
-                  </span>
+                  <span>Resultat</span>
                   <span>Bortalag</span>
                 </div>
               </div>
@@ -263,6 +350,23 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
                   const rowClassName = [
                     styles.rowButton,
                     isSelected ? styles.rowSelected : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
+
+                  const homeScoreReady =
+                    typeof match.homeScore === "number" &&
+                    Number.isFinite(match.homeScore);
+                  const awayScoreReady =
+                    typeof match.awayScore === "number" &&
+                    Number.isFinite(match.awayScore);
+                  const hasScore = homeScoreReady && awayScoreReady;
+                  const scoreLabel = hasScore
+                    ? `${match.homeScore} - ${match.awayScore}`
+                    : "vs";
+                  const scoreClassName = [
+                    styles.scoreCell,
+                    hasScore ? null : styles.scoreCellPlaceholder,
                   ]
                     .filter(Boolean)
                     .join(" ");
@@ -287,7 +391,7 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
                         />
                         <span className={styles.teamName}>{match.homeTeamName}</span>
                       </span>
-                      <span className={styles.vsCell}>vs</span>
+                      <span className={scoreClassName}>{scoreLabel}</span>
                       <span className={styles.teamCell}>
                         <ImageWithFallback
                           candidates={teamLogoCandidates(match.awayTeamId)}
