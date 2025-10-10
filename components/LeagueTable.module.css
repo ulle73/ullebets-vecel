@@ -104,7 +104,7 @@
 }
 
 .teamCell,
-.vsCell {
+.scoreCell {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -120,9 +120,17 @@
   white-space: nowrap;
 }
 
-.vsCell {
-  justify-content: flex-start;
+.scoreCell {
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+}
+
+.scoreCellPlaceholder {
   font-size: 0.75rem;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #9ca3af;

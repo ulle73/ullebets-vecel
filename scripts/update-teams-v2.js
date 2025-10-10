@@ -161,6 +161,12 @@ const rapidApiKeys = Array.from(
 const rapidApiState = { index: 0, calls: 0 };
 
 const EXTRA_MATCH_FIELDS = ["incidents", "shotmap", "odds"];
+const SCORE_FIELD_NAMES = ["homeScore", "awayScore"];
+const MATCH_UPDATE_FIELDS = [
+  "matchDetails",
+  ...EXTRA_MATCH_FIELDS,
+  ...SCORE_FIELD_NAMES,
+];
 
 const normalizeKey = (value) => {
   if (typeof value !== "string") return null;
@@ -508,6 +514,111 @@ const normalizeEvent = (entry) => {
   };
 };
 
+const SCORE_VALUE_KEYS = [
+  "display",
+  "current",
+  "total",
+  "normaltime",
+  "normalTime",
+  "regular",
+  "fullTime",
+  "ft",
+  "value",
+  "main",
+  "score",
+];
+
+const resolveScoreValue = (input) => {
+  if (typeof input === "number" && Number.isFinite(input)) {
+    return input;
+  }
+  if (typeof input === "string") {
+    const parsed = toNumber(input);
+    return parsed;
+  }
+  if (Array.isArray(input)) {
+    for (const item of input) {
+      const resolved = resolveScoreValue(item);
+      if (resolved !== null) return resolved;
+    }
+    return null;
+  }
+  if (input && typeof input === "object") {
+    for (const key of SCORE_VALUE_KEYS) {
+      if (!(key in input)) continue;
+      const resolved = resolveScoreValue(input[key]);
+      if (resolved !== null) return resolved;
+    }
+  }
+  return null;
+};
+
+const extractScoresFromEvent = (event) => {
+  if (!event || typeof event !== "object") {
+    return { homeScore: null, awayScore: null };
+  }
+
+  const homeCandidates = [
+    event.homeScore,
+    event.homeResult,
+    event.homeTeamScore,
+    event.score?.home,
+    event.scores?.home,
+    event.result?.home,
+    event.home,
+    event.event?.homeScore,
+    event.event?.homeResult,
+    event.event?.homeTeamScore,
+    event.event?.score?.home,
+    event.event?.scores?.home,
+    event.event?.result?.home,
+  ];
+
+  const awayCandidates = [
+    event.awayScore,
+    event.awayResult,
+    event.awayTeamScore,
+    event.score?.away,
+    event.scores?.away,
+    event.result?.away,
+    event.away,
+    event.event?.awayScore,
+    event.event?.awayResult,
+    event.event?.awayTeamScore,
+    event.event?.score?.away,
+    event.event?.scores?.away,
+    event.event?.result?.away,
+  ];
+
+  const homeScore = homeCandidates.reduce((acc, candidate) => {
+    if (acc !== null) return acc;
+    return resolveScoreValue(candidate);
+  }, null);
+
+  const awayScore = awayCandidates.reduce((acc, candidate) => {
+    if (acc !== null) return acc;
+    return resolveScoreValue(candidate);
+  }, null);
+
+  return { homeScore, awayScore };
+};
+
+const resolveFinalScores = ({ primary, secondary }) => {
+  const primaryScores = extractScoresFromEvent(primary || null);
+  const secondaryScores = extractScoresFromEvent(secondary || null);
+
+  const homeScore =
+    primaryScores.homeScore !== null
+      ? primaryScores.homeScore
+      : secondaryScores.homeScore;
+  const awayScore =
+    primaryScores.awayScore !== null
+      ? primaryScores.awayScore
+      : secondaryScores.awayScore;
+
+  return { homeScore, awayScore };
+};
+
 const resolveStartTimestamp = (event, normalizedEvent) => {
   const candidates = [
     normalizedEvent?.startTimestamp,
@@ -631,7 +742,7 @@ const deepEqual = (a, b) => {
 };
 
 const getUpdatedFields = (existingMatch = {}, newMatch = {}) =>
-  ["matchDetails", ...EXTRA_MATCH_FIELDS].filter((field) => {
+  MATCH_UPDATE_FIELDS.filter((field) => {
     if (!(field in newMatch)) {
       return false;
     }
@@ -1306,6 +1417,8 @@ if (leagues && typeof leagues === "object") {
     logger: console,
   };
 
+  const scoreUpdater = await createMatchScoreUpdater();
+
   const processedDates = [];
   let runCompleted = false;
 
@@ -1538,6 +1651,8 @@ if (leagues && typeof leagues === "object") {
           continue;
         }
 
+        const matchDateStr = ymdUTC(new Date(timestamp * 1000));
+
         const record = {
           matchId,
           timestamp,
@@ -1545,13 +1660,35 @@ if (leagues && typeof leagues === "object") {
 
         if (plan.matches && home?.name && away?.name) {
           Object.assign(record, {
-            date: ymdUTC(new Date(timestamp * 1000)),
+            date: matchDateStr,
             savedAt: new Date().toISOString(),
             homeTeamId: home.id,
             homeTeamName: home.name,
             awayTeamId: away.id,
             awayTeamName: away.name,
             matchDetails: formatMatchDetails(fetched.stats),
+          });
+        }
+
+        const { homeScore: resolvedHomeScore, awayScore: resolvedAwayScore } =
+          resolveFinalScores({ primary: fetched?.info, secondary: rawEvent });
+
+        if (resolvedHomeScore !== null) {
+          record.homeScore = resolvedHomeScore;
+        }
+        if (resolvedAwayScore !== null) {
+          record.awayScore = resolvedAwayScore;
+        }
+
+        if (
+          scoreUpdater &&
+          (resolvedHomeScore !== null || resolvedAwayScore !== null)
+        ) {
+          await scoreUpdater.update({
+            date: matchDateStr,
+            matchId,
+            homeScore: resolvedHomeScore,
+            awayScore: resolvedAwayScore,
           });
         }
 
@@ -1621,7 +1758,13 @@ if (leagues && typeof leagues === "object") {
     }
     runCompleted = true;
   } finally {
-    await browser.close();
+    try {
+      await browser.close();
+    } catch {}
+
+    if (scoreUpdater) {
+      await scoreUpdater.close();
+    }
   }
 
   if (runCompleted) {
@@ -1677,6 +1820,147 @@ async function ensureIndexes(col) {
   await tryCreate({ "_importMeta.teamRole": 1 }, "idx_teamRole");
   await tryCreate({ "full.matchId": 1 }, "idx_full_matchId", { sparse: true });
   await tryCreate({ "_importMeta.importedAt": -1 }, "idx_importedAt");
+}
+
+async function createMatchScoreUpdater() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.warn(
+      "⚠️ MONGODB_URI saknas – hoppar uppdatering av 'match-for-date'."
+    );
+    return null;
+  }
+
+  const dbName = process.env.MONGODB_DB || "app";
+  const client = new MongoClient(uri);
+
+  try {
+    await client.connect();
+  } catch (err) {
+    console.warn(
+      `⚠️ Kunde inte ansluta till databasen för matchuppdatering: ${
+        err?.message || err
+      }`
+    );
+    try {
+      await client.close(true);
+    } catch {}
+    return null;
+  }
+
+  const col = client.db(dbName).collection("match-for-date");
+  const missingDates = new Set();
+  const missingMatches = new Set();
+
+  const buildMatchArrayFilter = (matchId) => {
+    if (matchId === null || typeof matchId === "undefined") {
+      return null;
+    }
+
+    const numericId = toNumber(matchId);
+    const candidates = new Set();
+    candidates.add(String(matchId));
+    if (numericId !== null) {
+      candidates.add(numericId);
+    }
+
+    const orConditions = [];
+    for (const candidate of candidates) {
+      orConditions.push({ "match.id": candidate });
+      orConditions.push({ "match.matchId": candidate });
+      orConditions.push({ "match.eventId": candidate });
+      orConditions.push({ "match.event.id": candidate });
+      orConditions.push({ "match.event.matchId": candidate });
+      orConditions.push({ "match.event.eventId": candidate });
+    }
+
+    return orConditions.length ? { $or: orConditions } : null;
+  };
+
+  const updateScore = async ({ date, matchId, homeScore, awayScore }) => {
+    if (!date) {
+      return false;
+    }
+
+    const normalizedDate = String(date);
+    const resolvedHome = resolveScoreValue(homeScore);
+    const resolvedAway = resolveScoreValue(awayScore);
+
+    if (resolvedHome === null && resolvedAway === null) {
+      return false;
+    }
+
+    const matchFilter = buildMatchArrayFilter(matchId);
+    if (!matchFilter) {
+      return false;
+    }
+
+    const updateDoc = {};
+    if (resolvedHome !== null) {
+      updateDoc["full.0.matches.$[match].homeScore.current"] = resolvedHome;
+      updateDoc["full.0.matches.$[match].homeScore.display"] = resolvedHome;
+    }
+    if (resolvedAway !== null) {
+      updateDoc["full.0.matches.$[match].awayScore.current"] = resolvedAway;
+      updateDoc["full.0.matches.$[match].awayScore.display"] = resolvedAway;
+    }
+
+    if (!Object.keys(updateDoc).length) {
+      return false;
+    }
+
+    try {
+      const result = await col.updateOne(
+        { _id: normalizedDate },
+        { $set: updateDoc },
+        { arrayFilters: [matchFilter] }
+      );
+
+      if (!result.matchedCount) {
+        if (!missingDates.has(normalizedDate)) {
+          console.warn(
+            `⚠️ Hittade inget dokument för datum ${normalizedDate} i 'match-for-date'.`
+          );
+          missingDates.add(normalizedDate);
+        }
+        return false;
+      }
+
+      if (!result.modifiedCount) {
+        const key = `${normalizedDate}:${String(matchId)}`;
+        if (!missingMatches.has(key)) {
+          console.warn(
+            `⚠️ Hittade ingen match med id ${matchId} att uppdatera i 'match-for-date'.`
+          );
+          missingMatches.add(key);
+        }
+        return false;
+      }
+
+      console.log(
+        `🗂️ Uppdaterade match-for-date ${normalizedDate} #${matchId} med resultat ${
+          resolvedHome ?? "?"
+        }-${resolvedAway ?? "?"}.`
+      );
+      return true;
+    } catch (err) {
+      console.warn(
+        `⚠️ Kunde inte uppdatera match-for-date för ${normalizedDate}: ${
+          err?.message || err
+        }`
+      );
+      return false;
+    }
+  };
+
+  return {
+    update: updateScore,
+    close: async () => {
+      try {
+        await client.close(true);
+      } catch {}
+    },
+  };
 }
 
 async function readFullFromAnyDir(basename) {
