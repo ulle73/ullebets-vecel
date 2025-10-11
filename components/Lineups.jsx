@@ -669,10 +669,12 @@ export default function Lineups({ match, isLoading, className = "" }) {
         </h2>
       </div>
       <div className="flex flex-1 min-h-0 flex-col">
-        <TeamOddsHistory
-          match={match}
-          className="flex-[0_0_31.5%] min-h-0 border-b border-gray-100"
-        />
+        <div className="hidden lg:flex lg:flex-[0_0_31.5%] lg:flex-col lg:min-h-0">
+          <TeamOddsHistory
+            match={match}
+            className="flex-1 min-h-0 border-b border-gray-100"
+          />
+        </div>
         <div className="flex flex-[2] min-h-0 flex-col overflow-y-auto overscroll-contain pr-2">
           {content}
         </div>
