@@ -6,7 +6,7 @@ import TeamOddsHistory from "@/components/TeamOddsHistory";
 import { buildLineupsKey } from "@/lib/utils/apiKeys";
 import { fetchJson } from "@/lib/utils/fetchers";
 
-const ONE_DAY_MS = 28 * 60 * 60 * 1000;
+const ONE_DAY_MS = 168 * 60 * 60 * 1000;
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 
 const GOALKEEPER_TOKENS = ["gk", "goalkeeper", "keeper", "målvakt", "portero"];
