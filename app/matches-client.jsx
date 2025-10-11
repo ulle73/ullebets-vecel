@@ -7,6 +7,7 @@ import TeamCompare from "@/components/TeamCompare";
 import DayInsights from "@/components/DayInsights-copy";
 import Lineups from "@/components/Lineups";
 import BacktestPage from "@/components/BacktestPage";
+import ClosingOddsCard from "@/components/ClosingOddsCard";
 import { normalizeMatch } from "@/components/LeagueTable";
 import {
   buildMatchesByDateKey,
@@ -384,7 +385,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     const gridColumnsClass = showDetails
       ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
       : "grid-cols-1 md:grid-cols-2";
-    const gridRowClass = "auto-rows-[minmax(0,1fr)]";
+    const gridRowClass = "auto-rows-auto md:auto-rows-[minmax(0,1fr)]";
 
     return (
       <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
@@ -392,7 +393,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
           className={`mx-auto flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden ${containerPaddingClass} pb-6 ${containerWidthClass}`}
         >
           <div
-            className={`grid h-full min-h-0 gap-4 ${gridColumnsClass} ${gridRowClass}`}
+            className={`grid h-full min-h-0 gap-4 overflow-y-auto overscroll-contain lg:overflow-visible lg:overscroll-auto ${gridColumnsClass} ${gridRowClass}`}
           >
             <LeagueTables
               date={date}
@@ -414,11 +415,17 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
                 isLoading={isMatchLoading}
                 error={matchError}
               />
-            ) : <DayInsights
-              date={date}
-              items={items}
-              profilesVersion={teamProfilesVersion}
-            />}
+            ) : (
+              <DayInsights
+                date={date}
+                items={items}
+                profilesVersion={teamProfilesVersion}
+              />
+            )}
+
+            {showDetails ? (
+              <ClosingOddsCard match={mergedMatch} />
+            ) : null}
 
             {showDetails ? (
               <Lineups match={mergedMatch} isLoading={isMatchLoading} />
