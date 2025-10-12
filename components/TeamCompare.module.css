@@ -260,32 +260,22 @@
 
 @media (max-width: 639px) {
   .mainHeader {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(5, auto);
-    gap: 8px;
-  }
-
-  .mainHeaderMetric,
-  .mainHeaderTeam,
-  .mainHeaderLabel {
-    grid-column: auto;
-    grid-row: auto;
-    justify-content: flex-start;
-    text-align: left;
-  }
-
-  .mainHeaderTeam,
-  .mainHeaderLabel {
-    text-transform: none;
-    color: #4b5563;
+    gap: 4px;
+    padding: 10px 12px;
+    font-size: 0.65rem;
   }
 
   .headerRow,
   .row {
-    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .metricHint {
+    font-size: 0.65rem;
   }
 
   .valueCell {
-    justify-content: flex-start;
+    font-size: 0.8rem;
   }
 }

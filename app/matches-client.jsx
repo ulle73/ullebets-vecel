@@ -388,12 +388,12 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     const gridRowClass = "auto-rows-auto md:auto-rows-[minmax(0,1fr)]";
 
     return (
-      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+      <div className="flex w-full flex-col overflow-x-hidden lg:h-full lg:min-h-0 lg:overflow-hidden">
         <div
-          className={`mx-auto flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden ${containerPaddingClass} pb-6 ${containerWidthClass}`}
+          className={`mx-auto flex w-full flex-1 flex-col overflow-x-hidden pb-6 ${containerPaddingClass} ${containerWidthClass} lg:h-full lg:min-h-0 lg:overflow-hidden`}
         >
           <div
-            className={`grid h-full min-h-0 gap-4 overflow-y-auto overscroll-contain lg:overflow-visible lg:overscroll-auto ${gridColumnsClass} ${gridRowClass}`}
+            className={`grid w-full gap-4 ${gridColumnsClass} ${gridRowClass} md:h-full md:min-h-0 md:overflow-y-auto md:overscroll-contain lg:h-full lg:min-h-0 lg:overflow-visible lg:overscroll-auto`}
           >
             <LeagueTables
               date={date}
