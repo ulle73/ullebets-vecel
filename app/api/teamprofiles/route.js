@@ -7,6 +7,12 @@ const COLLECTION = "teamprofiles";
 const LOG = process.env.LOG_TEAMPROFILES !== "0";
 const TAG = "[api/teamprofiles]";
 
+// Keep the CDN fresh — team profiles are regenerated often and we don't want
+// to serve 24h old data. Five minutes is a reasonable compromise between RU
+// usage and freshness, while still allowing a SWR window for fast repeats.
+const CACHE_MAX_AGE_SECONDS = 300;
+const CACHE_STALE_REVALIDATE_SECONDS = 300;
+
 const log = (...args) => {
   if (LOG) console.log(TAG, ...args);
 };
@@ -158,13 +164,23 @@ export async function GET(req) {
     });
 
     if (profileFromDb) {
+      const savedAt =
+        profileFromDb?.meta?.savedAt ?? profileFromDb?.savedAt ?? null;
+      const headers = {
+        "cache-control":
+          `public, max-age=0, s-maxage=${CACHE_MAX_AGE_SECONDS}, stale-while-revalidate=${CACHE_STALE_REVALIDATE_SECONDS}`,
+      };
+      if (savedAt) {
+        const savedAtDate = new Date(savedAt);
+        if (!Number.isNaN(savedAtDate.getTime())) {
+          headers["last-modified"] = savedAtDate.toUTCString();
+        }
+      }
+
       return NextResponse.json(
         { profile: profileFromDb },
         {
-          headers: {
-            "cache-control":
-              "public, s-maxage=86400, stale-while-revalidate=86400",
-          },
+          headers,
         }
       );
     }
