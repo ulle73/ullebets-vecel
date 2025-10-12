@@ -655,7 +655,8 @@ export default function Lineups({ match, isLoading, className = "" }) {
   }
 
   const containerClass = [
-    "flex h-full min-h-0 flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
+    "flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
+    "lg:h-full lg:min-h-0",
     className,
   ]
     .filter(Boolean)
@@ -668,14 +669,14 @@ export default function Lineups({ match, isLoading, className = "" }) {
           Lineups
         </h2>
       </div>
-      <div className="flex flex-1 min-h-0 flex-col">
+      <div className="flex flex-col lg:flex-1 lg:min-h-0">
         <div className="hidden lg:flex lg:flex-[0_0_31.5%] lg:flex-col lg:min-h-0">
           <TeamOddsHistory
             match={match}
-            className="flex-1 min-h-0 border-b border-gray-100"
+            className="border-b border-gray-100 lg:flex-1 lg:min-h-0"
           />
         </div>
-        <div className="flex flex-[2] min-h-0 flex-col overflow-y-auto overscroll-contain pr-2">
+        <div className="flex flex-col pr-2 lg:flex-[2] lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain">
           {content}
         </div>
       </div>

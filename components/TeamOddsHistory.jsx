@@ -233,7 +233,7 @@ function TeamOddsTable({ teamName, data, loading, error }) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex flex-col lg:h-full lg:min-h-0">
       <div className="flex items-center justify-between px-2 pb-1">
         <p className="text-[8.25px] font-semibold uppercase tracking-wide text-gray-500">
           {teamName || "Ingen match"}
@@ -268,15 +268,17 @@ export default function TeamOddsHistory({
   const awayOdds = useTeamOdds(awayTeamName);
 
   const containerClass = [
-    "flex h-full min-h-0 flex-col bg-gray-50/60",
+    "flex flex-col bg-gray-50/60",
+    "lg:h-full lg:min-h-0",
     className,
   ]
     .filter(Boolean)
     .join(" ");
 
   const contentWrapperClass = [
-    "flex flex-1 flex-col gap-3 overflow-hidden lg:flex-row",
+    "flex flex-col gap-3 overflow-hidden",
     "px-4 py-3",
+    "lg:flex-1 lg:flex-row lg:min-h-0",
     contentClassName,
   ]
     .filter(Boolean)
@@ -295,7 +297,7 @@ export default function TeamOddsHistory({
         </div>
       ) : null}
       <div className={contentWrapperClass}>
-        <div className="flex min-h-0 w-full flex-1 flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+        <div className="flex w-full flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm lg:min-h-0 lg:flex-1">
           <TeamOddsTable
             teamName={homeTeamName}
             data={homeOdds.data}
@@ -303,7 +305,7 @@ export default function TeamOddsHistory({
             error={homeOdds.error}
           />
         </div>
-        <div className="flex min-h-0 w-full flex-1 flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+        <div className="flex w-full flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm lg:min-h-0 lg:flex-1">
           <TeamOddsTable
             teamName={awayTeamName}
             data={awayOdds.data}
