@@ -13,6 +13,9 @@ const TAG = "[api/teamprofiles]";
 const CACHE_MAX_AGE_SECONDS = 300;
 const CACHE_STALE_REVALIDATE_SECONDS = 300;
 
+const MULTISPACE_REGEX = /\s+/g;
+const DIACRITICS_REGEX = /[\u0300-\u036f]/g;
+
 const log = (...args) => {
   if (LOG) console.log(TAG, ...args);
 };
@@ -37,6 +40,91 @@ function stripDbProfile(doc) {
   return rest;
 }
 
+function normalizeComparableName(value) {
+  if (value == null) {
+    return null;
+  }
+
+  return String(value)
+    .normalize("NFD")
+    .replace(DIACRITICS_REGEX, "")
+    .toLowerCase()
+    .replace(MULTISPACE_REGEX, " ")
+    .trim();
+}
+
+function stringEquals(expected, actual) {
+  const lhs = normalizeComparableName(expected);
+  const rhs = normalizeComparableName(actual);
+
+  if (lhs && rhs) {
+    return lhs === rhs;
+  }
+
+  if (lhs) {
+    return false;
+  }
+
+  return true;
+}
+
+function profileMatchesRequest(doc, params) {
+  if (!doc) {
+    return false;
+  }
+
+  const meta = doc.meta ?? {};
+  const { leagueId, teamId, leagueName, teamName, matchType } = params;
+
+  if (matchType) {
+    if (typeof meta.matchType !== "string") {
+      return false;
+    }
+    if (meta.matchType.toLowerCase() !== matchType.toLowerCase()) {
+      return false;
+    }
+  }
+
+  const actualTeamId = parsePositiveInt(meta.lagId ?? meta.teamId ?? doc.teamId);
+  const expectedTeamId = parsePositiveInt(teamId);
+  if (expectedTeamId != null) {
+    if (actualTeamId == null || actualTeamId !== expectedTeamId) {
+      return false;
+    }
+  } else if (!stringEquals(teamName, meta.lagnamn ?? meta.teamName ?? doc.teamName ?? doc.team)) {
+    return false;
+  }
+
+  const actualLeagueId = parsePositiveInt(meta.ligaId ?? meta.leagueId ?? doc.leagueId);
+  const expectedLeagueId = parsePositiveInt(leagueId);
+  if (expectedLeagueId != null) {
+    if (actualLeagueId == null || actualLeagueId !== expectedLeagueId) {
+      return false;
+    }
+  } else if (!stringEquals(leagueName, meta.leagueName ?? meta.league ?? doc.leagueName ?? doc.league)) {
+    return false;
+  }
+
+  return true;
+}
+
+function sanitizeDbResult(doc, params, stage) {
+  if (!doc) {
+    return null;
+  }
+
+  if (!profileMatchesRequest(doc, params)) {
+    warn("db hit rejected", {
+      stage,
+      params,
+      meta: doc?.meta ?? null,
+    });
+    return null;
+  }
+
+  return stripDbProfile(doc);
+}
+
 function escapeForRegex(value) {
   return value.replace(/[|\\{}()[\]^$+*?.-]/g, "\\$&");
 }
@@ -52,15 +140,17 @@ async function fetchProfileFromDb({ leagueId, teamId, leagueName, teamName, matc
 
   const leagueNumeric = parsePositiveInt(leagueId);
   const teamNumeric = parsePositiveInt(teamId);
+  const requestParams = { leagueId, teamId, leagueName, teamName, matchType };
 
   if (leagueNumeric != null && teamNumeric != null) {
     const identifier = buildIdentifier(leagueNumeric, teamNumeric, matchType);
     if (identifier) {
       log("db lookup by _id", { identifier });
       const doc = await collection.findOne({ _id: identifier });
-      if (doc) {
+      const sanitized = sanitizeDbResult(doc, requestParams, "_id");
+      if (sanitized) {
         log("db hit", { identifier });
-        return stripDbProfile(doc);
+        return sanitized;
       }
       warn("db miss", { identifier });
     }
@@ -75,13 +165,14 @@ async function fetchProfileFromDb({ leagueId, teamId, leagueName, teamName, matc
       "meta.lagId": teamNumeric,
       "meta.matchType": matchType,
     });
-    if (docByMeta) {
+    const sanitizedByMeta = sanitizeDbResult(docByMeta, requestParams, "numeric-meta");
+    if (sanitizedByMeta) {
       log("db hit by numeric meta", {
         leagueNumeric,
         teamNumeric,
         matchType,
       });
-      return stripDbProfile(docByMeta);
+      return sanitizedByMeta;
     }
     warn("db miss by numeric meta", {
       leagueNumeric,
@@ -112,13 +203,14 @@ async function fetchProfileFromDb({ leagueId, teamId, leagueName, teamName, matc
 
     log("db lookup by fallback", query);
     const docByName = await collection.findOne(query);
-    if (docByName) {
+    const sanitizedByName = sanitizeDbResult(docByName, requestParams, "fallback");
+    if (sanitizedByName) {
       log("db hit by fallback", {
         leagueName,
         teamName,
         matchType,
       });
-      return stripDbProfile(docByName);
+      return sanitizedByName;
     }
     warn("db miss by fallback", {
       leagueName,
