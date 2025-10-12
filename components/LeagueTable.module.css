@@ -96,6 +96,24 @@
   background: #eff6ff;
 }
 
+.rowPast {
+  color: #9ca3af;
+}
+
+.rowPast .timeCell,
+.rowPast .teamName,
+.rowPast .scoreCell,
+.rowPast .scoreCellPlaceholder {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.rowPast .badge,
+.rowPast .leagueBadge {
+  filter: grayscale(100%);
+  opacity: 0.6;
+}
+
 .timeCell {
   font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.75rem;
