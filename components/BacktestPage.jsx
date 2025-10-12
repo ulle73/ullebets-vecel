@@ -760,7 +760,7 @@ export default function BacktestPage({ match }) {
     });
 
   return (
-    <section className="flex h-full min-h-0 flex-col rounded-lg bg-slate-900 p-4 text-slate-100 shadow">
+    <section className="flex flex-col rounded-lg bg-slate-900 p-4 text-slate-100 shadow lg:h-full lg:min-h-0">
       <div className="flex-shrink-0">
         <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -860,7 +860,7 @@ export default function BacktestPage({ match }) {
         ) : null}
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto pr-1">
+        <div className="overflow-auto pr-1 lg:flex-1 lg:min-h-0">
         {positiveResults.length ? (
           <div className="mb-6 rounded border border-emerald-500/30 bg-emerald-900/20 p-3">
             <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-200">

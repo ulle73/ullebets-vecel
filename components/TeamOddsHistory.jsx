@@ -233,7 +233,7 @@ function TeamOddsTable({ teamName, data, loading, error }) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex flex-col lg:h-full lg:min-h-0">
       <div className="flex items-center justify-between px-2 pb-1">
         <p className="text-[8.25px] font-semibold uppercase tracking-wide text-gray-500">
           {teamName || "Ingen match"}
@@ -247,7 +247,12 @@ function TeamOddsTable({ teamName, data, loading, error }) {
   );
 }
 
-export default function TeamOddsHistory({ match, className = "" }) {
+export default function TeamOddsHistory({
+  match,
+  className = "",
+  showHeader = true,
+  contentClassName = "",
+}) {
   const homeTeamName =
     match?.homeTeamName ||
     match?.homeTeam?.name ||
@@ -263,24 +268,36 @@ export default function TeamOddsHistory({ match, className = "" }) {
   const awayOdds = useTeamOdds(awayTeamName);
 
   const containerClass = [
-    "flex h-full min-h-0 flex-col bg-gray-50/60",
+    "flex flex-col bg-gray-50/60",
+    "lg:h-full lg:min-h-0",
     className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const contentWrapperClass = [
+    "flex flex-col gap-3 overflow-hidden",
+    "px-4 py-3",
+    "lg:flex-1 lg:flex-row lg:min-h-0",
+    contentClassName,
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
     <div className={containerClass}>
-      <div className="border-b border-gray-200 px-4 py-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-600">
-          Senaste 5 closing odds
-        </h3>
-        <p className="text-[8.25px] text-gray-500">
-          Hämtar hem- och bortastatistik från databasen.
-        </p>
-      </div>
-      <div className="flex flex-1 gap-3 overflow-hidden px-4 py-3">
-        <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+      {showHeader ? (
+        <div className="border-b border-gray-200 px-4 py-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Senaste 5 closing odds
+          </h3>
+          <p className="text-[8.25px] text-gray-500">
+            Hämtar hem- och bortastatistik från databasen.
+          </p>
+        </div>
+      ) : null}
+      <div className={contentWrapperClass}>
+        <div className="flex w-full flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm lg:min-h-0 lg:flex-1">
           <TeamOddsTable
             teamName={homeTeamName}
             data={homeOdds.data}
@@ -288,7 +305,7 @@ export default function TeamOddsHistory({ match, className = "" }) {
             error={homeOdds.error}
           />
         </div>
-        <div className="flex min-h-0 flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+        <div className="flex w-full flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm lg:min-h-0 lg:flex-1">
           <TeamOddsTable
             teamName={awayTeamName}
             data={awayOdds.data}

@@ -425,7 +425,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
 
   /* ---------------------------------- UI ---------------------------------- */
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className="flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm lg:h-full lg:min-h-0">
       <div className="border-b border-gray-100 px-4 py-3">
         <h2 className="text-lg font-semibold text-gray-900">Div2 – Bästa matchups</h2>
         <p className="mt-1 text-xs text-gray-500">
@@ -476,7 +476,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
         </div>
       </div>
 
-      <div className="grid flex-1 grid-cols-1 gap-3 border-t border-gray-100 px-4 py-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 border-t border-gray-100 px-4 py-4 lg:grid-cols-2 lg:flex-1 lg:min-h-0">
         {/* Över */}
         <div className="flex min-h-[150px] flex-col">
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-700">
