@@ -261,6 +261,8 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
     return normalized;
   }, [items]);
 
+  const nowSeconds = Math.floor(Date.now() / 1000);
+
   const groups = useMemo(() => {
     const map = new Map();
     for (const match of matches) {
@@ -346,10 +348,13 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
               <div className={styles.rows}>
                 {sortedList.map((match) => {
                   const isSelected = selectedMatchId === match.id;
+                  const isPastMatch =
+                    Number.isFinite(match.timestamp) && match.timestamp < nowSeconds;
                   const timeLabel = match.timestamp ? formatTime(match.timestamp) : "—";
                   const rowClassName = [
                     styles.rowButton,
                     isSelected ? styles.rowSelected : null,
+                    isPastMatch ? styles.rowPast : null,
                   ]
                     .filter(Boolean)
                     .join(" ");
