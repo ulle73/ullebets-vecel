@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import { createHash } from "crypto";
 import { fileURLToPath } from "url";
 import clientPromise from "../lib/mongo.js";
 
@@ -92,6 +93,57 @@ function sanitizeFileComponent(value) {
     .replace(/[<>:"/\\|?*]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function stableStringify(value) {
+  if (value === null) {
+    return "null";
+  }
+  if (Array.isArray(value)) {
+    return (
+      "[" +
+      value
+        .map((item) =>
+          typeof item === "undefined" ? "null" : stableStringify(item)
+        )
+        .join(",") +
+      "]"
+    );
+  }
+  if (typeof value === "object") {
+    const keys = Object.keys(value).sort();
+    const entries = [];
+    for (const key of keys) {
+      const val = value[key];
+      if (typeof val === "undefined") {
+        continue;
+      }
+      entries.push(`${JSON.stringify(key)}:${stableStringify(val)}`);
+    }
+    return `{${entries.join(",")}}`;
+  }
+  if (typeof value === "number" && !Number.isFinite(value)) {
+    return "null";
+  }
+  return JSON.stringify(value);
+}
+
+function buildComparableProfileDoc(leagueName, source) {
+  if (!source || typeof source !== "object") {
+    return { leagueName };
+  }
+  const { meta = {}, games = [], specials = {}, statistics = {} } = source;
+  return {
+    leagueName,
+    meta,
+    games,
+    specials,
+    statistics,
+  };
+}
+
+function createProfileFingerprint(profileDoc) {
+  return createHash("sha256").update(stableStringify(profileDoc)).digest("hex");
 }
 
 function getStatisticsItems(statistics, period) {
@@ -880,48 +932,136 @@ function applyLeagueRankings(leagueProfilesByMatchType) {
   }
 }
 
-async function saveProfilesToDatabase(profiles, generatedAt) {
+async function saveProfilesToDatabase(collection, profiles, generatedAt) {
+  if (process.env.SKIP_DB_SYNC === "true") {
+    console.log("Info: SKIP_DB_SYNC=true → skipping MongoDB sync for team profiles.");
+    return;
+  }
+
   if (!Array.isArray(profiles) || !profiles.length) {
     console.log("Info: No team profiles to upsert into database.");
     return;
   }
 
-  const client = await clientPromise;
-
-  try {
-    const db = client.db(process.env.MONGODB_DB || "app");
-    const collection = db.collection("teamprofiles");
-
-    const timestamp = generatedAt ?? new Date().toISOString();
-    const operations = profiles.map(({ leagueName, profile }) => {
-      const meta = profile.meta ?? {};
-      const identifier = `${meta.ligaId ?? "unknown"}:${meta.lagId ?? "unknown"}:${meta.matchType ?? "unknown"}`;
-      const document = {
-        _id: identifier,
-        leagueName,
-        generatedAt: timestamp,
-        ...profile,
-      };
-
-      return {
-        updateOne: {
-          filter: { _id: identifier },
-          update: { $set: document },
-          upsert: true,
-        },
-      };
-    });
-
-    const chunkSize = 500;
-    for (let i = 0; i < operations.length; i += chunkSize) {
-      const chunk = operations.slice(i, i + chunkSize);
-      await collection.bulkWrite(chunk, { ordered: false });
-    }
-
-    console.log(`Success: Upserted ${operations.length} team profiles into MongoDB`);
-  } finally {
-    await client.close();
+  if (!collection) {
+    throw new Error("Missing MongoDB collection handle for teamprofiles");
   }
+
+  const timestamp = generatedAt ?? new Date().toISOString();
+
+  const prepared = profiles.map(({ leagueName, profile }) => {
+    const meta = profile.meta ?? {};
+    const identifier = `${meta.ligaId ?? "unknown"}:${meta.lagId ?? "unknown"}:${meta.matchType ?? "unknown"}`;
+    const comparable = buildComparableProfileDoc(leagueName, profile);
+    const fingerprint = createProfileFingerprint(comparable);
+    const document = {
+      _id: identifier,
+      leagueName,
+      generatedAt: timestamp,
+      ...profile,
+    };
+    document._importMeta = {
+      ...(document._importMeta ?? {}),
+      fingerprint,
+    };
+    return { identifier, document, fingerprint };
+  });
+
+  const identifiers = prepared.map((entry) => entry.identifier);
+
+  const existingDocs = await collection
+    .find(
+      { _id: { $in: identifiers } },
+      {
+        projection: {
+          _id: 1,
+          leagueName: 1,
+          meta: 1,
+          games: 1,
+          specials: 1,
+          statistics: 1,
+          "_importMeta.fingerprint": 1,
+        },
+      }
+    )
+    .hint({ _id: 1 })
+    .toArray();
+
+  const existingFingerprintMap = new Map();
+  for (const doc of existingDocs) {
+    let fingerprint = doc?._importMeta?.fingerprint ?? null;
+    if (!fingerprint) {
+      const comparable = buildComparableProfileDoc(doc.leagueName, doc);
+      fingerprint = createProfileFingerprint(comparable);
+    }
+    existingFingerprintMap.set(doc._id, fingerprint);
+  }
+
+  const operations = [];
+
+  for (const entry of prepared) {
+    if (existingFingerprintMap.get(entry.identifier) === entry.fingerprint) {
+      continue;
+    }
+    operations.push({
+      updateOne: {
+        filter: { _id: entry.identifier },
+        update: { $set: entry.document },
+        upsert: true,
+      },
+    });
+  }
+
+  if (!operations.length) {
+    console.log("Info: No team profile changes detected; skipping MongoDB write.");
+    return;
+  }
+
+  const chunkSize = 500;
+  for (let i = 0; i < operations.length; i += chunkSize) {
+    const chunk = operations.slice(i, i + chunkSize);
+    await collection.bulkWrite(chunk, { ordered: false });
+  }
+
+  console.log(`Success: Upserted ${operations.length} team profiles into MongoDB`);
+}
+
+async function loadTeamStats(teamStatsCollection, teamStatsFileName, fallbackPath) {
+  let dbMatches = null;
+
+  if (teamStatsCollection) {
+    try {
+      const doc = await teamStatsCollection
+        .findOne(
+          { "_importMeta.sourceFile": teamStatsFileName },
+          { projection: { full: 1 } }
+        )
+        .hint({ "_importMeta.sourceFile": 1 });
+
+      if (Array.isArray(doc?.full) && doc.full.length) {
+        return { full: doc.full, source: "mongodb" };
+      }
+      if (Array.isArray(doc?.full)) {
+        dbMatches = doc.full;
+      }
+    } catch (error) {
+      console.warn(
+        `Warning: Failed to fetch ${teamStatsFileName} from MongoDB, falling back to disk.`,
+        error
+      );
+    }
+  }
+
+  const fileData = await readJSON(fallbackPath);
+  if (Array.isArray(fileData?.full) && fileData.full.length) {
+    return { full: fileData.full, source: "disk" };
+  }
+
+  if (dbMatches) {
+    return { full: dbMatches, source: "mongodb" };
+  }
+
+  return { full: Array.isArray(fileData?.full) ? fileData.full : [], source: "none" };
 }
 
 async function main() {
@@ -937,70 +1077,85 @@ async function main() {
 
   await fs.mkdir(teamProfilesDir, { recursive: true });
 
-  const profilesForDatabase = [];
+  const client = await clientPromise;
 
-  for (const [leagueName, leagueInfo] of Object.entries(leaguesData)) {
-    const leagueDirName = sanitizeFileComponent(leagueName).replace(/\s+/g, "-");
-    const leagueOutputDir = path.join(teamProfilesDir, leagueDirName);
-    await fs.mkdir(leagueOutputDir, { recursive: true });
+  try {
+    const dbName = process.env.MONGODB_DB || "app";
+    const db = client.db(dbName);
+    const teamStatsCollection = db.collection("teamstats");
+    const teamProfilesCollection = db.collection("teamprofiles");
 
-    const leagueProfilesByMatchType = {
-      home: [],
-      away: [],
-    };
-    const filesToWrite = [];
+    const profilesForDatabase = [];
 
-    for (const team of leagueInfo.teams) {
-      for (const matchType of MATCH_TYPES) {
-        const teamStatsFileName = `${formatTeamNameForStats(team.name)}_${matchType}_match_stats.json`;
-        const teamStatsPath = path.join(teamStatsDir, teamStatsFileName);
-        const teamStats = await readJSON(teamStatsPath);
+    for (const [leagueName, leagueInfo] of Object.entries(leaguesData)) {
+      const leagueDirName = sanitizeFileComponent(leagueName).replace(/\s+/g, "-");
+      const leagueOutputDir = path.join(teamProfilesDir, leagueDirName);
+      await fs.mkdir(leagueOutputDir, { recursive: true });
 
-        if (!teamStats || !Array.isArray(teamStats.full) || !teamStats.full.length) {
-          console.warn(
-            `Warning: Skipping ${team.name} (${matchType}) - no stats file or no matches found at ${teamStatsFileName}`
+      const leagueProfilesByMatchType = {
+        home: [],
+        away: [],
+      };
+      const filesToWrite = [];
+
+      for (const team of leagueInfo.teams) {
+        for (const matchType of MATCH_TYPES) {
+          const teamStatsFileName = `${formatTeamNameForStats(team.name)}_${matchType}_match_stats.json`;
+          const teamStatsPath = path.join(teamStatsDir, teamStatsFileName);
+          const { full: matches, source } = await loadTeamStats(
+            teamStatsCollection,
+            teamStatsFileName,
+            teamStatsPath
           );
-          continue;
+
+          if (!Array.isArray(matches) || !matches.length) {
+            console.warn(
+              `Warning: Skipping ${team.name} (${matchType}) - no matches available for ${teamStatsFileName} (source: ${source}).`
+            );
+            continue;
+          }
+
+          const games = buildGames(matches);
+          const savedAt = resolveLatestSavedAt(matches) ?? new Date().toISOString();
+          const statistics = computeStatistics(matches, matchType);
+          const specials = computeSpecials(matches, matchType);
+          const teamFileName = `${sanitizeFileComponent(team.name)}_${matchType}.json`;
+          const outputPath = path.join(leagueOutputDir, teamFileName);
+
+          const profile = {
+            meta: {
+              lagnamn: team.name,
+              lagId: team.id,
+              ligaId: leagueInfo.leagueId,
+              imageUrl: team.imageUrl,
+              categoryId: leagueInfo.categoryId,
+              matchType,
+              savedAt,
+            },
+            games,
+            statistics,
+            specials,
+          };
+
+          leagueProfilesByMatchType[matchType].push(profile);
+          filesToWrite.push({ profile, outputPath });
+          profilesForDatabase.push({ leagueName, profile });
         }
+      }
 
-        const matches = teamStats.full;
-        const games = buildGames(matches);
-        const savedAt = resolveLatestSavedAt(matches) ?? new Date().toISOString();
-        const statistics = computeStatistics(matches, matchType);
-        const specials = computeSpecials(matches, matchType);
-        const teamFileName = `${sanitizeFileComponent(team.name)}_${matchType}.json`;
-        const outputPath = path.join(leagueOutputDir, teamFileName);
+      applyLeagueRankings(leagueProfilesByMatchType);
 
-        const profile = {
-          meta: {
-            lagnamn: team.name,
-            lagId: team.id,
-            ligaId: leagueInfo.leagueId,
-            imageUrl: team.imageUrl,
-            categoryId: leagueInfo.categoryId,
-            matchType,
-            savedAt,
-          },
-          games,
-          statistics,
-          specials,
-        };
-
-        leagueProfilesByMatchType[matchType].push(profile);
-        filesToWrite.push({ profile, outputPath });
-        profilesForDatabase.push({ leagueName, profile });
+      for (const file of filesToWrite) {
+        await fs.writeFile(file.outputPath, JSON.stringify(file.profile, null, 2), "utf-8");
+        console.log(`Success: Created profile ${path.relative(dataDir, file.outputPath)}`);
       }
     }
 
-    applyLeagueRankings(leagueProfilesByMatchType);
-
-    for (const file of filesToWrite) {
-      await fs.writeFile(file.outputPath, JSON.stringify(file.profile, null, 2), "utf-8");
-      console.log(`Success: Created profile ${path.relative(dataDir, file.outputPath)}`);
-    }
+    const generatedAt = new Date().toISOString();
+    await saveProfilesToDatabase(teamProfilesCollection, profilesForDatabase, generatedAt);
+  } finally {
+    await client.close();
   }
-  const generatedAt = new Date().toISOString();
-  await saveProfilesToDatabase(profilesForDatabase, generatedAt);
 }
 
 main().catch((error) => {
