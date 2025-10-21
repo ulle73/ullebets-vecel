@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import { createHash } from "crypto";
 import { fileURLToPath } from "url";
 import clientPromise from "../lib/mongo.js";
 

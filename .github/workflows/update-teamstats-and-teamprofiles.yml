@@ -91,6 +91,8 @@ jobs:
 
       - name: Generate team profiles
         if: steps.has_teamstats.outputs.present == 'true' && env.SKIP_GENERATE != 'true'
+        env:
+          SKIP_DB_SYNC: "true"
         run: node scripts/generate-teamprofiles.js
 
       - name: Check MongoDB counts
