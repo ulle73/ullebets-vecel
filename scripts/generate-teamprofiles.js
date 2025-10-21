@@ -94,6 +94,113 @@ function sanitizeFileComponent(value) {
     .trim();
 }
 
+function buildMatchIdentifier(match) {
+  if (!match || typeof match !== "object") {
+    return null;
+  }
+
+  if (match.matchId != null) {
+    return `id:${match.matchId}`;
+  }
+  if (match.id != null) {
+    return `id:${match.id}`;
+  }
+  if (match.eventId != null) {
+    return `id:${match.eventId}`;
+  }
+
+  const home = match.homeTeamName ?? "";
+  const away = match.awayTeamName ?? "";
+  const timestamp = match.timestamp ?? match.startTimestamp ?? match.date ?? "";
+  return `sig:${home}__${away}__${timestamp}`;
+}
+
+function resolveMatchTimestampSeconds(match) {
+  if (!match || typeof match !== "object") {
+    return null;
+  }
+
+  if (typeof match.timestamp === "number" && Number.isFinite(match.timestamp)) {
+    return match.timestamp;
+  }
+  if (
+    typeof match.startTimestamp === "number" &&
+    Number.isFinite(match.startTimestamp)
+  ) {
+    return match.startTimestamp;
+  }
+  if (typeof match.date === "string" && match.date.trim()) {
+    const parsed = Date.parse(match.date);
+    if (Number.isFinite(parsed)) {
+      return Math.floor(parsed / 1000);
+    }
+  }
+
+  return null;
+}
+
+function mergeMatchCollections(...lists) {
+  const merged = new Map();
+
+  for (const list of lists) {
+    if (!Array.isArray(list)) {
+      continue;
+    }
+
+    for (const match of list) {
+      const identifier = buildMatchIdentifier(match);
+      if (!identifier) {
+        continue;
+      }
+
+      const existing = merged.get(identifier);
+      if (existing) {
+        merged.set(identifier, { ...existing, ...match });
+      } else {
+        merged.set(identifier, { ...match });
+      }
+    }
+  }
+
+  return Array.from(merged.values()).sort((a, b) => {
+    const aTs = resolveMatchTimestampSeconds(a) ?? 0;
+    const bTs = resolveMatchTimestampSeconds(b) ?? 0;
+    return bTs - aTs;
+  });
+}
+
+function deepSortComparable(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => deepSortComparable(item));
+  }
+
+  if (value && typeof value === "object") {
+    const sortedKeys = Object.keys(value).sort();
+    const result = {};
+    for (const key of sortedKeys) {
+      result[key] = deepSortComparable(value[key]);
+    }
+    return result;
+  }
+
+  return value;
+}
+
+function buildComparableProfileDocument(doc) {
+  if (!doc || typeof doc !== "object") {
+    return null;
+  }
+
+  const { _id, generatedAt, ...rest } = doc;
+  return deepSortComparable(rest);
+}
+
+function documentsAreEqual(existingDoc, nextDoc) {
+  const lhs = buildComparableProfileDocument(existingDoc);
+  const rhs = buildComparableProfileDocument(nextDoc);
+  return JSON.stringify(lhs) === JSON.stringify(rhs);
+}
+
 function getStatisticsItems(statistics, period) {
   if (!Array.isArray(statistics)) {
     return [];
@@ -880,48 +987,132 @@ function applyLeagueRankings(leagueProfilesByMatchType) {
   }
 }
 
-async function saveProfilesToDatabase(profiles, generatedAt) {
+async function loadTeamStatsFromDatabase(collection) {
+  const docs = await collection
+    .find(
+      {},
+      {
+        projection: {
+          full: 1,
+          "_importMeta.teamId": 1,
+          "_importMeta.teamRole": 1,
+          "_importMeta.importedAt": 1,
+        },
+      }
+    )
+    .toArray();
+
+  const map = new Map();
+
+  for (const doc of docs) {
+    const teamId = doc?._importMeta?.teamId;
+    const role = doc?._importMeta?.teamRole;
+    if (!teamId || !role) {
+      continue;
+    }
+
+    const key = `${String(teamId)}:${role}`;
+    const matches = mergeMatchCollections(doc?.full);
+    const importedAt = doc?._importMeta?.importedAt ?? null;
+
+    if (map.has(key)) {
+      const existing = map.get(key);
+      map.set(key, {
+        matches: mergeMatchCollections(existing.matches, matches),
+        importedAt: existing.importedAt ?? importedAt,
+      });
+    } else {
+      map.set(key, { matches, importedAt });
+    }
+  }
+
+  return map;
+}
+
+async function loadExistingProfiles(collection) {
+  const docs = await collection
+    .find(
+      {},
+      {
+        projection: {
+          leagueName: 1,
+          meta: 1,
+          games: 1,
+          statistics: 1,
+          specials: 1,
+          generatedAt: 1,
+        },
+      }
+    )
+    .toArray();
+
+  const map = new Map();
+  for (const doc of docs) {
+    map.set(doc._id, doc);
+  }
+  return map;
+}
+
+async function saveProfilesToDatabase(collection, profiles, generatedAt, existingProfiles) {
   if (!Array.isArray(profiles) || !profiles.length) {
     console.log("Info: No team profiles to upsert into database.");
     return;
   }
 
-  const client = await clientPromise;
+  const timestamp = generatedAt ?? new Date().toISOString();
+  const operations = [];
+  let unchanged = 0;
 
-  try {
-    const db = client.db(process.env.MONGODB_DB || "app");
-    const collection = db.collection("teamprofiles");
+  for (const { leagueName, profile } of profiles) {
+    const meta = profile.meta ?? {};
+    const identifier = `${meta.ligaId ?? "unknown"}:${
+      meta.lagId ?? "unknown"
+    }:${meta.matchType ?? "unknown"}`;
+    const document = {
+      _id: identifier,
+      leagueName,
+      generatedAt: timestamp,
+      ...profile,
+    };
 
-    const timestamp = generatedAt ?? new Date().toISOString();
-    const operations = profiles.map(({ leagueName, profile }) => {
-      const meta = profile.meta ?? {};
-      const identifier = `${meta.ligaId ?? "unknown"}:${meta.lagId ?? "unknown"}:${meta.matchType ?? "unknown"}`;
-      const document = {
-        _id: identifier,
-        leagueName,
-        generatedAt: timestamp,
-        ...profile,
-      };
-
-      return {
-        updateOne: {
-          filter: { _id: identifier },
-          update: { $set: document },
-          upsert: true,
-        },
-      };
-    });
-
-    const chunkSize = 500;
-    for (let i = 0; i < operations.length; i += chunkSize) {
-      const chunk = operations.slice(i, i + chunkSize);
-      await collection.bulkWrite(chunk, { ordered: false });
+    const existingDoc = existingProfiles?.get(identifier);
+    if (existingDoc && documentsAreEqual(existingDoc, document)) {
+      unchanged += 1;
+      continue;
     }
 
-    console.log(`Success: Upserted ${operations.length} team profiles into MongoDB`);
-  } finally {
-    await client.close();
+    operations.push({
+      updateOne: {
+        filter: { _id: identifier },
+        update: { $set: document },
+        upsert: true,
+      },
+    });
   }
+
+  if (!operations.length) {
+    console.log(
+      `Info: No changes detected for ${profiles.length} team profiles (${unchanged} unchanged).`
+    );
+    return;
+  }
+
+  const chunkSize = 500;
+  let upserted = 0;
+  let modified = 0;
+  let matched = 0;
+
+  for (let i = 0; i < operations.length; i += chunkSize) {
+    const chunk = operations.slice(i, i + chunkSize);
+    const result = await collection.bulkWrite(chunk, { ordered: false });
+    upserted += result.upsertedCount ?? 0;
+    modified += result.modifiedCount ?? 0;
+    matched += result.matchedCount ?? 0;
+  }
+
+  console.log(
+    `Success: Upserted ${operations.length} team profiles into MongoDB (upserted=${upserted}, modified=${modified}, matched=${matched}, unchanged=${unchanged}).`
+  );
 }
 
 async function main() {
@@ -937,70 +1128,107 @@ async function main() {
 
   await fs.mkdir(teamProfilesDir, { recursive: true });
 
-  const profilesForDatabase = [];
+  const client = await clientPromise;
 
-  for (const [leagueName, leagueInfo] of Object.entries(leaguesData)) {
-    const leagueDirName = sanitizeFileComponent(leagueName).replace(/\s+/g, "-");
-    const leagueOutputDir = path.join(teamProfilesDir, leagueDirName);
-    await fs.mkdir(leagueOutputDir, { recursive: true });
+  try {
+    const dbName = process.env.MONGODB_DB || "app";
+    const db = client.db(dbName);
+    const teamStatsCollection = db.collection("teamstats");
+    const teamProfilesCollection = db.collection("teamprofiles");
 
-    const leagueProfilesByMatchType = {
-      home: [],
-      away: [],
-    };
-    const filesToWrite = [];
+    const teamStatsFromDb = await loadTeamStatsFromDatabase(teamStatsCollection);
+    console.log(
+      `Info: Loaded ${teamStatsFromDb.size} teamstats entries from MongoDB for aggregation.`
+    );
+    const existingProfiles = await loadExistingProfiles(teamProfilesCollection);
+    console.log(
+      `Info: Loaded ${existingProfiles.size} existing team profiles from MongoDB for comparison.`
+    );
 
-    for (const team of leagueInfo.teams) {
-      for (const matchType of MATCH_TYPES) {
-        const teamStatsFileName = `${formatTeamNameForStats(team.name)}_${matchType}_match_stats.json`;
-        const teamStatsPath = path.join(teamStatsDir, teamStatsFileName);
-        const teamStats = await readJSON(teamStatsPath);
+    const profilesForDatabase = [];
 
-        if (!teamStats || !Array.isArray(teamStats.full) || !teamStats.full.length) {
-          console.warn(
-            `Warning: Skipping ${team.name} (${matchType}) - no stats file or no matches found at ${teamStatsFileName}`
-          );
-          continue;
+    for (const [leagueName, leagueInfo] of Object.entries(leaguesData)) {
+      const leagueDirName = sanitizeFileComponent(leagueName).replace(/\s+/g, "-");
+      const leagueOutputDir = path.join(teamProfilesDir, leagueDirName);
+      await fs.mkdir(leagueOutputDir, { recursive: true });
+
+      const leagueProfilesByMatchType = {
+        home: [],
+        away: [],
+      };
+      const filesToWrite = [];
+
+      for (const team of leagueInfo.teams) {
+        for (const matchType of MATCH_TYPES) {
+          const teamStatsFileName = `${formatTeamNameForStats(team.name)}_${matchType}_match_stats.json`;
+          const teamStatsPath = path.join(teamStatsDir, teamStatsFileName);
+          const teamStats = await readJSON(teamStatsPath);
+          const fileMatches = Array.isArray(teamStats?.full) ? teamStats.full : [];
+          const dbKey = `${team.id}:${matchType}`;
+          const dbEntry = teamStatsFromDb.get(dbKey);
+          const dbMatches = dbEntry?.matches ?? [];
+
+          const matches = mergeMatchCollections(dbMatches, fileMatches);
+          if (!matches.length) {
+            console.warn(
+              `Warning: Skipping ${team.name} (${matchType}) - no stats found in file or database (${teamStatsFileName}).`
+            );
+            continue;
+          }
+
+          if (!fileMatches.length && dbMatches.length) {
+            console.log(
+              `Info: Using ${dbMatches.length} matches from MongoDB for ${team.name} (${matchType}).`
+            );
+          }
+
+          const games = buildGames(matches);
+          const savedAt =
+            resolveLatestSavedAt(matches) ?? dbEntry?.importedAt ?? new Date().toISOString();
+          const statistics = computeStatistics(matches, matchType);
+          const specials = computeSpecials(matches, matchType);
+          const teamFileName = `${sanitizeFileComponent(team.name)}_${matchType}.json`;
+          const outputPath = path.join(leagueOutputDir, teamFileName);
+
+          const profile = {
+            meta: {
+              lagnamn: team.name,
+              lagId: team.id,
+              ligaId: leagueInfo.leagueId,
+              imageUrl: team.imageUrl,
+              categoryId: leagueInfo.categoryId,
+              matchType,
+              savedAt,
+            },
+            games,
+            statistics,
+            specials,
+          };
+
+          leagueProfilesByMatchType[matchType].push(profile);
+          filesToWrite.push({ profile, outputPath });
+          profilesForDatabase.push({ leagueName, profile });
         }
+      }
 
-        const matches = teamStats.full;
-        const games = buildGames(matches);
-        const savedAt = resolveLatestSavedAt(matches) ?? new Date().toISOString();
-        const statistics = computeStatistics(matches, matchType);
-        const specials = computeSpecials(matches, matchType);
-        const teamFileName = `${sanitizeFileComponent(team.name)}_${matchType}.json`;
-        const outputPath = path.join(leagueOutputDir, teamFileName);
+      applyLeagueRankings(leagueProfilesByMatchType);
 
-        const profile = {
-          meta: {
-            lagnamn: team.name,
-            lagId: team.id,
-            ligaId: leagueInfo.leagueId,
-            imageUrl: team.imageUrl,
-            categoryId: leagueInfo.categoryId,
-            matchType,
-            savedAt,
-          },
-          games,
-          statistics,
-          specials,
-        };
-
-        leagueProfilesByMatchType[matchType].push(profile);
-        filesToWrite.push({ profile, outputPath });
-        profilesForDatabase.push({ leagueName, profile });
+      for (const file of filesToWrite) {
+        await fs.writeFile(file.outputPath, JSON.stringify(file.profile, null, 2), "utf-8");
+        console.log(`Success: Created profile ${path.relative(dataDir, file.outputPath)}`);
       }
     }
 
-    applyLeagueRankings(leagueProfilesByMatchType);
-
-    for (const file of filesToWrite) {
-      await fs.writeFile(file.outputPath, JSON.stringify(file.profile, null, 2), "utf-8");
-      console.log(`Success: Created profile ${path.relative(dataDir, file.outputPath)}`);
-    }
+    const generatedAt = new Date().toISOString();
+    await saveProfilesToDatabase(
+      teamProfilesCollection,
+      profilesForDatabase,
+      generatedAt,
+      existingProfiles
+    );
+  } finally {
+    await client.close();
   }
-  const generatedAt = new Date().toISOString();
-  await saveProfilesToDatabase(profilesForDatabase, generatedAt);
 }
 
 main().catch((error) => {
