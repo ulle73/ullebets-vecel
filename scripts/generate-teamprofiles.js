@@ -70,6 +70,41 @@ async function readJSON(filePath) {
   }
 }
 
+async function loadTeamStats(teamstatsCollection, team, matchType, filePath) {
+  const teamId = team?.id ?? team?.teamId;
+
+  if (teamstatsCollection && teamId != null) {
+    const document = await teamstatsCollection.findOne(
+      {
+        "_importMeta.teamId": String(teamId),
+        "_importMeta.teamRole": matchType,
+      },
+      {
+        projection: { full: 1, "_importMeta.importedAt": 1 },
+      }
+    );
+
+    if (Array.isArray(document?.full) && document.full.length) {
+      return {
+        matches: document.full,
+        source: "database",
+        importedAt: document._importMeta?.importedAt ?? null,
+      };
+    }
+  }
+
+  const teamStatsFromFile = await readJSON(filePath);
+  if (Array.isArray(teamStatsFromFile?.full) && teamStatsFromFile.full.length) {
+    return {
+      matches: teamStatsFromFile.full,
+      source: "file",
+      importedAt: null,
+    };
+  }
+
+  return null;
+}
+
 function average(values) {
   if (!values.length) {
     return null;
@@ -880,48 +915,43 @@ function applyLeagueRankings(leagueProfilesByMatchType) {
   }
 }
 
-async function saveProfilesToDatabase(profiles, generatedAt) {
+async function saveProfilesToDatabase(collection, profiles, generatedAt) {
   if (!Array.isArray(profiles) || !profiles.length) {
     console.log("Info: No team profiles to upsert into database.");
     return;
   }
 
-  const client = await clientPromise;
-
-  try {
-    const db = client.db(process.env.MONGODB_DB || "app");
-    const collection = db.collection("teamprofiles");
-
-    const timestamp = generatedAt ?? new Date().toISOString();
-    const operations = profiles.map(({ leagueName, profile }) => {
-      const meta = profile.meta ?? {};
-      const identifier = `${meta.ligaId ?? "unknown"}:${meta.lagId ?? "unknown"}:${meta.matchType ?? "unknown"}`;
-      const document = {
-        _id: identifier,
-        leagueName,
-        generatedAt: timestamp,
-        ...profile,
-      };
-
-      return {
-        updateOne: {
-          filter: { _id: identifier },
-          update: { $set: document },
-          upsert: true,
-        },
-      };
-    });
-
-    const chunkSize = 500;
-    for (let i = 0; i < operations.length; i += chunkSize) {
-      const chunk = operations.slice(i, i + chunkSize);
-      await collection.bulkWrite(chunk, { ordered: false });
-    }
-
-    console.log(`Success: Upserted ${operations.length} team profiles into MongoDB`);
-  } finally {
-    await client.close();
+  if (!collection) {
+    throw new Error("Missing MongoDB collection for saving team profiles");
   }
+
+  const timestamp = generatedAt ?? new Date().toISOString();
+  const operations = profiles.map(({ leagueName, profile }) => {
+    const meta = profile.meta ?? {};
+    const identifier = `${meta.ligaId ?? "unknown"}:${meta.lagId ?? "unknown"}:${meta.matchType ?? "unknown"}`;
+    const document = {
+      _id: identifier,
+      leagueName,
+      generatedAt: timestamp,
+      ...profile,
+    };
+
+    return {
+      updateOne: {
+        filter: { _id: identifier },
+        update: { $set: document },
+        upsert: true,
+      },
+    };
+  });
+
+  const chunkSize = 500;
+  for (let i = 0; i < operations.length; i += chunkSize) {
+    const chunk = operations.slice(i, i + chunkSize);
+    await collection.bulkWrite(chunk, { ordered: false });
+  }
+
+  console.log(`Success: Upserted ${operations.length} team profiles into MongoDB`);
 }
 
 async function main() {
@@ -937,70 +967,86 @@ async function main() {
 
   await fs.mkdir(teamProfilesDir, { recursive: true });
 
-  const profilesForDatabase = [];
+  const client = await clientPromise;
 
-  for (const [leagueName, leagueInfo] of Object.entries(leaguesData)) {
-    const leagueDirName = sanitizeFileComponent(leagueName).replace(/\s+/g, "-");
-    const leagueOutputDir = path.join(teamProfilesDir, leagueDirName);
-    await fs.mkdir(leagueOutputDir, { recursive: true });
+  try {
+    const db = client.db(process.env.MONGODB_DB || "app");
+    const teamstatsCollection = db.collection("teamstats");
+    const teamprofilesCollection = db.collection("teamprofiles");
+    const profilesForDatabase = [];
 
-    const leagueProfilesByMatchType = {
-      home: [],
-      away: [],
-    };
-    const filesToWrite = [];
+    for (const [leagueName, leagueInfo] of Object.entries(leaguesData)) {
+      const leagueDirName = sanitizeFileComponent(leagueName).replace(/\s+/g, "-");
+      const leagueOutputDir = path.join(teamProfilesDir, leagueDirName);
+      await fs.mkdir(leagueOutputDir, { recursive: true });
 
-    for (const team of leagueInfo.teams) {
-      for (const matchType of MATCH_TYPES) {
-        const teamStatsFileName = `${formatTeamNameForStats(team.name)}_${matchType}_match_stats.json`;
-        const teamStatsPath = path.join(teamStatsDir, teamStatsFileName);
-        const teamStats = await readJSON(teamStatsPath);
+      const leagueProfilesByMatchType = {
+        home: [],
+        away: [],
+      };
+      const filesToWrite = [];
 
-        if (!teamStats || !Array.isArray(teamStats.full) || !teamStats.full.length) {
-          console.warn(
-            `Warning: Skipping ${team.name} (${matchType}) - no stats file or no matches found at ${teamStatsFileName}`
-          );
-          continue;
-        }
-
-        const matches = teamStats.full;
-        const games = buildGames(matches);
-        const savedAt = resolveLatestSavedAt(matches) ?? new Date().toISOString();
-        const statistics = computeStatistics(matches, matchType);
-        const specials = computeSpecials(matches, matchType);
-        const teamFileName = `${sanitizeFileComponent(team.name)}_${matchType}.json`;
-        const outputPath = path.join(leagueOutputDir, teamFileName);
-
-        const profile = {
-          meta: {
-            lagnamn: team.name,
-            lagId: team.id,
-            ligaId: leagueInfo.leagueId,
-            imageUrl: team.imageUrl,
-            categoryId: leagueInfo.categoryId,
+      for (const team of leagueInfo.teams) {
+        for (const matchType of MATCH_TYPES) {
+          const teamStatsFileName = `${formatTeamNameForStats(team.name)}_${matchType}_match_stats.json`;
+          const teamStatsPath = path.join(teamStatsDir, teamStatsFileName);
+          const teamStatsResult = await loadTeamStats(
+            teamstatsCollection,
+            team,
             matchType,
-            savedAt,
-          },
-          games,
-          statistics,
-          specials,
-        };
+            teamStatsPath
+          );
 
-        leagueProfilesByMatchType[matchType].push(profile);
-        filesToWrite.push({ profile, outputPath });
-        profilesForDatabase.push({ leagueName, profile });
+          if (!teamStatsResult) {
+            console.warn(
+              `Warning: Skipping ${team.name} (${matchType}) - no stats found in database or file (${teamStatsFileName})`
+            );
+            continue;
+          }
+
+          const { matches, importedAt } = teamStatsResult;
+          const games = buildGames(matches);
+          const savedAt =
+            resolveLatestSavedAt(matches) ?? importedAt ?? new Date().toISOString();
+          const statistics = computeStatistics(matches, matchType);
+          const specials = computeSpecials(matches, matchType);
+          const teamFileName = `${sanitizeFileComponent(team.name)}_${matchType}.json`;
+          const outputPath = path.join(leagueOutputDir, teamFileName);
+
+          const profile = {
+            meta: {
+              lagnamn: team.name,
+              lagId: team.id,
+              ligaId: leagueInfo.leagueId,
+              imageUrl: team.imageUrl,
+              categoryId: leagueInfo.categoryId,
+              matchType,
+              savedAt,
+            },
+            games,
+            statistics,
+            specials,
+          };
+
+          leagueProfilesByMatchType[matchType].push(profile);
+          filesToWrite.push({ profile, outputPath });
+          profilesForDatabase.push({ leagueName, profile });
+        }
+      }
+
+      applyLeagueRankings(leagueProfilesByMatchType);
+
+      for (const file of filesToWrite) {
+        await fs.writeFile(file.outputPath, JSON.stringify(file.profile, null, 2), "utf-8");
+        console.log(`Success: Created profile ${path.relative(dataDir, file.outputPath)}`);
       }
     }
 
-    applyLeagueRankings(leagueProfilesByMatchType);
-
-    for (const file of filesToWrite) {
-      await fs.writeFile(file.outputPath, JSON.stringify(file.profile, null, 2), "utf-8");
-      console.log(`Success: Created profile ${path.relative(dataDir, file.outputPath)}`);
-    }
+    const generatedAt = new Date().toISOString();
+    await saveProfilesToDatabase(teamprofilesCollection, profilesForDatabase, generatedAt);
+  } finally {
+    await client.close();
   }
-  const generatedAt = new Date().toISOString();
-  await saveProfilesToDatabase(profilesForDatabase, generatedAt);
 }
 
 main().catch((error) => {
