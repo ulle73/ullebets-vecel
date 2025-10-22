@@ -18,6 +18,77 @@ if (!process.env.VERCEL) {
   dotenv.config({ path: ".env.local" });
 }
 
+async function getDbClientOrNull() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    return null;
+  }
+
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    return client;
+  } catch (err) {
+    console.warn(
+      `⚠️ Kunde inte ansluta till databasen för last-run: ${
+        err?.message || err
+      }`
+    );
+    try {
+      await client.close(true);
+    } catch {}
+    return null;
+  }
+}
+
+async function readLastRunFromDb(client, key = "update-teams-v2") {
+  if (!client) {
+    return null;
+  }
+
+  try {
+    const dbName = process.env.MONGODB_DB || "app";
+    const doc = await client
+      .db(dbName)
+      .collection("job_state")
+      .findOne({ _id: key }, { projection: { lastRun: 1 } });
+
+    return parseYmdStrict(doc?.lastRun) || null;
+  } catch (err) {
+    console.warn(
+      `⚠️ Kunde inte läsa last-run från databasen: ${err?.message || err}`
+    );
+    return null;
+  }
+}
+
+async function writeLastRunToDb(client, runDateStr, key = "update-teams-v2") {
+  if (!client || typeof runDateStr !== "string") {
+    return;
+  }
+
+  try {
+    const dbName = process.env.MONGODB_DB || "app";
+    await client
+      .db(dbName)
+      .collection("job_state")
+      .updateOne(
+        { _id: key },
+        {
+          $set: {
+            lastRun: runDateStr,
+            updatedAt: new Date().toISOString(),
+          },
+        },
+        { upsert: true }
+      );
+  } catch (err) {
+    console.warn(
+      `⚠️ Kunde inte skriva last-run till databasen: ${err?.message || err}`
+    );
+  }
+}
+
 // __dirname för ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1350,439 +1421,478 @@ if (leagues && typeof leagues === "object") {
     (a, b) => a[0] - b[0]
   );
 
-  const { lastRunDate, history } = await readLastRunInfo();
-
-  const todayUTC = new Date();
-  const startOfTodayUTC = new Date(
-    Date.UTC(
-      todayUTC.getUTCFullYear(),
-      todayUTC.getUTCMonth(),
-      todayUTC.getUTCDate()
-    )
-  );
-  const runDateStr = ymdUTC(startOfTodayUTC);
-  const yesterdayDate = addDaysUTC(startOfTodayUTC, -1);
-
-  if (lastRunDate && lastRunDate >= startOfTodayUTC) {
-    console.log("✅ Inget att göra. Senaste körningen var redan idag.");
-    await writeLastRunInfo({
-      runDate: runDateStr,
-      processedDates: [],
-      previousHistory: history,
-    });
-    return;
-  }
-
-  const startDate = lastRunDate ? lastRunDate : yesterdayDate;
-  const endDate = yesterdayDate;
-
-  if (startDate > endDate) {
-    console.log("✅ Inget att göra. Senaste körningen var redan igår.");
-    await writeLastRunInfo({
-      runDate: runDateStr,
-      processedDates: [],
-      previousHistory: history,
-    });
-    return;
-  }
-
-  const datesToProcess = [];
-  for (let dt = new Date(startDate); dt <= endDate; dt = addDaysUTC(dt, 1)) {
-    datesToProcess.push(ymdUTC(dt));
-  }
-
-  if (!datesToProcess.length) {
-    console.log("✅ Inget att göra.");
-    await writeLastRunInfo({
-      runDate: runDateStr,
-      processedDates: [],
-      previousHistory: history,
-    });
-    return;
-  }
-
-  console.log(`📅 Dagar att bearbeta: ${datesToProcess.join(", ")}`);
-
-  const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--no-zygote","--no-first-run"] });
-  const page = await browser.newPage();
-  await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36"
-  );
-
-  const context = {
-    rapidApiKeys,
-    rapidApiState,
-    page,
-    apiCallStats,
-    logger: console,
-  };
-
-  const scoreUpdater = await createMatchScoreUpdater();
-
-  const processedDates = [];
-  let runCompleted = false;
-
+  const dbClient = await getDbClientOrNull();
   try {
-    await page.goto("https://www.sofascore.com/", {
-      waitUntil: "domcontentloaded",
-    });
-    await sleep(750);
-
-    const categoryPlan =
-      categoryEntries.length > 0 ? categoryEntries : [[1, null]];
-
-    for (const dateStr of datesToProcess) {
-      console.log(`\ℹ️ Hämtar matcher för ${dateStr} (yesterday-läge).`);
-
-      const targetDate = parseYmdStrict(dateStr);
-      if (!targetDate) {
-        console.warn(`⚠️ Ogiltigt datum '${dateStr}' – hoppar.`);
-        continue;
+    const dbLastRun = await readLastRunFromDb(dbClient);
+    const { lastRunDate: fileLastRun, history } = await readLastRunInfo();
+    const effectiveLastRunDate = dbLastRun || fileLastRun || null;
+  
+    const todayUTC = new Date();
+    const startOfTodayUTC = new Date(
+      Date.UTC(
+        todayUTC.getUTCFullYear(),
+        todayUTC.getUTCMonth(),
+        todayUTC.getUTCDate()
+      )
+    );
+    const runDateStr = ymdUTC(startOfTodayUTC);
+    const yesterdayDate = addDaysUTC(startOfTodayUTC, -1);
+  
+    if (effectiveLastRunDate && effectiveLastRunDate >= startOfTodayUTC) {
+      console.log("✅ Inget att göra. Senaste körningen var redan idag.");
+      await writeLastRunInfo({
+        runDate: runDateStr,
+        processedDates: [],
+        previousHistory: history,
+      });
+      if (dbClient) {
+        await writeLastRunToDb(dbClient, runDateStr);
       }
-
-      const dayStartTimestamp = Math.floor(targetDate.getTime() / 1000);
-      const dayEndTimestamp = Math.floor(
-        addDaysUTC(targetDate, 1).getTime() / 1000
-      );
-
-      const aggregatedMatches = [];
-      const aggregatedSources = new Map();
-      const seenMatchIds = new Set();
-      let scheduledCalls = 0;
-
-      for (const [categoryId, leagueSet] of categoryPlan) {
-        const leagueList =
-          leagueSet && leagueSet.size
-            ? Array.from(leagueSet).join(", ")
-            : "alla ligor (standard)";
-        console.log(
-          `ℹ️ Hämtar matcher för categoryId ${categoryId} (ligor: ${leagueList}).`
-        );
-
-        const scheduled = await fetchScheduledMatches(dateStr, context, {
-          categoryId,
-          includeGlobalEndpoint: categoryEntries.length === 0,
-        });
-        scheduledCalls += scheduled?.calls || 0;
-
-        const categoryMatches = Array.isArray(scheduled?.matches)
-          ? scheduled.matches
-          : [];
-        const categorySource = scheduled?.source || "okänd";
-        const categorySourceText = formatSourceWithKey(
-          categorySource,
-          scheduled?.apiKey || null
-        );
-
-        console.log(
-          `✅  categoryId ${categoryId}: ${categoryMatches.length} matcher (källa: ${categorySourceText}).`
-        );
-
-        aggregatedSources.set(categoryId, {
-          source: categorySource,
-          apiKey: scheduled?.apiKey || null,
-        });
-
-        for (const match of categoryMatches) {
-          const keyCandidate = [
-            match?.id,
-            match?.eventId,
-            match?.matchId,
-            match?.event?.id,
-          ].find(
-            (value) =>
-              value !== null &&
-              typeof value !== "undefined" &&
-              (typeof value === "number" || typeof value === "string")
-          );
-
-          const key =
-            keyCandidate !== undefined && keyCandidate !== null
-              ? String(keyCandidate)
-              : null;
-          if (key && seenMatchIds.has(key)) continue;
-          if (key) seenMatchIds.add(key);
-          aggregatedMatches.push(match);
-        }
+      return;
+    }
+  
+    const startDate = effectiveLastRunDate ?? yesterdayDate;
+    const endDate = yesterdayDate;
+  
+    if (startDate > endDate) {
+      console.log("✅ Inget att göra. Senaste körningen var redan igår.");
+      await writeLastRunInfo({
+        runDate: runDateStr,
+        processedDates: [],
+        previousHistory: history,
+      });
+      if (dbClient) {
+        await writeLastRunToDb(dbClient, runDateStr);
       }
-
-      apiCalls += scheduledCalls;
-
-      const sourceLabel = aggregatedSources.size
-        ? Array.from(aggregatedSources.entries())
-            .map(
-              ([catId, info]) =>
-                `category ${catId}: ${formatSourceWithKey(
-                  info.source,
-                  info.apiKey
-                )}`
-            )
-            .join(", ")
-        : "okänd";
-
-      console.log(
-        `✅  Hämtade totalt ${aggregatedMatches.length} matcher (källor: ${sourceLabel}).`
-      );
-
-      const matches = aggregatedMatches;
-
-      const filtered = [];
-
-      const statusLooksFinished = (event) => {
-        const candidates = [
-          event?.status?.type,
-          event?.status?.description,
-          event?.status?.code,
-          event?.status,
-        ]
-          .map((value) =>
-            typeof value === "string" ? value.toLowerCase() : undefined
-          )
-          .filter(Boolean);
-
-        if (!candidates.length) return true;
-        return candidates.some((value) =>
-          ["finished", "after", "full", "ended", "ft"].some((token) =>
-            value.includes(token)
-          )
-        );
-      };
-
-      for (const match of matches) {
-        if (!eventMatchesLookups(match, lookups)) {
-          const leagueInfo = describeEventLeague(match);
-          const leagueTag = leagueInfo.id
-            ? `${leagueInfo.name} #${leagueInfo.id}`
-            : leagueInfo.name;
+      return;
+    }
+  
+    const datesToProcess = [];
+    for (let dt = new Date(startDate); dt <= endDate; dt = addDaysUTC(dt, 1)) {
+      datesToProcess.push(ymdUTC(dt));
+    }
+  
+    if (!datesToProcess.length) {
+      console.log("✅ Inget att göra.");
+      await writeLastRunInfo({
+        runDate: runDateStr,
+        processedDates: [],
+        previousHistory: history,
+      });
+      if (dbClient) {
+        await writeLastRunToDb(dbClient, runDateStr);
+      }
+      return;
+    }
+  
+    console.log(`📅 Dagar att bearbeta: ${datesToProcess.join(", ")}`);
+  
+    const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--no-zygote","--no-first-run"] });
+    const page = await browser.newPage();
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36"
+    );
+  
+    const context = {
+      rapidApiKeys,
+      rapidApiState,
+      page,
+      apiCallStats,
+      logger: console,
+    };
+  
+    const scoreUpdater = await createMatchScoreUpdater();
+  
+    const processedDates = [];
+    let runCompleted = false;
+  
+    try {
+      await page.goto("https://www.sofascore.com/", {
+        waitUntil: "domcontentloaded",
+      });
+      await sleep(750);
+  
+      const categoryPlan =
+        categoryEntries.length > 0 ? categoryEntries : [[1, null]];
+  
+      for (const dateStr of datesToProcess) {
+        console.log(`\ℹ️ Hämtar matcher för ${dateStr} (yesterday-läge).`);
+  
+        const targetDate = parseYmdStrict(dateStr);
+        if (!targetDate) {
+          console.warn(`⚠️ Ogiltigt datum '${dateStr}' – hoppar.`);
           continue;
         }
-
-        const normalized = normalizeEvent(match);
-        if (!normalized?.id) continue;
-
-        const timestamp = resolveStartTimestamp(match, normalized);
-        if (timestamp < dayStartTimestamp || timestamp >= dayEndTimestamp) {
-          continue;
-        }
-
-        if (!statusLooksFinished(match)) {
-          continue;
-        }
-
-        filtered.push({
-          rawEvent: match,
-          normalizedEvent: normalized,
-          timestamp,
-        });
-      }
-
-      if (!filtered.length) {
-        console.log(
-          `✅ Inga matcher att bearbeta för ${dateStr} efter filtrering.`
+  
+        const dayStartTimestamp = Math.floor(targetDate.getTime() / 1000);
+        const dayEndTimestamp = Math.floor(
+          addDaysUTC(targetDate, 1).getTime() / 1000
         );
-        processedDates.push(dateStr);
-        await sleep(300);
-        continue;
-      }
-
-      console.log(
-        `🎯 ${filtered.length} matcher återstår efter filter. Bearbetar …`
-      );
-
-      for (const { rawEvent, normalizedEvent, timestamp } of filtered) {
-        const matchId = normalizedEvent.id;
-        const leagueInfo = describeEventLeague(rawEvent);
-        console.log(
-          `\n⚽ Match ${matchId}: ${normalizedEvent.homeTeamName || "?"} vs ${
-            normalizedEvent.awayTeamName || "?"
-          } (${leagueInfo.name}${leagueInfo.id ? ` #${leagueInfo.id}` : ""})`
-        );
-
-        const existingHome = normalizedEvent.homeTeamName
-          ? await getExistingMatchRecord(normalizedEvent.homeTeamName, matchId)
-          : null;
-        const existingAway = normalizedEvent.awayTeamName
-          ? await getExistingMatchRecord(normalizedEvent.awayTeamName, matchId)
-          : null;
-
-        const plan = buildFetchPlan([
-          existingHome?.record,
-          existingAway?.record,
-        ]);
-
-        if (!plan.matches && !plan.incidents && !plan.shotmap && !plan.odds) {
+  
+        const aggregatedMatches = [];
+        const aggregatedSources = new Map();
+        const seenMatchIds = new Set();
+        let scheduledCalls = 0;
+  
+        for (const [categoryId, leagueSet] of categoryPlan) {
+          const leagueList =
+            leagueSet && leagueSet.size
+              ? Array.from(leagueSet).join(", ")
+              : "alla ligor (standard)";
           console.log(
-            `✅ Match ${matchId} har redan alla efterfrågade delar. Hoppar.`
+            `ℹ️ Hämtar matcher för categoryId ${categoryId} (ligor: ${leagueList}).`
           );
-          await sleep(300);
-          continue;
-        }
-
-        const fetched =
-          plan.matches || plan.incidents || plan.shotmap
-            ? await fetchMatchDataSofascore(page, matchId, context, plan)
-            : null;
-        if (plan.matches && !(fetched?.info && fetched?.stats)) {
-          console.warn(
-            `⏭️ Kunde inte hämta basdata för match ${matchId}, hoppar.`
+  
+          const scheduled = await fetchScheduledMatches(dateStr, context, {
+            categoryId,
+            includeGlobalEndpoint: categoryEntries.length === 0,
+          });
+          scheduledCalls += scheduled?.calls || 0;
+  
+          const categoryMatches = Array.isArray(scheduled?.matches)
+            ? scheduled.matches
+            : [];
+          const categorySource = scheduled?.source || "okänd";
+          const categorySourceText = formatSourceWithKey(
+            categorySource,
+            scheduled?.apiKey || null
           );
-          await sleep(300);
-          continue;
-        }
-
-        const {
-          value: odds,
-          source: oddsSource,
-          market: oddsMarket,
-          apiKey: oddsApiKey,
-        } = plan.odds
-          ? await fetchMatchOdds(context, matchId)
-          : { value: undefined, source: null, market: null, apiKey: null };
-
-        const eventInfo = fetched?.info;
-        const home = eventInfo?.homeTeam;
-        const away = eventInfo?.awayTeam;
-
-        if (plan.matches && (!home?.name || !away?.name)) {
-          console.warn(
-            `⏭️ Saknar laginformation för match ${matchId}, hoppar.`
+  
+          console.log(
+            `✅  categoryId ${categoryId}: ${categoryMatches.length} matcher (källa: ${categorySourceText}).`
           );
-          await sleep(300);
-          continue;
+  
+          aggregatedSources.set(categoryId, {
+            source: categorySource,
+            apiKey: scheduled?.apiKey || null,
+          });
+  
+          for (const match of categoryMatches) {
+            const keyCandidate = [
+              match?.id,
+              match?.eventId,
+              match?.matchId,
+              match?.event?.id,
+            ].find(
+              (value) =>
+                value !== null &&
+                typeof value !== "undefined" &&
+                (typeof value === "number" || typeof value === "string")
+            );
+  
+            const key =
+              keyCandidate !== undefined && keyCandidate !== null
+                ? String(keyCandidate)
+                : null;
+            if (key && seenMatchIds.has(key)) continue;
+            if (key) seenMatchIds.add(key);
+            aggregatedMatches.push(match);
+          }
         }
-
-        const matchDateStr = ymdUTC(new Date(timestamp * 1000));
-
-        const record = {
-          matchId,
-          timestamp,
+  
+        apiCalls += scheduledCalls;
+  
+        const sourceLabel = aggregatedSources.size
+          ? Array.from(aggregatedSources.entries())
+              .map(
+                ([catId, info]) =>
+                  `category ${catId}: ${formatSourceWithKey(
+                    info.source,
+                    info.apiKey
+                  )}`
+              )
+              .join(", ")
+          : "okänd";
+  
+        console.log(
+          `✅  Hämtade totalt ${aggregatedMatches.length} matcher (källor: ${sourceLabel}).`
+        );
+  
+        const matches = aggregatedMatches;
+  
+        const filtered = [];
+  
+        const statusLooksFinished = (event) => {
+          const candidates = [
+            event?.status?.type,
+            event?.status?.description,
+            event?.status?.code,
+            event?.status,
+          ]
+            .map((value) =>
+              typeof value === "string" ? value.toLowerCase() : undefined
+            )
+            .filter(Boolean);
+  
+          if (!candidates.length) return true;
+          return candidates.some((value) =>
+            ["finished", "after", "full", "ended", "ft"].some((token) =>
+              value.includes(token)
+            )
+          );
         };
-
-        if (plan.matches && home?.name && away?.name) {
-          Object.assign(record, {
-            date: matchDateStr,
-            savedAt: new Date().toISOString(),
-            homeTeamId: home.id,
-            homeTeamName: home.name,
-            awayTeamId: away.id,
-            awayTeamName: away.name,
-            matchDetails: formatMatchDetails(fetched.stats),
+  
+        for (const match of matches) {
+          if (!eventMatchesLookups(match, lookups)) {
+            const leagueInfo = describeEventLeague(match);
+            const leagueTag = leagueInfo.id
+              ? `${leagueInfo.name} #${leagueInfo.id}`
+              : leagueInfo.name;
+            continue;
+          }
+  
+          const normalized = normalizeEvent(match);
+          if (!normalized?.id) continue;
+  
+          const timestamp = resolveStartTimestamp(match, normalized);
+          if (timestamp < dayStartTimestamp || timestamp >= dayEndTimestamp) {
+            continue;
+          }
+  
+          if (!statusLooksFinished(match)) {
+            continue;
+          }
+  
+          filtered.push({
+            rawEvent: match,
+            normalizedEvent: normalized,
+            timestamp,
           });
         }
-
-        const { homeScore: resolvedHomeScore, awayScore: resolvedAwayScore } =
-          resolveFinalScores({ primary: fetched?.info, secondary: rawEvent });
-
-        if (resolvedHomeScore !== null) {
-          record.homeScore = resolvedHomeScore;
-        }
-        if (resolvedAwayScore !== null) {
-          record.awayScore = resolvedAwayScore;
-        }
-
-        if (
-          scoreUpdater &&
-          (resolvedHomeScore !== null || resolvedAwayScore !== null)
-        ) {
-          await scoreUpdater.update({
-            date: matchDateStr,
-            matchId,
-            homeScore: resolvedHomeScore,
-            awayScore: resolvedAwayScore,
+  
+        if (!filtered.length) {
+          console.log(
+            `✅ Inga matcher att bearbeta för ${dateStr} efter filtrering.`
+          );
+          processedDates.push(dateStr);
+          await writeLastRunInfo({
+            runDate: dateStr,
+            processedDates: [dateStr],
+            previousHistory: history,
           });
-        }
-
-        if (typeof fetched?.incidents !== "undefined") {
-          record.incidents = fetched.incidents;
-        }
-        if (typeof fetched?.shotmap !== "undefined") {
-          record.shotmap = fetched.shotmap;
-        }
-        if (typeof odds !== "undefined") {
-          record.odds = odds ?? null;
-        }
-
-        const homeTeamName =
-          record.homeTeamName ??
-          existingHome?.record?.homeTeamName ??
-          existingAway?.record?.homeTeamName;
-        const awayTeamName =
-          record.awayTeamName ??
-          existingAway?.record?.awayTeamName ??
-          existingHome?.record?.awayTeamName;
-
-        const savedHome = homeTeamName
-          ? await sparaMatch(homeTeamName, "home", [record])
-          : false;
-        const savedAway = awayTeamName
-          ? await sparaMatch(awayTeamName, "away", [record])
-          : false;
-
-        if (savedHome || savedAway) {
-          if (plan.matches && fetched?.stats) {
-            const statsSourceText = formatSourceWithKey(
-              fetched?.statsSource,
-              fetched?.statsApiKey
-            );
-            console.log(`✅ Statistik sparad via ${statsSourceText}.`);
+          if (dbClient) {
+            await writeLastRunToDb(dbClient, dateStr);
           }
-
-          if (plan.incidents && typeof fetched?.incidents !== "undefined") {
-            const incidentsSourceText = formatSourceWithKey(
-              fetched?.incidentsSource,
-              fetched?.incidentsApiKey
-            );
-            console.log(`✅ Incidents sparade via ${incidentsSourceText}.`);
-          }
-
-          if (plan.shotmap && typeof fetched?.shotmap !== "undefined") {
-            const shotmapSourceText = formatSourceWithKey(
-              fetched?.shotmapSource,
-              fetched?.shotmapApiKey
-            );
-            console.log(`✅ Shotmap sparad via ${shotmapSourceText}.`);
-          }
-
-          if (typeof odds !== "undefined") {
-            const oddsMarketText = oddsMarket ? ` (market ${oddsMarket})` : "";
-            const oddsSourceText = formatSourceWithKey(oddsSource, oddsApiKey);
+          await sleep(300);
+          continue;
+        }
+  
+        console.log(
+          `🎯 ${filtered.length} matcher återstår efter filter. Bearbetar …`
+        );
+  
+        for (const { rawEvent, normalizedEvent, timestamp } of filtered) {
+          const matchId = normalizedEvent.id;
+          const leagueInfo = describeEventLeague(rawEvent);
+          console.log(
+            `\n⚽ Match ${matchId}: ${normalizedEvent.homeTeamName || "?"} vs ${
+              normalizedEvent.awayTeamName || "?"
+            } (${leagueInfo.name}${leagueInfo.id ? ` #${leagueInfo.id}` : ""})`
+          );
+  
+          const existingHome = normalizedEvent.homeTeamName
+            ? await getExistingMatchRecord(normalizedEvent.homeTeamName, matchId)
+            : null;
+          const existingAway = normalizedEvent.awayTeamName
+            ? await getExistingMatchRecord(normalizedEvent.awayTeamName, matchId)
+            : null;
+  
+          const plan = buildFetchPlan([
+            existingHome?.record,
+            existingAway?.record,
+          ]);
+  
+          if (!plan.matches && !plan.incidents && !plan.shotmap && !plan.odds) {
             console.log(
-              `✅ Odds sparade via ${oddsSourceText}${oddsMarketText}.`
+              `✅ Match ${matchId} har redan alla efterfrågade delar. Hoppar.`
             );
+            await sleep(300);
+            continue;
           }
+  
+          const fetched =
+            plan.matches || plan.incidents || plan.shotmap
+              ? await fetchMatchDataSofascore(page, matchId, context, plan)
+              : null;
+          if (plan.matches && !(fetched?.info && fetched?.stats)) {
+            console.warn(
+              `⏭️ Kunde inte hämta basdata för match ${matchId}, hoppar.`
+            );
+            await sleep(300);
+            continue;
+          }
+  
+          const {
+            value: odds,
+            source: oddsSource,
+            market: oddsMarket,
+            apiKey: oddsApiKey,
+          } = plan.odds
+            ? await fetchMatchOdds(context, matchId)
+            : { value: undefined, source: null, market: null, apiKey: null };
+  
+          const eventInfo = fetched?.info;
+          const home = eventInfo?.homeTeam;
+          const away = eventInfo?.awayTeam;
+  
+          if (plan.matches && (!home?.name || !away?.name)) {
+            console.warn(
+              `⏭️ Saknar laginformation för match ${matchId}, hoppar.`
+            );
+            await sleep(300);
+            continue;
+          }
+  
+          const matchDateStr = ymdUTC(new Date(timestamp * 1000));
+  
+          const record = {
+            matchId,
+            timestamp,
+          };
+  
+          if (plan.matches && home?.name && away?.name) {
+            Object.assign(record, {
+              date: matchDateStr,
+              savedAt: new Date().toISOString(),
+              homeTeamId: home.id,
+              homeTeamName: home.name,
+              awayTeamId: away.id,
+              awayTeamName: away.name,
+              matchDetails: formatMatchDetails(fetched.stats),
+            });
+          }
+  
+          const { homeScore: resolvedHomeScore, awayScore: resolvedAwayScore } =
+            resolveFinalScores({ primary: fetched?.info, secondary: rawEvent });
+  
+          if (resolvedHomeScore !== null) {
+            record.homeScore = resolvedHomeScore;
+          }
+          if (resolvedAwayScore !== null) {
+            record.awayScore = resolvedAwayScore;
+          }
+  
+          if (
+            scoreUpdater &&
+            (resolvedHomeScore !== null || resolvedAwayScore !== null)
+          ) {
+            await scoreUpdater.update({
+              date: matchDateStr,
+              matchId,
+              homeScore: resolvedHomeScore,
+              awayScore: resolvedAwayScore,
+            });
+          }
+  
+          if (typeof fetched?.incidents !== "undefined") {
+            record.incidents = fetched.incidents;
+          }
+          if (typeof fetched?.shotmap !== "undefined") {
+            record.shotmap = fetched.shotmap;
+          }
+          if (typeof odds !== "undefined") {
+            record.odds = odds ?? null;
+          }
+  
+          const homeTeamName =
+            record.homeTeamName ??
+            existingHome?.record?.homeTeamName ??
+            existingAway?.record?.homeTeamName;
+          const awayTeamName =
+            record.awayTeamName ??
+            existingAway?.record?.awayTeamName ??
+            existingHome?.record?.awayTeamName;
+  
+          const savedHome = homeTeamName
+            ? await sparaMatch(homeTeamName, "home", [record])
+            : false;
+          const savedAway = awayTeamName
+            ? await sparaMatch(awayTeamName, "away", [record])
+            : false;
+  
+          if (savedHome || savedAway) {
+            if (plan.matches && fetched?.stats) {
+              const statsSourceText = formatSourceWithKey(
+                fetched?.statsSource,
+                fetched?.statsApiKey
+              );
+              console.log(`✅ Statistik sparad via ${statsSourceText}.`);
+            }
+  
+            if (plan.incidents && typeof fetched?.incidents !== "undefined") {
+              const incidentsSourceText = formatSourceWithKey(
+                fetched?.incidentsSource,
+                fetched?.incidentsApiKey
+              );
+              console.log(`✅ Incidents sparade via ${incidentsSourceText}.`);
+            }
+  
+            if (plan.shotmap && typeof fetched?.shotmap !== "undefined") {
+              const shotmapSourceText = formatSourceWithKey(
+                fetched?.shotmapSource,
+                fetched?.shotmapApiKey
+              );
+              console.log(`✅ Shotmap sparad via ${shotmapSourceText}.`);
+            }
+  
+            if (typeof odds !== "undefined") {
+              const oddsMarketText = oddsMarket ? ` (market ${oddsMarket})` : "";
+              const oddsSourceText = formatSourceWithKey(oddsSource, oddsApiKey);
+              console.log(
+                `✅ Odds sparade via ${oddsSourceText}${oddsMarketText}.`
+              );
+            }
         }
-
+  
         await sleep(400);
       }
       processedDates.push(dateStr);
+      await writeLastRunInfo({
+        runDate: dateStr,
+        processedDates: [dateStr],
+        previousHistory: history,
+      });
+      if (dbClient) {
+        await writeLastRunToDb(dbClient, dateStr);
+      }
     }
     runCompleted = true;
-  } finally {
-    try {
-      await browser.close();
-    } catch {}
-
-    if (scoreUpdater) {
-      await scoreUpdater.close();
+    } finally {
+      try {
+        await browser.close();
+      } catch {}
+  
+      if (scoreUpdater) {
+        await scoreUpdater.close();
+      }
     }
-  }
+  
+    if (runCompleted) {
+      await writeLastRunInfo({
+        runDate: runDateStr,
+        processedDates,
+        previousHistory: history,
+      });
+      if (dbClient) {
+        await writeLastRunToDb(dbClient, runDateStr);
+      }
 
-  if (runCompleted) {
-    await writeLastRunInfo({
-      runDate: runDateStr,
-      processedDates,
-      previousHistory: history,
-    });
-
-    console.log(
-      `\ℹ️  Yesterday-läget klart! Totala API-anrop: ${apiCalls} (RapidAPI: ${
-        rapidApiState.calls || 0
-      })`
-    );
-    logApiCallSummary();
-    console.log(
-      `⏳ Last-run uppdaterad (${runDateStr}) med ${processedDates.length} dag(ar).`
-    );
+      console.log(
+        `\ℹ️  Yesterday-läget klart! Totala API-anrop: ${apiCalls} (RapidAPI: ${
+          rapidApiState.calls || 0
+        })`
+      );
+      logApiCallSummary();
+      console.log(
+        `⏳ Last-run uppdaterad (${runDateStr}) med ${processedDates.length} dag(ar).`
+      );
+    }
+  } finally {
+    if (dbClient) {
+      try {
+        await dbClient.close(true);
+      } catch {}
+    }
   }
 }
 
