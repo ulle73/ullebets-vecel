@@ -193,7 +193,7 @@ function RowAvg({ r, mode }) {
 
   return (
     <li
-      className={`flex min-h-[124px] items-start justify-between rounded bg-white px-4 py-3 text-sm shadow-sm transition-colors ${borderHighlight}`}
+      className={`flex min-h-[100px] items-start justify-between rounded bg-white px-4 py-4 text-sm shadow-sm transition-colors ${borderHighlight}`}
     >
       <div className="min-w-0">
         <div className="flex items-center">
@@ -204,17 +204,17 @@ function RowAvg({ r, mode }) {
         </div>
 
         <div className="mt-2 space-y-1 text-xs text-gray-600">
-          <div className="font-medium text-gray-700">
+          <div className="font-medium text-gray-700 py-1">
             {r.statLabel} · {r.period}
           </div>
-          <div>
-            <span className="inline-flex min-w-[120px] justify-center rounded bg-blue-50 px-2 py-1 text-[8.25px] font-semibold text-blue-700">
+          <div className="mt-1">
+            <span className="rounded bg-blue-50 px-2 py-1 text-[8.25px] font-semibold text-blue-700">
               {r.scopeLabel}
             </span>
           </div>
           {r.leagueName ? (
-            <div>
-              <span className="inline-flex min-w-[120px] justify-center rounded bg-gray-100 px-2 py-1 text-[8.25px] font-semibold text-gray-700">
+            <div className="mt-2">
+              <span className="rounded bg-gray-100 px-2 py-1 text-[8.25px] font-semibold text-gray-700">
                 {r.leagueName}
               </span>
             </div>
@@ -420,11 +420,11 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
     const over = accOver
       .filter((r) => byLeague(r) && byBadge(r) && byScope(r) && byPeriod(r))
       .sort((a, b) => b.score - a.score)
-      .slice(0, 20);
+      .slice(0, 30);
     const under = accUnder
       .filter((r) => byLeague(r) && byBadge(r) && byScope(r) && byPeriod(r))
       .sort((a, b) => b.score - a.score)
-      .slice(0, 20);
+      .slice(0, 30);
 
     return { overRows: over, underRows: under };
   }, [
