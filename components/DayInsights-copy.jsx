@@ -255,7 +255,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
 
   const matches = useMemo(
     () => rawItems.map(normalizeMatch).filter(Boolean),
-    [rawItems]
+    [rawItems, profilesVersion]
   );
 
   // para ihop profiler (samma liga)
