@@ -9,6 +9,9 @@ concurrency:
   group: import-fixtures-dplus7
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   run-script:
     name: Fetch fixtures for D+7 (Ubuntu runner)
@@ -75,3 +78,15 @@ jobs:
         run: |
           echo "▶ Kör fixtures-script för $TARGET"
           node scripts/fetch-and-import-fixtures.js "$TARGET"
+
+      - name: Commit & push teamstats
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/teamstats/*.json public/teamstats/*.json || true
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(teamstats): update JSON data [skip ci]"
+            git push
+          else
+            echo "No changes to commit."
+          fi
