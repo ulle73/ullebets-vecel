@@ -201,6 +201,7 @@ function RowAvg({ r }) {
           <Badge badge={r.badge} />
           <ScoreChip score={r.score} />
         </div>
+        <ScoreChip score={r.score} />
       </div>
     </li>
   );
