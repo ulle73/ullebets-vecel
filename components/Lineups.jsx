@@ -608,9 +608,9 @@ export default function Lineups({ match, isLoading, className = "" }) {
                 ? "Inte bekräftad"
                 : "Okänd status"}
             </p>
-            {data?.provider ? (
+            {/* {data?.provider ? (
               <p className="text-xs text-gray-400">Källa: {data.provider}</p>
-            ) : null}
+            ) : null} */}
           </div>
           <button
             type="button"
