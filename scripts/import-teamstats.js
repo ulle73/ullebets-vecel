@@ -49,27 +49,28 @@ function extractTeamIdentity(fullArray, role, file) {
 }
 
 // Unik nyckel per match: primärt matchId; fallback: enkel signatur
-function matchKey(m) {
-  const id = m?.matchId ?? m?.id ?? m?.eventId;
-  if (id != null) return `id:${id}`;
-  const h = m?.homeTeamName ?? "";
-  const a = m?.awayTeamName ?? "";
-  const t = m?.timestamp ?? m?.startTimestamp ?? m?.date ?? "";
-  return `sig:${h}__${a}__${t}`;
-}
+const matchKey = (m) => {
+  const primary = m?.matchId ?? m?.id ?? m?.eventId;
+  if (primary != null) {
+    return String(primary);
+  }
+  return `${m?.homeTeamName || ""}__${m?.awayTeamName || ""}__${
+    m?.timestamp || m?.startTimestamp || m?.date || ""
+  }`;
+};
 
 // Dedup inom en lista
 function dedup(list = []) {
   const seen = new Set();
   const out = [];
-  for (const m of list) {
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    const m = list[i];
     const k = matchKey(m);
-    if (!seen.has(k)) {
-      seen.add(k);
-      out.push(m);
-    }
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(m);
   }
-  return out;
+  return out.reverse();
 }
 
 /**
@@ -170,27 +171,53 @@ async function main() {
 
       // Hämta befintligt dokument för just denna fil
       const existing = await col.findOne(filter, {
-        projection: { _id: 1, full: 1 },
+        projection: { _id: 0, full: 1 },
       });
 
-      // Om du vill MERGA nya matcher vid repeterad import (utan dubbletter):
-      let nextFull = fullIncoming;
-      if (existing?.full?.length) {
-        // union: existing först, lägg till nya från filen
-        const seen = new Set((existing.full || []).map(matchKey));
-        nextFull = existing.full.slice();
-        for (const m of fullIncoming) {
-          const k = matchKey(m);
-          if (!seen.has(k)) {
-            seen.add(k);
-            nextFull.push(m);
-          }
+      const existingFull = Array.isArray(existing?.full) ? existing.full : [];
+      let changed = existingFull.length === 0;
+      if (!changed && existingFull.length) {
+        const uniqueCount = new Set(existingFull.map((m) => matchKey(m))).size;
+        if (uniqueCount !== existingFull.length) {
+          changed = true;
         }
-        if (nextFull.length === existing.full.length) {
-          console.log(`⏭️  Oförändrat (0 nya matcher): ${sourceFile}`);
-          skipped++;
+      }
+
+      const base = [];
+      const keyToIndex = new Map();
+      for (const match of existingFull) {
+        const key = matchKey(match);
+        if (keyToIndex.has(key)) {
+          changed = true;
           continue;
         }
+        keyToIndex.set(key, base.length);
+        base.push(match);
+      }
+
+      for (const match of fullIncoming) {
+        const key = matchKey(match);
+        if (keyToIndex.has(key)) {
+          const idx = keyToIndex.get(key);
+          const prev = base[idx];
+          const prevJson = JSON.stringify(prev);
+          const nextJson = JSON.stringify(match);
+          if (prevJson !== nextJson) {
+            base[idx] = match;
+            changed = true;
+          }
+        } else {
+          keyToIndex.set(key, base.length);
+          base.push(match);
+          changed = true;
+        }
+      }
+
+      const nextFull = base;
+      if (!changed) {
+        console.log(`⏭️  Oförändrat (0 nya matcher): ${sourceFile}`);
+        skipped++;
+        continue;
       }
 
       const res = await col.updateOne(
@@ -200,7 +227,7 @@ async function main() {
             full: nextFull,
             "_importMeta.sourceFile": sourceFile,
             "_importMeta.importedAt": nowIso,
-            "_importMeta.teamId": String(teamId),
+            "_importMeta.teamId": teamId != null ? String(teamId) : null,
             "_importMeta.teamName": teamName ?? null,
             "_importMeta.teamRole": role,
           },

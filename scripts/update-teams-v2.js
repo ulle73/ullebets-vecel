@@ -2038,6 +2038,68 @@ function pickTeamMetaFromFull(full, role) {
   return { teamId: null, teamName: null };
 }
 
+const matchKey = (m) => {
+  const primary = m?.matchId ?? m?.id ?? m?.eventId;
+  if (primary != null) {
+    return String(primary);
+  }
+  return `${m?.homeTeamName || ""}__${m?.awayTeamName || ""}__${
+    m?.timestamp || m?.startTimestamp || m?.date || ""
+  }`;
+};
+
+function dedupeMatches(list = []) {
+  const seen = new Set();
+  const out = [];
+  if (!Array.isArray(list)) return out;
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    const match = list[i];
+    const key = matchKey(match);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(match);
+  }
+  return out.reverse();
+}
+
+function mergeFullArrays(existingFull, incomingFull) {
+  const base = [];
+  const keyToIndex = new Map();
+  let changed = false;
+
+  if (Array.isArray(existingFull)) {
+    for (const match of existingFull) {
+      const key = matchKey(match);
+      if (keyToIndex.has(key)) {
+        changed = true;
+        continue;
+      }
+      keyToIndex.set(key, base.length);
+      base.push(match);
+    }
+  }
+
+  for (const match of incomingFull) {
+    const key = matchKey(match);
+    if (keyToIndex.has(key)) {
+      const idx = keyToIndex.get(key);
+      const prev = base[idx];
+      const prevJson = JSON.stringify(prev);
+      const nextJson = JSON.stringify(match);
+      if (prevJson !== nextJson) {
+        base[idx] = match;
+        changed = true;
+      }
+    } else {
+      keyToIndex.set(key, base.length);
+      base.push(match);
+      changed = true;
+    }
+  }
+
+  return { merged: base, changed };
+}
+
 async function ensureIndexes(col) {
   const tryCreate = async (key, name, opts = {}) => {
     try {
@@ -2046,7 +2108,11 @@ async function ensureIndexes(col) {
       // ignorera index-konflikter tyst
     }
   };
-  await tryCreate({ "_importMeta.sourceFile": 1 }, "idx_sourceFile");
+  await tryCreate(
+    { "_importMeta.sourceFile": 1 },
+    "idx_sourceFile_unique",
+    { unique: true }
+  );
   await tryCreate({ "_importMeta.teamName": 1 }, "idx_teamName");
   await tryCreate({ "_importMeta.teamRole": 1 }, "idx_teamRole");
   await tryCreate({ "full.matchId": 1 }, "idx_full_matchId", { sparse: true });
@@ -2223,6 +2289,7 @@ async function syncTeamstatsToDbForFiles(fileNames) {
 
   let upserts = 0,
     updates = 0,
+    unchanged = 0,
     failures = 0;
 
   for (const fname of fileNames) {
@@ -2233,33 +2300,64 @@ async function syncTeamstatsToDbForFiles(fileNames) {
     }
 
     try {
-      const full = await readFullFromAnyDir(fname);
-      const meta = pickTeamMetaFromFull(full, role);
+      const fullRaw = await readFullFromAnyDir(fname);
+      const fullIncoming = dedupeMatches(fullRaw);
+      const filter = { "_importMeta.sourceFile": fname };
+      const existing = await col.findOne(filter, {
+        projection: { _id: 0, full: 1, _importMeta: 1 },
+      });
+      const { merged: mergedFull, changed } = mergeFullArrays(
+        existing?.full,
+        fullIncoming
+      );
+      const metaSource = mergedFull.length > 0 ? mergedFull : fullIncoming;
+      const { teamId, teamName } = pickTeamMetaFromFull(metaSource, role);
       const now = new Date().toISOString();
+      const existingMeta = existing?._importMeta ?? {};
+      const resolvedTeamId =
+        teamId != null
+          ? String(teamId)
+          : existingMeta.teamId != null
+          ? String(existingMeta.teamId)
+          : null;
+      const resolvedTeamName =
+        teamName ?? existingMeta.teamName ?? null;
 
-      const doc = {
-        full,
-        _importMeta: {
-          sourceFile: fname,
-          teamRole: role,
-          teamId: meta.teamId,
-          teamName: meta.teamName,
-          importedAt: now,
-          createdAt: now,
+      const res = await col.updateOne(
+        filter,
+        {
+          $set: {
+            full: mergedFull,
+            "_importMeta.sourceFile": fname,
+            "_importMeta.teamRole": role,
+            "_importMeta.teamId": resolvedTeamId,
+            "_importMeta.teamName": resolvedTeamName,
+            "_importMeta.importedAt": now,
+          },
+          $setOnInsert: { createdAt: now },
         },
-      };
+        { upsert: true }
+      );
 
-      // säker skrivning utan unik-index: ta bort tidigare dubbletter → lägg in nytt dokument
-      const delRes = await col.deleteMany({ "_importMeta.sourceFile": fname });
-      await col.insertOne(doc);
-      if (delRes.deletedCount > 0) {
+      if (res.upsertedCount) {
+        upserts++;
+        console.log(
+          `🆕  La in '${fname}' → teamId=${resolvedTeamId ?? "n/a"} (full=${
+            mergedFull.length
+          }).`
+        );
+      } else if (changed) {
         updates++;
         console.log(
-          `♻️  Överskrev '${fname}' (tog bort ${delRes.deletedCount} dubblett(er)).`
+          `♻️  Uppdaterade '${fname}' → teamId=${resolvedTeamId ?? "n/a"} (full=${
+            mergedFull.length
+          }).`
         );
       } else {
-        upserts++;
-        console.log(`🆕  La in '${fname}'.`);
+        unchanged++;
+        console.log(
+          `⏭️  Inga förändringar i '${fname}' (full=${mergedFull.length}).`
+        );
       }
     } catch (e) {
       failures++;
@@ -2269,7 +2367,9 @@ async function syncTeamstatsToDbForFiles(fileNames) {
 
   await ensureIndexes(col);
   await client.close(true);
-  console.log(`🗃  DB-sync klar. 🆕 ${upserts}  ♻️ ${updates}  ❌ ${failures}`);
+  console.log(
+    `🗃  DB-sync klar. 🆕 ${upserts}  ♻️ ${updates}  ⏭️ ${unchanged}  ❌ ${failures}`
+  );
 }
 
 // ---------- Huvudprogram --------------------------------------
