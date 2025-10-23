@@ -124,11 +124,13 @@ function badgeForAvgPair(avgPair, leagueMax, mode) {
 /* --------------------------------- UI --------------------------------- */
 
 function ScoreChip({ score, mode }) {
-  const base = "rounded px-2 py-0.5 text-xs font-bold";
-  const tone =
-    mode === "over"
-      ? "bg-emerald-100 text-emerald-800"
-      : "bg-purple-100 text-purple-800";
+  const base = "rounded px-3 py-1 text-xs font-bold";
+  let tone = "bg-gray-100 text-gray-700";
+  if (score >= 85) {
+    tone = "bg-emerald-100 text-emerald-800";
+  } else if (score >= 70) {
+    tone = "bg-amber-100 text-amber-800";
+  }
   return <span className={`${base} ${tone}`}>{score.toFixed(1)}/100</span>;
 }
 function Badge({ badge }) {
@@ -186,8 +188,13 @@ function RowAvg({ r, mode }) {
       ? r.scoreBasis.toFixed(1)
       : null;
 
+  const borderHighlight =
+    r.score > 95 ? "border-2 border-emerald-400" : "border border-gray-200";
+
   return (
-    <li className="flex items-start justify-between rounded border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm">
+    <li
+      className={`flex min-h-[124px] items-start justify-between rounded bg-white px-4 py-3 text-sm shadow-sm transition-colors ${borderHighlight}`}
+    >
       <div className="min-w-0">
         <div className="flex items-center">
           <span className="truncate text-sm font-medium text-gray-900">
@@ -196,15 +203,21 @@ function RowAvg({ r, mode }) {
           <Badge badge={r.badge} />
         </div>
 
-        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-          <span>
+        <div className="mt-2 space-y-1 text-xs text-gray-600">
+          <div className="font-medium text-gray-700">
             {r.statLabel} · {r.period}
-          </span>
-          <span className="rounded bg-blue-50 px-2 py-0.5 text-[8.25px] font-semibold text-blue-700">
-            {r.scopeLabel}
-          </span>
+          </div>
+          <div>
+            <span className="inline-flex min-w-[120px] justify-center rounded bg-blue-50 px-2 py-1 text-[8.25px] font-semibold text-blue-700">
+              {r.scopeLabel}
+            </span>
+          </div>
           {r.leagueName ? (
-            <span className="rounded bg-gray-100 px-2 py-0.5">{r.leagueName}</span>
+            <div>
+              <span className="inline-flex min-w-[120px] justify-center rounded bg-gray-100 px-2 py-1 text-[8.25px] font-semibold text-gray-700">
+                {r.leagueName}
+              </span>
+            </div>
           ) : null}
           {/* {mode === "under" && r.leagueMax ? (
             <span className="text-[8.25px] text-gray-400">maxrank={r.leagueMax}</span>
