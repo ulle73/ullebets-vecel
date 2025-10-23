@@ -240,11 +240,13 @@ function formatScope(scope, home, away, t) {
   return t("scope_total");
 }
 
-async function postBacktest(body) {
+async function postBacktest(body, options = {}) {
+  const { signal } = options;
   const res = await fetch("/api/backtest", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
+    signal,
   });
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
@@ -265,6 +267,7 @@ export default function BacktestPage({ match }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const recalcTimers = useRef({});
+  const autoLoadAbort = useRef(null);
 
   const homeTeam = match?.homeTeamName || form[Object.keys(form)[0]]?.homeTeam || "";
   const awayTeam = match?.awayTeamName || form[Object.keys(form)[0]]?.awayTeam || "";
@@ -295,8 +298,138 @@ export default function BacktestPage({ match }) {
           clearTimeout(timeoutId);
         }
       });
+      if (autoLoadAbort.current) {
+        autoLoadAbort.current.abort();
+        autoLoadAbort.current = null;
+      }
     };
   }, []);
+
+  const applyOddsTuples = useCallback(
+    (tuples, bucketKey = teamKey) => {
+      if (!Array.isArray(tuples) || !tuples.length) return;
+      setOddsStore((prev) => {
+        const next = { ...prev };
+        if (!next[bucketKey]) next[bucketKey] = {};
+        for (const tuple of tuples) {
+          const { statKey, scope, period, line, odds } = tuple;
+          if (!next[bucketKey][statKey]) next[bucketKey][statKey] = {};
+          if (!next[bucketKey][statKey][scope]) next[bucketKey][statKey][scope] = {};
+          if (!next[bucketKey][statKey][scope][period]) {
+            next[bucketKey][statKey][scope][period] = {};
+          }
+          const lineStore = {
+            ...(next[bucketKey][statKey][scope][period][line] || {
+              over: "",
+              under: "",
+            }),
+          };
+          if (odds.over != null) lineStore.over = odds.over;
+          if (odds.under != null) lineStore.under = odds.under;
+          next[bucketKey][statKey][scope][period][line] = lineStore;
+        }
+        return next;
+      });
+    },
+    [teamKey]
+  );
+
+  const autoMatchHome = match?.homeTeamName || "";
+  const autoMatchAway = match?.awayTeamName || "";
+  const autoMatchId =
+    match?.matchId || match?.id || match?.eventId || match?.raw?.eventId || null;
+  const autoEventId =
+    match?.eventId ||
+    match?.raw?.event?.id ||
+    match?.raw?.eventId ||
+    match?.raw?.match?.event?.id ||
+    null;
+  const autoLeagueName =
+    match?.leagueName || match?.league?.name || match?.raw?.league?.name || null;
+  const autoTimestamp =
+    match?.timestamp ??
+    match?.startTimestamp ??
+    match?.raw?.startTimestamp ??
+    match?.raw?.event?.startTimestamp ??
+    null;
+  const autoStart = match?.start || match?.raw?.event?.start || null;
+
+  useEffect(() => {
+    if (!autoMatchHome || !autoMatchAway) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    if (autoLoadAbort.current) {
+      autoLoadAbort.current.abort();
+    }
+    autoLoadAbort.current = controller;
+
+    setLoading(true);
+    setError(null);
+
+    const payload = {
+      action: "auto-unibet-odds",
+      matchId: autoMatchId,
+      eventId: autoEventId,
+      homeTeam: autoMatchHome,
+      awayTeam: autoMatchAway,
+      leagueName: autoLeagueName,
+      timestamp: autoTimestamp,
+      start: autoStart,
+    };
+
+    postBacktest(payload, { signal: controller.signal })
+      .then((data) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        const tuples = mapUnibetOdds(
+          data?.odds,
+          data?.matched?.home || autoMatchHome,
+          data?.matched?.away || autoMatchAway
+        );
+        if (tuples.length) {
+          applyOddsTuples(tuples);
+        }
+        const url =
+          data?.eventUrl ||
+          (data?.eventId
+            ? `https://www.unibet.se/betting/sports/event/${data.eventId}`
+            : null);
+        if (url) {
+          setUnibetUrl(url);
+        }
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        setError(err.message || t("error_generic"));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+        if (autoLoadAbort.current === controller) {
+          autoLoadAbort.current = null;
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    applyOddsTuples,
+    autoEventId,
+    autoLeagueName,
+    autoMatchAway,
+    autoMatchHome,
+    autoMatchId,
+    autoStart,
+    autoTimestamp,
+    t,
+  ]);
 
   const statNames = useMemo(
     () => ({
@@ -531,34 +664,13 @@ export default function BacktestPage({ match }) {
     try {
       const data = await postBacktest({ action: "unibet-odds", url: unibetUrl });
       const tuples = mapUnibetOdds(data.odds, homeTeam, awayTeam);
-      setOddsStore((prev) => {
-        const next = { ...prev };
-        if (!next[teamKey]) next[teamKey] = {};
-        for (const tuple of tuples) {
-          const { statKey, scope, period, line, odds } = tuple;
-          if (!next[teamKey][statKey]) next[teamKey][statKey] = {};
-          if (!next[teamKey][statKey][scope]) next[teamKey][statKey][scope] = {};
-          const lineStore = {
-            ...(next[teamKey][statKey][scope][period]?.[line] || {
-              over: "",
-              under: "",
-            }),
-          };
-          if (odds.over != null) lineStore.over = odds.over;
-          if (odds.under != null) lineStore.under = odds.under;
-          if (!next[teamKey][statKey][scope][period]) {
-            next[teamKey][statKey][scope][period] = {};
-          }
-          next[teamKey][statKey][scope][period][line] = lineStore;
-        }
-        return next;
-      });
+      applyOddsTuples(tuples);
     } catch (err) {
       setError(err.message || t("error_generic"));
     } finally {
       setLoading(false);
     }
-  }, [homeTeam, awayTeam, teamKey, t, unibetUrl]);
+  }, [applyOddsTuples, homeTeam, awayTeam, t, unibetUrl]);
 
   const renderStatSections = () =>
     Object.keys(statPatterns).map((statKey) => {
