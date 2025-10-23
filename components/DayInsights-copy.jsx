@@ -206,12 +206,12 @@ function RowAvg({ r, mode }) {
           {r.leagueName ? (
             <span className="rounded bg-gray-100 px-2 py-0.5">{r.leagueName}</span>
           ) : null}
-          {mode === "under" && r.leagueMax ? (
+          {/* {mode === "under" && r.leagueMax ? (
             <span className="text-[8.25px] text-gray-400">maxrank={r.leagueMax}</span>
-          ) : null}
+          ) : null} */}
         </div>
 
-        <div className="mt-1 space-y-0.5 text-[8.25px] text-gray-600">
+        {/* <div className="mt-1 space-y-0.5 text-[8.25px] text-gray-600">
           <div className={highlightHome ? "font-semibold text-gray-900" : undefined}>
             H-par: FOR <b>#{r.homePair.forRank}</b> ({hf}) + AGAINST <b>#{r.homePair.againstRank}</b> ({ha}) = <b>{r.homePair.sum}</b>
           </div>
@@ -226,7 +226,7 @@ function RowAvg({ r, mode }) {
               </span>
             ) : null}
           </div>
-        </div>
+        </div> */}
       </div>
 
       <div className="ml-3 shrink-0 text-right">
