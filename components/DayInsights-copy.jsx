@@ -7,7 +7,6 @@ import {
   buildTeamProfileKeyForMatch,
 } from "@/lib/utils/apiKeys";
 import { normalizeMatch } from "@/components/LeagueTable";
-import { formatValue } from "@/components/TeamCompare";
 
 /* ----------------------------- Konfiguration ----------------------------- */
 
@@ -66,10 +65,6 @@ function readValue(profile, type, statKey, period) {
   const p = node && getPeriodNode(node, period);
   return toNum(p?.value ?? p?.Value);
 }
-function formatStatValue(statKey, value) {
-  const isPercentage = statKey === "ballPossession";
-  return formatValue(value, { isPercentage });
-}
 function leagueSizeFromMeta(profile) {
   return (
     toNum(profile?.meta?.leagueTeamCount) ??
@@ -123,17 +118,31 @@ function badgeForAvgPair(avgPair, leagueMax, mode) {
 
 /* --------------------------------- UI --------------------------------- */
 
-function ScoreChip({ score, mode }) {
-  const base = "rounded px-2 py-0.5 text-xs font-bold";
-  const tone =
-    mode === "over"
-      ? "bg-emerald-100 text-emerald-800"
-      : "bg-purple-100 text-purple-800";
-  return <span className={`${base} ${tone}`}>{score.toFixed(1)}/100</span>;
+function ScoreChip({ score }) {
+  const value = Number.isFinite(score) ? score : 0;
+  let tone = "bg-gray-200 text-gray-700 border border-gray-300";
+  if (value > 95) {
+    tone = "bg-emerald-100 text-emerald-700 border border-emerald-300";
+  } else if (value > 85) {
+    tone = "bg-emerald-100 text-emerald-700 border border-emerald-200";
+  } else if (value >= 70) {
+    tone = "bg-amber-100 text-amber-700 border border-amber-200";
+  }
+
+  const pulse = value > 95 ? "ring-2 ring-emerald-400 animate-pulse" : "";
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-bold shadow-sm ${tone} ${pulse}`}
+    >
+      {value.toFixed(1)}/100
+    </span>
+  );
 }
+
 function Badge({ badge }) {
   if (!badge) return null;
-  const base = "ml-2 rounded px-2 py-0.5 text-[8.25px] font-semibold";
+  const base = "rounded px-2 py-0.5 text-[8.25px] font-semibold";
   const tone =
     badge.tone === "perfect"
       ? "bg-yellow-200 text-yellow-900"
@@ -165,72 +174,33 @@ function FilterChips({ options, value, onChange }) {
   );
 }
 
-function RowAvg({ r, mode }) {
-  const hf = r.homePair.forValue != null ? formatStatValue(r.statKey, r.homePair.forValue) : "—";
-  const ha = r.homePair.againstValue != null ? formatStatValue(r.statKey, r.homePair.againstValue) : "—";
-  const af = r.awayPair.forValue != null ? formatStatValue(r.statKey, r.awayPair.forValue) : "—";
-  const aa = r.awayPair.againstValue != null ? formatStatValue(r.statKey, r.awayPair.againstValue) : "—";
-
-  const highlightHome = r.primaryPair === "home" || r.primaryPair === "both";
-  const highlightAway = r.primaryPair === "away" || r.primaryPair === "both";
-
-  const decimals = r.scope === "total" ? 2 : 0;
-  const baseValue = Number.isFinite(r.basisValue) ? r.basisValue : null;
-  const basisDisplay = baseValue == null
-    ? "—"
-    : mode === "under" && r.leagueMax
-      ? `${baseValue.toFixed(decimals)}/${(2 * r.leagueMax).toFixed(0)}`
-      : baseValue.toFixed(decimals);
-  const adjustedDisplay =
-    r.scope !== "total" && Number.isFinite(r.scoreBasis)
-      ? r.scoreBasis.toFixed(1)
-      : null;
-
+function RowAvg({ r }) {
   return (
-    <li className="flex items-start justify-between rounded border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm">
-      <div className="min-w-0">
-        <div className="flex items-center">
-          <span className="truncate text-sm font-medium text-gray-900">
-            {r.matchLabel}
+    <li className="group relative overflow-hidden rounded-xl border border-gray-100 bg-white/90 p-4 text-sm shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600">
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10.5px] font-semibold text-blue-700">
+            {r.statLabel}
           </span>
-          <Badge badge={r.badge} />
-        </div>
-
-        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-          <span>
-            {r.statLabel} · {r.period}
+          <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gray-600">
+            {r.period}
           </span>
-          <span className="rounded bg-blue-50 px-2 py-0.5 text-[8.25px] font-semibold text-blue-700">
+          <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-700">
             {r.scopeLabel}
           </span>
           {r.leagueName ? (
-            <span className="rounded bg-gray-100 px-2 py-0.5">{r.leagueName}</span>
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-600">
+              {r.leagueName}
+            </span>
           ) : null}
-          {mode === "under" && r.leagueMax ? (
-            <span className="text-[8.25px] text-gray-400">maxrank={r.leagueMax}</span>
-          ) : null}
+          <span className="truncate text-[10.5px] font-semibold text-gray-700">
+            {r.matchLabel}
+          </span>
         </div>
-
-        <div className="mt-1 space-y-0.5 text-[8.25px] text-gray-600">
-          <div className={highlightHome ? "font-semibold text-gray-900" : undefined}>
-            H-par: FOR <b>#{r.homePair.forRank}</b> ({hf}) + AGAINST <b>#{r.homePair.againstRank}</b> ({ha}) = <b>{r.homePair.sum}</b>
-          </div>
-          <div className={highlightAway ? "font-semibold text-gray-900" : undefined}>
-            B-par: FOR <b>#{r.awayPair.forRank}</b> ({af}) + AGAINST <b>#{r.awayPair.againstRank}</b> ({aa}) = <b>{r.awayPair.sum}</b>
-          </div>
-          <div>
-            {r.basisLabel}: <b>{basisDisplay}</b>
-            {adjustedDisplay ? (
-              <span className="ml-2 text-[7.5px] font-normal text-gray-500">
-                (justerad för total-jämförelse: {adjustedDisplay})
-              </span>
-            ) : null}
-          </div>
+        <div className="flex items-center gap-2">
+          <Badge badge={r.badge} />
+          <ScoreChip score={r.score} />
         </div>
-      </div>
-
-      <div className="ml-3 shrink-0 text-right">
-        <ScoreChip score={r.score} mode={mode} />
       </div>
     </li>
   );
@@ -486,7 +456,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
             {overRows.length ? (
               <ol className="space-y-2">
                 {overRows.map((r) => (
-                  <RowAvg key={`o:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`} r={r} mode="over" />
+                  <RowAvg key={`o:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`} r={r} />
                 ))}
               </ol>
             ) : (
@@ -506,7 +476,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
             {underRows.length ? (
               <ol className="space-y-2">
                 {underRows.map((r) => (
-                  <RowAvg key={`u:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`} r={r} mode="under" />
+                  <RowAvg key={`u:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`} r={r} />
                 ))}
               </ol>
             ) : (
