@@ -4,6 +4,10 @@ import {
   fetchTeamMatches,
   fetchLeaguesAndTeams,
 } from "@/lib/backtest/data";
+import {
+  findUnibetEventForMatch,
+  UNIBET_EVENT_BASE_URL,
+} from "@/lib/backtest/unibetAuto";
 import { logServerBacktestError, logServerBacktestStep } from "@/lib/backtest/logger";
 
 const UNIBET_BASE_URL =
@@ -81,6 +85,47 @@ async function handleUnibetOdds(body) {
   };
 }
 
+async function handleAutoUnibetOdds(body) {
+  const directEventId = extractUnibetEventId(body?.eventId);
+  if (directEventId) {
+    const odds = await handleUnibetOdds({ eventId: directEventId });
+    return {
+      ...odds,
+      eventUrl: `${UNIBET_EVENT_BASE_URL.replace(/\/$/, "")}/${directEventId}`,
+    };
+  }
+
+  const matchInfo = {
+    homeTeam: body?.homeTeam || body?.homeTeamName,
+    awayTeam: body?.awayTeam || body?.awayTeamName,
+    leagueName: body?.leagueName,
+    timestamp: body?.timestamp,
+    kickoff: body?.kickoff,
+    start: body?.start,
+  };
+
+  if (!matchInfo.homeTeam || !matchInfo.awayTeam) {
+    throw new Error("Saknar lag för automatisk Unibet-hämtning");
+  }
+
+  const match = await findUnibetEventForMatch(matchInfo);
+  if (!match) {
+    throw new Error("Kunde inte hitta match i Unibets listView");
+  }
+
+  const odds = await handleUnibetOdds({ eventId: match.eventId });
+  return {
+    ...odds,
+    eventUrl: match.eventUrl,
+    matched: {
+      home: match.homeTeam,
+      away: match.awayTeam,
+      league: match.league,
+      start: match.start,
+    },
+  };
+}
+
 async function handleTeamStats(body) {
   const { teamName, matchType = "home" } = body || {};
   if (!teamName) {
@@ -117,6 +162,11 @@ export async function POST(req) {
       case "unibet-odds": {
         logServerBacktestStep("API: unibet odds", body);
         const odds = await handleUnibetOdds(body);
+        return json(odds);
+      }
+      case "auto-unibet-odds": {
+        logServerBacktestStep("API: auto unibet odds", body);
+        const odds = await handleAutoUnibetOdds(body);
         return json(odds);
       }
       case "team-stats": {
