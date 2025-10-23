@@ -124,12 +124,17 @@ function badgeForAvgPair(avgPair, leagueMax, mode) {
 /* --------------------------------- UI --------------------------------- */
 
 function ScoreChip({ score, mode }) {
-  const base = "rounded px-2 py-0.5 text-xs font-bold";
-  const tone =
+  const base = "rounded-full px-3 py-1 text-xs font-semibold";
+  const tone = (() => {
+    if (score > 85) return "bg-emerald-100 text-emerald-800";
+    if (score >= 70) return "bg-amber-100 text-amber-700";
+    return "bg-gray-100 text-gray-600";
+  })();
+  const accent =
     mode === "over"
-      ? "bg-emerald-100 text-emerald-800"
-      : "bg-purple-100 text-purple-800";
-  return <span className={`${base} ${tone}`}>{score.toFixed(1)}/100</span>;
+      ? "ring-1 ring-inset ring-emerald-200"
+      : "ring-1 ring-inset ring-purple-200";
+  return <span className={`${base} ${tone} ${accent}`}>{score.toFixed(1)}/100</span>;
 }
 function Badge({ badge }) {
   if (!badge) return null;
@@ -186,8 +191,15 @@ function RowAvg({ r, mode }) {
       ? r.scoreBasis.toFixed(1)
       : null;
 
+  const eliteScore = r.score > 95;
+  const containerClass = eliteScore
+    ? "border-2 border-emerald-500"
+    : "border border-gray-200";
+
   return (
-    <li className="flex items-start justify-between rounded border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm">
+    <li
+      className={`flex min-h-[116px] items-stretch justify-between rounded-lg bg-white px-4 py-3 text-sm shadow-sm transition-shadow ${containerClass}`}
+    >
       <div className="min-w-0">
         <div className="flex items-center">
           <span className="truncate text-sm font-medium text-gray-900">
@@ -196,15 +208,21 @@ function RowAvg({ r, mode }) {
           <Badge badge={r.badge} />
         </div>
 
-        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-          <span>
+        <div className="mt-1 space-y-1 text-xs text-gray-600">
+          <div className="font-medium text-gray-700">
             {r.statLabel} · {r.period}
-          </span>
-          <span className="rounded bg-blue-50 px-2 py-0.5 text-[8.25px] font-semibold text-blue-700">
-            {r.scopeLabel}
-          </span>
+          </div>
+          <div>
+            <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+              {r.scopeLabel}
+            </span>
+          </div>
           {r.leagueName ? (
-            <span className="rounded bg-gray-100 px-2 py-0.5">{r.leagueName}</span>
+            <div>
+              <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700">
+                {r.leagueName}
+              </span>
+            </div>
           ) : null}
           {/* {mode === "under" && r.leagueMax ? (
             <span className="text-[8.25px] text-gray-400">maxrank={r.leagueMax}</span>
@@ -229,7 +247,7 @@ function RowAvg({ r, mode }) {
         </div> */}
       </div>
 
-      <div className="ml-3 shrink-0 text-right">
+      <div className="ml-3 flex shrink-0 items-start justify-end">
         <ScoreChip score={r.score} mode={mode} />
       </div>
     </li>
