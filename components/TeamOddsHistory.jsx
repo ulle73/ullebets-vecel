@@ -117,7 +117,9 @@ function resolveOpponent(match, perspective) {
 
 function normalizeMatchEntry(match, perspective) {
   const timestamp = toTimestamp(match);
-  const closing = extractClosingOdds(match)?.values || null;
+  const closingInfo = extractClosingOdds(match) || null;
+  const closing = closingInfo?.values || null;
+  const winner = closingInfo?.winner || null;
   return {
     id:
       match?.matchId ||
@@ -130,6 +132,7 @@ function normalizeMatchEntry(match, perspective) {
     opponent: resolveOpponent(match, perspective),
     venue: perspective,
     closingOdds: closing,
+    closingWinner: winner,
   };
 }
 
@@ -215,14 +218,41 @@ function TeamOddsTable({ teamName, data, loading, error }) {
                   </span>{" "}
                   {item.opponent || "Okänd"}
                 </td>
-                <td className="px-2 py-1 text-right text-xs font-semibold text-gray-700">
-                  {formatOddsValue(item.closingOdds?.home)}
+                <td className="px-2 py-1 text-right text-xs font-semibold">
+                  <span
+                    className={[
+                      "inline-flex min-w-[2rem] justify-end rounded px-1 py-0.5",
+                      item.closingWinner === "home"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "text-gray-700",
+                    ].join(" ")}
+                  >
+                    {formatOddsValue(item.closingOdds?.home)}
+                  </span>
                 </td>
-                <td className="px-2 py-1 text-right text-xs font-semibold text-gray-700">
-                  {formatOddsValue(item.closingOdds?.draw)}
+                <td className="px-2 py-1 text-right text-xs font-semibold">
+                  <span
+                    className={[
+                      "inline-flex min-w-[2rem] justify-end rounded px-1 py-0.5",
+                      item.closingWinner === "draw"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "text-gray-700",
+                    ].join(" ")}
+                  >
+                    {formatOddsValue(item.closingOdds?.draw)}
+                  </span>
                 </td>
-                <td className="px-2 py-1 text-right text-xs font-semibold text-gray-700">
-                  {formatOddsValue(item.closingOdds?.away)}
+                <td className="px-2 py-1 text-right text-xs font-semibold">
+                  <span
+                    className={[
+                      "inline-flex min-w-[2rem] justify-end rounded px-1 py-0.5",
+                      item.closingWinner === "away"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "text-gray-700",
+                    ].join(" ")}
+                  >
+                    {formatOddsValue(item.closingOdds?.away)}
+                  </span>
                 </td>
               </tr>
             ))}
