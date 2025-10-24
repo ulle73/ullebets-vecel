@@ -266,6 +266,7 @@ export default function BacktestPage({ match }) {
   const [resultsMap, setResultsMap] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [autoRunToken, setAutoRunToken] = useState(0);
   const recalcTimers = useRef({});
   const autoLoadAbort = useRef(null);
 
@@ -406,6 +407,7 @@ export default function BacktestPage({ match }) {
         );
         if (tuples.length) {
           applyOddsTuples(tuples);
+          setAutoRunToken((token) => token + 1);
         }
         const url =
           data?.eventUrl ||
@@ -679,6 +681,13 @@ export default function BacktestPage({ match }) {
       setLoading(false);
     }
   }, [form, oddsStore, recalculateBet, teamKey]);
+
+  useEffect(() => {
+    if (!autoRunToken) {
+      return;
+    }
+    handleCalculateAll();
+  }, [autoRunToken, handleCalculateAll]);
 
   const handleLoadOdds = useCallback(async () => {
     if (!unibetUrl) return;
