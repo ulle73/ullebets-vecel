@@ -45,11 +45,11 @@ const translations = {
   stat_tackles: "Tacklingar",
   stat_offsides: "Offside",
   history: "Historik",
-  ev_multiplier_label: "EV (multiplikator)",
-  ev_multifactor_label: "EV (multifaktor)",
-  ev_league_avg_label: "EV (liga)",
-  ev_model_label: "EV (modell)",
-  ev_legacy_label: "EV (legacy)",
+  ev_multiplier_label: "",
+  ev_multifactor_label: "",
+  ev_league_avg_label: "",
+  ev_model_label: "",
+  ev_legacy_label: "",
   conceded: "conceded",
 };
 
@@ -1021,7 +1021,7 @@ export default function BacktestPage({ match }) {
                       <td className="px-2 py-1">{result.bet.odds}</td>
                       <td className="px-2 py-1">
                         {result.primaryEv?.toFixed(1)}%
-                        {result.primaryLabel ? ` (${result.primaryLabel})` : ""}
+                        
                       </td>
                     </tr>
                   ))}

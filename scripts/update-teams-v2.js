@@ -2310,6 +2310,9 @@ async function syncTeamstatsToDbForFiles(fileNames) {
         existing?.full,
         fullIncoming
       );
+      mergedFull.sort(
+        (a, b) => Number(b?.timestamp ?? 0) - Number(a?.timestamp ?? 0)
+      );
       const metaSource = mergedFull.length > 0 ? mergedFull : fullIncoming;
       const { teamId, teamName } = pickTeamMetaFromFull(metaSource, role);
       const now = new Date().toISOString();
