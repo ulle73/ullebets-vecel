@@ -313,25 +313,40 @@ export default function BacktestPage({ match }) {
         if (!next[bucketKey]) next[bucketKey] = {};
         for (const tuple of tuples) {
           const { statKey, scope, period, line, odds } = tuple;
+          const numericLine = Number(line);
+          if (!Number.isFinite(numericLine)) {
+            continue;
+          }
+          const pattern = statPatterns?.[statKey];
+          if (!pattern || typeof pattern.thresholds !== "function") {
+            continue;
+          }
+          const availableLines = pattern.thresholds(scope, period) || [];
+          const matchesLine = availableLines.some(
+            (available) => Number.isFinite(available) && Math.abs(available - numericLine) < 1e-6
+          );
+          if (!matchesLine) {
+            continue;
+          }
           if (!next[bucketKey][statKey]) next[bucketKey][statKey] = {};
           if (!next[bucketKey][statKey][scope]) next[bucketKey][statKey][scope] = {};
           if (!next[bucketKey][statKey][scope][period]) {
             next[bucketKey][statKey][scope][period] = {};
           }
           const lineStore = {
-            ...(next[bucketKey][statKey][scope][period][line] || {
+            ...(next[bucketKey][statKey][scope][period][numericLine] || {
               over: "",
               under: "",
             }),
           };
           if (odds.over != null) lineStore.over = odds.over;
           if (odds.under != null) lineStore.under = odds.under;
-          next[bucketKey][statKey][scope][period][line] = lineStore;
+          next[bucketKey][statKey][scope][period][numericLine] = lineStore;
         }
         return next;
       });
     },
-    [teamKey]
+    [statPatterns, teamKey]
   );
 
   const autoMatchHome = match?.homeTeamName || "";
