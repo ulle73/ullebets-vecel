@@ -462,7 +462,10 @@ export default function BacktestPage({ match }) {
     [t]
   );
 
-  const results = useMemo(() => Object.values(resultsMap), [resultsMap]);
+  const results = useMemo(
+    () => Object.values(resultsMap[teamKey] ?? {}),
+    [resultsMap, teamKey]
+  );
 
   const positiveResults = useMemo(() => {
     return results
@@ -555,7 +558,12 @@ export default function BacktestPage({ match }) {
             key: betKey,
           },
         };
-        setResultsMap((prev) => ({ ...prev, [betKey]: result }));
+        setResultsMap((prev) => {
+          const next = { ...prev };
+          const prevTeamResults = next[teamKey] || {};
+          next[teamKey] = { ...prevTeamResults, [betKey]: result };
+          return next;
+        });
         return result;
       } catch (err) {
         setError(err.message || t("error_generic"));
@@ -771,8 +779,9 @@ export default function BacktestPage({ match }) {
                     formMatches: cfg.formMatches,
                     neutralGround,
                   });
-                  const overResult = resultsMap[overKey];
-                  const underResult = resultsMap[underKey];
+                  const teamResults = resultsMap[teamKey] || {};
+                  const overResult = teamResults[overKey];
+                  const underResult = teamResults[underKey];
                   const overEntries = getEvEntries(overResult, t);
                   const underEntries = getEvEntries(underResult, t);
                   const concededLabel = t("conceded");
