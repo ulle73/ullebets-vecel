@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapUnibetOdds from "./backtest/unibetOddsMapper";
 import { getStatPatterns } from "./backtest/statPatterns";
 import { computeHistoryStats } from "./backtest/historyCalculator";
+import { describeEvMultiplier } from "./backtest/evMultiplierCalculator";
+import { describeEvLeague } from "./backtest/evLeagueCalculator";
+import { describeEvModel } from "./backtest/evModelCalculator";
+import { describeEvLegacy } from "./backtest/evLegacyCalculator";
 
 const translations = {
   title: "Backtest",
@@ -151,16 +155,21 @@ function resolvePrimaryEv(result) {
 function getEvEntries(result, t) {
   if (!result) return [];
   const entries = [];
-  const add = (value, label) => {
-    if (typeof value === "number") {
-      entries.push({ value, label });
+  const push = (info, label) => {
+    if (info && typeof info.value === "number") {
+      entries.push({ ...info, label });
     }
   };
-  add(result.evPctWithMultiplier, t("ev_multiplier_label"));
-  add(result.evPctMultifactor, t("ev_multifactor_label"));
-  add(result.evPctLeagueAvg, t("ev_league_avg_label"));
-  add(result.evPct, t("ev_model_label"));
-  add(result.legacyEvPct, t("ev_legacy_label"));
+
+  push(describeEvMultiplier(result), t("ev_multiplier_label"));
+
+  if (typeof result.evPctMultifactor === "number") {
+    entries.push({ value: result.evPctMultifactor, label: t("ev_multifactor_label") });
+  }
+
+  push(describeEvLeague(result), t("ev_league_avg_label"));
+  push(describeEvModel(result), t("ev_model_label"));
+  push(describeEvLegacy(result), t("ev_legacy_label"));
   return entries;
 }
 
@@ -798,17 +807,24 @@ export default function BacktestPage({ match }) {
                         {overEntries.length ? (
                           <div className="flex flex-col gap-1">
                             {overEntries.map((entry, idx) => (
-                              <div key={idx} className="flex items-baseline gap-2">
-                                <span
-                                  className={`font-semibold ${
-                                    entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
-                                  }`}
-                                >
-                                  {entry.value.toFixed(1)}%
-                                </span>
-                                <span className="text-[7.5px] uppercase tracking-wide text-slate-400">
-                                  {entry.label}
-                                </span>
+                              <div key={idx} className="flex flex-col gap-0.5">
+                                <div className="flex items-baseline gap-2">
+                                  <span
+                                    className={`font-semibold ${
+                                      entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                    }`}
+                                  >
+                                    {entry.value.toFixed(1)}%
+                                  </span>
+                                  <span className="text-[7.5px] uppercase tracking-wide text-slate-400">
+                                    {entry.label}
+                                  </span>
+                                </div>
+                                {entry.formula ? (
+                                  <span className="text-[10px] font-medium text-slate-400">
+                                    {entry.formula}
+                                  </span>
+                                ) : null}
                               </div>
                             ))}
                           </div>
@@ -831,17 +847,24 @@ export default function BacktestPage({ match }) {
                         {underEntries.length ? (
                           <div className="flex flex-col gap-1">
                             {underEntries.map((entry, idx) => (
-                              <div key={idx} className="flex items-baseline gap-2">
-                                <span
-                                  className={`font-semibold ${
-                                    entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
-                                  }`}
-                                >
-                                  {entry.value.toFixed(1)}%
-                                </span>
-                                <span className="text-[7.5px] uppercase tracking-wide text-slate-400">
-                                  {entry.label}
-                                </span>
+                              <div key={idx} className="flex flex-col gap-0.5">
+                                <div className="flex items-baseline gap-2">
+                                  <span
+                                    className={`font-semibold ${
+                                      entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                    }`}
+                                  >
+                                    {entry.value.toFixed(1)}%
+                                  </span>
+                                  <span className="text-[7.5px] uppercase tracking-wide text-slate-400">
+                                    {entry.label}
+                                  </span>
+                                </div>
+                                {entry.formula ? (
+                                  <span className="text-[10px] font-medium text-slate-400">
+                                    {entry.formula}
+                                  </span>
+                                ) : null}
                               </div>
                             ))}
                           </div>
