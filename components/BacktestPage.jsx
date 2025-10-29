@@ -1,5 +1,6 @@
 "use client";
 
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapUnibetOdds from "./backtest/unibetOddsMapper";
 import { getStatPatterns } from "./backtest/statPatterns";
@@ -226,6 +227,61 @@ function getHitSummary(result, direction, t, options = {}) {
     label: String(raw),
     tooltip: `${rawLabel}: ${raw}`,
   };
+}
+
+function pickHistory(...results) {
+  for (const result of results) {
+    if (result?.history) return result.history;
+  }
+  return null;
+}
+
+function resolveHistorySamples(history, scope, type) {
+  if (!history?.samples) return [];
+  if (scope === "total") {
+    return history.samples.combined || history.samples.team || history.samples.opponent || [];
+  }
+  if (type === "team") return history.samples.team || [];
+  if (type === "opponent") return history.samples.opponent || [];
+  return history.samples.combined || [];
+}
+
+function formatHistoryValue(match) {
+  if (match == null) return "";
+  if (match.displayValue != null && match.displayValue !== "") {
+    return String(match.displayValue);
+  }
+  const numeric = Number(match.value);
+  if (!Number.isFinite(numeric)) return "";
+  return Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(1);
+}
+
+function buildHistoryTooltipEntries({ history, scope, type, line, direction }) {
+  if (!history) return [];
+  const samples = resolveHistorySamples(history, scope, type);
+  if (!Array.isArray(samples) || !samples.length) return [];
+  const numericLine = Number(line);
+  const hasLine = Number.isFinite(numericLine);
+  return samples
+    .map((match) => {
+      const value = Number(match?.value);
+      if (!Number.isFinite(value)) return null;
+      const highlight = hasLine
+        ? direction === "under"
+          ? value < numericLine
+          : value > numericLine
+        : false;
+      const home = (match?.homeTeam || "").trim();
+      const away = (match?.awayTeam || "").trim();
+      const label = [home, away].filter(Boolean).join(" vs ");
+      const valueText = formatHistoryValue(match);
+      return {
+        label: label || "–",
+        value: valueText || "–",
+        highlight,
+      };
+    })
+    .filter(Boolean);
 }
 
 function formatPeriodLabel(period, t) {
@@ -813,6 +869,25 @@ export default function BacktestPage({ match }) {
                       opponentLabel: historyOpponentLabel,
                     }
                   );
+                  const historyForOver = pickHistory(overResult, underResult);
+                  const historyForUnder =
+                    cfg.scope === "total"
+                      ? pickHistory(underResult, overResult)
+                      : historyForOver;
+                  const overTooltipEntries = buildHistoryTooltipEntries({
+                    history: historyForOver,
+                    scope: cfg.scope,
+                    type: cfg.scope === "total" ? "combined" : "team",
+                    line,
+                    direction: "over",
+                  });
+                  const underTooltipEntries = buildHistoryTooltipEntries({
+                    history: historyForUnder,
+                    scope: cfg.scope,
+                    type: cfg.scope === "total" ? "combined" : "opponent",
+                    line,
+                    direction: "under",
+                  });
                   return (
                     <tr key={line} className="align-top">
                       <td className="px-3 py-3 text-sm font-medium text-slate-100">{line}</td>
@@ -884,14 +959,74 @@ export default function BacktestPage({ match }) {
                       </td>
                       <td className="px-3 py-3">
                         <div className="space-y-1 text-[8.25px] text-slate-300">
-                          <div className="cursor-help" title={overHistory.tooltip || undefined}>
-                            {t("over")}:
-                            <span className="ml-1 font-medium text-slate-100">{overHistory.label}</span>
-                          </div>
-                          <div className="cursor-help" title={underHistory.tooltip || undefined}>
-                            {historyOpponentLabel}:
-                            <span className="ml-1 font-medium text-slate-100">{underHistory.label}</span>
-                          </div>
+                          <Tooltip.Root>
+                            <Tooltip.Trigger asChild>
+                              <div className="cursor-help">
+                                {t("over")}:
+                                <span className="ml-1 font-medium text-slate-100">{overHistory.label}</span>
+                              </div>
+                            </Tooltip.Trigger>
+                            <Tooltip.Portal>
+                              <Tooltip.Content
+                                sideOffset={6}
+                                className="z-50 max-h-80 w-72 overflow-y-auto rounded-md bg-slate-800/95 px-3 py-2 text-[11px] leading-relaxed text-slate-100 shadow-lg"
+                              >
+                                {overTooltipEntries.length ? (
+                                  <div className="flex flex-col gap-1">
+                                    {overTooltipEntries.map((entry, idx) => (
+                                      <div key={idx} className="flex items-center justify-between gap-4">
+                                        <span className="text-left text-slate-200">{entry.label}</span>
+                                        <span
+                                          className={`font-semibold ${
+                                            entry.highlight ? "text-emerald-300" : "text-rose-300"
+                                          }`}
+                                        >
+                                          {entry.value}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-slate-300">Ingen historik</div>
+                                )}
+                                <Tooltip.Arrow className="fill-slate-800/95" />
+                              </Tooltip.Content>
+                            </Tooltip.Portal>
+                          </Tooltip.Root>
+                          <Tooltip.Root>
+                            <Tooltip.Trigger asChild>
+                              <div className="cursor-help">
+                                {historyOpponentLabel}:
+                                <span className="ml-1 font-medium text-slate-100">{underHistory.label}</span>
+                              </div>
+                            </Tooltip.Trigger>
+                            <Tooltip.Portal>
+                              <Tooltip.Content
+                                sideOffset={6}
+                                className="z-50 max-h-80 w-72 overflow-y-auto rounded-md bg-slate-800/95 px-3 py-2 text-[11px] leading-relaxed text-slate-100 shadow-lg"
+                              >
+                                {underTooltipEntries.length ? (
+                                  <div className="flex flex-col gap-1">
+                                    {underTooltipEntries.map((entry, idx) => (
+                                      <div key={idx} className="flex items-center justify-between gap-4">
+                                        <span className="text-left text-slate-200">{entry.label}</span>
+                                        <span
+                                          className={`font-semibold ${
+                                            entry.highlight ? "text-emerald-300" : "text-rose-300"
+                                          }`}
+                                        >
+                                          {entry.value}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-slate-300">Ingen historik</div>
+                                )}
+                                <Tooltip.Arrow className="fill-slate-800/95" />
+                              </Tooltip.Content>
+                            </Tooltip.Portal>
+                          </Tooltip.Root>
                         </div>
                       </td>
                     </tr>
@@ -905,152 +1040,151 @@ export default function BacktestPage({ match }) {
     });
 
   return (
-    <section className="flex flex-col rounded-lg bg-slate-900 p-4 text-slate-100 shadow lg:h-full lg:min-h-0">
-      <div className="flex-shrink-0">
-        <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">{t("title")}</h2>
-            {homeTeam && awayTeam ? (
-              <p className="text-sm text-slate-300">
-                {homeTeam} vs {awayTeam}
-              </p>
-            ) : null}
+    <Tooltip.Provider delayDuration={150}>
+      <section className="flex flex-col rounded-lg bg-slate-900 p-4 text-slate-100 shadow lg:h-full lg:min-h-0">
+        <div className="flex-shrink-0">
+          <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">{t("title")}</h2>
+              {homeTeam && awayTeam ? (
+                <p className="text-sm text-slate-300">
+                  {homeTeam} vs {awayTeam}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 text-sm text-slate-300">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={neutralGround}
+                  onChange={(event) => setNeutralGround(event.target.checked)}
+                />
+                {t("neutral_ground")}
+              </label>
+            </div>
+          </header>
+
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input
+              className="flex-1 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm"
+              placeholder={t("unibet_placeholder")}
+              value={unibetUrl}
+              onChange={(event) => setUnibetUrl(event.target.value)}
+            />
+            <button
+              type="button"
+              onClick={handleLoadOdds}
+              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500"
+              disabled={loading}
+            >
+              {t("load_odds")}
+            </button>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm text-slate-300">
+
+          <div className="mb-6 grid gap-4 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span>{t("home_importance")}</span>
               <input
-                type="checkbox"
-                className="h-4 w-4"
-                checked={neutralGround}
-                onChange={(event) => setNeutralGround(event.target.checked)}
+                type="range"
+                min={1}
+                max={10}
+                value={form[Object.keys(form)[0]]?.home_importance ?? 5}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setForm((prev) => {
+                    const next = { ...prev };
+                    for (const key of Object.keys(next)) {
+                      next[key] = { ...next[key], home_importance: value };
+                    }
+                    return next;
+                  });
+                }}
               />
-              {t("neutral_ground")}
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span>{t("away_importance")}</span>
+              <input
+                type="range"
+                min={1}
+                max={10}
+                value={form[Object.keys(form)[0]]?.away_importance ?? 5}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setForm((prev) => {
+                    const next = { ...prev };
+                    for (const key of Object.keys(next)) {
+                      next[key] = { ...next[key], away_importance: value };
+                    }
+                    return next;
+                  });
+                }}
+              />
             </label>
           </div>
-        </header>
 
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <input
-            className="flex-1 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm"
-            placeholder={t("unibet_placeholder")}
-            value={unibetUrl}
-            onChange={(event) => setUnibetUrl(event.target.value)}
-          />
-          <button
-            type="button"
-            onClick={handleLoadOdds}
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500"
-            disabled={loading}
-          >
-            {t("load_odds")}
-          </button>
-        </div>
-
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-sm">
-            <span>{t("home_importance")}</span>
-            <input
-              type="range"
-              min={1}
-              max={10}
-              value={form[Object.keys(form)[0]]?.home_importance ?? 5}
-              onChange={(event) => {
-                const value = Number(event.target.value);
-                setForm((prev) => {
-                  const next = { ...prev };
-                  for (const key of Object.keys(next)) {
-                    next[key] = { ...next[key], home_importance: value };
-                  }
-                  return next;
-                });
-              }}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span>{t("away_importance")}</span>
-            <input
-              type="range"
-              min={1}
-              max={10}
-              value={form[Object.keys(form)[0]]?.away_importance ?? 5}
-              onChange={(event) => {
-                const value = Number(event.target.value);
-                setForm((prev) => {
-                  const next = { ...prev };
-                  for (const key of Object.keys(next)) {
-                    next[key] = { ...next[key], away_importance: value };
-                  }
-                  return next;
-                });
-              }}
-            />
-          </label>
-        </div>
-
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
-          <button
-            type="button"
-            onClick={handleCalculateAll}
-            className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500"
-            disabled={loading}
-          >
-            {loading ? t("loading") : t("calculate_all")}
-          </button>
-        </div>
-
-        {error ? (
-          <div className="mb-4 rounded border border-red-500/40 bg-red-900/40 px-3 py-2 text-sm text-red-200">
-            {error}
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
+            <button
+              type="button"
+              onClick={handleCalculateAll}
+              className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500"
+              disabled={loading}
+            >
+              {loading ? t("loading") : t("calculate_all")}
+            </button>
           </div>
-        ) : null}
-      </div>
+
+          {error ? (
+            <div className="mb-4 rounded border border-red-500/40 bg-red-900/40 px-3 py-2 text-sm text-red-200">
+              {error}
+            </div>
+          ) : null}
+        </div>
 
         <div className="overflow-auto pr-1 lg:flex-1 lg:min-h-0">
-        {positiveResults.length ? (
-          <div className="mb-6 rounded border border-emerald-500/30 bg-emerald-900/20 p-3">
-            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-200">
-              {t("positive_ev_header")}
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-xs">
-                <thead className="text-slate-300">
-                  <tr>
-                    <th className="px-2 py-1">{t("stat")}</th>
-                    <th className="px-2 py-1">{t("team")}</th>
-                    <th className="px-2 py-1">{t("period")}</th>
-                    <th className="px-2 py-1">{t("direction")}</th>
-                    <th className="px-2 py-1">{t("odds")}</th>
-                    <th className="px-2 py-1">{t("value")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {positiveResults.map((result) => (
-                    <tr key={result.bet.key} className="border-t border-slate-700">
-                      <td className="px-2 py-1">{statNames[result.bet.statKey] || result.bet.statKey}</td>
-                      <td className="px-2 py-1">
-                        {formatScope(result.bet.scope, result.bet.homeTeam, result.bet.awayTeam, t)}
-                      </td>
-                      <td className="px-2 py-1">
-                        {formatPeriodLabel(result.bet.period, t)}
-                      </td>
-                      <td className="px-2 py-1">
-                        {result.bet.direction === "over" ? t("over") : t("under")} {result.bet.line}
-                      </td>
-                      <td className="px-2 py-1">{result.bet.odds}</td>
-                      <td className="px-2 py-1">
-                        {result.primaryEv?.toFixed(1)}%
-                        
-                      </td>
+          {positiveResults.length ? (
+            <div className="mb-6 rounded border border-emerald-500/30 bg-emerald-900/20 p-3">
+              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-200">
+                {t("positive_ev_header")}
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-xs">
+                  <thead className="text-slate-300">
+                    <tr>
+                      <th className="px-2 py-1">{t("stat")}</th>
+                      <th className="px-2 py-1">{t("team")}</th>
+                      <th className="px-2 py-1">{t("period")}</th>
+                      <th className="px-2 py-1">{t("direction")}</th>
+                      <th className="px-2 py-1">{t("odds")}</th>
+                      <th className="px-2 py-1">{t("value")}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {positiveResults.map((result) => (
+                      <tr key={result.bet.key} className="border-t border-slate-700">
+                        <td className="px-2 py-1">{statNames[result.bet.statKey] || result.bet.statKey}</td>
+                        <td className="px-2 py-1">
+                          {formatScope(result.bet.scope, result.bet.homeTeam, result.bet.awayTeam, t)}
+                        </td>
+                        <td className="px-2 py-1">
+                          {formatPeriodLabel(result.bet.period, t)}
+                        </td>
+                        <td className="px-2 py-1">
+                          {result.bet.direction === "over" ? t("over") : t("under")} {result.bet.line}
+                        </td>
+                        <td className="px-2 py-1">{result.bet.odds}</td>
+                        <td className="px-2 py-1">{result.primaryEv?.toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        <div className="space-y-6 pb-1">{renderStatSections()}</div>
-      </div>
-    </section>
+          <div className="space-y-6 pb-1">{renderStatSections()}</div>
+        </div>
+      </section>
+    </Tooltip.Provider>
   );
 }

@@ -2,6 +2,7 @@ const DEFAULT_HISTORY = () => ({
   over: { hits: 0, total: 0 },
   under: { hits: 0, total: 0 },
   opponent: { hits: 0, total: 0 },
+  samples: { team: [], opponent: [], combined: [] },
 });
 
 const PERIODS = new Set(["ALL", "1ST", "2ND"]);
@@ -251,6 +252,23 @@ function limitMatches(matches, limit) {
   return sorted.slice(0, limit);
 }
 
+function createSample(match, value, displayValue) {
+  const numeric = toNumber(value);
+  if (!Number.isFinite(numeric)) return null;
+  const label = {
+    homeTeam: match.homeTeam || "",
+    awayTeam: match.awayTeam || "",
+  };
+  const sample = {
+    ...label,
+    value: numeric,
+  };
+  if (displayValue != null) {
+    sample.displayValue = displayValue;
+  }
+  return sample;
+}
+
 function countGreater(values, threshold) {
   return values.filter((value) => Number.isFinite(value) && value > threshold).length;
 }
@@ -311,6 +329,17 @@ export function computeHistoryStats({
     history.over = { hits: hitsOver, total: values.length };
     history.under = { hits: hitsUnder, total: values.length };
     history.opponent = { ...history.under };
+    history.samples = {
+      team: combined
+        .map((match) => createSample(match, match?.stat?.total))
+        .filter(Boolean),
+      opponent: combined
+        .map((match) => createSample(match, match?.stat?.total))
+        .filter(Boolean),
+      combined: combined
+        .map((match) => createSample(match, match?.stat?.total))
+        .filter(Boolean),
+    };
     return history;
   }
 
@@ -357,6 +386,26 @@ export function computeHistoryStats({
   history.opponent = {
     hits: countGreater(opponentValues, numericLine),
     total: opponentValues.length,
+  };
+
+  history.samples = {
+    team: teamMatches
+      .map((match) => {
+        const teamIsHome =
+          match.teamIsHome != null ? match.teamIsHome : scope === "home";
+        const value = teamIsHome ? match.stat?.home : match.stat?.away;
+        return createSample(match, value);
+      })
+      .filter(Boolean),
+    opponent: opponentMatches
+      .map((match) => {
+        const teamIsHome =
+          match.teamIsHome != null ? match.teamIsHome : scope !== "home";
+        const value = teamIsHome ? match.stat?.away : match.stat?.home;
+        return createSample(match, value);
+      })
+      .filter(Boolean),
+    combined: [],
   };
 
   return history;
