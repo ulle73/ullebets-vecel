@@ -1,4 +1,4 @@
-[data-theme="light-clean"] {
+html[data-theme="light-clean"] {
   --background: #f7f9fc;
   --foreground: #0f172a;
   --surface-primary: #ffffff;
@@ -39,7 +39,7 @@
   color-scheme: light;
 }
 
-[data-theme="light-clean"] a:hover,
-[data-theme="light-clean"] button:hover {
+html[data-theme="light-clean"] a:hover,
+html[data-theme="light-clean"] button:hover {
   box-shadow: 0 18px 35px -24px rgba(37, 99, 235, 0.35);
 }

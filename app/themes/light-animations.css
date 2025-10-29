@@ -1,4 +1,4 @@
-[data-theme="light-animations"] {
+html[data-theme="light-animations"] {
   --background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(224, 242, 254, 0.75));
   --foreground: #0f172a;
   --surface-primary: rgba(255, 255, 255, 0.88);
@@ -40,15 +40,15 @@
   color-scheme: light;
 }
 
-[data-theme="light-animations"] .shadow-sm,
-[data-theme="light-animations"] .shadow {
+html[data-theme="light-animations"] .shadow-sm,
+html[data-theme="light-animations"] .shadow {
   position: relative;
   overflow: hidden;
   animation: floaty-light 16s ease-in-out infinite;
 }
 
-[data-theme="light-animations"] .shadow-sm::after,
-[data-theme="light-animations"] .shadow::after {
+html[data-theme="light-animations"] .shadow-sm::after,
+html[data-theme="light-animations"] .shadow::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -59,9 +59,9 @@
   pointer-events: none;
 }
 
-[data-theme="light-animations"] header,
-[data-theme="light-animations"] nav,
-[data-theme="light-animations"] .rounded-lg {
+html[data-theme="light-animations"] header,
+html[data-theme="light-animations"] nav,
+html[data-theme="light-animations"] .rounded-lg {
   animation-duration: 22s;
   animation-timing-function: ease-in-out;
   animation-name: shimmer-shift;
@@ -69,8 +69,8 @@
   background-size: 200% 200%;
 }
 
-[data-theme="light-animations"] a:hover,
-[data-theme="light-animations"] button:hover {
+html[data-theme="light-animations"] a:hover,
+html[data-theme="light-animations"] button:hover {
   transform: translateY(-3px) scale(1.01);
   box-shadow: 0 35px 90px -55px rgba(37, 99, 235, 0.55);
 }

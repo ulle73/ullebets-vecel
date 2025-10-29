@@ -1,4 +1,4 @@
-[data-theme="dark-animations"] {
+html[data-theme="dark-animations"] {
   --background: #020817;
   --foreground: #e2e8f0;
   --surface-primary: rgba(10, 25, 44, 0.92);
@@ -40,15 +40,15 @@
   color-scheme: dark;
 }
 
-[data-theme="dark-animations"] .shadow-sm,
-[data-theme="dark-animations"] .shadow {
+html[data-theme="dark-animations"] .shadow-sm,
+html[data-theme="dark-animations"] .shadow {
   position: relative;
   overflow: hidden;
   animation: floaty 14s ease-in-out infinite;
 }
 
-[data-theme="dark-animations"] .shadow-sm::after,
-[data-theme="dark-animations"] .shadow::after {
+html[data-theme="dark-animations"] .shadow-sm::after,
+html[data-theme="dark-animations"] .shadow::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -59,17 +59,17 @@
   pointer-events: none;
 }
 
-[data-theme="dark-animations"] header,
-[data-theme="dark-animations"] nav,
-[data-theme="dark-animations"] .rounded-lg {
+html[data-theme="dark-animations"] header,
+html[data-theme="dark-animations"] nav,
+html[data-theme="dark-animations"] .rounded-lg {
   animation-duration: 20s;
   animation-timing-function: ease-in-out;
   animation-name: gradient-shift;
   animation-iteration-count: infinite;
 }
 
-[data-theme="dark-animations"] a:hover,
-[data-theme="dark-animations"] button:hover {
+html[data-theme="dark-animations"] a:hover,
+html[data-theme="dark-animations"] button:hover {
   transform: translateY(-3px) scale(1.01);
   box-shadow: 0 28px 65px -40px rgba(91, 157, 255, 0.85);
 }

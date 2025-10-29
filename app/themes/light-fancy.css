@@ -1,4 +1,4 @@
-[data-theme="light-fancy"] {
+html[data-theme="light-fancy"] {
   --background: linear-gradient(145deg, rgba(224, 242, 254, 0.6), rgba(255, 255, 255, 0.85)),
     #f3f6ff;
   --foreground: #0f172a;
@@ -47,15 +47,15 @@
   color-scheme: light;
 }
 
-[data-theme="light-fancy"] .shadow-sm,
-[data-theme="light-fancy"] .shadow {
+html[data-theme="light-fancy"] .shadow-sm,
+html[data-theme="light-fancy"] .shadow {
   position: relative;
   overflow: hidden;
   isolation: isolate;
 }
 
-[data-theme="light-fancy"] .shadow-sm::before,
-[data-theme="light-fancy"] .shadow::before {
+html[data-theme="light-fancy"] .shadow-sm::before,
+html[data-theme="light-fancy"] .shadow::before {
   content: "";
   position: absolute;
   inset: -1px;
@@ -67,13 +67,13 @@
   z-index: -1;
 }
 
-[data-theme="light-fancy"] .shadow-sm:hover::before,
-[data-theme="light-fancy"] .shadow:hover::before {
+html[data-theme="light-fancy"] .shadow-sm:hover::before,
+html[data-theme="light-fancy"] .shadow:hover::before {
   opacity: 1;
 }
 
-[data-theme="light-fancy"] a:hover,
-[data-theme="light-fancy"] button:hover {
+html[data-theme="light-fancy"] a:hover,
+html[data-theme="light-fancy"] button:hover {
   transform: translateY(-2px);
   box-shadow: 0 25px 55px -35px rgba(37, 99, 235, 0.45);
 }

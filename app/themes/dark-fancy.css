@@ -1,4 +1,4 @@
-[data-theme="dark-fancy"] {
+html[data-theme="dark-fancy"] {
   --background: radial-gradient(circle at 15% 15%, rgba(17, 94, 164, 0.55), transparent 55%),
     radial-gradient(circle at 85% 10%, rgba(34, 197, 247, 0.35), transparent 60%),
     #030712;
@@ -48,15 +48,15 @@
   color-scheme: dark;
 }
 
-[data-theme="dark-fancy"] .shadow-sm,
-[data-theme="dark-fancy"] .shadow {
+html[data-theme="dark-fancy"] .shadow-sm,
+html[data-theme="dark-fancy"] .shadow {
   position: relative;
   overflow: hidden;
   isolation: isolate;
 }
 
-[data-theme="dark-fancy"] .shadow-sm::before,
-[data-theme="dark-fancy"] .shadow::before {
+html[data-theme="dark-fancy"] .shadow-sm::before,
+html[data-theme="dark-fancy"] .shadow::before {
   content: "";
   position: absolute;
   inset: -1px;
@@ -68,13 +68,13 @@
   z-index: -1;
 }
 
-[data-theme="dark-fancy"] .shadow-sm:hover::before,
-[data-theme="dark-fancy"] .shadow:hover::before {
+html[data-theme="dark-fancy"] .shadow-sm:hover::before,
+html[data-theme="dark-fancy"] .shadow:hover::before {
   opacity: 1;
 }
 
-[data-theme="dark-fancy"] a:hover,
-[data-theme="dark-fancy"] button:hover {
+html[data-theme="dark-fancy"] a:hover,
+html[data-theme="dark-fancy"] button:hover {
   box-shadow: 0 25px 55px -35px rgba(59, 130, 246, 0.75);
   transform: translateY(-2px);
 }
