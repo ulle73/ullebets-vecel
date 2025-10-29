@@ -1,0 +1,80 @@
+[data-theme="dark-fancy"] {
+  --background: radial-gradient(circle at 15% 15%, rgba(17, 94, 164, 0.55), transparent 55%),
+    radial-gradient(circle at 85% 10%, rgba(34, 197, 247, 0.35), transparent 60%),
+    #030712;
+  --foreground: #dbeafe;
+  --surface-primary: rgba(8, 18, 36, 0.82);
+  --surface-secondary: rgba(10, 24, 46, 0.7);
+  --surface-muted: rgba(59, 130, 246, 0.14);
+  --surface-soft: rgba(59, 130, 246, 0.08);
+  --surface-inverse: #f8fafc;
+  --border-color: rgba(148, 197, 255, 0.25);
+  --border-strong: rgba(59, 130, 246, 0.45);
+  --text-primary: #eff6ff;
+  --text-secondary: #bfdbfe;
+  --text-tertiary: #94a3b8;
+  --accent: #60a5fa;
+  --accent-soft: rgba(96, 165, 250, 0.3);
+  --accent-contrast: #021024;
+  --success: #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.28);
+  --success-contrast: #052919;
+  --warning: #facc15;
+  --warning-soft: rgba(250, 204, 21, 0.28);
+  --warning-contrast: #261700;
+  --danger: #fb7185;
+  --danger-soft: rgba(251, 113, 133, 0.28);
+  --danger-contrast: #36010b;
+  --info: #38bdf8;
+  --info-soft: rgba(56, 189, 248, 0.32);
+  --info-contrast: #011622;
+  --shadow-soft: 0 45px 120px -60px rgba(15, 118, 247, 0.75);
+  --shadow-strong: 0 55px 180px -75px rgba(37, 99, 235, 0.7);
+  --card-backdrop-filter: blur(18px) saturate(185%);
+  --surface-gradient: linear-gradient(160deg, rgba(96, 165, 250, 0.22), rgba(14, 116, 144, 0.16));
+  --body-overlay: radial-gradient(circle at 35% 25%, rgba(59, 130, 246, 0.35), transparent 55%),
+    radial-gradient(circle at 70% 80%, rgba(14, 165, 233, 0.28), transparent 60%),
+    linear-gradient(120deg, rgba(8, 47, 73, 0.45), rgba(12, 74, 110, 0.2));
+  --body-overlay-opacity: 0.85;
+  --body-overlay-blend: lighten;
+  --canvas-texture: repeating-radial-gradient(
+      circle at 20% 20%,
+      rgba(148, 197, 255, 0.06),
+      rgba(148, 197, 255, 0.06) 1px,
+      transparent 1px,
+      transparent 12px
+    );
+  --accent-ring: 0 0 0 1px rgba(96, 165, 250, 0.65);
+  color-scheme: dark;
+}
+
+[data-theme="dark-fancy"] .shadow-sm,
+[data-theme="dark-fancy"] .shadow {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-theme="dark-fancy"] .shadow-sm::before,
+[data-theme="dark-fancy"] .shadow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.55), transparent 65%);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: none;
+  z-index: -1;
+}
+
+[data-theme="dark-fancy"] .shadow-sm:hover::before,
+[data-theme="dark-fancy"] .shadow:hover::before {
+  opacity: 1;
+}
+
+[data-theme="dark-fancy"] a:hover,
+[data-theme="dark-fancy"] button:hover {
+  box-shadow: 0 25px 55px -35px rgba(59, 130, 246, 0.75);
+  transform: translateY(-2px);
+}

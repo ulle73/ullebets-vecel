@@ -1,0 +1,45 @@
+[data-theme="light-clean"] {
+  --background: #f7f9fc;
+  --foreground: #0f172a;
+  --surface-primary: #ffffff;
+  --surface-secondary: #f3f6fb;
+  --surface-muted: #eef2f7;
+  --surface-soft: rgba(15, 23, 42, 0.05);
+  --surface-inverse: #0f172a;
+  --border-color: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.18);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --accent: #2563eb;
+  --accent-soft: rgba(37, 99, 235, 0.14);
+  --accent-contrast: #f8fafc;
+  --success: #16a34a;
+  --success-soft: rgba(22, 163, 74, 0.16);
+  --success-contrast: #062913;
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.18);
+  --warning-contrast: #341d00;
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.16);
+  --danger-contrast: #2d0909;
+  --info: #0284c7;
+  --info-soft: rgba(2, 132, 199, 0.18);
+  --info-contrast: #042135;
+  --shadow-soft: 0 18px 45px -32px rgba(15, 23, 42, 0.35);
+  --shadow-strong: 0 55px 110px -60px rgba(15, 23, 42, 0.4);
+  --card-backdrop-filter: blur(0px) saturate(120%);
+  --surface-gradient: linear-gradient(135deg, rgba(37, 99, 235, 0.07), rgba(14, 165, 233, 0.05));
+  --body-overlay: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.08), transparent 60%),
+    radial-gradient(circle at 90% 0%, rgba(14, 165, 233, 0.08), transparent 55%);
+  --body-overlay-opacity: 0.7;
+  --body-overlay-blend: normal;
+  --canvas-texture: linear-gradient(120deg, rgba(255, 255, 255, 0.4), rgba(236, 241, 255, 0.2));
+  --accent-ring: 0 0 0 1px rgba(37, 99, 235, 0.32);
+  color-scheme: light;
+}
+
+[data-theme="light-clean"] a:hover,
+[data-theme="light-clean"] button:hover {
+  box-shadow: 0 18px 35px -24px rgba(37, 99, 235, 0.35);
+}
