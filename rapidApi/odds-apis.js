@@ -59,3 +59,27 @@ try {
 //sofascore.com
 
 url = "https://www.sofascore.com/api/v1/event/14025184/odds/1/all";
+
+
+
+// SofaSport new 2025-10-31
+const options4 = {
+  method: "GET",
+  url: "https://sofasport.p.rapidapi.com/v1/events/odds/all",
+  params: {
+    event_id: "14025184",
+    provider_id: "1",
+    odds_format: "decimal",
+  },
+  headers: {
+    "x-rapidapi-key": "d26361d6a1msh55def5349c5e57dp1eaee1jsn74e247833a6e",
+    "x-rapidapi-host": "sofasport.p.rapidapi.com",
+  },
+};
+
+try {
+  const response = await axios.request(options);
+  console.log(response.data);
+} catch (error) {
+  console.error(error);
+}
