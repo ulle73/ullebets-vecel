@@ -70,17 +70,63 @@ async function readJSON(filePath) {
   }
 }
 
+// async function loadTeamStats(teamstatsCollection, team, matchType, filePath) {
+//   const teamId = team?.id ?? team?.teamId;
+  
+//    const idS = String(teamId);
+//    const idN = Number.isFinite(Number(teamId)) ? Number(teamId) : null;
+
+//   if (teamstatsCollection && teamId != null) {
+//     const document = await teamstatsCollection.findOne(
+//       {
+//         "_importMeta.teamId": String(teamId),
+//         "_importMeta.teamRole": matchType,
+//       },
+//       {
+//         projection: { full: 1, "_importMeta.importedAt": 1 },
+//       }
+//     );
+
+//     if (Array.isArray(document?.full) && document.full.length) {
+//       return {
+//         matches: document.full,
+//         source: "database",
+//         importedAt: document._importMeta?.importedAt ?? null,
+//       };
+//     }
+//   }
+
+//   const teamStatsFromFile = await readJSON(filePath);
+//   if (Array.isArray(teamStatsFromFile?.full) && teamStatsFromFile.full.length) {
+//     return {
+//       matches: teamStatsFromFile.full,
+//       source: "file",
+//       importedAt: null,
+//     };
+//   }
+
+//   return null;
+// }
+
 async function loadTeamStats(teamstatsCollection, team, matchType, filePath) {
   const teamId = team?.id ?? team?.teamId;
+  const idS = String(teamId);
+  const idN = Number.isFinite(Number(teamId)) ? Number(teamId) : null;
 
   if (teamstatsCollection && teamId != null) {
+    const orFilters = [
+      { "_importMeta.teamId": idS, "_importMeta.teamRole": matchType },
+      idN !== null
+        ? { "_importMeta.teamId": idN, "_importMeta.teamRole": matchType }
+        : null,
+      idN !== null ? { "meta.lagId": idN, "meta.matchType": matchType } : null,
+      idN !== null ? { "meta.lagId": idN, matchType } : null, // om matchType ligger top-level
+    ].filter(Boolean);
+
     const document = await teamstatsCollection.findOne(
+      { $or: orFilters },
       {
-        "_importMeta.teamId": String(teamId),
-        "_importMeta.teamRole": matchType,
-      },
-      {
-        projection: { full: 1, "_importMeta.importedAt": 1 },
+        projection: { full: 1, "_importMeta.importedAt": 1, "meta.savedAt": 1 },
       }
     );
 
@@ -88,11 +134,13 @@ async function loadTeamStats(teamstatsCollection, team, matchType, filePath) {
       return {
         matches: document.full,
         source: "database",
-        importedAt: document._importMeta?.importedAt ?? null,
+        importedAt:
+          document._importMeta?.importedAt ?? document.meta?.savedAt ?? null,
       };
     }
   }
 
+  // (behåll din fil-fallback här; överväg ASCII-fallback som bonus)
   const teamStatsFromFile = await readJSON(filePath);
   if (Array.isArray(teamStatsFromFile?.full) && teamStatsFromFile.full.length) {
     return {
@@ -104,6 +152,7 @@ async function loadTeamStats(teamstatsCollection, team, matchType, filePath) {
 
   return null;
 }
+
 
 function average(values) {
   if (!values.length) {
