@@ -1,3 +1,5 @@
+
+
 import fs from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
@@ -29,7 +31,9 @@ async function getDbClientOrNull() {
     return client;
   } catch (err) {
     console.warn(
-      `⚠️ Kunde inte ansluta till databasen för last-run: ${err?.message || err}`
+      `⚠️ Kunde inte ansluta till databasen för last-run: ${
+        err?.message || err
+      }`
     );
     try {
       await client.close(true);
@@ -129,13 +133,25 @@ const positionalArgs = rawArgs.filter((arg) => !arg.startsWith("--"));
 
 const wantYesterdayMode = optionArgs.includes("--yesterday");
 
-const ligaNamnInput = positionalArgs[0]
-  ? String(positionalArgs[0]).trim()
-  : null;
-  
 const filteredOptionArgs = optionArgs.filter(
-  (arg) => arg !== "--yesterday" && !arg.startsWith("--backfill=") && arg !== "--backfill"
+  (arg) => arg !== "--yesterday" && !arg.startsWith("--backfill=")
 );
+
+const [ligaNamnInput, teamOrMatchesInput, maybeMatchesInput] = positionalArgs;
+
+const antalMatcherCLI = isNaN(parseInt(teamOrMatchesInput))
+  ? isNaN(parseInt(maybeMatchesInput))
+    ? 10
+    : +maybeMatchesInput
+  : +teamOrMatchesInput;
+
+// --backfill=N (valfri)
+const backfillArg = optionArgs.find(
+  (a) => typeof a === "string" && a.startsWith("--backfill=")
+);
+const backfill = backfillArg
+  ? Math.max(0, parseInt(backfillArg.split("=")[1]))
+  : 0;
 
 // --- Selektiva flaggor ----------------------------------------
 const allowedFlags = new Set([
@@ -149,17 +165,14 @@ const modeLimited = selectedFlags.length > 0;
 
 const WANT_MATCHES = !modeLimited || selectedFlags.includes("--matches");
 const WANT_INCIDENTS = !modeLimited || selectedFlags.includes("--incidents");
- const WANT_SHOTMAP = !modeLimited || selectedFlags.includes("--shotmap");
+const WANT_SHOTMAP = !modeLimited || selectedFlags.includes("--shotmap");
 const WANT_ODDS = !modeLimited || selectedFlags.includes("--odds");
 
-// Enskild extraflagga? (inte --matches) → påverkar inte nya backfill längre, men behåller flaggan för selektivt läge
+// Enskild extraflagga? (inte --matches) → tvinga backfill
 const singleFlagBackfillMode =
   modeLimited &&
   selectedFlags.length === 1 &&
   !selectedFlags.includes("--matches");
-
-// --- NYTT: --backfill som ren boolean-flagga (utan siffra) ---
-const backfill = optionArgs.includes("--backfill");
 
 // ---------- Allmänt -------------------------------------------
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -910,135 +923,6 @@ async function browserFetch(page, endpoint) {
   recordApiCallOutcome("sofascore", false);
   return null;
 }
-
-// ============================================================================
-// BACKFILL v2 – Helper-funktioner för ny boolean-flagga `--backfill`
-// ============================================================================
-
-// Hämta enbart page 0 (max ~30) och filtrera till rätt liga
-async function fetchLeagueEventsPage0ForTeam(page, teamId, ligaFilter, ligaSlug) {
-  const norm = (s) =>
-    (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s|-/g, "");
-  const wantName = norm(ligaFilter);
-  const wantSlug = norm(ligaSlug);
-
-  const passLeagueFilter = (e) => {
-    const tour = e?.tournament || {};
-    const nameCandidates = [tour.name, tour.uniqueTournament?.name, e?.uniqueTournament?.name];
-    const slugCandidates = [tour.slug, tour.uniqueTournament?.slug, e?.uniqueTournament?.slug];
-    const nameOk = nameCandidates.some((n) => n && norm(n) === wantName);
-    const slugOk = slugCandidates.some((s) => s && norm(s) === wantSlug);
-    return nameOk || slugOk;
-  };
-
-  const isFinished = (e) => {
-    const cand = [e?.status?.type, e?.status?.description, e?.status?.code, e?.status]
-      .map((v) => (typeof v === "string" ? v.toLowerCase() : undefined))
-      .filter(Boolean);
-    if (!cand.length) return true;
-    return cand.some((v) => ["finished", "after", "full", "ended", "ft"].some((t) => v.includes(t)));
-  };
-
-  const data = await browserFetch(page, `team/${teamId}/events/last/0`);
-  apiCalls++;
-  const events = Array.isArray(data?.events) ? data.events : [];
-  const out = [];
-  const seen = new Set();
-  for (const e of events) {
-    if (!isFinished(e) || !passLeagueFilter(e) || !e.startTimestamp) continue;
-    const id = e.id ?? e.eventId ?? e.matchId ?? e.event?.id;
-    if (!id || seen.has(id)) continue;
-    seen.add(id);
-    out.push({ id, ts: e.startTimestamp });
-  }
-  out.sort((a, b) => b.ts - a.ts);
-  return out;
-}
-
-// Finns match för ett visst lag redan sparad?
-async function hasExistingRecordForTeam(teamName, matchId) {
-  const rec = await getExistingMatchRecord(teamName, matchId);
-  return !!rec?.record;
-}
-
-// Backfilla fullständigt för ett matchId så båda sidorna finns
-async function ensureFullMatchSavedForBothSides(page, context, team, matchId, ts) {
-  const fetched = await fetchMatchDataSofascore(page, matchId, context, {
-    matches: true,
-    incidents: true,
-    shotmap: true,
-  });
-  if (!(fetched && fetched.info && fetched.stats)) {
-    console.warn(`⏭️ Kunde inte hämta basdata för match ${matchId} – hoppar.`);
-    return false;
-  }
-
-  const { value: odds, source: oddsSource, market: oddsMarket, apiKey: oddsApiKey } =
-    await fetchMatchOdds(context, matchId);
-
-  const info = fetched.info;
-  const home = info?.homeTeam;
-  const away = info?.awayTeam;
-  if (!home?.name || !away?.name) {
-    console.warn(`⏭️ Saknar laginfo för match ${matchId} – hoppar.`);
-    return false;
-  }
-
-  const record = {
-    matchId,
-    timestamp: ts,
-    date: new Date(ts * 1000).toISOString().split("T")[0],
-    savedAt: new Date().toISOString(),
-    homeTeamId: home.id,
-    homeTeamName: home.name,
-    awayTeamId: away.id,
-    awayTeamName: away.name,
-    matchDetails: formatMatchDetails(fetched.stats),
-    ...(typeof fetched.incidents !== "undefined" ? { incidents: fetched.incidents } : {}),
-    ...(typeof fetched.shotmap !== "undefined" ? { shotmap: fetched.shotmap } : {}),
-    ...(typeof odds !== "undefined" ? { odds: odds ?? null } : {}),
-  };
-
-  const { homeScore, awayScore } = resolveFinalScores({ primary: fetched.info, secondary: null });
-  if (homeScore !== null) record.homeScore = homeScore;
-  if (awayScore !== null) record.awayScore = awayScore;
-
-  const isHomeForTeam = record.homeTeamId === team.id;
-  const oppName = isHomeForTeam ? record.awayTeamName : record.homeTeamName;
-  const oppType = isHomeForTeam ? "away" : "home";
-
-  const savedTeam = await sparaMatch(team.name, isHomeForTeam ? "home" : "away", [record]);
-  let savedOpp = false;
-  if (oppName && oppType) {
-    savedOpp = await sparaMatch(oppName, oppType, [record]);
-  }
-
-  if (savedTeam || savedOpp) {
-    if (fetched?.stats) {
-      const statsSourceText = formatSourceWithKey(fetched?.statsSource, fetched?.statsApiKey);
-      console.log(`✅ Statistik sparad via ${statsSourceText}.`);
-    }
-    if (typeof fetched?.incidents !== "undefined") {
-      const incidentsSourceText = formatSourceWithKey(fetched?.incidentsSource, fetched?.incidentsApiKey);
-      console.log(`✅ Incidents sparade via ${incidentsSourceText}.`);
-    }
-    if (typeof fetched?.shotmap !== "undefined") {
-      const shotmapSourceText = formatSourceWithKey(fetched?.shotmapSource, fetched?.shotmapApiKey);
-      console.log(`✅ Shotmap sparad via ${shotmapSourceText}.`);
-    }
-    if (typeof odds !== "undefined") {
-      const oddsMarketText = oddsMarket ? ` (market ${oddsMarket})` : "";
-      const oddsSourceText = formatSourceWithKey(oddsSource, oddsApiKey);
-      console.log(`✅ Odds sparade via ${oddsSourceText}${oddsMarketText}.`);
-    }
-    return true;
-  }
-  return false;
-}
-
-// ============================================================================
-// SLUT BACKFILL v2 helper-funktioner
-// ============================================================================
 
 // ---------- API-funktioner ------------------------------------
 async function fetchMatchIdsSofascore(
@@ -2251,7 +2135,9 @@ async function createMatchScoreUpdater() {
     await client.connect();
   } catch (err) {
     console.warn(
-      `⚠️ Kunde inte ansluta till databasen för matchuppdatering: ${err?.message || err}`
+      `⚠️ Kunde inte ansluta till databasen för matchuppdatering: ${
+        err?.message || err
+      }`
     );
     try {
       await client.close(true);
@@ -2356,7 +2242,9 @@ async function createMatchScoreUpdater() {
       return true;
     } catch (err) {
       console.warn(
-        `⚠️ Kunde inte uppdatera match-for-date för ${normalizedDate}: ${err?.message || err}`
+        `⚠️ Kunde inte uppdatera match-for-date för ${normalizedDate}: ${
+          err?.message || err
+        }`
       );
       return false;
     }
@@ -2513,8 +2401,12 @@ async function main() {
       ? positionalArgs[2]
       : positionalArgs[1];
     const antalMatcher = isNaN(parseInt(antalMatcherInput))
-      ? 10
+      ? antalMatcherCLI
       : +antalMatcherInput;
+
+    const effectiveBackfill = singleFlagBackfillMode
+      ? Math.max(backfill, antalMatcher)
+      : backfill;
 
     const ligorAttKöra =
       ligaNamnInput.toLowerCase() === "all"
@@ -2542,6 +2434,11 @@ async function main() {
           .filter(Boolean)
           .join(", ")}`
       );
+      if (singleFlagBackfillMode) {
+        console.log(
+          `✅ Enskild extraflagga upptäckt – backfill tvingas till minst ${effectiveBackfill}`
+        );
+      }
     } else {
       console.log(
         "✅ Hämtar alla delar (matches + incidents + shotmap + odds)"
@@ -2571,7 +2468,7 @@ async function main() {
       page,
       apiCallStats,
       logger: console,
-      desiredMatchCount: antalMatcher,
+      desiredMatchCount: antalMatcher + effectiveBackfill,
     };
 
     for (const [ligaNamn, ligaData] of ligorAttKöra) {
@@ -2590,42 +2487,6 @@ async function main() {
       for (const team of teamsToRun) {
         console.log(`\n⚽ Hämtar för ${team.name}…`);
 
-        // ---------------- NEW BACKFILL BLOCK (boolean --backfill) ----------------
-        if (backfill) {
-          console.log(`🔁 Backfill (page 0) för ${team.name} i ${ligaNamn}…`);
-          const page0 = await fetchLeagueEventsPage0ForTeam(page, team.id, ligaNamn, ligaSlug);
-
-          if (!page0.length) {
-            console.log(`⏭️ Inga liga-matcher på page 0 för ${team.name}.`);
-          } else {
-            for (const { id, ts } of page0) {
-              // kontrollera att båda sidorna finns
-              const hasTeam = await hasExistingRecordForTeam(team.name, id);
-
-              let hasOpp = false;
-              if (hasTeam) {
-                const existing = await getExistingMatchRecord(team.name, id);
-                const rec = existing?.record;
-                if (rec) {
-                  const isHome = rec.homeTeamName?.toLowerCase() === team.name.toLowerCase();
-                  const oppName = isHome ? rec.awayTeamName : rec.homeTeamName;
-                  if (oppName) {
-                    hasOpp = await hasExistingRecordForTeam(oppName, id);
-                  }
-                }
-              }
-
-              if (!hasTeam || !hasOpp) {
-                console.log(`🧩 Fyller saknad match ${id} för ${team.name} (båda sidor).`);
-                await ensureFullMatchSavedForBothSides(page, context, team, id, ts);
-                await sleep(400);
-              }
-            }
-          }
-          // fortsätt med ordinarie flöde
-        }
-        // ---------------- END NEW BACKFILL BLOCK ----------------
-
         const {
           maxTimestamp: teamMaxTs,
           matchesNeedingEnrichment,
@@ -2639,6 +2500,8 @@ async function main() {
           context
         );
 
+        let backfilledOlder = 0;
+
         for (const { id, ts } of matchIds.slice(0, antalMatcher)) {
           const needsEnrichment = matchesNeedingEnrichment.has(id);
           const forceUpdateBecauseSelective = modeLimited;
@@ -2647,10 +2510,17 @@ async function main() {
             !needsEnrichment &&
             !forceUpdateBecauseSelective
           ) {
-            console.log(
-              `⏭️ Hoppar: ${team.name} match ${id} (ts ${ts}) ≤ sparat max ${teamMaxTs}`
-            );
-            continue;
+            if (effectiveBackfill > 0 && backfilledOlder < effectiveBackfill) {
+              console.log(
+                `⏬ Backfillar äldre match för ${team.name}: ${id} (ts ${ts})`
+              );
+              backfilledOlder++;
+            } else {
+              console.log(
+                `⏭️ Hoppar: ${team.name} match ${id} (ts ${ts}) ≤ sparat max ${teamMaxTs}`
+              );
+              continue;
+            }
           } else if (needsEnrichment || forceUpdateBecauseSelective) {
             console.log(`♻️ Uppdaterar selektivt för ${team.name}: ${id}`);
           }
@@ -2721,6 +2591,14 @@ async function main() {
               );
             }
 
+            if (!savedTeam && !savedOpp) {
+              if (effectiveBackfill > 0) {
+                console.log("⏭️ Redan sparad – fortsätter (backfill aktiv)");
+                continue;
+              }
+              console.log("⏩ Ingen uppdatering skedd – hoppar till nästa lag");
+              break;
+            }
             await sleep(1_000);
             continue;
           }
@@ -2862,6 +2740,16 @@ async function main() {
             }
           }
 
+          if (!savedTeam && !savedOpp) {
+            if (effectiveBackfill > 0) {
+              console.log("⏭️ Redan sparad – fortsätter (backfill aktiv)");
+              continue;
+            }
+            console.log(
+              "⏩ Senaste matchen redan sparad – hoppar till nästa lag"
+            );
+            break;
+          }
           await sleep(1_000);
         }
       }
