@@ -22,6 +22,13 @@ const INCIDENT_ENDPOINTS = [
     query: ({ matchId }) => ({ matchId }),
     transform: (data) => data?.data ?? data?.incidents ?? data ?? null,
   },
+  {
+    name: "sofasport-incidents",
+    host: "sofasport.p.rapidapi.com",
+    url: () => `https://sofasport.p.rapidapi.com/v1/events/incidents`,
+    query: ({ matchId }) => ({ event_id: matchId }),
+    transform: (data) => data?.data ?? data?.incidents ?? data ?? null,
+  },
 ];
 
 

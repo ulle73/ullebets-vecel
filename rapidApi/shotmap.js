@@ -7,6 +7,13 @@ const SHOTMAP_ENDPOINTS = [
     url: ({ matchId }) => `https://sportapi7.p.rapidapi.com/api/v1/event/${matchId}/shotmap`,
     transform: (data) => data ?? null,
   },
+  {
+    name: "sofasport-shotmap",
+    host: "sofasport.p.rapidapi.com",
+    url: () => `https://sofasport.p.rapidapi.com/v1/events/shotmap`,
+    query: ({ matchId }) => ({ event_id: matchId }),
+    transform: (data) => data?.data ?? data ?? null,
+  },
 ];
 
 export async function fetchMatchShotmap(matchId, context) {

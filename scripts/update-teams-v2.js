@@ -115,8 +115,8 @@ const WRITE_DIRS = [
 ];
 const READ_DIRS = [
   REL_TEAMSTATS_DIR,
-  ABS_TEAMSTATS_DIR,
-  ABS_PUBLIC_TEAMSTATS_DIR,
+  // ABS_TEAMSTATS_DIR,
+  // ABS_PUBLIC_TEAMSTATS_DIR,
 ];
 
 // 👇 NYTT: spåra vilka filer som faktiskt skrevs

@@ -173,6 +173,13 @@ const STAT_ENDPOINTS = [
     query: ({ matchId }) => ({ matchId }),
     transform: (data) => data?.data ?? data?.statistics ?? data ?? null,
   },
+  {
+    name: "sofasport-event-statistics",
+    host: "sofasport.p.rapidapi.com",
+    url: () => `https://sofasport.p.rapidapi.com/v1/events/statistics`,
+    query: ({ matchId }) => ({ event_id: matchId }),
+    transform: (data) => data?.data ?? data?.statistics ?? data ?? null,
+  },
 ];
 
 export async function fetchMatchStatistics(matchId, context) {
