@@ -1,0 +1,661 @@
+{
+  "full": [
+    {
+      "matchId": 14596322,
+      "timestamp": 1758884400,
+      "date": "2025-09-26",
+      "savedAt": "2025-09-27T15:47:57.427Z",
+      "homeTeamId": 1123897,
+      "homeTeamName": "FC Ordabasy U19",
+      "awayTeamId": 491481,
+      "awayTeamName": "FC Dinamo Minsk U19",
+      "matchDetails": {
+        "statistics": [
+          {
+            "period": "ALL",
+            "groups": [
+              {
+                "groupName": "Match overview",
+                "statisticsItems": [
+                  {
+                    "name": "Yellow cards",
+                    "home": "4",
+                    "away": "1",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 4,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "yellowCards"
+                  },
+                  {
+                    "name": "Red cards",
+                    "home": "0",
+                    "away": "0",
+                    "compareCode": 3,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 0,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "redCards"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "incidents": {
+        "incidents": [
+          {
+            "text": "FT",
+            "homeScore": 1,
+            "awayScore": 1,
+            "isLive": false,
+            "time": 90,
+            "addedTime": 999,
+            "timeSeconds": 5400,
+            "reversedPeriodTime": 1,
+            "reversedPeriodTimeSeconds": 0,
+            "periodTimeSeconds": 2700,
+            "incidentType": "period"
+          },
+          {
+            "player": {
+              "name": "Anuar Abdashim",
+              "firstName": "Anuar Abdashim",
+              "slug": "anuar-abdashim",
+              "shortName": "A. Abdashim",
+              "position": "M",
+              "jerseyNumber": "4",
+              "height": 183,
+              "userCount": 0,
+              "id": 1584925,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1168214400
+            },
+            "playerName": "Anuar Abdashim",
+            "reason": "Foul",
+            "rescinded": false,
+            "id": 123956593,
+            "time": 90,
+            "isHome": true,
+            "incidentClass": "yellow",
+            "reversedPeriodTime": 1,
+            "incidentType": "card"
+          },
+          {
+            "playerIn": {
+              "name": "Gleb Drozd",
+              "firstName": "Gleb Drozd",
+              "slug": "gleb-drozd",
+              "shortName": "G. Drozd",
+              "jerseyNumber": "18",
+              "userCount": 0,
+              "id": 1938934,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1184457600
+            },
+            "playerOut": {
+              "name": "Dmitriy Degtyarenko",
+              "firstName": "Dmitriy Degtyarenko",
+              "slug": "dmitriy-degtyarenko",
+              "shortName": "D. Degtyarenko",
+              "position": "M",
+              "jerseyNumber": "19",
+              "userCount": 2,
+              "id": 1957698,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1208995200,
+              "proposedMarketValueRaw": {
+                "value": 49000,
+                "currency": "EUR"
+              }
+            },
+            "id": 124609636,
+            "time": 85,
+            "injury": false,
+            "isHome": false,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 6,
+            "incidentType": "substitution"
+          },
+          {
+            "playerIn": {
+              "name": "Nikita Titov",
+              "slug": "nikita-titov",
+              "shortName": "N. Titov",
+              "position": "M",
+              "jerseyNumber": "7",
+              "userCount": 0,
+              "id": 2208701,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1199318400
+            },
+            "playerOut": {
+              "name": "Artur Zablotskiy",
+              "firstName": "Artur Zablotskiy",
+              "slug": "artur-zablotskiy",
+              "shortName": "A. Zablotskiy",
+              "position": "M",
+              "jerseyNumber": "25",
+              "userCount": 2,
+              "id": 1957673,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1207180800,
+              "proposedMarketValueRaw": {
+                "value": 47000,
+                "currency": "EUR"
+              }
+            },
+            "id": 124609633,
+            "time": 85,
+            "injury": false,
+            "isHome": false,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 6,
+            "incidentType": "substitution"
+          },
+          {
+            "playerIn": {
+              "name": "Talant Kuanysh",
+              "firstName": "Talant Kuanysh",
+              "slug": "talant-kuanysh",
+              "shortName": "T. Kuanysh",
+              "position": "D",
+              "jerseyNumber": "15",
+              "height": 179,
+              "userCount": 1,
+              "id": 2283061,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1226361600
+            },
+            "playerOut": {
+              "name": "Zhanali Yesenaliev",
+              "firstName": "Zhanali Yesenaliev",
+              "slug": "zhanali-yesenaliev",
+              "shortName": "Z. Yesenaliev",
+              "position": "F",
+              "jerseyNumber": "12",
+              "userCount": 1,
+              "id": 2283064,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1180483200
+            },
+            "id": 124609629,
+            "time": 80,
+            "injury": false,
+            "isHome": true,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 11,
+            "incidentType": "substitution"
+          },
+          {
+            "playerIn": {
+              "name": "Erdauit Ermekuly",
+              "firstName": "Erdauit Ermekuly",
+              "slug": "erdauit-ermekuly",
+              "shortName": "E. Ermekuly",
+              "position": "D",
+              "jerseyNumber": "13",
+              "height": 172,
+              "userCount": 1,
+              "id": 2283028,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1170201600
+            },
+            "playerOut": {
+              "name": "Zhasulan Amir",
+              "slug": "zhasulan-amir",
+              "shortName": "Z. Amir",
+              "position": "M",
+              "jerseyNumber": "3",
+              "height": 167,
+              "userCount": 9,
+              "id": 2058613,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1167091200,
+              "proposedMarketValueRaw": {
+                "value": 24000,
+                "currency": "EUR"
+              }
+            },
+            "id": 124609628,
+            "time": 80,
+            "injury": false,
+            "isHome": true,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 11,
+            "incidentType": "substitution"
+          },
+          {
+            "homeScore": 1,
+            "awayScore": 1,
+            "player": {
+              "name": "Maxim Gamayunov",
+              "firstName": "Maxim Gamayunov",
+              "slug": "maxim-gamayunov",
+              "shortName": "M. Gamayunov",
+              "position": "F",
+              "jerseyNumber": "19",
+              "height": 182,
+              "userCount": 1,
+              "id": 2283038,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1188000000
+            },
+            "assist1": {
+              "name": "Aben Bakdiar",
+              "firstName": "Aben Bakdiar",
+              "slug": "aben-bakdiar",
+              "shortName": "A. Bakdiar",
+              "position": "F",
+              "jerseyNumber": "8",
+              "userCount": 1,
+              "id": 2283023,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1187827200
+            },
+            "footballPassingNetworkAction": [],
+            "id": 323255105,
+            "time": 79,
+            "isHome": true,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 12,
+            "incidentType": "goal"
+          },
+          {
+            "from": "penalty",
+            "homeScore": 0,
+            "awayScore": 1,
+            "player": {
+              "name": "Egor Molchan",
+              "firstName": "Egor Molchan",
+              "slug": "egor-molchan",
+              "shortName": "E. Molchan",
+              "position": "M",
+              "jerseyNumber": "10",
+              "userCount": 5,
+              "id": 1830844,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1218585600
+            },
+            "footballPassingNetworkAction": [],
+            "id": 323254934,
+            "time": 78,
+            "isHome": false,
+            "incidentClass": "penalty",
+            "reversedPeriodTime": 13,
+            "incidentType": "goal"
+          },
+          {
+            "playerIn": {
+              "name": "Dinmukhamed Makhmudov",
+              "firstName": "Dinmukhamed Makhmudov",
+              "slug": "dinmukhamed-makhmudov",
+              "shortName": "D. Makhmudov",
+              "position": "M",
+              "jerseyNumber": "20",
+              "userCount": 0,
+              "id": 2073921,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1196380800
+            },
+            "playerOut": {
+              "name": "Bagdaulet Nuraly",
+              "firstName": "Bagdaulet Nuraly",
+              "slug": "bagdaulet-nuraly",
+              "shortName": "B. Nuraly",
+              "position": "F",
+              "jerseyNumber": "9",
+              "height": 174,
+              "userCount": 14,
+              "id": 1584930,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1170720000,
+              "proposedMarketValueRaw": {
+                "value": 55000,
+                "currency": "EUR"
+              }
+            },
+            "id": 124609580,
+            "time": 70,
+            "injury": false,
+            "isHome": true,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 21,
+            "incidentType": "substitution"
+          },
+          {
+            "playerIn": {
+              "name": "Vladislav Kibak",
+              "firstName": "Vladislav Kibak",
+              "slug": "vladislav-kibak",
+              "shortName": "V. Kibak",
+              "position": "D",
+              "jerseyNumber": "5",
+              "userCount": 0,
+              "id": 1584982,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1188950400,
+              "proposedMarketValueRaw": {
+                "value": 52000,
+                "currency": "EUR"
+              }
+            },
+            "playerOut": {
+              "name": "Artem Antipov",
+              "slug": "artem-antipov",
+              "shortName": "A. Antipov",
+              "position": "M",
+              "jerseyNumber": "20",
+              "userCount": 1,
+              "id": 2208706,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1187136000
+            },
+            "id": 124609578,
+            "time": 64,
+            "injury": false,
+            "isHome": false,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 27,
+            "incidentType": "substitution"
+          },
+          {
+            "playerIn": {
+              "name": "Artem Voskoboynikov",
+              "firstName": "",
+              "lastName": "",
+              "slug": "artem-voskoboynikov",
+              "shortName": "A. Voskoboynikov",
+              "position": "F",
+              "jerseyNumber": "9",
+              "height": 190,
+              "userCount": 2,
+              "id": 1479464,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1158192000,
+              "proposedMarketValueRaw": {
+                "value": 69000,
+                "currency": "EUR"
+              }
+            },
+            "playerOut": {
+              "name": "Andrei Lutskovich",
+              "slug": "andrei-lutskovich",
+              "shortName": "A. Lutskovich",
+              "position": "F",
+              "jerseyNumber": "11",
+              "userCount": 7,
+              "id": 1939634,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1203811200,
+              "proposedMarketValueRaw": {
+                "value": 95000,
+                "currency": "EUR"
+              }
+            },
+            "id": 124609567,
+            "time": 60,
+            "injury": false,
+            "isHome": false,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 31,
+            "incidentType": "substitution"
+          },
+          {
+            "player": {
+              "name": "Zhasulan Amir",
+              "slug": "zhasulan-amir",
+              "shortName": "Z. Amir",
+              "position": "M",
+              "jerseyNumber": "3",
+              "height": 167,
+              "userCount": 9,
+              "id": 2058613,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1167091200,
+              "proposedMarketValueRaw": {
+                "value": 24000,
+                "currency": "EUR"
+              }
+            },
+            "playerName": "Zhasulan Amir",
+            "reason": "Foul",
+            "rescinded": false,
+            "id": 123956485,
+            "time": 57,
+            "isHome": true,
+            "incidentClass": "yellow",
+            "reversedPeriodTime": 34,
+            "incidentType": "card"
+          },
+          {
+            "playerIn": {
+              "name": "Maxim Gamayunov",
+              "firstName": "Maxim Gamayunov",
+              "slug": "maxim-gamayunov",
+              "shortName": "M. Gamayunov",
+              "position": "F",
+              "jerseyNumber": "19",
+              "height": 182,
+              "userCount": 1,
+              "id": 2283038,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1188000000
+            },
+            "playerOut": {
+              "name": "Zhakhongir Ilashov",
+              "firstName": "Zhakhongir Ilashov",
+              "slug": "zhakhongir-ilashov",
+              "shortName": "Z. Ilashov",
+              "position": "M",
+              "jerseyNumber": "17",
+              "height": 176,
+              "userCount": 1,
+              "id": 2283063,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1174348800
+            },
+            "id": 124609566,
+            "time": 55,
+            "injury": false,
+            "isHome": true,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 36,
+            "incidentType": "substitution"
+          },
+          {
+            "player": {
+              "name": "Aben Bakdiar",
+              "firstName": "Aben Bakdiar",
+              "slug": "aben-bakdiar",
+              "shortName": "A. Bakdiar",
+              "position": "F",
+              "jerseyNumber": "8",
+              "userCount": 1,
+              "id": 2283023,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1187827200
+            },
+            "playerName": "Aben Bakdiar",
+            "reason": "Foul",
+            "rescinded": false,
+            "id": 123956481,
+            "time": 54,
+            "isHome": true,
+            "incidentClass": "yellow",
+            "reversedPeriodTime": 37,
+            "incidentType": "card"
+          },
+          {
+            "player": {
+              "name": "Vladislav Beynya",
+              "firstName": "Vladislav Beynya",
+              "slug": "vladislav-beynya",
+              "shortName": "V. Beynya",
+              "position": "D",
+              "jerseyNumber": "13",
+              "userCount": 0,
+              "id": 1938945,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1161043200,
+              "proposedMarketValueRaw": {
+                "value": 26000,
+                "currency": "EUR"
+              }
+            },
+            "playerName": "Vladislav Beynya",
+            "reason": "Foul",
+            "rescinded": false,
+            "id": 123956480,
+            "time": 52,
+            "isHome": false,
+            "incidentClass": "yellow",
+            "reversedPeriodTime": 39,
+            "incidentType": "card"
+          },
+          {
+            "playerIn": {
+              "name": "Ayan Rakhimbek",
+              "firstName": "Ayan",
+              "lastName": "Rakhimbek",
+              "slug": "ayan-rakhimbek",
+              "shortName": "A. Rakhimbek",
+              "jerseyNumber": "16",
+              "userCount": 0,
+              "id": 2235831,
+              "marketValueCurrency": "EUR"
+            },
+            "playerOut": {
+              "name": "Ramazan Serdaly",
+              "firstName": "Ramazan Serdaly",
+              "slug": "ramazan-serdaly",
+              "shortName": "R. Serdaly",
+              "position": "D",
+              "jerseyNumber": "2",
+              "height": 180,
+              "userCount": 1,
+              "id": 2283049,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1191888000
+            },
+            "id": 124609565,
+            "time": 46,
+            "injury": false,
+            "isHome": true,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 45,
+            "incidentType": "substitution"
+          },
+          {
+            "playerIn": {
+              "name": "Egor Molchan",
+              "firstName": "Egor Molchan",
+              "slug": "egor-molchan",
+              "shortName": "E. Molchan",
+              "position": "M",
+              "jerseyNumber": "10",
+              "userCount": 5,
+              "id": 1830844,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1218585600
+            },
+            "playerOut": {
+              "name": "Kirill Adamovich",
+              "firstName": "Kirill Adamovich",
+              "slug": "kirill-adamovich",
+              "shortName": "K. Adamovich",
+              "position": "M",
+              "jerseyNumber": "6",
+              "userCount": 0,
+              "id": 1938937,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1139961600,
+              "proposedMarketValueRaw": {
+                "value": 46000,
+                "currency": "EUR"
+              }
+            },
+            "id": 124609564,
+            "time": 46,
+            "injury": false,
+            "isHome": false,
+            "incidentClass": "regular",
+            "reversedPeriodTime": 45,
+            "incidentType": "substitution"
+          },
+          {
+            "text": "HT",
+            "homeScore": 0,
+            "awayScore": 0,
+            "isLive": false,
+            "time": 45,
+            "addedTime": 999,
+            "timeSeconds": 2700,
+            "reversedPeriodTime": 1,
+            "reversedPeriodTimeSeconds": 0,
+            "periodTimeSeconds": 2700,
+            "incidentType": "period"
+          },
+          {
+            "player": {
+              "name": "Ramazan Serdaly",
+              "firstName": "Ramazan Serdaly",
+              "slug": "ramazan-serdaly",
+              "shortName": "R. Serdaly",
+              "position": "D",
+              "jerseyNumber": "2",
+              "height": 180,
+              "userCount": 1,
+              "id": 2283049,
+              "marketValueCurrency": "EUR",
+              "dateOfBirthTimestamp": 1191888000
+            },
+            "playerName": "Ramazan Serdaly",
+            "reason": "Foul",
+            "rescinded": false,
+            "id": 123956417,
+            "time": 23,
+            "isHome": true,
+            "incidentClass": "yellow",
+            "reversedPeriodTime": 23,
+            "incidentType": "card"
+          }
+        ],
+        "home": {
+          "goalkeeperColor": {
+            "primary": "000000",
+            "number": "222226",
+            "outline": "808080",
+            "fancyNumber": "222226"
+          },
+          "playerColor": {
+            "primary": "000000",
+            "number": "222226",
+            "outline": "808080",
+            "fancyNumber": "222226"
+          }
+        },
+        "away": {
+          "goalkeeperColor": {
+            "primary": "fdf408",
+            "number": "222226",
+            "outline": "fdf408",
+            "fancyNumber": "222226"
+          },
+          "playerColor": {
+            "primary": "0008ff",
+            "number": "ffffff",
+            "outline": "0008ff",
+            "fancyNumber": "ffffff"
+          }
+        }
+      },
+      "shotmap": null
+    }
+  ]
+}
