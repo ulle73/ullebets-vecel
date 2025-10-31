@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import LeagueTables from "@/components/LeagueTables";
 import TeamCompare from "@/components/TeamCompare";
-import DayInsights from "@/components/DayInsights-copy";
+import DayInsights from "@/components/DayInsights-copy-v2";
 import Lineups from "@/components/Lineups";
 import BacktestPage from "@/components/BacktestPage";
 import ClosingOddsCard from "@/components/ClosingOddsCard";
