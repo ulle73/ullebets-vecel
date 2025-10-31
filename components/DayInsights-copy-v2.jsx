@@ -136,7 +136,28 @@ function badgeForAvgPair(avgPair, leagueMax, mode) {
 
 /* --------------------------------- UI --------------------------------- */
 
-function ScoreChip({ score, mode }) {
+function ScoreChip({ score, format, mode }) {
+  if (!Number.isFinite(score)) {
+    return <span className="rounded px-3 py-1 text-xs font-semibold text-gray-400">—</span>;
+  }
+
+  if (format === "ratio") {
+    const base = "rounded px-3 py-1 text-xs font-bold";
+    let tone = "bg-gray-100 text-gray-700";
+    if (mode === "over") {
+      if (score >= 1.3) tone = "bg-emerald-200 text-emerald-900";
+      else if (score >= 1.15) tone = "bg-emerald-100 text-emerald-800";
+      else if (score >= 1.05) tone = "bg-emerald-50 text-emerald-700";
+      else if (score <= 0.9) tone = "bg-amber-100 text-amber-800";
+    } else if (mode === "under") {
+      if (score <= 0.7) tone = "bg-purple-200 text-purple-900";
+      else if (score <= 0.85) tone = "bg-purple-100 text-purple-800";
+      else if (score <= 0.95) tone = "bg-purple-50 text-purple-700";
+      else if (score >= 1.1) tone = "bg-amber-100 text-amber-800";
+    }
+    return <span className={`${base} ${tone}`}>{`${score.toFixed(2)}×`}</span>;
+  }
+
   const base = "rounded px-3 py-1 text-xs font-bold";
   let tone = "bg-gray-100 text-gray-700";
   if (score >= 85) {
@@ -205,14 +226,24 @@ function RowAvg({ r, mode }) {
   const baselineForecast = forecast && Number.isFinite(forecast.baseline) ? forecast.baseline : null;
   const styleForecast = forecast && Number.isFinite(forecast.styleModifier) ? forecast.styleModifier : null;
   const adjustedForecast = forecast && Number.isFinite(forecast.adjusted) ? forecast.adjusted : null;
+  const normalizedForecast = forecast && Number.isFinite(forecast.normalized) ? forecast.normalized : null;
   const forecastSampleSize = forecast?.driverSampleSize ?? 0;
   const forecastParts = [];
   if (baselineForecast != null) forecastParts.push(`Grund ${baselineForecast.toFixed(2)}`);
   if (styleForecast != null) forecastParts.push(`Stil ${styleForecast.toFixed(2)}`);
   if (adjustedForecast != null) forecastParts.push(`Justerad ${adjustedForecast.toFixed(2)}`);
+  if (normalizedForecast != null) forecastParts.push(`Liga ${Math.round(normalizedForecast * 100)}%`);
 
-  const borderHighlight =
-    r.score > 95 ? "border-2 border-emerald-400" : "border border-gray-200";
+  let borderHighlight = "border border-gray-200";
+  if (r.scoreFormat === "ratio") {
+    if (mode === "over" && r.score >= 1.2) {
+      borderHighlight = "border-2 border-emerald-400";
+    } else if (mode === "under" && r.score <= 0.8) {
+      borderHighlight = "border-2 border-purple-400";
+    }
+  } else if (r.score > 95) {
+    borderHighlight = "border-2 border-emerald-400";
+  }
 
   return (
     <li
@@ -275,7 +306,7 @@ function RowAvg({ r, mode }) {
       </div>
 
       <div className="ml-3 shrink-0 text-right">
-        <ScoreChip score={r.score} mode={mode} />
+        <ScoreChip score={r.score} format={r.scoreFormat} mode={mode} />
       </div>
     </li>
   );
@@ -392,6 +423,9 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
                 const baselineValue = forecastBundle?.baseline?.perScope?.[bundleScope] ?? null;
                 const modifierValue = forecastBundle?.styleModifier?.perScope?.[bundleScope] ?? null;
                 const adjustedValue = forecastBundle?.adjusted?.[bundleScope] ?? null;
+                const leagueBaselineValue =
+                  forecastBundle?.baseline?.league?.perScope?.[bundleScope] ?? null;
+                const normalizedValue = forecastBundle?.normalized?.[bundleScope] ?? null;
                 const sampleSize =
                   forecastBundle?.styleModifier?.sampleSizes?.[bundleScope] ?? 0;
                 return [
@@ -400,6 +434,8 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
                     baseline: baselineValue,
                     styleModifier: Number.isFinite(modifierValue) ? modifierValue : null,
                     adjusted: adjustedValue,
+                    leagueBaseline: leagueBaselineValue,
+                    normalized: Number.isFinite(normalizedValue) ? normalizedValue : null,
                     driverSampleSize: sampleSize,
                   },
                 ];
@@ -433,19 +469,43 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
             const pushRows = (
               scope,
               basisValue,
-            basisLabel,
-            scopeLabel,
-            primaryPair,
-            scoreBasisOverride = null,
-          ) => {
-            const scoreBasis =
-              scope === "total"
-                ? basisValue
-                : scoreBasisOverride ?? adjustSinglePairForComparison(basisValue, leagueMax);
-            const overScore = normalizePairScore(scoreBasis, leagueMax, "over");
-            const underScore = normalizePairScore(scoreBasis, leagueMax, "under");
-            const overBadge = badgeForAvgPair(scoreBasis, leagueMax, "over");
-            const underBadge = badgeForAvgPair(scoreBasis, leagueMax, "under");
+              basisLabel,
+              scopeLabel,
+              primaryPair,
+              scoreBasisOverride = null,
+            ) => {
+              const forecastData = forecastPerScope?.[scope] ?? null;
+              const normalizedForecast =
+                forecastData && Number.isFinite(forecastData.normalized)
+                  ? forecastData.normalized
+                  : null;
+
+              let scoreFormat = normalizedForecast != null ? "ratio" : "normalized";
+              let scoreBasis = null;
+              let overScore;
+              let underScore;
+              let overSortKey;
+              let underSortKey;
+              let overBadge = null;
+              let underBadge = null;
+
+              if (normalizedForecast != null) {
+                overScore = normalizedForecast;
+                underScore = normalizedForecast;
+                overSortKey = normalizedForecast;
+                underSortKey = -normalizedForecast;
+              } else {
+                scoreBasis =
+                  scope === "total"
+                    ? basisValue
+                    : scoreBasisOverride ?? adjustSinglePairForComparison(basisValue, leagueMax);
+                overScore = normalizePairScore(scoreBasis, leagueMax, "over");
+                underScore = normalizePairScore(scoreBasis, leagueMax, "under");
+                overSortKey = overScore;
+                underSortKey = underScore;
+                overBadge = badgeForAvgPair(scoreBasis, leagueMax, "over");
+                underBadge = badgeForAvgPair(scoreBasis, leagueMax, "under");
+              }
 
               const shared = {
                 ...rowCommon,
@@ -455,11 +515,12 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
                 scoreBasis,
                 basisLabel,
                 primaryPair,
-                forecast: forecastPerScope?.[scope] ?? null,
+                forecast: forecastData,
+                scoreFormat,
               };
 
-              accOver.push({ ...shared, score: overScore, badge: overBadge });
-              accUnder.push({ ...shared, score: underScore, badge: underBadge });
+              accOver.push({ ...shared, score: overScore, sortKey: overSortKey, badge: overBadge });
+              accUnder.push({ ...shared, score: underScore, sortKey: underSortKey, badge: underBadge });
             };
 
             pushRows("total", avgPair, "Medelpar", "Totalt", "both");
@@ -474,21 +535,28 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
       (r) =>
         !onlyTopBadges ||
         (r.badge && (r.badge.tone === "perfect" || r.badge.tone === "almost"));
-    const byScope = (r) => scopeFilter === "all" || r.scope === scopeFilter;
-    const byPeriod = (r) => periodFilter === "any" || r.period === periodFilter;
+      const byScope = (r) => scopeFilter === "all" || r.scope === scopeFilter;
+      const byPeriod = (r) => periodFilter === "any" || r.period === periodFilter;
 
-    const over = accOver
-      .filter((r) => byLeague(r) && byBadge(r) && byScope(r) && byPeriod(r))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 30);
-    const under = accUnder
-      .filter((r) => byLeague(r) && byBadge(r) && byScope(r) && byPeriod(r))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 30);
+      const toSortKey = (row) =>
+        Number.isFinite(row?.sortKey)
+          ? row.sortKey
+          : Number.isFinite(row?.score)
+            ? row.score
+            : -Infinity;
 
-    return { overRows: over, underRows: under };
-  }, [
-    pairs,
+      const over = accOver
+        .filter((r) => byLeague(r) && byBadge(r) && byScope(r) && byPeriod(r))
+        .sort((a, b) => toSortKey(b) - toSortKey(a))
+        .slice(0, 30);
+      const under = accUnder
+        .filter((r) => byLeague(r) && byBadge(r) && byScope(r) && byPeriod(r))
+        .sort((a, b) => toSortKey(b) - toSortKey(a))
+        .slice(0, 30);
+
+      return { overRows: over, underRows: under };
+    }, [
+      pairs,
     leagueSizeMap,
     leagueFilter,
     onlyTopBadges,

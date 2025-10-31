@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import LeagueTables from "@/components/LeagueTables";
 import TeamCompare from "@/components/TeamCompare";
+import DayInsightsLegacy from "@/components/DayInsights-copy";
 import DayInsights from "@/components/DayInsights-copy-v2";
 import Lineups from "@/components/Lineups";
 import BacktestPage from "@/components/BacktestPage";
@@ -416,11 +417,20 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
                 error={matchError}
               />
             ) : (
-              <DayInsights
-                date={date}
-                items={items}
-                profilesVersion={teamProfilesVersion}
-              />
+              <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-2">
+                {/* Kommentera ut denna rad om du vill gömma originalversionen */}
+                <DayInsightsLegacy
+                  date={date}
+                  items={items}
+                  profilesVersion={teamProfilesVersion}
+                />
+                {/* Kommentera ut denna rad om du vill gömma nya prognosversionen */}
+                <DayInsights
+                  date={date}
+                  items={items}
+                  profilesVersion={teamProfilesVersion}
+                />
+              </div>
             )}
 
             {showDetails ? (
