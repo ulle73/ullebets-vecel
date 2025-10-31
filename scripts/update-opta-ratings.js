@@ -5,6 +5,7 @@ import fs from "fs/promises";
 import path from "path";
 import puppeteer from "puppeteer";
 import { fileURLToPath } from "url";
+import { NAME_OVERRIDES } from "./update-opta-id.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +15,7 @@ const JSON_PATHS = [
 ];
 
 const RANKINGS_URL = "https://dataviz.theanalyst.com/opta-power-rankings/pr-reference.json";
+const norm = (s) => (s ?? "").toString().trim().toLowerCase();
 
 async function fetchOptaArray() {
   const browser = await puppeteer.launch({
@@ -33,9 +35,16 @@ async function main() {
   // 1) Hämta Opta-listan och indexera via optaId
   const optaArray = await fetchOptaArray();
   const byId = new Map();
+  const byName = new Map();
   for (const r of optaArray) {
     const id = Number(r?.optaId);
     if (Number.isFinite(id)) byId.set(id, r);
+    const candidates = [r?.contestantName, r?.contestantShortName, r?.contestantClubName];
+    for (const candidate of candidates) {
+      const key = norm(candidate);
+      if (!key) continue;
+      if (!byName.has(key)) byName.set(key, r);
+    }
   }
 
   // 2) Läs ligor från den första sökvägen
@@ -48,13 +57,13 @@ async function main() {
   for (const league of Object.values(leagues)) {
     for (const team of league.teams) {
       const id = Number(team?.optaId);
-      if (!Number.isFinite(id)) {
-        team.optaRank = null;
-        team.optaRating = null;
-        missing++;
-        continue;
+      let rec = Number.isFinite(id) ? byId.get(id) : null;
+      if (!rec) {
+        const nameKey = norm(team?.name);
+        const overrideRaw = NAME_OVERRIDES[nameKey] ?? NAME_OVERRIDES[team?.name] ?? null;
+        const lookupKey = overrideRaw ? norm(overrideRaw) : nameKey;
+        if (lookupKey) rec = byName.get(lookupKey) ?? null;
       }
-      const rec = byId.get(id);
       if (!rec) {
         team.optaRank = null;
         team.optaRating = null;

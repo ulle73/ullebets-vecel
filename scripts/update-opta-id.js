@@ -2,6 +2,7 @@
 import fs from "fs/promises";
 import path from "path";
 import puppeteer from "puppeteer";
+import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,6 +15,43 @@ const JSON_PATHS = [
 const RANKINGS_URL = "https://dataviz.theanalyst.com/opta-power-rankings/pr-reference.json";
 
 const norm = (s) => (s ?? "").toString().trim().toLowerCase();
+
+// Manuell mapping: teamnamn i vår fil -> exakt namn i Opta-datat.
+// Lägg till poster här för lag som inte matchar automatiskt.
+const NAME_OVERRIDES = {
+  // "vårt namn i json": "exakt namn i opta-data",
+  "1. FC Heidenheim": "Heidenheim",
+  "1. FC Köln": "Köln",
+  "1. FC Union Berlin": "Union Berlin",
+  "1. FSV Mainz 05": "Mainz 05",
+  Angers: "Angers SCO",
+  "AS Monaco": "Monaco",
+  "Atlético Madrid": "Atlético de Madrid",
+  "Auckland FC": "Auckland",
+  "Bayer 04 Leverkusen": "Bayer Leverkusen",
+  Bournemouth: "AFC Bournemouth",
+  "Celta Vigo": "Celta de Vigo",
+  "Deportivo Alavés": "Alavés",
+  "FC Augsburg": "Augsburg",
+  "FC Bayern München": "Bayern München",
+  "FC St. Pauli": "St. Pauli",
+  "Girona FC": "Girona",
+  "Levante UD": "Levante UD",
+  "Macarthur FC": "Macarthur FC",
+  "Olympique de Marseille": "Olympique de Marseille",
+  "RC Lens": "Lens",
+  "RC Strasbourg": "Strasbourg",
+  "Red Bull Bragantino": "Red Bull Bragantino",
+  "SC Freiburg": "SC Freiburg",
+  "Stade Brestois": "Brest",
+  "Stade Rennais": "Rennes",
+  "SV Werder Bremen": "SV Werder Bremen",
+  "Sydney FC": "Sydney FC",
+  "TSG Hoffenheim": "Hoffenheim",
+  "VfB Stuttgart": "Stuttgart",
+  "VfL Wolfsburg": "Wolfsburg",
+  Wolverhampton: "Wolverhampton Wanderers",
+};
 
 async function fetchOptaArray() {
   const browser = await puppeteer.launch({ headless: true });
@@ -31,10 +69,13 @@ async function main() {
   // Map: exact contestantName (norm) -> record
   const byExactName = new Map();
   for (const r of ratingData) {
-    const key = norm(r?.contestantName);
-    if (!key) continue;
-    // Om dublett av exakt namn → låt första stå kvar (vi vill hellre nolla än chansa)
-    if (!byExactName.has(key)) byExactName.set(key, r);
+    const candidates = [r?.contestantName, r?.contestantShortName, r?.contestantClubName];
+    for (const candidate of candidates) {
+      const key = norm(candidate);
+      if (!key) continue;
+      // Om dublett av exakt namn → låt första stå kvar (vi vill hellre nolla än chansa)
+      if (!byExactName.has(key)) byExactName.set(key, r);
+    }
   }
 
   // Läs ligor (från första pathen)
@@ -45,7 +86,9 @@ async function main() {
   for (const league of Object.values(leagues)) {
     for (const team of league.teams) {
       const key = norm(team.name);
-      const rec = byExactName.get(key);
+      const overrideRaw = NAME_OVERRIDES[key] ?? NAME_OVERRIDES[team.name] ?? null;
+      const overrideKey = overrideRaw ? norm(overrideRaw) : key;
+      const rec = byExactName.get(overrideKey);
       if (rec && Number.isFinite(+rec.optaId)) {
         team.optaId = +rec.optaId;
         matched++;
@@ -60,9 +103,28 @@ async function main() {
   await Promise.all(JSON_PATHS.map((p) => fs.writeFile(p, payload, "utf-8")));
 
   console.log(`✅ optaId seedad med EXAKT namnmatch: ${matched} träffar, övriga satta till null`);
+
+  await runUpdateRatings();
 }
 
-main().catch((err) => {
-  console.error("❌", err);
-  process.exit(1);
-});
+async function runUpdateRatings() {
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [path.join(__dirname, "./update-opta-ratings.js")], {
+      stdio: "inherit",
+    });
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`update-opta-ratings.js exited with code ${code}`));
+    });
+  });
+}
+
+export { NAME_OVERRIDES };
+
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  main().catch((err) => {
+    console.error("❌", err);
+    process.exit(1);
+  });
+}
