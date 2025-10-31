@@ -20,7 +20,14 @@ const norm = (s) => (s ?? "").toString().trim().toLowerCase();
 async function fetchOptaArray() {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--no-zygote",
+      "--single-process",
+      "--disable-gpu",
+    ],
   });
   const page = await browser.newPage();
   const raw = await page.evaluate((url) => fetch(url).then((r) => r.json()), RANKINGS_URL);

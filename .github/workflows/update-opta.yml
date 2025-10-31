@@ -11,12 +11,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Puppeteer system libraries (handle Ubuntu 24.04 t64)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+
+          # Try install standard packages
+          BASE_PKGS=(
+            libnss3
+            libxss1
+            libatk-bridge2.0-0
+            libgtk-3-0
+            libcups2
+            libx11-xcb1
+            libxcomposite1
+            libxdamage1
+            libxfixes3
+            libxrandr2
+            libpangocairo-1.0-0
+            xdg-utils
+          )
+          sudo apt-get install -y --no-install-recommends "${BASE_PKGS[@]}"
+
+          # Packages that may be renamed to *t64 on Ubuntu 24.04
+          # Try non-t64 first, then fall back to t64
+          sudo apt-get install -y --no-install-recommends libgbm1 || sudo apt-get install -y --no-install-recommends libgbm1t64
+          sudo apt-get install -y --no-install-recommends libasound2 || sudo apt-get install -y --no-install-recommends libasound2t64
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
+        
+      # Hotfix if axios is missing in lockfile/repo (keeps repo clean)
+      - name: Ensure axios is present
+        run: node -e "try{require('axios');process.exit(0)}catch(e){process.exit(1)}" || npm i --no-save axios@^1
 
       - name: Update Opta IDs and ratings
         run: node scripts/update-opta-id.js
