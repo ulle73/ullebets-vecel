@@ -8,57 +8,24 @@ const TEAM_STATS_ENDPOINT = "/api/backtest";
 const TEAM_MATCH_LIMIT = 5;
 
 async function requestTeamMatches(teamName, matchType) {
+  console.log(`[requestTeamMatches] Fetching for team: '${teamName}', type: '${matchType}'`);
   const res = await fetch(TEAM_STATS_ENDPOINT, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      action: "team-stats",
-      teamName,
-      matchType,
-    }),
+    body: JSON.stringify({ action: "team-stats", teamName, matchType }),
   });
 
+  console.log(`[requestTeamMatches] API response status for '${teamName}': ${res.status}`);
   const payload = await res.json().catch(() => ({}));
+  console.log(`[requestTeamMatches] API payload for '${teamName}':`, payload);
 
   if (!res.ok) {
-    const message = payload?.message || `Failed to fetch ${matchType} matches`;
+    const message = payload?.message || `Failed to fetch matches for ${teamName}`;
+    console.error(`[requestTeamMatches] Error for '${teamName}':`, message);
     throw new Error(message);
   }
 
   return Array.isArray(payload?.matches) ? payload.matches : [];
-}
-
-async function fetchTeamOddsHistory([, teamName]) {
-  const results = await Promise.allSettled([
-    requestTeamMatches(teamName, "home"),
-    requestTeamMatches(teamName, "away"),
-  ]);
-
-  const matches = [];
-  const errors = [];
-
-  results.forEach((result, index) => {
-    if (result.status === "fulfilled") {
-      const perspective = index === 0 ? "home" : "away";
-      matches.push(
-        ...result.value.map((match) => ({
-          match,
-          perspective,
-        }))
-      );
-    } else if (result.status === "rejected") {
-      errors.push(result.reason);
-    }
-  });
-
-  if (!matches.length && errors.length) {
-    throw errors[0] instanceof Error ? errors[0] : new Error(String(errors[0]));
-  }
-
-  return {
-    matches,
-    partialErrors: errors,
-  };
 }
 
 function toTimestamp(match) {
@@ -115,26 +82,52 @@ function resolveOpponent(match, perspective) {
   );
 }
 
-function normalizeMatchEntry(match, perspective) {
-  const timestamp = toTimestamp(match);
-  const closingInfo = extractClosingOdds(match) || null;
-  const closing = closingInfo?.values || null;
-  const winner = closingInfo?.winner || null;
-  return {
-    id:
-      match?.matchId ||
-      match?.id ||
-      match?.gameId ||
-      match?.eventId ||
-      `${match?.date || ""}-${match?.homeTeamName || ""}-${match?.awayTeamName || ""}`,
-    timestamp: timestamp ?? 0,
-    date: resolveMatchDate(match),
-    opponent: resolveOpponent(match, perspective),
-    venue: perspective,
-    closingOdds: closing,
-    closingWinner: winner,
-  };
+function resolvePerspective(match, teamName) {
+  const homeTeamCandidates = [match?.homeTeamName, match?.homeTeam?.name].filter(Boolean);
+  const normalizedTeamName = (teamName || "").toLowerCase();
+
+  const isHome = homeTeamCandidates.some(
+    (candidate) => (candidate || "").toLowerCase() === normalizedTeamName
+  );
+  if (isHome) {
+    return "home";
+  }
+  return "away";
 }
+
+function normalizeMatchEntry(match, perspective) {
+   // console.log(`[normalizeMatchEntry] Normalizing match for perspective '${perspective}':`, match);
+   const timestamp = toTimestamp(match);
+   const closingInfo = extractClosingOdds(match) || null;
+   const closing = closingInfo?.values || null;
+   const winner = closingInfo?.winner || null;
+
+   // Debug logging for Genoa
+   if (match?.homeTeamName?.toLowerCase().includes('genoa') || match?.awayTeamName?.toLowerCase().includes('genoa')) {
+     console.log(`[normalizeMatchEntry] Genoa match found:`, {
+       homeTeam: match?.homeTeamName,
+       awayTeam: match?.awayTeamName,
+       hasClosingOdds: !!closing,
+       closingOdds: closing,
+       matchStructure: Object.keys(match).slice(0, 10)
+     });
+   }
+
+   return {
+     id:
+       match?.matchId ||
+       match?.id ||
+       match?.gameId ||
+       match?.eventId ||
+       `${match?.date || ""}-${match?.homeTeamName || ""}-${match?.awayTeamName || ""}`,
+     timestamp: timestamp ?? 0,
+     date: resolveMatchDate(match),
+     opponent: resolveOpponent(match, perspective),
+     venue: perspective,
+     closingOdds: closing,
+     closingWinner: winner,
+   };
+ }
 
 function formatOddsValue(value) {
   if (typeof value === "number") {
@@ -144,28 +137,50 @@ function formatOddsValue(value) {
 }
 
 function useTeamOdds(teamName) {
-  return useSWR(teamName ? ["team-odds-history", teamName] : null, fetchTeamOddsHistory, {
+  console.log(`[useTeamOdds] SWR hook initialized for team: '${teamName}'`);
+  return useSWR(teamName ? ["team-odds-history", teamName] : null, ([, team]) => requestTeamMatches(team, "all"), {
     revalidateOnFocus: false,
     revalidateIfStale: false,
     revalidateOnReconnect: false,
     dedupingInterval: 5 * 60 * 1000,
+    onSuccess: (data) => {
+      console.log(`[useTeamOdds] API success for '${teamName}': ${data?.length || 0} matches`);
+      if (data && data.length > 0) {
+        const matchesWithOdds = data.filter(match => extractClosingOdds(match));
+        console.log(`[useTeamOdds] '${teamName}' matches with closing odds: ${matchesWithOdds.length}/${data.length}`);
+        if (matchesWithOdds.length === 0) {
+          console.log(`[useTeamOdds] Sample match structure for '${teamName}':`, JSON.stringify(data[0], null, 2).slice(0, 1000));
+        }
+      }
+    },
+    onError: (error) => {
+      console.error(`[useTeamOdds] API error for '${teamName}':`, error);
+    }
   });
 }
 
 function TeamOddsTable({ teamName, data, loading, error }) {
+  console.log(`[TeamOddsTable] Rendering for team: '${teamName}'`, { data, loading, error });
+
   const items = useMemo(() => {
-    if (!data?.matches?.length) {
+    if (!Array.isArray(data) || !data.length) {
+      console.log(`[TeamOddsTable] No data for '${teamName}', returning empty items.`);
       return [];
     }
 
-    const normalized = data.matches
-      .map(({ match, perspective }) => normalizeMatchEntry(match, perspective))
-      .sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0));
-
+    // Felsäker sortering: placera matcher utan giltigt timestamp sist.
+    const normalized = data
+      .map((match) => normalizeMatchEntry(match, resolvePerspective(match, teamName)))
+      .sort((a, b) => {
+        const tsA = a.timestamp || 0;
+        const tsB = b.timestamp || 0;
+        if (tsA === 0 && tsB > 0) return 1; // a (utan ts) ska komma efter b
+        if (tsB === 0 && tsA > 0) return -1; // b (utan ts) ska komma efter a
+        return tsB - tsA; // Sortera normalt efter timestamp
+      });
+    console.log(`[TeamOddsTable] Normalized and sorted data for '${teamName}':`, normalized);
     return normalized.slice(0, TEAM_MATCH_LIMIT);
-  }, [data]);
-
-  const partialError = data?.partialErrors?.length ? data.partialErrors[0] : null;
+  }, [data, teamName]);
 
   let content = null;
 
@@ -268,9 +283,6 @@ function TeamOddsTable({ teamName, data, loading, error }) {
         <p className="text-[8.25px] font-semibold uppercase tracking-wide text-gray-500">
           {teamName || "Ingen match"}
         </p>
-        {partialError ? (
-          <span className="text-[7.5px] text-amber-600">Delvis data</span>
-        ) : null}
       </div>
       {content}
     </div>
@@ -283,6 +295,8 @@ export default function TeamOddsHistory({
   showHeader = true,
   contentClassName = "",
 }) {
+  console.log("--- TeamOddsHistory Render ---");
+  console.log("Received match object:", match);
   const homeTeamName =
     match?.homeTeamName ||
     match?.homeTeam?.name ||
@@ -294,6 +308,7 @@ export default function TeamOddsHistory({
     match?.awayTeam?.teamName ||
     null;
 
+  console.log(`Requesting odds for HOME: '${homeTeamName}' and AWAY: '${awayTeamName}'`);
   const homeOdds = useTeamOdds(homeTeamName);
   const awayOdds = useTeamOdds(awayTeamName);
 

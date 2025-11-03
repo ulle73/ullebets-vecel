@@ -127,16 +127,22 @@ async function handleAutoUnibetOdds(body) {
 }
 
 async function handleTeamStats(body) {
-  const { teamName, matchType = "home" } = body || {};
+  const { teamName, matchType = "all" } = body || {};
   if (!teamName) {
     throw new Error("teamName krävs");
   }
+
+  if (matchType === "all") {
+    const [homeMatches, awayMatches] = await Promise.all([
+      fetchTeamMatches(teamName, "home"),
+      fetchTeamMatches(teamName, "away"),
+    ]);
+    return { matches: [...homeMatches, ...awayMatches] };
+  }
+
+  // Fallback för specifika anrop (home/away)
   const matches = await fetchTeamMatches(teamName, matchType);
-  return {
-    teamName,
-    matchType,
-    matches,
-  };
+  return { teamName, matchType, matches };
 }
 
 async function handleLeagues() {
