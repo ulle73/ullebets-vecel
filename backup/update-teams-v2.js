@@ -227,6 +227,9 @@ const rapidApiKeys = Array.from(
       "d71b975b3bmsh119f2182f5f36a2p132437jsnc623beefd032",
       "458c4dc749msh93ad163f4a8f4efp13ac33jsn776bb3a83b55",
       "87b25a4718msh550e88b539cccfep180203jsna7971b255886",
+      "0def1536ddmsheadeef2a10523eap1097aajsn83298b1288ff",
+      "ee993e7033mshc89bce6544129e6p105ed0jsn32fd059188ed",
+      "a2e0410905msh54d2e36ec6ced44p1e27b3jsnd966f1dce244",
     ].filter(Boolean)
   )
 );
@@ -909,6 +912,7 @@ async function browserFetch(page, endpoint) {
         return { ok: false, status: response.status };
       }
       const data = await response.json();
+      console.log("******", data)
       return { ok: true, data };
     } catch (error) {
       return { ok: false, error: error?.message || String(error) };

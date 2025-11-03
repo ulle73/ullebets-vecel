@@ -28,6 +28,31 @@ export async function GET(_req, contextPromise) {
   const odds = (f0.odds && typeof f0.odds === "object") ? f0.odds : null;
   const statistics = Array.isArray(f0.matchDetails?.statistics) ? f0.matchDetails.statistics : [];
 
+  const toScore = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : null;
+  };
+
+  const finalFromIncidents = (() => {
+    for (let i = incidents.length - 1; i >= 0; i -= 1) {
+      const entry = incidents[i];
+      if (!entry || typeof entry !== "object") continue;
+      const home =
+        toScore(entry.homeScore ?? entry?.score?.home ?? entry?.scoreHome ?? entry?.result?.home);
+      const away =
+        toScore(entry.awayScore ?? entry?.score?.away ?? entry?.scoreAway ?? entry?.result?.away);
+      if (home != null && away != null) {
+        return { home, away };
+      }
+    }
+    return null;
+  })();
+
+  const homeScore =
+    toScore(f0.homeScore) ?? (finalFromIncidents ? finalFromIncidents.home : null);
+  const awayScore =
+    toScore(f0.awayScore) ?? (finalFromIncidents ? finalFromIncidents.away : null);
+
   const res = {
     matchId: doc._id,
     timestamp: f0.timestamp ?? null,
@@ -39,6 +64,8 @@ export async function GET(_req, contextPromise) {
     shotmap,
     odds,
     statistics,
+    homeScore,
+    awayScore,
   };
 
   return new Response(JSON.stringify(res), {

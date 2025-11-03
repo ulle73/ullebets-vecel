@@ -117,7 +117,7 @@ export async function fetchScheduledMatches(date, context, options = {}) {
 
   const sofaResult = await fetchFromSofaScore({
     page,
-    endpoint: `tournaments/get-scheduled-events?categoryId=${effectiveCategoryId}&date=${date}`,
+    endpoint: `sport/football/scheduled-events/${date}`,
     transform: (data) => (Array.isArray(data?.events) ? data.events : []),
     allowEmpty: true,
     label: "scheduled-matches",
