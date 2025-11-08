@@ -1,3 +1,4 @@
+// app/GAReporter.js
 "use client";
 
 import { useEffect } from "react";
@@ -16,7 +17,7 @@ export default function GAReporter() {
       ? `${pathname}?${searchParams.toString()}`
       : pathname || "/";
 
-    // Trigga pageview på varje route-byte
+    // Skicka pageview vid varje route-byte
     window.gtag?.("config", GA_ID, { page_path });
   }, [pathname, searchParams]);
 

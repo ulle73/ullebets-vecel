@@ -35,6 +35,7 @@ import "./globals.css";
 import Providers from "./providers";
 import { ACTIVE_THEME } from "./theme-config";
 import Script from "next/script";
+import GAReporter from "./GAReporter";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
