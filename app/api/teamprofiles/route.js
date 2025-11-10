@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongo";
+import { createCache } from "@/lib/backtest/cache";
 import { isValidMatchType } from "@/lib/utils/teamprofiles";
+import {
+  buildTeamProfileKey,
+  TEAM_PROFILE_TTL_MS,
+} from "@/lib/utils/apiKeys";
 
 const DB_NAME = process.env.MONGODB_DB || "app";
 const COLLECTION = "teamprofiles";
@@ -13,6 +18,12 @@ const TAG = "[api/teamprofiles]";
 const CACHE_MAX_AGE_SECONDS = 300;
 const CACHE_STALE_REVALIDATE_SECONDS = 300;
 
+const CACHE_KEY_SYMBOL = Symbol.for("ullebets.teamprofiles.cache");
+const profileCache =
+  globalThis[CACHE_KEY_SYMBOL] ??
+  createCache({ ttlMs: TEAM_PROFILE_TTL_MS ?? 300_000 });
+globalThis[CACHE_KEY_SYMBOL] = profileCache;
+
 const MULTISPACE_REGEX = /\s+/g;
 const DIACRITICS_REGEX = /[\u0300-\u036f]/g;
 
@@ -21,6 +32,21 @@ const log = (...args) => {
 };
 const warn = (...args) => console.warn(TAG, ...args);
 const logError = (...args) => console.error(TAG, ...args);
+
+function buildResponseHeaders(savedAt) {
+  const headers = {
+    "cache-control": `public, max-age=0, s-maxage=${CACHE_MAX_AGE_SECONDS}, stale-while-revalidate=${CACHE_STALE_REVALIDATE_SECONDS}`,
+  };
+
+  if (savedAt) {
+    const savedAtDate = new Date(savedAt);
+    if (!Number.isNaN(savedAtDate.getTime())) {
+      headers["last-modified"] = savedAtDate.toUTCString();
+    }
+  }
+
+  return headers;
+}
 
 function parsePositiveInt(value) {
   const num = Number(value);
@@ -247,6 +273,29 @@ export async function GET(req) {
       );
     }
 
+    const cacheKey = buildTeamProfileKey({
+      leagueId,
+      league: leagueName,
+      leagueName,
+      teamId,
+      team: teamName,
+      teamName,
+      matchType,
+      matchId: url.searchParams.get("matchId"),
+    });
+
+    if (cacheKey) {
+      const cached = profileCache.get(cacheKey);
+      if (cached) {
+        return NextResponse.json(
+          { profile: cached.profile },
+          {
+            headers: buildResponseHeaders(cached.savedAt),
+          }
+        );
+      }
+    }
+
     const profileFromDb = await fetchProfileFromDb({
       leagueId,
       teamId,
@@ -258,15 +307,12 @@ export async function GET(req) {
     if (profileFromDb) {
       const savedAt =
         profileFromDb?.meta?.savedAt ?? profileFromDb?.savedAt ?? null;
-      const headers = {
-        "cache-control":
-          `public, max-age=0, s-maxage=${CACHE_MAX_AGE_SECONDS}, stale-while-revalidate=${CACHE_STALE_REVALIDATE_SECONDS}`,
-      };
-      if (savedAt) {
-        const savedAtDate = new Date(savedAt);
-        if (!Number.isNaN(savedAtDate.getTime())) {
-          headers["last-modified"] = savedAtDate.toUTCString();
-        }
+      const headers = buildResponseHeaders(savedAt);
+      if (cacheKey) {
+        profileCache.set(cacheKey, {
+          profile: profileFromDb,
+          savedAt,
+        });
       }
 
       return NextResponse.json(
