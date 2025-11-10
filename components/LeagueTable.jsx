@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import styles from "./LeagueTable.module.css";
 
@@ -245,7 +245,13 @@ function ImageWithFallback({ candidates, alt, size = 20, className }) {
   );
 }
 
-export default function LeagueTable({ items, formatTime, onSelectMatch, selectedMatchId }) {
+export default function LeagueTable({
+  items,
+  formatTime,
+  onSelectMatch,
+  onPrefetchMatch,
+  selectedMatchId,
+}) {
   const matches = useMemo(() => {
     if (!Array.isArray(items)) return [];
     const normalized = items.map(normalizeMatch);
@@ -294,6 +300,24 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
     });
     return entries;
   }, [groups]);
+
+  const prefetchedMatchIds = useRef(new Set());
+
+  useEffect(() => {
+    prefetchedMatchIds.current.clear();
+  }, [items]);
+
+  const handlePrefetchMatch = useCallback(
+    (match) => {
+      if (!match || typeof onPrefetchMatch !== "function") return;
+      const matchKey = match.id ?? match.matchId ?? null;
+      if (!matchKey) return;
+      if (prefetchedMatchIds.current.has(matchKey)) return;
+      prefetchedMatchIds.current.add(matchKey);
+      onPrefetchMatch(match);
+    },
+    [onPrefetchMatch]
+  );
 
   const handleRowClick = useCallback(
     (match) => {
@@ -377,12 +401,14 @@ export default function LeagueTable({ items, formatTime, onSelectMatch, selected
                     .join(" ");
 
                   return (
-                    <button
-                      key={match.id}
-                      type="button"
-                      onClick={() => handleRowClick(match)}
-                      className={rowClassName}
-                      data-match-id={match.matchId}
+                  <button
+                    key={match.id}
+                    type="button"
+                    onClick={() => handleRowClick(match)}
+                    onPointerEnter={() => handlePrefetchMatch(match)}
+                    onFocus={() => handlePrefetchMatch(match)}
+                    className={rowClassName}
+                    data-match-id={match.matchId}
                       data-league-id={match.leagueId ?? undefined}
                       data-home-team-id={match.homeTeamId ?? undefined}
                       data-away-team-id={match.awayTeamId ?? undefined}

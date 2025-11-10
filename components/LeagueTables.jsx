@@ -12,6 +12,7 @@ export default function LeagueTables({
   selectedMatchId,
   isLoading,
   error,
+  onPrefetchMatch,
   matchesCount = 0,
   className = "",
 }) {
@@ -47,6 +48,7 @@ export default function LeagueTables({
               items={items}
               formatTime={formatTime}
               onSelectMatch={onSelectMatch}
+              onPrefetchMatch={onPrefetchMatch}
               selectedMatchId={selectedMatchId}
             />
           </div>

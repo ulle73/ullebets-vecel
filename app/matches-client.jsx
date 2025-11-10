@@ -34,6 +34,14 @@ function makeFormatter() {
   });
 }
 
+function getNextDateString(currentDate) {
+  if (!currentDate) return null;
+  const parsed = new Date(currentDate);
+  if (!Number.isFinite(parsed.getTime())) return null;
+  parsed.setDate(parsed.getDate() + 1);
+  return parsed.toISOString().slice(0, 10);
+}
+
   function toMatchId(value) {
     if (!value) return null;
     if (typeof value === "string" || typeof value === "number") {
@@ -135,6 +143,8 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   );
 
   const matchesKey = date ? buildMatchesByDateKey(date) : null;
+  const tomorrowDate = useMemo(() => getNextDateString(date), [date]);
+  const tomorrowMatchesKey = tomorrowDate ? buildMatchesByDateKey(tomorrowDate) : null;
 
   // const { data, error, isLoading } = useSWR(matchesKey, fetchJson, {
   //   revalidateOnFocus: false,
@@ -173,7 +183,21 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   //   }
   
   
-  const { data, error, isLoading } = useSWR(matchesKey, fetchJson, {
+  const {
+    data,
+    error,
+    isLoading,
+  } = useSWR(matchesKey, fetchJson, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 60_000,
+    keepPreviousData: true,
+  });
+
+  const {
+    data: tomorrowData,
+  } = useSWR(tomorrowMatchesKey, fetchJson, {
     revalidateOnFocus: false,
     revalidateIfStale: false,
     revalidateOnReconnect: false,
@@ -197,6 +221,8 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     });
     return normalized;
   }, [items]);
+
+  const tomorrowItems = useMemo(() => tomorrowData?.items ?? [], [tomorrowData]);
 
   // Nu kan effekterna tryggt referera till matches
   useEffect(() => {
@@ -238,6 +264,18 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
       cancelled = true;
     };
   }, [matchesKey, matches, prefetchTeamProfiles]);
+
+  useEffect(() => {
+    if (!tomorrowItems.length) return;
+    const promise = prefetchTeamProfiles(tomorrowItems);
+    Promise.resolve(promise)
+      .catch((prefetchError) => {
+        debugError("teamprofiles:prefetch:tomorrow", {
+          key: tomorrowMatchesKey,
+          message: prefetchError?.message,
+        });
+      });
+  }, [tomorrowItems, tomorrowMatchesKey, prefetchTeamProfiles]);
 
   if (error) {
     debugError("matches:error", error);
@@ -352,7 +390,20 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
       return merged;
     }, [selectedMatchSummary, matchDetails]);
 
-    const handleSelectMatch = (payload) => {
+    const handlePrefetchMatch = useCallback(
+      (match) => {
+        if (!match) return;
+        void prefetchTeamProfiles([match]).catch((prefetchError) => {
+          debugError("teamprofiles:prefetch:on-hover", {
+            matchId: match.id ?? match.matchId ?? null,
+            message: prefetchError?.message,
+          });
+        });
+      },
+      [prefetchTeamProfiles]
+    );
+
+    const handleSelectMatch = useCallback((payload) => {
       const resolvedId = toMatchId(payload);
       if (!resolvedId) {
         debugError("selection:invalid", { payload });
@@ -363,21 +414,19 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
         resolvedId,
       });
       const matchForSelection = matches.find((match) => match.id === resolvedId);
-      const completionPromise = matchForSelection
-        ? prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
-            debugError("teamprofiles:prefetch:on-select", {
-              matchId: resolvedId,
-              message: prefetchError?.message,
-            });
-          })
-        : prefetchInFlightRef.current;
-
-      Promise.resolve(completionPromise)
-        .catch(() => {})
-        .finally(() => {
-          setSelectedMatchId(resolvedId);
+      if (matchForSelection) {
+        void prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
+          debugError("teamprofiles:prefetch:on-select", {
+            matchId: resolvedId,
+            message: prefetchError?.message,
+          });
         });
-    };
+      } else {
+        void Promise.resolve(prefetchInFlightRef.current);
+      }
+
+      setSelectedMatchId(resolvedId);
+    }, [matches, prefetchTeamProfiles]);
 
     const showDetails = Boolean(selectedMatchSummary);
 
@@ -402,6 +451,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
               items={items}
               formatTime={formatTime}
               onSelectMatch={handleSelectMatch}
+              onPrefetchMatch={handlePrefetchMatch}
               selectedMatchId={selectedMatchId}
               isLoading={isLoading}
               error={error}
