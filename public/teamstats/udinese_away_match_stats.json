@@ -1,0 +1,5761 @@
+{
+  "full": [
+    {
+      "matchId": 13981523,
+      "timestamp": 1762707600,
+      "date": "2025-11-09",
+      "savedAt": "2025-11-10T05:18:51.294Z",
+      "homeTeamId": 2702,
+      "homeTeamName": "Roma",
+      "awayTeamId": 2695,
+      "awayTeamName": "Udinese",
+      "matchDetails": {
+        "statistics": [
+          {
+            "period": "ALL",
+            "groups": [
+              {
+                "groupName": "Match overview",
+                "statisticsItems": [
+                  {
+                    "name": "Ball possession",
+                    "home": "58%",
+                    "away": "42%",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 58,
+                    "awayValue": 42,
+                    "renderType": 2,
+                    "key": "ballPossession"
+                  },
+                  {
+                    "name": "Expected goals",
+                    "home": "1.53",
+                    "away": "1.08",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1.53,
+                    "awayValue": 1.08,
+                    "renderType": 1,
+                    "key": "expectedGoals"
+                  },
+                  {
+                    "name": "Big chances",
+                    "home": "2",
+                    "away": "1",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "bigChanceCreated"
+                  },
+                  {
+                    "name": "Total shots",
+                    "home": "13",
+                    "away": "10",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 13,
+                    "awayValue": 10,
+                    "renderType": 1,
+                    "key": "totalShotsOnGoal"
+                  },
+                  {
+                    "name": "Goalkeeper saves",
+                    "home": "4",
+                    "away": "2",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 4,
+                    "awayValue": 2,
+                    "renderType": 1,
+                    "key": "goalkeeperSaves"
+                  },
+                  {
+                    "name": "Corner kicks",
+                    "home": "3",
+                    "away": "4",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 3,
+                    "awayValue": 4,
+                    "renderType": 1,
+                    "key": "cornerKicks"
+                  },
+                  {
+                    "name": "Fouls",
+                    "home": "13",
+                    "away": "14",
+                    "compareCode": 2,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 13,
+                    "awayValue": 14,
+                    "renderType": 1,
+                    "key": "fouls"
+                  },
+                  {
+                    "name": "Passes",
+                    "home": "488",
+                    "away": "361",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 488,
+                    "awayValue": 361,
+                    "renderType": 1,
+                    "key": "passes"
+                  },
+                  {
+                    "name": "Tackles",
+                    "home": "13",
+                    "away": "17",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 13,
+                    "awayValue": 17,
+                    "renderType": 1,
+                    "key": "totalTackle"
+                  },
+                  {
+                    "name": "Free kicks",
+                    "home": "13",
+                    "away": "13",
+                    "compareCode": 3,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 13,
+                    "awayValue": 13,
+                    "renderType": 1,
+                    "key": "freeKicks"
+                  },
+                  {
+                    "name": "Yellow cards",
+                    "home": "2",
+                    "away": "1",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "yellowCards"
+                  }
+                ]
+              },
+              {
+                "groupName": "Shots",
+                "statisticsItems": [
+                  {
+                    "name": "Total shots",
+                    "home": "13",
+                    "away": "10",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 13,
+                    "awayValue": 10,
+                    "renderType": 1,
+                    "key": "totalShotsOnGoal"
+                  },
+                  {
+                    "name": "Shots on target",
+                    "home": "4",
+                    "away": "4",
+                    "compareCode": 3,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 4,
+                    "awayValue": 4,
+                    "renderType": 1,
+                    "key": "shotsOnGoal"
+                  },
+                  {
+                    "name": "Hit woodwork",
+                    "home": "1",
+                    "away": "1",
+                    "compareCode": 3,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "hitWoodwork"
+                  },
+                  {
+                    "name": "Shots off target",
+                    "home": "2",
+                    "away": "1",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "shotsOffGoal"
+                  },
+                  {
+                    "name": "Blocked shots",
+                    "home": "7",
+                    "away": "5",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 7,
+                    "awayValue": 5,
+                    "renderType": 1,
+                    "key": "blockedScoringAttempt"
+                  },
+                  {
+                    "name": "Shots inside box",
+                    "home": "11",
+                    "away": "7",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 11,
+                    "awayValue": 7,
+                    "renderType": 1,
+                    "key": "totalShotsInsideBox"
+                  },
+                  {
+                    "name": "Shots outside box",
+                    "home": "2",
+                    "away": "3",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 3,
+                    "renderType": 1,
+                    "key": "totalShotsOutsideBox"
+                  }
+                ]
+              },
+              {
+                "groupName": "Attack",
+                "statisticsItems": [
+                  {
+                    "name": "Big chances scored",
+                    "home": "2",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "bigChanceScored"
+                  },
+                  {
+                    "name": "Big chances missed",
+                    "home": "0",
+                    "away": "1",
+                    "compareCode": 2,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 0,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "bigChanceMissed"
+                  },
+                  {
+                    "name": "Touches in penalty area",
+                    "home": "22",
+                    "away": "15",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 22,
+                    "awayValue": 15,
+                    "renderType": 1,
+                    "key": "touchesInOppBox"
+                  },
+                  {
+                    "name": "Fouled in final third",
+                    "home": "3",
+                    "away": "1",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 3,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "fouledFinalThird"
+                  },
+                  {
+                    "name": "Offsides",
+                    "home": "2",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "offsides"
+                  }
+                ]
+              },
+              {
+                "groupName": "Passes",
+                "statisticsItems": [
+                  {
+                    "name": "Accurate passes",
+                    "home": "413",
+                    "away": "282",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 413,
+                    "awayValue": 282,
+                    "renderType": 1,
+                    "key": "accuratePasses"
+                  },
+                  {
+                    "name": "Throw-ins",
+                    "home": "20",
+                    "away": "20",
+                    "compareCode": 3,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 20,
+                    "awayValue": 20,
+                    "renderType": 1,
+                    "key": "throwIns"
+                  },
+                  {
+                    "name": "Final third entries",
+                    "home": "79",
+                    "away": "30",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 79,
+                    "awayValue": 30,
+                    "renderType": 1,
+                    "key": "finalThirdEntries"
+                  },
+                  {
+                    "name": "Final third phase",
+                    "home": "121/163 (74%)",
+                    "away": "37/60 (62%)",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 121,
+                    "awayValue": 37,
+                    "homeTotal": 163,
+                    "awayTotal": 60,
+                    "renderType": 3,
+                    "key": "finalThirdPhaseStatistic"
+                  },
+                  {
+                    "name": "Long balls",
+                    "home": "43/81 (53%)",
+                    "away": "30/61 (49%)",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 43,
+                    "awayValue": 30,
+                    "homeTotal": 81,
+                    "awayTotal": 61,
+                    "renderType": 3,
+                    "key": "accurateLongBalls"
+                  },
+                  {
+                    "name": "Crosses",
+                    "home": "1/16 (6%)",
+                    "away": "2/8 (25%)",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 1,
+                    "awayValue": 2,
+                    "homeTotal": 16,
+                    "awayTotal": 8,
+                    "renderType": 3,
+                    "key": "accurateCross"
+                  }
+                ]
+              },
+              {
+                "groupName": "Duels",
+                "statisticsItems": [
+                  {
+                    "name": "Duels",
+                    "home": "42%",
+                    "away": "58%",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 42,
+                    "awayValue": 58,
+                    "renderType": 2,
+                    "key": "duelWonPercent"
+                  },
+                  {
+                    "name": "Dispossessed",
+                    "home": "10",
+                    "away": "8",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 10,
+                    "awayValue": 8,
+                    "renderType": 1,
+                    "key": "dispossessed"
+                  },
+                  {
+                    "name": "Ground duels",
+                    "home": "26/62 (42%)",
+                    "away": "36/62 (58%)",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 26,
+                    "awayValue": 36,
+                    "homeTotal": 62,
+                    "awayTotal": 62,
+                    "renderType": 3,
+                    "key": "groundDuelsPercentage"
+                  },
+                  {
+                    "name": "Aerial duels",
+                    "home": "10/23 (43%)",
+                    "away": "13/23 (57%)",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 10,
+                    "awayValue": 13,
+                    "homeTotal": 23,
+                    "awayTotal": 23,
+                    "renderType": 3,
+                    "key": "aerialDuelsPercentage"
+                  },
+                  {
+                    "name": "Dribbles",
+                    "home": "2/9 (22%)",
+                    "away": "6/11 (55%)",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 2,
+                    "awayValue": 6,
+                    "homeTotal": 9,
+                    "awayTotal": 11,
+                    "renderType": 3,
+                    "key": "dribblesPercentage"
+                  }
+                ]
+              },
+              {
+                "groupName": "Defending",
+                "statisticsItems": [
+                  {
+                    "name": "Tackles won",
+                    "home": "38%",
+                    "away": "65%",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 5,
+                    "awayValue": 11,
+                    "homeTotal": 13,
+                    "awayTotal": 17,
+                    "renderType": 4,
+                    "key": "wonTacklePercent"
+                  },
+                  {
+                    "name": "Total tackles",
+                    "home": "13",
+                    "away": "17",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 13,
+                    "awayValue": 17,
+                    "renderType": 1,
+                    "key": "totalTackle"
+                  },
+                  {
+                    "name": "Interceptions",
+                    "home": "5",
+                    "away": "7",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 5,
+                    "awayValue": 7,
+                    "renderType": 1,
+                    "key": "interceptionWon"
+                  },
+                  {
+                    "name": "Recoveries",
+                    "home": "51",
+                    "away": "46",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 51,
+                    "awayValue": 46,
+                    "renderType": 1,
+                    "key": "ballRecovery"
+                  },
+                  {
+                    "name": "Clearances",
+                    "home": "11",
+                    "away": "25",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 11,
+                    "awayValue": 25,
+                    "renderType": 1,
+                    "key": "totalClearance"
+                  },
+                  {
+                    "name": "Errors lead to a shot",
+                    "home": "1",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "errorsLeadToShot"
+                  }
+                ]
+              },
+              {
+                "groupName": "Goalkeeping",
+                "statisticsItems": [
+                  {
+                    "name": "Total saves",
+                    "home": "4",
+                    "away": "2",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 4,
+                    "awayValue": 2,
+                    "renderType": 1,
+                    "key": "goalkeeperSaves"
+                  },
+                  {
+                    "name": "Goals prevented",
+                    "home": "1.13",
+                    "away": "-0.28",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1.1299,
+                    "awayValue": -0.2785,
+                    "renderType": 1,
+                    "key": "goalsPrevented"
+                  },
+                  {
+                    "name": "Big saves",
+                    "home": "1",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "diveSaves"
+                  },
+                  {
+                    "name": "High claims",
+                    "home": "3",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 3,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "highClaims"
+                  },
+                  {
+                    "name": "Punches",
+                    "home": "0",
+                    "away": "1",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 0,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "punches"
+                  },
+                  {
+                    "name": "Goal kicks",
+                    "home": "4",
+                    "away": "5",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 4,
+                    "awayValue": 5,
+                    "renderType": 1,
+                    "key": "goalKicks"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "period": "1ST",
+            "groups": [
+              {
+                "groupName": "Match overview",
+                "statisticsItems": [
+                  {
+                    "name": "Ball possession",
+                    "home": "56%",
+                    "away": "44%",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 56,
+                    "awayValue": 44,
+                    "renderType": 2,
+                    "key": "ballPossession"
+                  },
+                  {
+                    "name": "Expected goals",
+                    "home": "1.36",
+                    "away": "0.16",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1.36,
+                    "awayValue": 0.16,
+                    "renderType": 1,
+                    "key": "expectedGoals"
+                  },
+                  {
+                    "name": "Big chances",
+                    "home": "1",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "bigChanceCreated"
+                  },
+                  {
+                    "name": "Total shots",
+                    "home": "10",
+                    "away": "4",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 10,
+                    "awayValue": 4,
+                    "renderType": 1,
+                    "key": "totalShotsOnGoal"
+                  },
+                  {
+                    "name": "Goalkeeper saves",
+                    "home": "1",
+                    "away": "1",
+                    "compareCode": 3,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "goalkeeperSaves"
+                  },
+                  {
+                    "name": "Corner kicks",
+                    "home": "1",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "cornerKicks"
+                  },
+                  {
+                    "name": "Fouls",
+                    "home": "8",
+                    "away": "7",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 8,
+                    "awayValue": 7,
+                    "renderType": 1,
+                    "key": "fouls"
+                  },
+                  {
+                    "name": "Passes",
+                    "home": "191",
+                    "away": "157",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 191,
+                    "awayValue": 157,
+                    "renderType": 1,
+                    "key": "passes"
+                  },
+                  {
+                    "name": "Tackles",
+                    "home": "7",
+                    "away": "8",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 7,
+                    "awayValue": 8,
+                    "renderType": 1,
+                    "key": "totalTackle"
+                  },
+                  {
+                    "name": "Free kicks",
+                    "home": "6",
+                    "away": "8",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 6,
+                    "awayValue": 8,
+                    "renderType": 1,
+                    "key": "freeKicks"
+                  },
+                  {
+                    "name": "Yellow cards",
+                    "home": "2",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "yellowCards"
+                  }
+                ]
+              },
+              {
+                "groupName": "Shots",
+                "statisticsItems": [
+                  {
+                    "name": "Total shots",
+                    "home": "10",
+                    "away": "4",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 10,
+                    "awayValue": 4,
+                    "renderType": 1,
+                    "key": "totalShotsOnGoal"
+                  },
+                  {
+                    "name": "Shots on target",
+                    "home": "2",
+                    "away": "1",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "shotsOnGoal"
+                  },
+                  {
+                    "name": "Hit woodwork",
+                    "home": "1",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "hitWoodwork"
+                  },
+                  {
+                    "name": "Shots off target",
+                    "home": "2",
+                    "away": "1",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "shotsOffGoal"
+                  },
+                  {
+                    "name": "Blocked shots",
+                    "home": "6",
+                    "away": "2",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 6,
+                    "awayValue": 2,
+                    "renderType": 1,
+                    "key": "blockedScoringAttempt"
+                  },
+                  {
+                    "name": "Shots inside box",
+                    "home": "8",
+                    "away": "2",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 8,
+                    "awayValue": 2,
+                    "renderType": 1,
+                    "key": "totalShotsInsideBox"
+                  },
+                  {
+                    "name": "Shots outside box",
+                    "home": "2",
+                    "away": "2",
+                    "compareCode": 3,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 2,
+                    "renderType": 1,
+                    "key": "totalShotsOutsideBox"
+                  }
+                ]
+              },
+              {
+                "groupName": "Attack",
+                "statisticsItems": [
+                  {
+                    "name": "Big chances scored",
+                    "home": "1",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "bigChanceScored"
+                  },
+                  {
+                    "name": "Big chances missed",
+                    "home": "0",
+                    "away": "0",
+                    "compareCode": 3,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 0,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "bigChanceMissed"
+                  },
+                  {
+                    "name": "Fouled in final third",
+                    "home": "2",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "fouledFinalThird"
+                  },
+                  {
+                    "name": "Offsides",
+                    "home": "1",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "offsides"
+                  }
+                ]
+              },
+              {
+                "groupName": "Passes",
+                "statisticsItems": [
+                  {
+                    "name": "Accurate passes",
+                    "home": "153",
+                    "away": "113",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 153,
+                    "awayValue": 113,
+                    "renderType": 1,
+                    "key": "accuratePasses"
+                  },
+                  {
+                    "name": "Throw-ins",
+                    "home": "12",
+                    "away": "7",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 12,
+                    "awayValue": 7,
+                    "renderType": 1,
+                    "key": "throwIns"
+                  },
+                  {
+                    "name": "Final third entries",
+                    "home": "38",
+                    "away": "13",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 38,
+                    "awayValue": 13,
+                    "renderType": 1,
+                    "key": "finalThirdEntries"
+                  },
+                  {
+                    "name": "Long balls",
+                    "home": "15/37 (41%)",
+                    "away": "13/36 (36%)",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 15,
+                    "awayValue": 13,
+                    "homeTotal": 37,
+                    "awayTotal": 36,
+                    "renderType": 3,
+                    "key": "accurateLongBalls"
+                  },
+                  {
+                    "name": "Crosses",
+                    "home": "1/10 (10%)",
+                    "away": "0/2 (0%)",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 1,
+                    "awayValue": 0,
+                    "homeTotal": 10,
+                    "awayTotal": 2,
+                    "renderType": 3,
+                    "key": "accurateCross"
+                  }
+                ]
+              },
+              {
+                "groupName": "Duels",
+                "statisticsItems": [
+                  {
+                    "name": "Duels",
+                    "home": "46%",
+                    "away": "54%",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 46,
+                    "awayValue": 54,
+                    "renderType": 2,
+                    "key": "duelWonPercent"
+                  },
+                  {
+                    "name": "Dispossessed",
+                    "home": "6",
+                    "away": "4",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 6,
+                    "awayValue": 4,
+                    "renderType": 1,
+                    "key": "dispossessed"
+                  },
+                  {
+                    "name": "Ground duels",
+                    "home": "13/30 (43%)",
+                    "away": "17/30 (57%)",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 13,
+                    "awayValue": 17,
+                    "homeTotal": 30,
+                    "awayTotal": 30,
+                    "renderType": 3,
+                    "key": "groundDuelsPercentage"
+                  },
+                  {
+                    "name": "Aerial duels",
+                    "home": "6/11 (55%)",
+                    "away": "5/11 (45%)",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 6,
+                    "awayValue": 5,
+                    "homeTotal": 11,
+                    "awayTotal": 11,
+                    "renderType": 3,
+                    "key": "aerialDuelsPercentage"
+                  },
+                  {
+                    "name": "Dribbles",
+                    "home": "1/3 (33%)",
+                    "away": "1/4 (25%)",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 1,
+                    "awayValue": 1,
+                    "homeTotal": 3,
+                    "awayTotal": 4,
+                    "renderType": 3,
+                    "key": "dribblesPercentage"
+                  }
+                ]
+              },
+              {
+                "groupName": "Defending",
+                "statisticsItems": [
+                  {
+                    "name": "Tackles won",
+                    "home": "29%",
+                    "away": "75%",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 2,
+                    "awayValue": 6,
+                    "homeTotal": 7,
+                    "awayTotal": 8,
+                    "renderType": 4,
+                    "key": "wonTacklePercent"
+                  },
+                  {
+                    "name": "Total tackles",
+                    "home": "7",
+                    "away": "8",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 7,
+                    "awayValue": 8,
+                    "renderType": 1,
+                    "key": "totalTackle"
+                  },
+                  {
+                    "name": "Interceptions",
+                    "home": "2",
+                    "away": "4",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 4,
+                    "renderType": 1,
+                    "key": "interceptionWon"
+                  },
+                  {
+                    "name": "Recoveries",
+                    "home": "19",
+                    "away": "19",
+                    "compareCode": 3,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 19,
+                    "awayValue": 19,
+                    "renderType": 1,
+                    "key": "ballRecovery"
+                  },
+                  {
+                    "name": "Clearances",
+                    "home": "4",
+                    "away": "13",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 4,
+                    "awayValue": 13,
+                    "renderType": 1,
+                    "key": "totalClearance"
+                  }
+                ]
+              },
+              {
+                "groupName": "Goalkeeping",
+                "statisticsItems": [
+                  {
+                    "name": "Total saves",
+                    "home": "1",
+                    "away": "1",
+                    "compareCode": 3,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "goalkeeperSaves"
+                  },
+                  {
+                    "name": "Goal kicks",
+                    "home": "2",
+                    "away": "5",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 5,
+                    "renderType": 1,
+                    "key": "goalKicks"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "period": "2ND",
+            "groups": [
+              {
+                "groupName": "Match overview",
+                "statisticsItems": [
+                  {
+                    "name": "Ball possession",
+                    "home": "59%",
+                    "away": "41%",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 59,
+                    "awayValue": 41,
+                    "renderType": 2,
+                    "key": "ballPossession"
+                  },
+                  {
+                    "name": "Expected goals",
+                    "home": "0.17",
+                    "away": "0.92",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 0.17,
+                    "awayValue": 0.92,
+                    "renderType": 1,
+                    "key": "expectedGoals"
+                  },
+                  {
+                    "name": "Big chances",
+                    "home": "1",
+                    "away": "1",
+                    "compareCode": 3,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "bigChanceCreated"
+                  },
+                  {
+                    "name": "Total shots",
+                    "home": "3",
+                    "away": "6",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 3,
+                    "awayValue": 6,
+                    "renderType": 1,
+                    "key": "totalShotsOnGoal"
+                  },
+                  {
+                    "name": "Goalkeeper saves",
+                    "home": "3",
+                    "away": "1",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 3,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "goalkeeperSaves"
+                  },
+                  {
+                    "name": "Corner kicks",
+                    "home": "2",
+                    "away": "4",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 4,
+                    "renderType": 1,
+                    "key": "cornerKicks"
+                  },
+                  {
+                    "name": "Fouls",
+                    "home": "5",
+                    "away": "7",
+                    "compareCode": 2,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 5,
+                    "awayValue": 7,
+                    "renderType": 1,
+                    "key": "fouls"
+                  },
+                  {
+                    "name": "Passes",
+                    "home": "297",
+                    "away": "204",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 297,
+                    "awayValue": 204,
+                    "renderType": 1,
+                    "key": "passes"
+                  },
+                  {
+                    "name": "Tackles",
+                    "home": "6",
+                    "away": "9",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 6,
+                    "awayValue": 9,
+                    "renderType": 1,
+                    "key": "totalTackle"
+                  },
+                  {
+                    "name": "Free kicks",
+                    "home": "7",
+                    "away": "5",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 7,
+                    "awayValue": 5,
+                    "renderType": 1,
+                    "key": "freeKicks"
+                  },
+                  {
+                    "name": "Yellow cards",
+                    "home": "0",
+                    "away": "1",
+                    "compareCode": 2,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 0,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "yellowCards"
+                  }
+                ]
+              },
+              {
+                "groupName": "Shots",
+                "statisticsItems": [
+                  {
+                    "name": "Total shots",
+                    "home": "3",
+                    "away": "6",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 3,
+                    "awayValue": 6,
+                    "renderType": 1,
+                    "key": "totalShotsOnGoal"
+                  },
+                  {
+                    "name": "Shots on target",
+                    "home": "2",
+                    "away": "3",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 3,
+                    "renderType": 1,
+                    "key": "shotsOnGoal"
+                  },
+                  {
+                    "name": "Hit woodwork",
+                    "home": "0",
+                    "away": "1",
+                    "compareCode": 2,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 0,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "hitWoodwork"
+                  },
+                  {
+                    "name": "Shots off target",
+                    "home": "0",
+                    "away": "0",
+                    "compareCode": 3,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 0,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "shotsOffGoal"
+                  },
+                  {
+                    "name": "Blocked shots",
+                    "home": "1",
+                    "away": "3",
+                    "compareCode": 2,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 3,
+                    "renderType": 1,
+                    "key": "blockedScoringAttempt"
+                  },
+                  {
+                    "name": "Shots inside box",
+                    "home": "3",
+                    "away": "5",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 3,
+                    "awayValue": 5,
+                    "renderType": 1,
+                    "key": "totalShotsInsideBox"
+                  },
+                  {
+                    "name": "Shots outside box",
+                    "home": "0",
+                    "away": "1",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 0,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "totalShotsOutsideBox"
+                  }
+                ]
+              },
+              {
+                "groupName": "Attack",
+                "statisticsItems": [
+                  {
+                    "name": "Big chances scored",
+                    "home": "1",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "bigChanceScored"
+                  },
+                  {
+                    "name": "Big chances missed",
+                    "home": "0",
+                    "away": "1",
+                    "compareCode": 2,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 0,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "bigChanceMissed"
+                  },
+                  {
+                    "name": "Fouled in final third",
+                    "home": "1",
+                    "away": "1",
+                    "compareCode": 3,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "fouledFinalThird"
+                  },
+                  {
+                    "name": "Offsides",
+                    "home": "1",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 1,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "offsides"
+                  }
+                ]
+              },
+              {
+                "groupName": "Passes",
+                "statisticsItems": [
+                  {
+                    "name": "Accurate passes",
+                    "home": "260",
+                    "away": "169",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 260,
+                    "awayValue": 169,
+                    "renderType": 1,
+                    "key": "accuratePasses"
+                  },
+                  {
+                    "name": "Throw-ins",
+                    "home": "8",
+                    "away": "13",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 8,
+                    "awayValue": 13,
+                    "renderType": 1,
+                    "key": "throwIns"
+                  },
+                  {
+                    "name": "Final third entries",
+                    "home": "41",
+                    "away": "17",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 41,
+                    "awayValue": 17,
+                    "renderType": 1,
+                    "key": "finalThirdEntries"
+                  },
+                  {
+                    "name": "Long balls",
+                    "home": "28/44 (64%)",
+                    "away": "17/25 (68%)",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 28,
+                    "awayValue": 17,
+                    "homeTotal": 44,
+                    "awayTotal": 25,
+                    "renderType": 3,
+                    "key": "accurateLongBalls"
+                  },
+                  {
+                    "name": "Crosses",
+                    "home": "0/6 (0%)",
+                    "away": "2/6 (33%)",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 0,
+                    "awayValue": 2,
+                    "homeTotal": 6,
+                    "awayTotal": 6,
+                    "renderType": 3,
+                    "key": "accurateCross"
+                  }
+                ]
+              },
+              {
+                "groupName": "Duels",
+                "statisticsItems": [
+                  {
+                    "name": "Duels",
+                    "home": "39%",
+                    "away": "61%",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 39,
+                    "awayValue": 61,
+                    "renderType": 2,
+                    "key": "duelWonPercent"
+                  },
+                  {
+                    "name": "Dispossessed",
+                    "home": "4",
+                    "away": "4",
+                    "compareCode": 3,
+                    "statisticsType": "negative",
+                    "valueType": "event",
+                    "homeValue": 4,
+                    "awayValue": 4,
+                    "renderType": 1,
+                    "key": "dispossessed"
+                  },
+                  {
+                    "name": "Ground duels",
+                    "home": "13/32 (41%)",
+                    "away": "19/32 (59%)",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 13,
+                    "awayValue": 19,
+                    "homeTotal": 32,
+                    "awayTotal": 32,
+                    "renderType": 3,
+                    "key": "groundDuelsPercentage"
+                  },
+                  {
+                    "name": "Aerial duels",
+                    "home": "4/12 (33%)",
+                    "away": "8/12 (67%)",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 4,
+                    "awayValue": 8,
+                    "homeTotal": 12,
+                    "awayTotal": 12,
+                    "renderType": 3,
+                    "key": "aerialDuelsPercentage"
+                  },
+                  {
+                    "name": "Dribbles",
+                    "home": "1/6 (17%)",
+                    "away": "5/7 (71%)",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 1,
+                    "awayValue": 5,
+                    "homeTotal": 6,
+                    "awayTotal": 7,
+                    "renderType": 3,
+                    "key": "dribblesPercentage"
+                  }
+                ]
+              },
+              {
+                "groupName": "Defending",
+                "statisticsItems": [
+                  {
+                    "name": "Tackles won",
+                    "home": "50%",
+                    "away": "56%",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "team",
+                    "homeValue": 3,
+                    "awayValue": 5,
+                    "homeTotal": 6,
+                    "awayTotal": 9,
+                    "renderType": 4,
+                    "key": "wonTacklePercent"
+                  },
+                  {
+                    "name": "Total tackles",
+                    "home": "6",
+                    "away": "9",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 6,
+                    "awayValue": 9,
+                    "renderType": 1,
+                    "key": "totalTackle"
+                  },
+                  {
+                    "name": "Interceptions",
+                    "home": "3",
+                    "away": "3",
+                    "compareCode": 3,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 3,
+                    "awayValue": 3,
+                    "renderType": 1,
+                    "key": "interceptionWon"
+                  },
+                  {
+                    "name": "Recoveries",
+                    "home": "32",
+                    "away": "27",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 32,
+                    "awayValue": 27,
+                    "renderType": 1,
+                    "key": "ballRecovery"
+                  },
+                  {
+                    "name": "Clearances",
+                    "home": "7",
+                    "away": "12",
+                    "compareCode": 2,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 7,
+                    "awayValue": 12,
+                    "renderType": 1,
+                    "key": "totalClearance"
+                  }
+                ]
+              },
+              {
+                "groupName": "Goalkeeping",
+                "statisticsItems": [
+                  {
+                    "name": "Total saves",
+                    "home": "3",
+                    "away": "1",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 3,
+                    "awayValue": 1,
+                    "renderType": 1,
+                    "key": "goalkeeperSaves"
+                  },
+                  {
+                    "name": "Goal kicks",
+                    "home": "2",
+                    "away": "0",
+                    "compareCode": 1,
+                    "statisticsType": "positive",
+                    "valueType": "event",
+                    "homeValue": 2,
+                    "awayValue": 0,
+                    "renderType": 1,
+                    "key": "goalKicks"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "homeScore": 2,
+      "awayScore": 0,
+      "incidents": [
+        {
+          "text": "FT",
+          "homeScore": 2,
+          "awayScore": 0,
+          "isLive": false,
+          "time": 90,
+          "addedTime": 999,
+          "timeSeconds": 5400,
+          "reversedPeriodTime": 1,
+          "reversedPeriodTimeSeconds": 0,
+          "periodTimeSeconds": 2700,
+          "incidentType": "period"
+        },
+        {
+          "playerIn": {
+            "name": "Daniele Ghilardi",
+            "firstName": "",
+            "lastName": "",
+            "slug": "daniele-ghilardi",
+            "shortName": "D. Ghilardi",
+            "position": "D",
+            "jerseyNumber": "87",
+            "height": 189,
+            "userCount": 812,
+            "gender": "M",
+            "id": 1384847,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1041811200,
+            "proposedMarketValueRaw": {
+              "value": 8800000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جيلاردي ، دانييل"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. ، دانييل"
+              }
+            }
+          },
+          "playerOut": {
+            "name": "Zeki Çelik",
+            "firstName": "",
+            "lastName": "",
+            "slug": "zeki-celik",
+            "shortName": "Z. Çelik",
+            "position": "D",
+            "jerseyNumber": "19",
+            "height": 180,
+            "userCount": 2704,
+            "gender": "M",
+            "id": 893008,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 856137600,
+            "proposedMarketValueRaw": {
+              "value": 6200000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "زكي شيليك",
+                "hi": "ज़ेकी सेलिक",
+                "bn": "জেকি সেলিক"
+              },
+              "shortNameTranslation": {
+                "ar": "ز. شيليك",
+                "hi": "ज़ेड. सेलिक",
+                "bn": "জেড. সেলিক"
+              }
+            }
+          },
+          "id": 125112560,
+          "time": 90,
+          "injury": false,
+          "isHome": true,
+          "incidentClass": "regular",
+          "reversedPeriodTime": 1,
+          "incidentType": "substitution"
+        },
+        {
+          "playerIn": {
+            "name": "Jan Ziółkowski",
+            "firstName": "Jan Ziólkowski",
+            "slug": "jan-ziolkowski",
+            "shortName": "J. Ziółkowski",
+            "position": "D",
+            "jerseyNumber": "24",
+            "height": 194,
+            "userCount": 2521,
+            "gender": "M",
+            "id": 1499991,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1117929600,
+            "proposedMarketValueRaw": {
+              "value": 5800000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "يان زيوكوسكي"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. زيوكوسكي"
+              }
+            }
+          },
+          "playerOut": {
+            "name": "Wesley",
+            "slug": "wesley-franca",
+            "shortName": "Wesley",
+            "position": "D",
+            "jerseyNumber": "43",
+            "height": 178,
+            "userCount": 24395,
+            "gender": "M",
+            "sofascoreId": "WesleyFranca03",
+            "id": 1134200,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1062806400,
+            "proposedMarketValueRaw": {
+              "value": 27000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ويسلي",
+                "hi": "वेस्ली",
+                "bn": "ওয়েসলি"
+              },
+              "shortNameTranslation": {
+                "ar": "ويسلي",
+                "hi": "वेस्ली",
+                "bn": "ওয়েসলি"
+              }
+            }
+          },
+          "id": 125112573,
+          "time": 90,
+          "injury": false,
+          "isHome": true,
+          "incidentClass": "regular",
+          "reversedPeriodTime": 1,
+          "incidentType": "substitution"
+        },
+        {
+          "length": 4,
+          "time": 90,
+          "addedTime": 0,
+          "reversedPeriodTime": 1,
+          "incidentType": "injuryTime"
+        },
+        {
+          "playerIn": {
+            "name": "Vakoun Issouf Bayo",
+            "firstName": "",
+            "lastName": "",
+            "slug": "bayo-vakoun-issouf",
+            "shortName": "V. I. Bayo",
+            "position": "F",
+            "jerseyNumber": "15",
+            "height": 184,
+            "userCount": 1973,
+            "gender": "M",
+            "id": 796455,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 852854400,
+            "proposedMarketValueRaw": {
+              "value": 4200000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بايو، فاكون إيسوف",
+                "hi": "बेयो, वकौन इस्सौफ",
+                "bn": "বায়ো, ভ্যাকাউন ইসুফ"
+              },
+              "shortNameTranslation": {
+                "ar": "ف. إ. بايو",
+                "hi": "वी.आई. बेयो",
+                "bn": "ভি. আই. বেয়ো"
+              }
+            }
+          },
+          "playerOut": {
+            "name": "Nicolò Zaniolo",
+            "firstName": "",
+            "lastName": "",
+            "slug": "nicolo-zaniolo",
+            "shortName": "N. Zaniolo",
+            "position": "F",
+            "jerseyNumber": "10",
+            "height": 189,
+            "userCount": 9953,
+            "gender": "M",
+            "sofascoreId": "nicolozaniolo",
+            "id": 864898,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 930873600,
+            "proposedMarketValueRaw": {
+              "value": 11400000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "نيكولو زانيولو",
+                "hi": "निकोलो ज़ेनिओलो",
+                "bn": "নিকোলো জানিওলো"
+              },
+              "shortNameTranslation": {
+                "ar": "ن. زانيولو",
+                "hi": "एन. ज़ेनिओलो",
+                "bn": "এন. জানিওলো"
+              }
+            }
+          },
+          "id": 125112505,
+          "time": 82,
+          "injury": false,
+          "isHome": false,
+          "incidentClass": "regular",
+          "reversedPeriodTime": 9,
+          "incidentType": "substitution"
+        },
+        {
+          "playerIn": {
+            "name": "Jordan Zemura",
+            "firstName": "",
+            "lastName": "",
+            "slug": "jordan-zemura",
+            "shortName": "J. Zemura",
+            "position": "D",
+            "jerseyNumber": "33",
+            "height": 173,
+            "userCount": 747,
+            "gender": "M",
+            "id": 964119,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 942537600,
+            "proposedMarketValueRaw": {
+              "value": 4099999,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جوردان زيمورا",
+                "hi": "जॉर्डन ज़ेमुरा",
+                "bn": "জর্ডান জেমুরা"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. زيمورا",
+                "hi": "जे. ज़ेमुरा",
+                "bn": "জে. জেমুরা"
+              }
+            }
+          },
+          "playerOut": {
+            "name": "Hassane Kamara",
+            "firstName": "",
+            "lastName": "",
+            "slug": "hassane-kamara",
+            "shortName": "H. Kamara",
+            "position": "M",
+            "jerseyNumber": "11",
+            "height": 168,
+            "userCount": 1079,
+            "gender": "M",
+            "id": 351434,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 762825600,
+            "proposedMarketValueRaw": {
+              "value": 3700000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "حسن كامارا",
+                "hi": "हसन कामारा",
+                "bn": "হাসানে কামারা"
+              },
+              "shortNameTranslation": {
+                "ar": "ح. كامارا",
+                "hi": "एच. कामारा",
+                "bn": "এইচ. কামারা"
+              }
+            }
+          },
+          "id": 125112506,
+          "time": 82,
+          "injury": false,
+          "isHome": false,
+          "incidentClass": "regular",
+          "reversedPeriodTime": 9,
+          "incidentType": "substitution"
+        },
+        {
+          "playerIn": {
+            "name": "Stephan El Shaarawy",
+            "slug": "stephan-el-shaarawy",
+            "shortName": "S. El Shaarawy",
+            "position": "F",
+            "jerseyNumber": "92",
+            "height": 178,
+            "userCount": 5962,
+            "gender": "M",
+            "sofascoreId": "stewel92",
+            "id": 45925,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 720144000,
+            "proposedMarketValueRaw": {
+              "value": 3300000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ستيفان الشعراوي",
+                "hi": "स्टीफ़न एल शारावी",
+                "bn": "স্টেফান এল শারাউই"
+              },
+              "shortNameTranslation": {
+                "ar": "س. الشعراوي",
+                "hi": "एस. एल",
+                "bn": "এস. এল শারাউই"
+              }
+            }
+          },
+          "playerOut": {
+            "name": "Matías Soulé",
+            "firstName": "",
+            "lastName": "",
+            "slug": "matias-soule",
+            "shortName": "M. Soulé",
+            "position": "F",
+            "jerseyNumber": "18",
+            "height": 182,
+            "userCount": 12169,
+            "gender": "M",
+            "sofascoreId": "matiassoule11",
+            "id": 1082406,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1050364800,
+            "proposedMarketValueRaw": {
+              "value": 36000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ماتيا سوليه",
+                "hi": "मटियास सोले",
+                "bn": "ম্যাথিয়াস সোলে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سوليه",
+                "hi": "एम. सोले",
+                "bn": "এম. সোলে"
+              }
+            }
+          },
+          "id": 125112457,
+          "time": 74,
+          "injury": false,
+          "isHome": true,
+          "incidentClass": "regular",
+          "reversedPeriodTime": 17,
+          "incidentType": "substitution"
+        },
+        {
+          "playerIn": {
+            "name": "Neil El Aynaoui",
+            "firstName": "Neil",
+            "lastName": "El Aynaoui",
+            "slug": "neil-el-aynaoui",
+            "shortName": "N. E. Aynaoui",
+            "position": "M",
+            "jerseyNumber": "8",
+            "height": 186,
+            "userCount": 5677,
+            "gender": "M",
+            "id": 1128530,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 994032000,
+            "proposedMarketValueRaw": {
+              "value": 19000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "نيل العيناوي",
+                "hi": "नील एल अयनौई",
+                "bn": "নিল এল আয়নাউই"
+              },
+              "shortNameTranslation": {
+                "ar": "ن. العيناوي",
+                "hi": "एन.ई. अयनौई",
+                "bn": "এন. ই. আয়নাউই"
+              }
+            }
+          },
+          "playerOut": {
+            "name": "Lorenzo Pellegrini",
+            "firstName": "",
+            "lastName": "",
+            "slug": "lorenzo-pellegrini",
+            "shortName": "L. Pellegrini",
+            "position": "M",
+            "jerseyNumber": "7",
+            "height": 186,
+            "userCount": 5997,
+            "gender": "M",
+            "sofascoreId": "lorepelle7",
+            "id": 555540,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 835142400,
+            "proposedMarketValueRaw": {
+              "value": 9500000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لورينزو بيليجريني",
+                "hi": "लोरेंज़ो पेलेग्रिनी",
+                "bn": "লরেঞ্জো পেলেগ্রিনি"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. بيليجريني",
+                "hi": "एल. पेलेग्रिनी",
+                "bn": "এল. পেলেগ্রিনি"
+              }
+            }
+          },
+          "id": 125112456,
+          "time": 74,
+          "injury": false,
+          "isHome": true,
+          "incidentClass": "regular",
+          "reversedPeriodTime": 17,
+          "incidentType": "substitution"
+        },
+        {
+          "playerIn": {
+            "name": "Keinan Davis",
+            "firstName": "",
+            "lastName": "",
+            "slug": "keinan-davis",
+            "shortName": "K. Davis",
+            "position": "F",
+            "jerseyNumber": "9",
+            "height": 189,
+            "userCount": 982,
+            "gender": "M",
+            "id": 830858,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 887328000,
+            "proposedMarketValueRaw": {
+              "value": 4099999,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كينان ديفيس",
+                "hi": "कीनन डेविस",
+                "bn": "কেনান ডেভিস"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. ديفيس",
+                "hi": "के. डेविस",
+                "bn": "কে. ডেভিস"
+              }
+            }
+          },
+          "playerOut": {
+            "name": "Adam Buksa",
+            "slug": "adam-buksa",
+            "shortName": "A. Buksa",
+            "position": "F",
+            "jerseyNumber": "18",
+            "height": 191,
+            "userCount": 4171,
+            "gender": "M",
+            "sofascoreId": "AdamBuksa",
+            "id": 1138856,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 837129600,
+            "proposedMarketValueRaw": {
+              "value": 4800000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "آدم بوسكا",
+                "hi": "एडम बुक्सा",
+                "bn": "অ্যাডাম বুকসা"
+              },
+              "shortNameTranslation": {
+                "ar": "آ. بوسكا",
+                "hi": "ए. बुक्सा",
+                "bn": "এ. বুকসা"
+              }
+            }
+          },
+          "id": 125112448,
+          "time": 72,
+          "injury": false,
+          "isHome": false,
+          "incidentClass": "regular",
+          "reversedPeriodTime": 19,
+          "incidentType": "substitution"
+        },
+        {
+          "playerIn": {
+            "name": "Jakub Piotrowski",
+            "slug": "jakub-piotrowski",
+            "shortName": "J. Piotrowski",
+            "position": "M",
+            "jerseyNumber": "24",
+            "height": 188,
+            "userCount": 2422,
+            "gender": "M",
+            "id": 825271,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 875923200,
+            "proposedMarketValueRaw": {
+              "value": 4400000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ياكوب بيوتروفسكي",
+                "hi": "जैकब पेट्रोवस्की",
+                "bn": "জ্যাকুব পিওট্রোস্কি"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. بيوتروفسكي",
+                "hi": "जे. पेट्रोवस्की",
+                "bn": "জে. পিওট্রোস্কি"
+              }
+            }
+          },
+          "playerOut": {
+            "name": "Jesper Karlström",
+            "slug": "jesper-karlstrom",
+            "shortName": "J. Karlström",
+            "position": "M",
+            "jerseyNumber": "8",
+            "height": 179,
+            "userCount": 631,
+            "gender": "M",
+            "id": 227894,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 803692800,
+            "proposedMarketValueRaw": {
+              "value": 4099999,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ياسبر كارلستروم",
+                "hi": "जेस्पर कार्लस्ट्रोम",
+                "bn": "জেসপার কার্লস্ট্রম"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. كارلستروم",
+                "hi": "जे. कार्लस्ट्रोम",
+                "bn": "জে. কার্লস্ট্রম"
+              }
+            }
+          },
+          "id": 125112442,
+          "time": 72,
+          "injury": false,
+          "isHome": false,
+          "incidentClass": "regular",
+          "reversedPeriodTime": 19,
+          "incidentType": "substitution"
+        },
+        {
+          "player": {
+            "name": "Jesper Karlström",
+            "slug": "jesper-karlstrom",
+            "shortName": "J. Karlström",
+            "position": "M",
+            "jerseyNumber": "8",
+            "height": 179,
+            "userCount": 631,
+            "gender": "M",
+            "id": 227894,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 803692800,
+            "proposedMarketValueRaw": {
+              "value": 4099999,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ياسبر كارلستروم",
+                "hi": "जेस्पर कार्लस्ट्रोम",
+                "bn": "জেসপার কার্লস্ট্রম"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. كارلستروم",
+                "hi": "जे. कार्लस्ट्रोम",
+                "bn": "জে. কার্লস্ট্রম"
+              }
+            }
+          },
+          "playerName": "Jesper Karlström",
+          "reason": "Argument",
+          "rescinded": false,
+          "id": 124321571,
+          "time": 62,
+          "isHome": false,
+          "incidentClass": "yellow",
+          "reversedPeriodTime": 29,
+          "incidentType": "card"
+        },
+        {
+          "homeScore": 2,
+          "awayScore": 0,
+          "player": {
+            "name": "Zeki Çelik",
+            "firstName": "",
+            "lastName": "",
+            "slug": "zeki-celik",
+            "shortName": "Z. Çelik",
+            "position": "D",
+            "jerseyNumber": "19",
+            "height": 180,
+            "userCount": 2704,
+            "gender": "M",
+            "id": 893008,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 856137600,
+            "proposedMarketValueRaw": {
+              "value": 6200000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "زكي شيليك",
+                "hi": "ज़ेकी सेलिक",
+                "bn": "জেকি সেলিক"
+              },
+              "shortNameTranslation": {
+                "ar": "ز. شيليك",
+                "hi": "ज़ेड. सेलिक",
+                "bn": "জেড. সেলিক"
+              }
+            }
+          },
+          "assist1": {
+            "name": "Gianluca Mancini",
+            "slug": "gianluca-mancini",
+            "shortName": "G. Mancini",
+            "position": "D",
+            "jerseyNumber": "23",
+            "height": 190,
+            "userCount": 3955,
+            "gender": "M",
+            "id": 611210,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 829699200,
+            "proposedMarketValueRaw": {
+              "value": 14600000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جيانلوكا مانشيني",
+                "hi": "जियानलुका मैनसिनी",
+                "bn": "জিয়ানলুকা মানচিনি"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. مانشيني",
+                "hi": "जी. मैनसिनी",
+                "bn": "জি. মানচিনি"
+              }
+            }
+          },
+          "footballPassingNetworkAction": [
+            {
+              "player": {
+                "name": "Manu Koné",
+                "firstName": "",
+                "lastName": "",
+                "slug": "manu-kone",
+                "shortName": "M. Koné",
+                "position": "M",
+                "jerseyNumber": "17",
+                "height": 186,
+                "userCount": 6385,
+                "gender": "M",
+                "id": 974087,
+                "marketValueCurrency": "EUR",
+                "dateOfBirthTimestamp": 990057600,
+                "proposedMarketValueRaw": {
+                  "value": 47000000,
+                  "currency": "EUR"
+                },
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "مانو كوني",
+                    "hi": "मनु कोने",
+                    "bn": "মনু কোনে"
+                  },
+                  "shortNameTranslation": {
+                    "ar": "م. كوني",
+                    "hi": "एम. कोने",
+                    "bn": "এম. কোনে"
+                  }
+                }
+              },
+              "eventType": "pass",
+              "time": 61,
+              "playerCoordinates": {
+                "x": 56.4,
+                "y": 90.2
+              },
+              "passEndCoordinates": {
+                "x": 62.5,
+                "y": 88.4
+              },
+              "isHome": true
+            },
+            {
+              "player": {
+                "name": "Lorenzo Pellegrini",
+                "firstName": "",
+                "lastName": "",
+                "slug": "lorenzo-pellegrini",
+                "shortName": "L. Pellegrini",
+                "position": "M",
+                "jerseyNumber": "7",
+                "height": 186,
+                "userCount": 5997,
+                "gender": "M",
+                "sofascoreId": "lorepelle7",
+                "id": 555540,
+                "marketValueCurrency": "EUR",
+                "dateOfBirthTimestamp": 835142400,
+                "proposedMarketValueRaw": {
+                  "value": 9500000,
+                  "currency": "EUR"
+                },
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "لورينزو بيليجريني",
+                    "hi": "लोरेंज़ो पेलेग्रिनी",
+                    "bn": "লরেঞ্জো পেলেগ্রিনি"
+                  },
+                  "shortNameTranslation": {
+                    "ar": "ل. بيليجريني",
+                    "hi": "एल. पेलेग्रिनी",
+                    "bn": "এল. পেলেগ্রিনি"
+                  }
+                }
+              },
+              "eventType": "pass",
+              "time": 61,
+              "playerCoordinates": {
+                "x": 68.1,
+                "y": 84.7
+              },
+              "passEndCoordinates": {
+                "x": 66.2,
+                "y": 73.3
+              },
+              "isHome": true
+            },
+            {
+              "player": {
+                "name": "Manu Koné",
+                "firstName": "",
+                "lastName": "",
+                "slug": "manu-kone",
+                "shortName": "M. Koné",
+                "position": "M",
+                "jerseyNumber": "17",
+                "height": 186,
+                "userCount": 6385,
+                "gender": "M",
+                "id": 974087,
+                "marketValueCurrency": "EUR",
+                "dateOfBirthTimestamp": 990057600,
+                "proposedMarketValueRaw": {
+                  "value": 47000000,
+                  "currency": "EUR"
+                },
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "مانو كوني",
+                    "hi": "मनु कोने",
+                    "bn": "মনু কোনে"
+                  },
+                  "shortNameTranslation": {
+                    "ar": "م. كوني",
+                    "hi": "एम. कोने",
+                    "bn": "এম. কোনে"
+                  }
+                }
+              },
+              "eventType": "long-ball",
+              "time": 61,
+              "playerCoordinates": {
+                "x": 67.8,
+                "y": 66.6
+              },
+              "passEndCoordinates": {
+                "x": 88.3,
+                "y": 18.6
+              },
+              "isHome": true
+            },
+            {
+              "player": {
+                "name": "Zeki Çelik",
+                "firstName": "",
+                "lastName": "",
+                "slug": "zeki-celik",
+                "shortName": "Z. Çelik",
+                "position": "D",
+                "jerseyNumber": "19",
+                "height": 180,
+                "userCount": 2704,
+                "gender": "M",
+                "id": 893008,
+                "marketValueCurrency": "EUR",
+                "dateOfBirthTimestamp": 856137600,
+                "proposedMarketValueRaw": {
+                  "value": 6200000,
+                  "currency": "EUR"
+                },
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "زكي شيليك",
+                    "hi": "ज़ेकी सेलिक",
+                    "bn": "জেকি সেলিক"
+                  },
+                  "shortNameTranslation": {
+                    "ar": "ز. شيليك",
+                    "hi": "ज़ेड. सेलिक",
+                    "bn": "জেড. সেলিক"
+                  }
+                }
+              },
+              "eventType": "pass",
+              "time": 61,
+              "playerCoordinates": {
+                "x": 88.4,
+                "y": 18.3
+              },
+              "passEndCoordinates": {
+                "x": 94.3,
+                "y": 26.4
+              },
+              "isHome": true
+            },
+            {
+              "player": {
+                "name": "Gianluca Mancini",
+                "slug": "gianluca-mancini",
+                "shortName": "G. Mancini",
+                "position": "D",
+                "jerseyNumber": "23",
+                "height": 190,
+                "userCount": 3955,
+                "gender": "M",
+                "id": 611210,
+                "marketValueCurrency": "EUR",
+                "dateOfBirthTimestamp": 829699200,
+                "proposedMarketValueRaw": {
+                  "value": 14600000,
+                  "currency": "EUR"
+                },
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "جيانلوكا مانشيني",
+                    "hi": "जियानलुका मैनसिनी",
+                    "bn": "জিয়ানলুকা মানচিনি"
+                  },
+                  "shortNameTranslation": {
+                    "ar": "ج. مانشيني",
+                    "hi": "जी. मैनसिनी",
+                    "bn": "জি. মানচিনি"
+                  }
+                }
+              },
+              "eventType": "pass",
+              "isAssist": true,
+              "time": 61,
+              "playerCoordinates": {
+                "x": 96.3,
+                "y": 27.4
+              },
+              "passEndCoordinates": {
+                "x": 91.4,
+                "y": 35.8
+              },
+              "isHome": true
+            },
+            {
+              "player": {
+                "name": "Zeki Çelik",
+                "firstName": "",
+                "lastName": "",
+                "slug": "zeki-celik",
+                "shortName": "Z. Çelik",
+                "position": "D",
+                "jerseyNumber": "19",
+                "height": 180,
+                "userCount": 2704,
+                "gender": "M",
+                "id": 893008,
+                "marketValueCurrency": "EUR",
+                "dateOfBirthTimestamp": 856137600,
+                "proposedMarketValueRaw": {
+                  "value": 6200000,
+                  "currency": "EUR"
+                },
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "زكي شيليك",
+                    "hi": "ज़ेकी सेलिक",
+                    "bn": "জেকি সেলিক"
+                  },
+                  "shortNameTranslation": {
+                    "ar": "ز. شيليك",
+                    "hi": "ज़ेड. सेलिक",
+                    "bn": "জেড. সেলিক"
+                  }
+                }
+              },
+              "eventType": "goal",
+              "bodyPart": "right-foot",
+              "time": 61,
+              "playerCoordinates": {
+                "x": 91.4,
+                "y": 35.8
+              },
+              "gkCoordinates": {
+                "x": 98.5,
+                "y": 46.4
+              },
+              "goalShotCoordinates": {
+                "x": 100,
+                "y": 51.6
+              },
+              "goalMouthCoordinates": {
+                "x": 41.4,
+                "y": 55.67
+              },
+              "goalkeeper": {
+                "name": "Maduka Okoye",
+                "firstName": "",
+                "lastName": "",
+                "slug": "maduka-okoye",
+                "shortName": "M. Okoye",
+                "position": "G",
+                "jerseyNumber": "40",
+                "height": 197,
+                "userCount": 2032,
+                "gender": "M",
+                "id": 891656,
+                "marketValueCurrency": "EUR",
+                "dateOfBirthTimestamp": 935798400,
+                "proposedMarketValueRaw": {
+                  "value": 8100000,
+                  "currency": "EUR"
+                },
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "مادوكا أوكوي",
+                    "hi": "मदुका ओकोये",
+                    "bn": "মাদুকা ওকয়ে"
+                  },
+                  "shortNameTranslation": {
+                    "ar": "م. أوكوي",
+                    "hi": "एम. ओकोये",
+                    "bn": "এম. ওকোয়ে"
+                  }
+                }
+              },
+              "isHome": true,
+              "goalType": "regular"
+            }
+          ],
+          "id": 326966207,
+          "time": 61,
+          "isHome": true,
+          "incidentClass": "regular",
+          "reversedPeriodTime": 30,
+          "incidentType": "goal"
+        },
+        {
+          "playerIn": {
+            "name": "Matteo Palma",
+            "firstName": "Matteo",
+            "lastName": "Palma",
+            "slug": "matteo-palma",
+            "shortName": "M. Palma",
+            "position": "D",
+            "jerseyNumber": "16",
+            "height": 194,
+            "userCount": 451,
+            "gender": "M",
+            "id": 1495719,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1205366400,
+            "proposedMarketValueRaw": {
+              "value": 2600000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ماتيو بالما"
+              },
+              "shortNameTranslation": {
+                "ar": "م. بالما"
+              }
+            }
+          },
+          "playerOut": {
+            "name": "Christian Kabasele",
+            "firstName": "",
+            "lastName": "",
+            "slug": "christian-kabasele",
+            "shortName": "C. Kabasele",
+            "position": "D",
+            "jerseyNumber": "27",
+            "height": 186,
+            "userCount": 426,
+            "gender": "M",
+            "id": 58351,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 667353600,
+            "proposedMarketValueRaw": {
+              "value": 750000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كريستيان كاباسيلي",
+                "hi": "क्रिश्चियन कबसेले",
+                "bn": "ক্রিশ্চিয়ান কাবাসেলে"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. كاباسيلي",
+                "hi": "सी. कबसेले",
+                "bn": "সি. কাবাসেলে"
+              }
+            }
+          },
+          "id": 125112299,
+          "time": 53,
+          "injury": false,
+          "isHome": false,
+          "incidentClass": "regular",
+          "reversedPeriodTime": 38,
+          "incidentType": "substitution"
+        },
+        {
+          "text": "HT",
+          "homeScore": 1,
+          "awayScore": 0,
+          "isLive": false,
+          "time": 45,
+          "addedTime": 999,
+          "timeSeconds": 2700,
+          "reversedPeriodTime": 1,
+          "reversedPeriodTimeSeconds": 0,
+          "periodTimeSeconds": 2700,
+          "incidentType": "period"
+        },
+        {
+          "player": {
+            "name": "Lorenzo Pellegrini",
+            "firstName": "",
+            "lastName": "",
+            "slug": "lorenzo-pellegrini",
+            "shortName": "L. Pellegrini",
+            "position": "M",
+            "jerseyNumber": "7",
+            "height": 186,
+            "userCount": 5997,
+            "gender": "M",
+            "sofascoreId": "lorepelle7",
+            "id": 555540,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 835142400,
+            "proposedMarketValueRaw": {
+              "value": 9500000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لورينزو بيليجريني",
+                "hi": "लोरेंज़ो पेलेग्रिनी",
+                "bn": "লরেঞ্জো পেলেগ্রিনি"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. بيليجريني",
+                "hi": "एल. पेलेग्रिनी",
+                "bn": "এল. পেলেগ্রিনি"
+              }
+            }
+          },
+          "playerName": "Lorenzo Pellegrini",
+          "reason": "Time wasting",
+          "rescinded": false,
+          "id": 124321161,
+          "time": 45,
+          "addedTime": 4,
+          "isHome": true,
+          "incidentClass": "yellow",
+          "reversedPeriodTime": 1,
+          "incidentType": "card"
+        },
+        {
+          "length": 4,
+          "time": 45,
+          "addedTime": 0,
+          "reversedPeriodTime": 1,
+          "incidentType": "injuryTime"
+        },
+        {
+          "playerIn": {
+            "name": "Tommaso Baldanzi",
+            "firstName": "",
+            "lastName": "",
+            "slug": "tommaso-baldanzi",
+            "shortName": "T. Baldanzi",
+            "position": "M",
+            "jerseyNumber": "35",
+            "height": 170,
+            "userCount": 2225,
+            "gender": "M",
+            "id": 1012172,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1048377600,
+            "proposedMarketValueRaw": {
+              "value": 9400000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "توماسو بالدانزي",
+                "hi": "टोमासो बाल्दांज़ी",
+                "bn": "টমাসো বলদানজি"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. بالدانزي",
+                "hi": "टी. बाल्दांज़ी",
+                "bn": "টি. বালদানজি"
+              }
+            }
+          },
+          "playerOut": {
+            "name": "Artem Dovbyk",
+            "firstName": "",
+            "lastName": "",
+            "slug": "artem-dovbyk",
+            "shortName": "A. Dovbyk",
+            "position": "F",
+            "jerseyNumber": "9",
+            "height": 189,
+            "userCount": 15951,
+            "gender": "M",
+            "sofascoreId": "tema_dovbyk",
+            "id": 798820,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 866851200,
+            "proposedMarketValueRaw": {
+              "value": 23000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أرتيم دوفبيك",
+                "hi": "आर्टेम डोवबिक",
+                "bn": "আর্টেম ডভবাইক"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. دوفبيك",
+                "hi": "ए. डोवबिक",
+                "bn": "এ. ডভবাইক"
+              }
+            }
+          },
+          "id": 125111743,
+          "time": 42,
+          "injury": true,
+          "isHome": true,
+          "incidentClass": "injury",
+          "reversedPeriodTime": 4,
+          "incidentType": "substitution"
+        },
+        {
+          "from": "penalty",
+          "homeScore": 1,
+          "awayScore": 0,
+          "player": {
+            "name": "Lorenzo Pellegrini",
+            "firstName": "",
+            "lastName": "",
+            "slug": "lorenzo-pellegrini",
+            "shortName": "L. Pellegrini",
+            "position": "M",
+            "jerseyNumber": "7",
+            "height": 186,
+            "userCount": 5997,
+            "gender": "M",
+            "sofascoreId": "lorepelle7",
+            "id": 555540,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 835142400,
+            "proposedMarketValueRaw": {
+              "value": 9500000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لورينزو بيليجريني",
+                "hi": "लोरेंज़ो पेलेग्रिनी",
+                "bn": "লরেঞ্জো পেলেগ্রিনি"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. بيليجريني",
+                "hi": "एल. पेलेग्रिनी",
+                "bn": "এল. পেলেগ্রিনি"
+              }
+            }
+          },
+          "footballPassingNetworkAction": [
+            {
+              "player": {
+                "name": "Lorenzo Pellegrini",
+                "firstName": "",
+                "lastName": "",
+                "slug": "lorenzo-pellegrini",
+                "shortName": "L. Pellegrini",
+                "position": "M",
+                "jerseyNumber": "7",
+                "height": 186,
+                "userCount": 5997,
+                "gender": "M",
+                "sofascoreId": "lorepelle7",
+                "id": 555540,
+                "marketValueCurrency": "EUR",
+                "dateOfBirthTimestamp": 835142400,
+                "proposedMarketValueRaw": {
+                  "value": 9500000,
+                  "currency": "EUR"
+                },
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "لورينزو بيليجريني",
+                    "hi": "लोरेंज़ो पेलेग्रिनी",
+                    "bn": "লরেঞ্জো পেলেগ্রিনি"
+                  },
+                  "shortNameTranslation": {
+                    "ar": "ل. بيليجريني",
+                    "hi": "एल. पेलेग्रिनी",
+                    "bn": "এল. পেলেগ্রিনি"
+                  }
+                }
+              },
+              "eventType": "goal",
+              "bodyPart": "right-foot",
+              "time": 42,
+              "playerCoordinates": {
+                "x": 88.5,
+                "y": 50
+              },
+              "gkCoordinates": {
+                "x": 99.4,
+                "y": 50.2
+              },
+              "goalShotCoordinates": {
+                "x": 100,
+                "y": 46.9
+              },
+              "goalMouthCoordinates": {
+                "x": 66.67,
+                "y": 97.83
+              },
+              "goalkeeper": {
+                "name": "Maduka Okoye",
+                "firstName": "",
+                "lastName": "",
+                "slug": "maduka-okoye",
+                "shortName": "M. Okoye",
+                "position": "G",
+                "jerseyNumber": "40",
+                "height": 197,
+                "userCount": 2032,
+                "gender": "M",
+                "id": 891656,
+                "marketValueCurrency": "EUR",
+                "dateOfBirthTimestamp": 935798400,
+                "proposedMarketValueRaw": {
+                  "value": 8100000,
+                  "currency": "EUR"
+                },
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "مادوكا أوكوي",
+                    "hi": "मदुका ओकोये",
+                    "bn": "মাদুকা ওকয়ে"
+                  },
+                  "shortNameTranslation": {
+                    "ar": "م. أوكوي",
+                    "hi": "एम. ओकोये",
+                    "bn": "এম. ওকোয়ে"
+                  }
+                }
+              },
+              "isHome": true,
+              "goalType": "penalty"
+            }
+          ],
+          "id": 326959911,
+          "time": 42,
+          "isHome": true,
+          "incidentClass": "penalty",
+          "reversedPeriodTime": 4,
+          "incidentType": "goal"
+        },
+        {
+          "confirmed": false,
+          "player": {
+            "name": "Gianluca Mancini",
+            "slug": "gianluca-mancini",
+            "shortName": "G. Mancini",
+            "position": "D",
+            "jerseyNumber": "23",
+            "height": 190,
+            "userCount": 3955,
+            "gender": "M",
+            "id": 611210,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 829699200,
+            "proposedMarketValueRaw": {
+              "value": 14600000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جيانلوكا مانشيني",
+                "hi": "जियानलुका मैनसिनी",
+                "bn": "জিয়ানলুকা মানচিনি"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. مانشيني",
+                "hi": "जी. मैनसिनी",
+                "bn": "জি. মানচিনি"
+              }
+            }
+          },
+          "isHome": true,
+          "id": 91169,
+          "time": 40,
+          "incidentClass": "penaltyNotAwarded",
+          "reversedPeriodTime": 6,
+          "incidentType": "varDecision"
+        },
+        {
+          "player": {
+            "name": "Bryan Cristante",
+            "slug": "bryan-cristante",
+            "shortName": "B. Cristante",
+            "position": "M",
+            "jerseyNumber": "4",
+            "height": 186,
+            "userCount": 2613,
+            "gender": "M",
+            "id": 186855,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 794188800,
+            "proposedMarketValueRaw": {
+              "value": 7700000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "برايان كريستانتي",
+                "hi": "ब्रायन क्रिस्टांटे",
+                "bn": "ব্রায়ান ক্রিস্ট্যান্ট"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. كريستانتي",
+                "hi": "बी. क्रिस्टांटे",
+                "bn": "বি. ক্রিস্ট্যান্টে"
+              }
+            }
+          },
+          "playerName": "Bryan Cristante",
+          "reason": "Foul",
+          "rescinded": false,
+          "id": 124320897,
+          "time": 28,
+          "isHome": true,
+          "incidentClass": "yellow",
+          "reversedPeriodTime": 18,
+          "incidentType": "card"
+        }
+      ],
+      "shotmap": [
+        {
+          "player": {
+            "name": "Keinan Davis",
+            "firstName": "",
+            "lastName": "",
+            "slug": "keinan-davis",
+            "shortName": "K. Davis",
+            "position": "F",
+            "jerseyNumber": "9",
+            "userCount": 982,
+            "gender": "M",
+            "id": 830858,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كينان ديفيس",
+                "hi": "कीनन डेविस",
+                "bn": "কেনান ডেভিস"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. ديفيس",
+                "hi": "के. डेविस",
+                "bn": "কে. ডেভিস"
+              }
+            }
+          },
+          "isHome": false,
+          "shotType": "block",
+          "situation": "assisted",
+          "playerCoordinates": {
+            "x": 13.8,
+            "y": 41.8,
+            "z": 0
+          },
+          "bodyPart": "left-foot",
+          "goalMouthLocation": "low-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 48.5,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 12.1,
+            "y": 43,
+            "z": 0
+          },
+          "xg": 0.053038600832224,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Mile Svilar",
+            "slug": "svilar-mile",
+            "shortName": "M. Svilar",
+            "position": "G",
+            "jerseyNumber": "99",
+            "userCount": 4143,
+            "gender": "M",
+            "id": 793986,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سفيلار، ميل",
+                "hi": "स्विलर, माइल",
+                "bn": "স্বিলার, মাইল"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سفيلار",
+                "hi": "एम. स्विलर",
+                "bn": "এম. স্বিলার"
+              }
+            }
+          },
+          "id": 6147868,
+          "time": 90,
+          "addedTime": 2,
+          "timeSeconds": 5474,
+          "draw": {
+            "start": {
+              "x": 41.8,
+              "y": 13.8
+            },
+            "block": {
+              "x": 43,
+              "y": 12.1
+            },
+            "end": {
+              "x": 51.5,
+              "y": 0
+            },
+            "goal": {
+              "x": 51.5,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 1,
+          "reversedPeriodTimeSeconds": 826,
+          "periodTimeSeconds": 74,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Arthur Atta",
+            "firstName": "",
+            "lastName": "",
+            "slug": "atta-arthur",
+            "shortName": "A. Atta",
+            "position": "M",
+            "jerseyNumber": "14",
+            "userCount": 2107,
+            "gender": "M",
+            "id": 1444690,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "عتا، آرثر",
+                "hi": "अट्टा, आर्थर",
+                "bn": "আতা, আর্থার"
+              },
+              "shortNameTranslation": {
+                "ar": "آ. عتا",
+                "hi": "ए. अट्टा",
+                "bn": "এ. আতা"
+              }
+            }
+          },
+          "isHome": false,
+          "shotType": "block",
+          "situation": "assisted",
+          "playerCoordinates": {
+            "x": 14.3,
+            "y": 56.2,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "low-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 49.7,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 11.1,
+            "y": 54.9,
+            "z": 0
+          },
+          "xg": 0.095419675111771,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Mile Svilar",
+            "slug": "svilar-mile",
+            "shortName": "M. Svilar",
+            "position": "G",
+            "jerseyNumber": "99",
+            "userCount": 4143,
+            "gender": "M",
+            "id": 793986,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سفيلار، ميل",
+                "hi": "स्विलर, माइल",
+                "bn": "স্বিলার, মাইল"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سفيلار",
+                "hi": "एम. स्विलर",
+                "bn": "এম. স্বিলার"
+              }
+            }
+          },
+          "id": 6147825,
+          "time": 89,
+          "timeSeconds": 5282,
+          "draw": {
+            "start": {
+              "x": 56.2,
+              "y": 14.3
+            },
+            "block": {
+              "x": 54.9,
+              "y": 11.1
+            },
+            "end": {
+              "x": 50.3,
+              "y": 0
+            },
+            "goal": {
+              "x": 50.3,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 2,
+          "reversedPeriodTimeSeconds": 118,
+          "periodTimeSeconds": 2582,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Vakoun Issouf Bayo",
+            "firstName": "",
+            "lastName": "",
+            "slug": "bayo-vakoun-issouf",
+            "shortName": "V. I. Bayo",
+            "position": "F",
+            "jerseyNumber": "15",
+            "userCount": 1973,
+            "gender": "M",
+            "id": 796455,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بايو، فاكون إيسوف",
+                "hi": "बेयो, वकौन इस्सौफ",
+                "bn": "বায়ো, ভ্যাকাউন ইসুফ"
+              },
+              "shortNameTranslation": {
+                "ar": "ف. إ. بايو",
+                "hi": "वी.आई. बेयो",
+                "bn": "ভি. আই. বেয়ো"
+              }
+            }
+          },
+          "isHome": false,
+          "shotType": "save",
+          "situation": "corner",
+          "playerCoordinates": {
+            "x": 7.1,
+            "y": 52.3,
+            "z": 0
+          },
+          "bodyPart": "head",
+          "goalMouthLocation": "high-right",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 45.9,
+            "z": 20.9
+          },
+          "blockCoordinates": {
+            "x": 1,
+            "y": 51.3,
+            "z": 0
+          },
+          "xg": 0.1049380749464,
+          "xgot": 0.67288833856583,
+          "goalkeeper": {
+            "name": "Mile Svilar",
+            "slug": "svilar-mile",
+            "shortName": "M. Svilar",
+            "position": "G",
+            "jerseyNumber": "99",
+            "userCount": 4143,
+            "gender": "M",
+            "id": 793986,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سفيلار، ميل",
+                "hi": "स्विलर, माइल",
+                "bn": "স্বিলার, মাইল"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سفيلار",
+                "hi": "एम. स्विलर",
+                "bn": "এম. স্বিলার"
+              }
+            }
+          },
+          "id": 6147793,
+          "time": 85,
+          "timeSeconds": 5083,
+          "draw": {
+            "start": {
+              "x": 52.3,
+              "y": 7.1
+            },
+            "block": {
+              "x": 51.3,
+              "y": 1
+            },
+            "end": {
+              "x": 54.1,
+              "y": 0
+            },
+            "goal": {
+              "x": 54.1,
+              "y": 79.1
+            }
+          },
+          "reversedPeriodTime": 6,
+          "reversedPeriodTimeSeconds": 317,
+          "periodTimeSeconds": 2383,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Stephan El Shaarawy",
+            "slug": "stephan-el-shaarawy",
+            "shortName": "S. El Shaarawy",
+            "position": "F",
+            "jerseyNumber": "92",
+            "userCount": 5962,
+            "gender": "M",
+            "sofascoreId": "stewel92",
+            "id": 45925,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ستيفان الشعراوي",
+                "hi": "स्टीफ़न एल शारावी",
+                "bn": "স্টেফান এল শারাউই"
+              },
+              "shortNameTranslation": {
+                "ar": "س. الشعراوي",
+                "hi": "एस. एल",
+                "bn": "এস. এল শারাউই"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "save",
+          "situation": "assisted",
+          "playerCoordinates": {
+            "x": 6.2,
+            "y": 28.5,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "low-right",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 45.8,
+            "z": 2.5
+          },
+          "blockCoordinates": {
+            "x": 0.59999999999999,
+            "y": 45.7,
+            "z": 0
+          },
+          "xg": 0.021668083965778,
+          "xgot": 0.49481320381165,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6147762,
+          "time": 79,
+          "timeSeconds": 4706,
+          "draw": {
+            "start": {
+              "x": 28.5,
+              "y": 6.2
+            },
+            "block": {
+              "x": 45.7,
+              "y": 0.59999999999999
+            },
+            "end": {
+              "x": 54.2,
+              "y": 0
+            },
+            "goal": {
+              "x": 54.2,
+              "y": 97.5
+            }
+          },
+          "reversedPeriodTime": 12,
+          "reversedPeriodTimeSeconds": 694,
+          "periodTimeSeconds": 2006,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Tommaso Baldanzi",
+            "firstName": "",
+            "lastName": "",
+            "slug": "tommaso-baldanzi",
+            "shortName": "T. Baldanzi",
+            "position": "M",
+            "jerseyNumber": "35",
+            "userCount": 2225,
+            "gender": "M",
+            "id": 1012172,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "توماسو بالدانزي",
+                "hi": "टोमासो बाल्दांज़ी",
+                "bn": "টমাসো বলদানজি"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. بالدانزي",
+                "hi": "टी. बाल्दांज़ी",
+                "bn": "টি. বালদানজি"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "block",
+          "situation": "assisted",
+          "playerCoordinates": {
+            "x": 11.8,
+            "y": 62.7,
+            "z": 0
+          },
+          "bodyPart": "left-foot",
+          "goalMouthLocation": "low-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 49.4,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 10.3,
+            "y": 61.2,
+            "z": 0
+          },
+          "xg": 0.04996445402503,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6147753,
+          "time": 78,
+          "timeSeconds": 4643,
+          "draw": {
+            "start": {
+              "x": 62.7,
+              "y": 11.8
+            },
+            "block": {
+              "x": 61.2,
+              "y": 10.3
+            },
+            "end": {
+              "x": 50.6,
+              "y": 0
+            },
+            "goal": {
+              "x": 50.6,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 13,
+          "reversedPeriodTimeSeconds": 757,
+          "periodTimeSeconds": 1943,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Nicolò Zaniolo",
+            "firstName": "",
+            "lastName": "",
+            "slug": "nicolo-zaniolo",
+            "shortName": "N. Zaniolo",
+            "position": "F",
+            "jerseyNumber": "10",
+            "userCount": 9953,
+            "gender": "M",
+            "sofascoreId": "nicolozaniolo",
+            "id": 864898,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "نيكولو زانيولو",
+                "hi": "निकोलो ज़ेनिओलो",
+                "bn": "নিকোলো জানিওলো"
+              },
+              "shortNameTranslation": {
+                "ar": "ن. زانيولو",
+                "hi": "एन. ज़ेनिओलो",
+                "bn": "এন. জানিওলো"
+              }
+            }
+          },
+          "isHome": false,
+          "shotType": "save",
+          "situation": "regular",
+          "playerCoordinates": {
+            "x": 13.2,
+            "y": 51.5,
+            "z": 0
+          },
+          "bodyPart": "left-foot",
+          "goalMouthLocation": "low-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 51.8,
+            "z": 17.7
+          },
+          "blockCoordinates": {
+            "x": 7.1,
+            "y": 50.7,
+            "z": 0
+          },
+          "xg": 0.55255609750748,
+          "xgot": 0.41901695728302,
+          "goalkeeper": {
+            "name": "Mile Svilar",
+            "slug": "svilar-mile",
+            "shortName": "M. Svilar",
+            "position": "G",
+            "jerseyNumber": "99",
+            "userCount": 4143,
+            "gender": "M",
+            "id": 793986,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سفيلار، ميل",
+                "hi": "स्विलर, माइल",
+                "bn": "স্বিলার, মাইল"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سفيلار",
+                "hi": "एम. स्विलर",
+                "bn": "এম. স্বিলার"
+              }
+            }
+          },
+          "id": 6147728,
+          "time": 72,
+          "timeSeconds": 4318,
+          "draw": {
+            "start": {
+              "x": 51.5,
+              "y": 13.2
+            },
+            "block": {
+              "x": 50.7,
+              "y": 7.1
+            },
+            "end": {
+              "x": 48.2,
+              "y": 0
+            },
+            "goal": {
+              "x": 48.2,
+              "y": 82.3
+            }
+          },
+          "reversedPeriodTime": 19,
+          "reversedPeriodTimeSeconds": 1082,
+          "periodTimeSeconds": 1618,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Zeki Çelik",
+            "firstName": "",
+            "lastName": "",
+            "slug": "zeki-celik",
+            "shortName": "Z. Çelik",
+            "position": "D",
+            "jerseyNumber": "19",
+            "userCount": 2704,
+            "gender": "M",
+            "id": 893008,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "زكي شيليك",
+                "hi": "ज़ेकी सेलिक",
+                "bn": "জেকি সেলিক"
+              },
+              "shortNameTranslation": {
+                "ar": "ز. شيليك",
+                "hi": "ज़ेड. सेलिक",
+                "bn": "জেড. সেলিক"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "goal",
+          "goalType": "regular",
+          "situation": "assisted",
+          "playerCoordinates": {
+            "x": 8.8,
+            "y": 65.4,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "high-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 51.6,
+            "z": 26.6
+          },
+          "xg": 0.097892180085182,
+          "xgot": 0.36701002717018,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6147622,
+          "time": 61,
+          "timeSeconds": 3636,
+          "draw": {
+            "start": {
+              "x": 65.4,
+              "y": 8.8
+            },
+            "end": {
+              "x": 48.4,
+              "y": 0
+            },
+            "goal": {
+              "x": 48.4,
+              "y": 73.4
+            }
+          },
+          "reversedPeriodTime": 30,
+          "reversedPeriodTimeSeconds": 1764,
+          "periodTimeSeconds": 936,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Jesper Karlström",
+            "slug": "jesper-karlstrom",
+            "shortName": "J. Karlström",
+            "position": "M",
+            "jerseyNumber": "8",
+            "userCount": 631,
+            "gender": "M",
+            "id": 227894,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ياسبر كارلستروم",
+                "hi": "जेस्पर कार्लस्ट्रोम",
+                "bn": "জেসপার কার্লস্ট্রম"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. كارلستروم",
+                "hi": "जे. कार्लस्ट्रोम",
+                "bn": "জে. কার্লস্ট্রম"
+              }
+            }
+          },
+          "isHome": false,
+          "shotType": "block",
+          "situation": "fast-break",
+          "playerCoordinates": {
+            "x": 6.3,
+            "y": 64.6,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "low-right",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 47.9,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 5.4,
+            "y": 62.8,
+            "z": 0
+          },
+          "xg": 0.067831240594387,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Mile Svilar",
+            "slug": "svilar-mile",
+            "shortName": "M. Svilar",
+            "position": "G",
+            "jerseyNumber": "99",
+            "userCount": 4143,
+            "gender": "M",
+            "id": 793986,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سفيلار، ميل",
+                "hi": "स्विलर, माइल",
+                "bn": "স্বিলার, মাইল"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سفيلار",
+                "hi": "एम. स्विलर",
+                "bn": "এম. স্বিলার"
+              }
+            }
+          },
+          "id": 6147604,
+          "time": 60,
+          "timeSeconds": 3565,
+          "draw": {
+            "start": {
+              "x": 64.6,
+              "y": 6.3
+            },
+            "block": {
+              "x": 62.8,
+              "y": 5.4
+            },
+            "end": {
+              "x": 52.1,
+              "y": 0
+            },
+            "goal": {
+              "x": 52.1,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 31,
+          "reversedPeriodTimeSeconds": 1835,
+          "periodTimeSeconds": 865,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Adam Buksa",
+            "slug": "adam-buksa",
+            "shortName": "A. Buksa",
+            "position": "F",
+            "jerseyNumber": "18",
+            "userCount": 4171,
+            "gender": "M",
+            "sofascoreId": "AdamBuksa",
+            "id": 1138856,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "آدم بوسكا",
+                "hi": "एडम बुक्सा",
+                "bn": "অ্যাডাম বুকসা"
+              },
+              "shortNameTranslation": {
+                "ar": "آ. بوسكا",
+                "hi": "ए. बुक्सा",
+                "bn": "এ. বুকসা"
+              }
+            }
+          },
+          "isHome": false,
+          "shotType": "save",
+          "situation": "regular",
+          "playerCoordinates": {
+            "x": 18.6,
+            "y": 51.1,
+            "z": 0
+          },
+          "bodyPart": "left-foot",
+          "goalMouthLocation": "high-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 50.4,
+            "z": 25.9
+          },
+          "blockCoordinates": {
+            "x": 1.9,
+            "y": 50.2,
+            "z": 0
+          },
+          "xg": 0.042388129979372,
+          "xgot": 0.029086103662848,
+          "goalkeeper": {
+            "name": "Mile Svilar",
+            "slug": "svilar-mile",
+            "shortName": "M. Svilar",
+            "position": "G",
+            "jerseyNumber": "99",
+            "userCount": 4143,
+            "gender": "M",
+            "id": 793986,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سفيلار، ميل",
+                "hi": "स्विलर, माइल",
+                "bn": "স্বিলার, মাইল"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سفيلار",
+                "hi": "एम. स्विलर",
+                "bn": "এম. স্বিলার"
+              }
+            }
+          },
+          "id": 6147539,
+          "time": 51,
+          "timeSeconds": 3032,
+          "draw": {
+            "start": {
+              "x": 51.1,
+              "y": 18.6
+            },
+            "block": {
+              "x": 50.2,
+              "y": 1.9
+            },
+            "end": {
+              "x": 49.6,
+              "y": 0
+            },
+            "goal": {
+              "x": 49.6,
+              "y": 74.1
+            }
+          },
+          "reversedPeriodTime": 40,
+          "reversedPeriodTimeSeconds": 2368,
+          "periodTimeSeconds": 332,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Tommaso Baldanzi",
+            "firstName": "",
+            "lastName": "",
+            "slug": "tommaso-baldanzi",
+            "shortName": "T. Baldanzi",
+            "position": "M",
+            "jerseyNumber": "35",
+            "userCount": 2225,
+            "gender": "M",
+            "id": 1012172,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "توماسو بالدانزي",
+                "hi": "टोमासो बाल्दांज़ी",
+                "bn": "টমাসো বলদানজি"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. بالدانزي",
+                "hi": "टी. बाल्दांज़ी",
+                "bn": "টি. বালদানজি"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "block",
+          "situation": "assisted",
+          "playerCoordinates": {
+            "x": 14.2,
+            "y": 44.8,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "low-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 50.4,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 11.1,
+            "y": 45.8,
+            "z": 0
+          },
+          "xg": 0.070390827953815,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6147190,
+          "time": 44,
+          "timeSeconds": 2601,
+          "draw": {
+            "start": {
+              "x": 44.8,
+              "y": 14.2
+            },
+            "block": {
+              "x": 45.8,
+              "y": 11.1
+            },
+            "end": {
+              "x": 49.6,
+              "y": 0
+            },
+            "goal": {
+              "x": 49.6,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 2,
+          "reversedPeriodTimeSeconds": 99,
+          "periodTimeSeconds": 2601,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Jesper Karlström",
+            "slug": "jesper-karlstrom",
+            "shortName": "J. Karlström",
+            "position": "M",
+            "jerseyNumber": "8",
+            "userCount": 631,
+            "gender": "M",
+            "id": 227894,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ياسبر كارلستروم",
+                "hi": "जेस्पर कार्लस्ट्रोम",
+                "bn": "জেসপার কার্লস্ট্রম"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. كارلستروم",
+                "hi": "जे. कार्लस्ट्रोम",
+                "bn": "জে. কার্লস্ট্রম"
+              }
+            }
+          },
+          "isHome": false,
+          "shotType": "block",
+          "situation": "regular",
+          "playerCoordinates": {
+            "x": 29.3,
+            "y": 53.8,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "low-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 51.7,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 27.3,
+            "y": 53.4,
+            "z": 0
+          },
+          "xg": 0.0070074307732284,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Mile Svilar",
+            "slug": "svilar-mile",
+            "shortName": "M. Svilar",
+            "position": "G",
+            "jerseyNumber": "99",
+            "userCount": 4143,
+            "gender": "M",
+            "id": 793986,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سفيلار، ميل",
+                "hi": "स्विलर, माइल",
+                "bn": "স্বিলার, মাইল"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سفيلار",
+                "hi": "एम. स्विलर",
+                "bn": "এম. স্বিলার"
+              }
+            }
+          },
+          "id": 6147174,
+          "time": 44,
+          "timeSeconds": 2584,
+          "draw": {
+            "start": {
+              "x": 53.8,
+              "y": 29.3
+            },
+            "block": {
+              "x": 53.4,
+              "y": 27.3
+            },
+            "end": {
+              "x": 48.3,
+              "y": 0
+            },
+            "goal": {
+              "x": 48.3,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 2,
+          "reversedPeriodTimeSeconds": 116,
+          "periodTimeSeconds": 2584,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Lorenzo Pellegrini",
+            "firstName": "",
+            "lastName": "",
+            "slug": "lorenzo-pellegrini",
+            "shortName": "L. Pellegrini",
+            "position": "M",
+            "jerseyNumber": "7",
+            "userCount": 5997,
+            "gender": "M",
+            "sofascoreId": "lorepelle7",
+            "id": 555540,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لورينزو بيليجريني",
+                "hi": "लोरेंज़ो पेलेग्रिनी",
+                "bn": "লরেঞ্জো পেলেগ্রিনি"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. بيليجريني",
+                "hi": "एल. पेलेग्रिनी",
+                "bn": "এল. পেলেগ্রিনি"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "goal",
+          "goalType": "penalty",
+          "situation": "penalty",
+          "playerCoordinates": {
+            "x": 11.5,
+            "y": 50,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "low-right",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 46.9,
+            "z": 1.3
+          },
+          "xg": 0.7884,
+          "xgot": 0.80778110027313,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6147159,
+          "time": 42,
+          "timeSeconds": 2494,
+          "draw": {
+            "start": {
+              "x": 50,
+              "y": 11.5
+            },
+            "end": {
+              "x": 53.1,
+              "y": 0
+            },
+            "goal": {
+              "x": 53.1,
+              "y": 98.7
+            }
+          },
+          "reversedPeriodTime": 4,
+          "reversedPeriodTimeSeconds": 206,
+          "periodTimeSeconds": 2494,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Jesper Karlström",
+            "slug": "jesper-karlstrom",
+            "shortName": "J. Karlström",
+            "position": "M",
+            "jerseyNumber": "8",
+            "userCount": 631,
+            "gender": "M",
+            "id": 227894,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ياسبر كارلستروم",
+                "hi": "जेस्पर कार्लस्ट्रोम",
+                "bn": "জেসপার কার্লস্ট্রম"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. كارلستروم",
+                "hi": "जे. कार्लस्ट्रोम",
+                "bn": "জে. কার্লস্ট্রম"
+              }
+            }
+          },
+          "isHome": false,
+          "shotType": "block",
+          "situation": "set-piece",
+          "playerCoordinates": {
+            "x": 13,
+            "y": 52.5,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "low-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 48.2,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 10.3,
+            "y": 52.3,
+            "z": 0
+          },
+          "xg": 0.074666447937489,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Mile Svilar",
+            "slug": "svilar-mile",
+            "shortName": "M. Svilar",
+            "position": "G",
+            "jerseyNumber": "99",
+            "userCount": 4143,
+            "gender": "M",
+            "id": 793986,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سفيلار، ميل",
+                "hi": "स्विलर, माइल",
+                "bn": "স্বিলার, মাইল"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سفيلار",
+                "hi": "एम. स्विलर",
+                "bn": "এম. স্বিলার"
+              }
+            }
+          },
+          "id": 6147076,
+          "time": 35,
+          "timeSeconds": 2089,
+          "draw": {
+            "start": {
+              "x": 52.5,
+              "y": 13
+            },
+            "block": {
+              "x": 52.3,
+              "y": 10.3
+            },
+            "end": {
+              "x": 51.8,
+              "y": 0
+            },
+            "goal": {
+              "x": 51.8,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 11,
+          "reversedPeriodTimeSeconds": 611,
+          "periodTimeSeconds": 2089,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Hassane Kamara",
+            "firstName": "",
+            "lastName": "",
+            "slug": "hassane-kamara",
+            "shortName": "H. Kamara",
+            "position": "M",
+            "jerseyNumber": "11",
+            "userCount": 1079,
+            "gender": "M",
+            "id": 351434,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "حسن كامارا",
+                "hi": "हसन कामारा",
+                "bn": "হাসানে কামারা"
+              },
+              "shortNameTranslation": {
+                "ar": "ح. كامارا",
+                "hi": "एच. कामारा",
+                "bn": "এইচ. কামারা"
+              }
+            }
+          },
+          "isHome": false,
+          "shotType": "save",
+          "situation": "set-piece",
+          "playerCoordinates": {
+            "x": 33.9,
+            "y": 31.6,
+            "z": 0
+          },
+          "bodyPart": "left-foot",
+          "goalMouthLocation": "high-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 50,
+            "z": 21.5
+          },
+          "blockCoordinates": {
+            "x": 1.4,
+            "y": 49.3,
+            "z": 0
+          },
+          "xg": 0.0090246107429266,
+          "xgot": 0.0088712759315968,
+          "goalkeeper": {
+            "name": "Mile Svilar",
+            "slug": "svilar-mile",
+            "shortName": "M. Svilar",
+            "position": "G",
+            "jerseyNumber": "99",
+            "userCount": 4143,
+            "gender": "M",
+            "id": 793986,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سفيلار، ميل",
+                "hi": "स्विलर, माइल",
+                "bn": "স্বিলার, মাইল"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سفيلار",
+                "hi": "एम. स्विलर",
+                "bn": "এম. স্বিলার"
+              }
+            }
+          },
+          "id": 6147079,
+          "time": 35,
+          "timeSeconds": 2085,
+          "draw": {
+            "start": {
+              "x": 31.6,
+              "y": 33.9
+            },
+            "block": {
+              "x": 49.3,
+              "y": 1.4
+            },
+            "end": {
+              "x": 50,
+              "y": 0
+            },
+            "goal": {
+              "x": 50,
+              "y": 78.5
+            }
+          },
+          "reversedPeriodTime": 11,
+          "reversedPeriodTimeSeconds": 615,
+          "periodTimeSeconds": 2085,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Bryan Cristante",
+            "slug": "bryan-cristante",
+            "shortName": "B. Cristante",
+            "position": "M",
+            "jerseyNumber": "4",
+            "userCount": 2613,
+            "gender": "M",
+            "id": 186855,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "برايان كريستانتي",
+                "hi": "ब्रायन क्रिस्टांटे",
+                "bn": "ব্রায়ান ক্রিস্ট্যান্ট"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. كريستانتي",
+                "hi": "बी. क्रिस्टांटे",
+                "bn": "বি. ক্রিস্ট্যান্টে"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "block",
+          "situation": "regular",
+          "playerCoordinates": {
+            "x": 19.1,
+            "y": 51.5,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "low-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 49.7,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 15.3,
+            "y": 51.3,
+            "z": 0
+          },
+          "xg": 0.078948266804218,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6146955,
+          "time": 30,
+          "timeSeconds": 1755,
+          "draw": {
+            "start": {
+              "x": 51.5,
+              "y": 19.1
+            },
+            "block": {
+              "x": 51.3,
+              "y": 15.3
+            },
+            "end": {
+              "x": 50.3,
+              "y": 0
+            },
+            "goal": {
+              "x": 50.3,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 16,
+          "reversedPeriodTimeSeconds": 945,
+          "periodTimeSeconds": 1755,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Artem Dovbyk",
+            "firstName": "",
+            "lastName": "",
+            "slug": "artem-dovbyk",
+            "shortName": "A. Dovbyk",
+            "position": "F",
+            "jerseyNumber": "9",
+            "userCount": 15951,
+            "gender": "M",
+            "sofascoreId": "tema_dovbyk",
+            "id": 798820,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أرتيم دوفبيك",
+                "hi": "आर्टेम डोवबिक",
+                "bn": "আর্টেম ডভবাইক"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. دوفبيك",
+                "hi": "ए. डोवबिक",
+                "bn": "এ. ডভবাইক"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "block",
+          "situation": "assisted",
+          "playerCoordinates": {
+            "x": 12.3,
+            "y": 37.6,
+            "z": 0
+          },
+          "bodyPart": "left-foot",
+          "goalMouthLocation": "low-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 51.2,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 11,
+            "y": 38.8,
+            "z": 0
+          },
+          "xg": 0.046399634331465,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6146954,
+          "time": 30,
+          "timeSeconds": 1752,
+          "draw": {
+            "start": {
+              "x": 37.6,
+              "y": 12.3
+            },
+            "block": {
+              "x": 38.8,
+              "y": 11
+            },
+            "end": {
+              "x": 48.8,
+              "y": 0
+            },
+            "goal": {
+              "x": 48.8,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 16,
+          "reversedPeriodTimeSeconds": 948,
+          "periodTimeSeconds": 1752,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Arthur Atta",
+            "firstName": "",
+            "lastName": "",
+            "slug": "atta-arthur",
+            "shortName": "A. Atta",
+            "position": "M",
+            "jerseyNumber": "14",
+            "userCount": 2107,
+            "gender": "M",
+            "id": 1444690,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "عتا، آرثر",
+                "hi": "अट्टा, आर्थर",
+                "bn": "আতা, আর্থার"
+              },
+              "shortNameTranslation": {
+                "ar": "آ. عتا",
+                "hi": "ए. अट्टा",
+                "bn": "এ. আতা"
+              }
+            }
+          },
+          "isHome": false,
+          "shotType": "miss",
+          "situation": "fast-break",
+          "playerCoordinates": {
+            "x": 11.7,
+            "y": 68.7,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "left",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 59.8,
+            "z": 5.6
+          },
+          "xg": 0.050165742635727,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Mile Svilar",
+            "slug": "svilar-mile",
+            "shortName": "M. Svilar",
+            "position": "G",
+            "jerseyNumber": "99",
+            "userCount": 4143,
+            "gender": "M",
+            "id": 793986,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سفيلار، ميل",
+                "hi": "स्विलर, माइल",
+                "bn": "স্বিলার, মাইল"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سفيلار",
+                "hi": "एम. स्विलर",
+                "bn": "এম. স্বিলার"
+              }
+            }
+          },
+          "id": 6146925,
+          "time": 26,
+          "timeSeconds": 1541,
+          "draw": {
+            "start": {
+              "x": 68.7,
+              "y": 11.7
+            },
+            "end": {
+              "x": 40.2,
+              "y": 0
+            },
+            "goal": {
+              "x": 40.2,
+              "y": 94.4
+            }
+          },
+          "reversedPeriodTime": 20,
+          "reversedPeriodTimeSeconds": 1159,
+          "periodTimeSeconds": 1541,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Lorenzo Pellegrini",
+            "firstName": "",
+            "lastName": "",
+            "slug": "lorenzo-pellegrini",
+            "shortName": "L. Pellegrini",
+            "position": "M",
+            "jerseyNumber": "7",
+            "userCount": 5997,
+            "gender": "M",
+            "sofascoreId": "lorepelle7",
+            "id": 555540,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لورينزو بيليجريني",
+                "hi": "लोरेंज़ो पेलेग्रिनी",
+                "bn": "লরেঞ্জো পেলেগ্রিনি"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. بيليجريني",
+                "hi": "एल. पेलेग्रिनी",
+                "bn": "এল. পেলেগ্রিনি"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "miss",
+          "situation": "regular",
+          "playerCoordinates": {
+            "x": 14.3,
+            "y": 51,
+            "z": 0
+          },
+          "bodyPart": "head",
+          "goalMouthLocation": "right",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 39,
+            "z": 8.3
+          },
+          "xg": 0.038702685385942,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6146908,
+          "time": 23,
+          "timeSeconds": 1369,
+          "draw": {
+            "start": {
+              "x": 51,
+              "y": 14.3
+            },
+            "end": {
+              "x": 61,
+              "y": 0
+            },
+            "goal": {
+              "x": 61,
+              "y": 91.7
+            }
+          },
+          "reversedPeriodTime": 23,
+          "reversedPeriodTimeSeconds": 1331,
+          "periodTimeSeconds": 1369,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Matías Soulé",
+            "firstName": "",
+            "lastName": "",
+            "slug": "matias-soule",
+            "shortName": "M. Soulé",
+            "position": "F",
+            "jerseyNumber": "18",
+            "userCount": 12169,
+            "gender": "M",
+            "sofascoreId": "matiassoule11",
+            "id": 1082406,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ماتيا سوليه",
+                "hi": "मटियास सोले",
+                "bn": "ম্যাথিয়াস সোলে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سوليه",
+                "hi": "एम. सोले",
+                "bn": "এম. সোলে"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "block",
+          "situation": "assisted",
+          "playerCoordinates": {
+            "x": 21.3,
+            "y": 69.5,
+            "z": 0
+          },
+          "bodyPart": "left-foot",
+          "goalMouthLocation": "low-right",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 48.1,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 19.5,
+            "y": 68.1,
+            "z": 0
+          },
+          "xg": 0.014396984130144,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6146899,
+          "time": 23,
+          "timeSeconds": 1367,
+          "draw": {
+            "start": {
+              "x": 69.5,
+              "y": 21.3
+            },
+            "block": {
+              "x": 68.1,
+              "y": 19.5
+            },
+            "end": {
+              "x": 51.9,
+              "y": 0
+            },
+            "goal": {
+              "x": 51.9,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 23,
+          "reversedPeriodTimeSeconds": 1333,
+          "periodTimeSeconds": 1367,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Zeki Çelik",
+            "firstName": "",
+            "lastName": "",
+            "slug": "zeki-celik",
+            "shortName": "Z. Çelik",
+            "position": "D",
+            "jerseyNumber": "19",
+            "userCount": 2704,
+            "gender": "M",
+            "id": 893008,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "زكي شيليك",
+                "hi": "ज़ेकी सेलिक",
+                "bn": "জেকি সেলিক"
+              },
+              "shortNameTranslation": {
+                "ar": "ز. شيليك",
+                "hi": "ज़ेड. सेलिक",
+                "bn": "জেড. সেলিক"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "miss",
+          "situation": "assisted",
+          "playerCoordinates": {
+            "x": 7,
+            "y": 52.3,
+            "z": 0
+          },
+          "bodyPart": "head",
+          "goalMouthLocation": "close-left",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 57.1,
+            "z": 5.6
+          },
+          "xg": 0.12276937067509,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6146876,
+          "time": 21,
+          "timeSeconds": 1231,
+          "draw": {
+            "start": {
+              "x": 52.3,
+              "y": 7
+            },
+            "end": {
+              "x": 42.9,
+              "y": 0
+            },
+            "goal": {
+              "x": 42.9,
+              "y": 94.4
+            }
+          },
+          "reversedPeriodTime": 25,
+          "reversedPeriodTimeSeconds": 1469,
+          "periodTimeSeconds": 1231,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Lorenzo Pellegrini",
+            "firstName": "",
+            "lastName": "",
+            "slug": "lorenzo-pellegrini",
+            "shortName": "L. Pellegrini",
+            "position": "M",
+            "jerseyNumber": "7",
+            "userCount": 5997,
+            "gender": "M",
+            "sofascoreId": "lorepelle7",
+            "id": 555540,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لورينزو بيليجريني",
+                "hi": "लोरेंज़ो पेलेग्रिनी",
+                "bn": "লরেঞ্জো পেলেগ্রিনি"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. بيليجريني",
+                "hi": "एल. पेलेग्रिनी",
+                "bn": "এল. পেলেগ্রিনি"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "block",
+          "situation": "regular",
+          "playerCoordinates": {
+            "x": 15,
+            "y": 47.9,
+            "z": 0
+          },
+          "bodyPart": "right-foot",
+          "goalMouthLocation": "low-right",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 48.2,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 13.2,
+            "y": 48.4,
+            "z": 0
+          },
+          "xg": 0.045441385358572,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6146858,
+          "time": 21,
+          "timeSeconds": 1224,
+          "draw": {
+            "start": {
+              "x": 47.9,
+              "y": 15
+            },
+            "block": {
+              "x": 48.4,
+              "y": 13.2
+            },
+            "end": {
+              "x": 51.8,
+              "y": 0
+            },
+            "goal": {
+              "x": 51.8,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 25,
+          "reversedPeriodTimeSeconds": 1476,
+          "periodTimeSeconds": 1224,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Manu Koné",
+            "firstName": "",
+            "lastName": "",
+            "slug": "manu-kone",
+            "shortName": "M. Koné",
+            "position": "M",
+            "jerseyNumber": "17",
+            "userCount": 6385,
+            "gender": "M",
+            "id": 974087,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مانو كوني",
+                "hi": "मनु कोने",
+                "bn": "মনু কোনে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. كوني",
+                "hi": "एम. कोने",
+                "bn": "এম. কোনে"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "save",
+          "situation": "assisted",
+          "playerCoordinates": {
+            "x": 9.3,
+            "y": 36.6,
+            "z": 0
+          },
+          "bodyPart": "left-foot",
+          "goalMouthLocation": "low-left",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 51.9,
+            "z": 1.3
+          },
+          "blockCoordinates": {
+            "x": 1.1,
+            "y": 47.5,
+            "z": 0
+          },
+          "xg": 0.093358658254147,
+          "xgot": 0.051850996911526,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6146799,
+          "time": 13,
+          "timeSeconds": 753,
+          "draw": {
+            "start": {
+              "x": 36.6,
+              "y": 9.3
+            },
+            "block": {
+              "x": 47.5,
+              "y": 1.1
+            },
+            "end": {
+              "x": 48.1,
+              "y": 0
+            },
+            "goal": {
+              "x": 48.1,
+              "y": 98.7
+            }
+          },
+          "reversedPeriodTime": 33,
+          "reversedPeriodTimeSeconds": 1947,
+          "periodTimeSeconds": 753,
+          "incidentType": "shot"
+        },
+        {
+          "player": {
+            "name": "Manu Koné",
+            "firstName": "",
+            "lastName": "",
+            "slug": "manu-kone",
+            "shortName": "M. Koné",
+            "position": "M",
+            "jerseyNumber": "17",
+            "userCount": 6385,
+            "gender": "M",
+            "id": 974087,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مانو كوني",
+                "hi": "मनु कोने",
+                "bn": "মনু কোনে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. كوني",
+                "hi": "एम. कोने",
+                "bn": "এম. কোনে"
+              }
+            }
+          },
+          "isHome": true,
+          "shotType": "block",
+          "situation": "regular",
+          "playerCoordinates": {
+            "x": 14.8,
+            "y": 34.6,
+            "z": 0
+          },
+          "bodyPart": "left-foot",
+          "goalMouthLocation": "low-centre",
+          "goalMouthCoordinates": {
+            "x": 0,
+            "y": 48.2,
+            "z": 19
+          },
+          "blockCoordinates": {
+            "x": 4.5,
+            "y": 46.6,
+            "z": 0
+          },
+          "xg": 0.058970358222723,
+          "xgot": 0,
+          "goalkeeper": {
+            "name": "Maduka Okoye",
+            "firstName": "",
+            "lastName": "",
+            "slug": "maduka-okoye",
+            "shortName": "M. Okoye",
+            "position": "G",
+            "jerseyNumber": "40",
+            "userCount": 2032,
+            "gender": "M",
+            "id": 891656,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مادوكا أوكوي",
+                "hi": "मदुका ओकोये",
+                "bn": "মাদুকা ওকয়ে"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أوكوي",
+                "hi": "एम. ओकोये",
+                "bn": "এম. ওকোয়ে"
+              }
+            }
+          },
+          "id": 6146797,
+          "time": 13,
+          "timeSeconds": 751,
+          "draw": {
+            "start": {
+              "x": 34.6,
+              "y": 14.8
+            },
+            "block": {
+              "x": 46.6,
+              "y": 4.5
+            },
+            "end": {
+              "x": 51.8,
+              "y": 0
+            },
+            "goal": {
+              "x": 51.8,
+              "y": 81
+            }
+          },
+          "reversedPeriodTime": 33,
+          "reversedPeriodTimeSeconds": 1949,
+          "periodTimeSeconds": 751,
+          "incidentType": "shot"
+        }
+      ],
+      "odds": {
+        "markets": [
+          {
+            "sourceId": 183399763,
+            "structureType": 1,
+            "marketId": 1,
+            "marketName": "Full time",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 136578313,
+            "marketGroup": "1X2",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "1/2",
+                "fractionalValue": "1/2",
+                "sourceId": 1914879781,
+                "name": "1",
+                "winning": true,
+                "change": 0
+              },
+              {
+                "initialFractionalValue": "10/3",
+                "fractionalValue": "31/10",
+                "sourceId": 1914879798,
+                "name": "X",
+                "winning": false,
+                "change": -1
+              },
+              {
+                "initialFractionalValue": "21/4",
+                "fractionalValue": "11/2",
+                "sourceId": 1914879801,
+                "name": "2",
+                "winning": false,
+                "change": 1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 1,
+            "marketId": 2,
+            "marketName": "Double chance",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426189,
+            "marketGroup": "Double chance",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "1/8",
+                "fractionalValue": "1/9",
+                "sourceId": 1993191577,
+                "name": "1X",
+                "winning": true,
+                "change": -1
+              },
+              {
+                "initialFractionalValue": "6/4",
+                "fractionalValue": "11/8",
+                "sourceId": 1993191571,
+                "name": "X2",
+                "winning": false,
+                "change": -1
+              },
+              {
+                "initialFractionalValue": "1/5",
+                "fractionalValue": "2/9",
+                "sourceId": 1993191574,
+                "name": "12",
+                "winning": true,
+                "change": 1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 1,
+            "marketId": 3,
+            "marketName": "1st half",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426190,
+            "marketGroup": "1X2",
+            "marketPeriod": "1st half",
+            "choices": [
+              {
+                "initialFractionalValue": "21/20",
+                "fractionalValue": "21/20",
+                "sourceId": 1993191046,
+                "name": "1",
+                "winning": true,
+                "change": 0
+              },
+              {
+                "initialFractionalValue": "13/10",
+                "fractionalValue": "5/4",
+                "sourceId": 1993191049,
+                "name": "X",
+                "winning": false,
+                "change": -1
+              },
+              {
+                "initialFractionalValue": "11/2",
+                "fractionalValue": "6/1",
+                "sourceId": 1993191052,
+                "name": "2",
+                "winning": false,
+                "change": 1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 1,
+            "marketId": 4,
+            "marketName": "Draw no bet",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426191,
+            "marketGroup": "Draw no bet",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "2/11",
+                "fractionalValue": "1/6",
+                "sourceId": 1993191033,
+                "name": "1",
+                "winning": true,
+                "change": -1
+              },
+              {
+                "initialFractionalValue": "7/2",
+                "fractionalValue": "4/1",
+                "sourceId": 1993191036,
+                "name": "2",
+                "winning": false,
+                "change": 1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 1,
+            "marketId": 5,
+            "marketName": "Both teams to score",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426192,
+            "marketGroup": "Both teams to score",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "21/20",
+                "fractionalValue": "11/10",
+                "sourceId": 1993198533,
+                "name": "Yes",
+                "winning": false,
+                "change": 1
+              },
+              {
+                "initialFractionalValue": "7/10",
+                "fractionalValue": "4/6",
+                "sourceId": 1993198536,
+                "name": "No",
+                "winning": true,
+                "change": -1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 2,
+            "marketId": 9,
+            "marketName": "Match goals",
+            "choiceGroup": "0.5",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426201,
+            "marketGroup": "Match goals",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "1/20",
+                "fractionalValue": "1/14",
+                "sourceId": 1993198260,
+                "name": "Over",
+                "winning": true,
+                "change": 1
+              },
+              {
+                "initialFractionalValue": "10/1",
+                "fractionalValue": "8/1",
+                "sourceId": 1993198243,
+                "name": "Under",
+                "winning": false,
+                "change": -1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 2,
+            "marketId": 9,
+            "marketName": "Match goals",
+            "choiceGroup": "1.5",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426200,
+            "marketGroup": "Match goals",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "3/10",
+                "fractionalValue": "1/3",
+                "sourceId": 1993198262,
+                "name": "Over",
+                "winning": true,
+                "change": 1
+              },
+              {
+                "initialFractionalValue": "5/2",
+                "fractionalValue": "12/5",
+                "sourceId": 1993198244,
+                "name": "Under",
+                "winning": false,
+                "change": -1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 2,
+            "marketId": 9,
+            "marketName": "Match goals",
+            "choiceGroup": "2.5",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426195,
+            "marketGroup": "Match goals",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "10/11",
+                "fractionalValue": "11/10",
+                "sourceId": 1914879805,
+                "name": "Over",
+                "winning": false,
+                "change": 1
+              },
+              {
+                "initialFractionalValue": "10/11",
+                "fractionalValue": "8/11",
+                "sourceId": 1914879812,
+                "name": "Under",
+                "winning": true,
+                "change": -1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 2,
+            "marketId": 9,
+            "marketName": "Match goals",
+            "choiceGroup": "3.5",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426199,
+            "marketGroup": "Match goals",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "12/5",
+                "fractionalValue": "11/4",
+                "sourceId": 1993198264,
+                "name": "Over",
+                "winning": false,
+                "change": 1
+              },
+              {
+                "initialFractionalValue": "1/3",
+                "fractionalValue": "2/7",
+                "sourceId": 1993198249,
+                "name": "Under",
+                "winning": true,
+                "change": -1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 2,
+            "marketId": 9,
+            "marketName": "Match goals",
+            "choiceGroup": "4.5",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426198,
+            "marketGroup": "Match goals",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "11/2",
+                "fractionalValue": "6/1",
+                "sourceId": 1993198247,
+                "name": "Over",
+                "winning": false,
+                "change": 1
+              },
+              {
+                "initialFractionalValue": "1/9",
+                "fractionalValue": "1/10",
+                "sourceId": 1993198238,
+                "name": "Under",
+                "winning": true,
+                "change": -1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 2,
+            "marketId": 9,
+            "marketName": "Match goals",
+            "choiceGroup": "5.5",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426197,
+            "marketGroup": "Match goals",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "14/1",
+                "fractionalValue": "14/1",
+                "sourceId": 1993198252,
+                "name": "Over",
+                "winning": false,
+                "change": 0
+              },
+              {
+                "initialFractionalValue": "1/33",
+                "fractionalValue": "1/33",
+                "sourceId": 1993198255,
+                "name": "Under",
+                "winning": true,
+                "change": 0
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 2,
+            "marketId": 9,
+            "marketName": "Match goals",
+            "choiceGroup": "6.5",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426196,
+            "marketGroup": "Match goals",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "25/1",
+                "fractionalValue": "28/1",
+                "sourceId": 1993198241,
+                "name": "Over",
+                "winning": false,
+                "change": 1
+              },
+              {
+                "initialFractionalValue": "1/100",
+                "fractionalValue": "1/150",
+                "sourceId": 1993198256,
+                "name": "Under",
+                "winning": true,
+                "change": 0
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 1,
+            "marketId": 17,
+            "marketName": "Asian handicap",
+            "isLive": false,
+            "fid": 183399764,
+            "suspended": false,
+            "id": 140426194,
+            "marketGroup": "Asian Handicap",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "7/8",
+                "fractionalValue": "37/40",
+                "sourceId": 1914879816,
+                "name": "(-1) Roma",
+                "change": 1
+              },
+              {
+                "initialFractionalValue": "39/40",
+                "fractionalValue": "37/40",
+                "sourceId": 1914879820,
+                "name": "(1) Udinese",
+                "change": -1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 2,
+            "marketId": 20,
+            "marketName": "Cards in match",
+            "choiceGroup": "3.5",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 144256441,
+            "marketGroup": "Total Cards",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "6/5",
+                "fractionalValue": "8/13",
+                "sourceId": 2047786742,
+                "name": "Over",
+                "change": -1
+              },
+              {
+                "initialFractionalValue": "8/13",
+                "fractionalValue": "6/5",
+                "sourceId": 2047786749,
+                "name": "Under",
+                "change": 1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 2,
+            "marketId": 21,
+            "marketName": "Corners 2-Way",
+            "choiceGroup": "9.5",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426202,
+            "marketGroup": "Corners 2-Way",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "10/11",
+                "fractionalValue": "5/6",
+                "sourceId": 2001603008,
+                "name": "Over",
+                "winning": false,
+                "change": -1
+              },
+              {
+                "initialFractionalValue": "4/5",
+                "fractionalValue": "5/6",
+                "sourceId": 2001603042,
+                "name": "Under",
+                "winning": true,
+                "change": 1
+              }
+            ]
+          },
+          {
+            "sourceId": 183399763,
+            "structureType": 1,
+            "marketId": 6,
+            "marketName": "First team to score",
+            "isLive": false,
+            "fid": 183399763,
+            "suspended": false,
+            "id": 140426193,
+            "marketGroup": "First team to score",
+            "marketPeriod": "Full-time",
+            "choices": [
+              {
+                "initialFractionalValue": "4/9",
+                "fractionalValue": "4/9",
+                "sourceId": 1993191039,
+                "name": "Roma",
+                "winning": true,
+                "change": 0
+              },
+              {
+                "initialFractionalValue": "10/1",
+                "fractionalValue": "8/1",
+                "sourceId": 1993191041,
+                "name": "No goal",
+                "winning": false,
+                "change": -1
+              },
+              {
+                "initialFractionalValue": "2/1",
+                "fractionalValue": "11/5",
+                "sourceId": 1993191043,
+                "name": "Udinese",
+                "winning": false,
+                "change": 1
+              }
+            ]
+          }
+        ],
+        "eventId": 13981523
+      }
+    }
+  ]
+}
