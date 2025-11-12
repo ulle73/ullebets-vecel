@@ -434,7 +434,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     const containerPaddingClass = showDetails ? "px-3 sm:px-6 lg:px-8" : "px-4 sm:px-6";
     const gridColumnsClass = showDetails
       ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
-      : "grid-cols-1 md:grid-cols-2";
+      : "grid-cols-1 md:[grid-template-columns:1fr_2fr] xl:[grid-template-columns:1fr_2fr]";
     const gridRowClass = "auto-rows-auto md:auto-rows-[minmax(0,1fr)]";
 
     return (
