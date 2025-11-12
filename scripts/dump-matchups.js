@@ -605,7 +605,7 @@ async function main() {
       files: {
         score: path.relative(process.cwd(), scorePath),
       },
-      score: scoreSnapshot,
+      data: scoreSnapshot,
     };
     const db = client.db(DB_NAME);
     await db.collection("matchups-score").updateOne({ _id: targetDate }, { $set: doc }, { upsert: true });

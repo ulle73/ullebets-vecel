@@ -8,6 +8,7 @@ on:
 jobs:
   run-matchups:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,18 +21,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set date for all scripts
+        id: set-date
+        run: echo "DATE=$(date -u +'%Y-%m-%d')" >> $GITHUB_ENV
+
       - name: Dump matchups into MongoDB
-        run: node scripts/dump-matchups.js
+        run: node scripts/dump-matchups.js --date=${{ env.DATE }}
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB: ${{ secrets.MONGODB_DB }}
+
       - name: Dump league average matchups
-        run: node scripts/dump-matchups-league-avg.js
+        run: node scripts/dump-matchups-league-avg.js --date=${{ env.DATE }}
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB: ${{ secrets.MONGODB_DB }}
-      - name: Enrich matchups history
-        run: node scripts/enrich-matchups-results.js
+
+      - name: Enrich matchups results
+        run: node scripts/enrich-matchups-results.js --date=${{ env.DATE }}
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB: ${{ secrets.MONGODB_DB }}

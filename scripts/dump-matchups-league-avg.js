@@ -371,7 +371,7 @@ async function main() {
           date: targetDate,
           generatedAt,
           files: { league: path.relative(process.cwd(), filePath) },
-          leagueAvg: snapshot,
+          data: snapshot,
         },
       },
       { upsert: true }
