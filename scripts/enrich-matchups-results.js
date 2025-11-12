@@ -1,16 +1,11 @@
-// #!/usr/bin/env node
 
-// import fs from "fs/promises";
-// import path from "path";
 // import dotenv from "dotenv";
 // import { MongoClient } from "mongodb";
 
 // dotenv.config({ path: ".env.local" });
 
-// const RESULTS_DIR = path.join(process.cwd(), "data", "matchups");
-// const SCORE_DIR = path.join(RESULTS_DIR, "matchup-score");
-// const LEAGUE_DIR = path.join(RESULTS_DIR, "matchup-league-avg");
-// const HISTORY_COLLECTION = "matchups-history";
+// const MONGODB_URI = process.env.MONGODB_URI;
+// const DB_NAME = process.env.MONGODB_DB ?? "app";
 
 // function buildKey(row) {
 //   return `${row.matchId}:${row.statKey}:${row.period}:${row.scope}:${row.condition}`;
@@ -24,19 +19,10 @@
 //   });
 // }
 
-// const MONGODB_URI = process.env.MONGODB_URI;
-// const DB_NAME = process.env.MONGODB_DB ?? "app";
-
 // function resolveDateArg() {
 //   const arg = process.argv.find((value) => value.startsWith("--date="));
 //   if (arg) return arg.split("=", 2)[1];
 //   return new Date().toISOString().slice(0, 10);
-// }
-
-// async function loadMatchups(date) {
-//   const scorePath = path.join(SCORE_DIR, `${date}.json`);
-//   const raw = await fs.readFile(scorePath, "utf8");
-//   return JSON.parse(raw);
 // }
 
 // async function loadTeamstats(client, matchId) {
@@ -85,8 +71,7 @@
 //     if (!Array.isArray(statistics)) continue;
 
 //     const nodesToCheck = statistics.filter(
-//       (entry) =>
-//         entry?.period === period || (!entry?.period && period === "ALL")
+//       (entry) => entry?.period === period || (!entry?.period && period === "ALL")
 //     );
 
 //     for (const node of nodesToCheck) {
@@ -122,154 +107,86 @@
 //   };
 // }
 
-// async function persistHistory(client, date, enrichedRows, stats) {
-//   const collection = client.db(DB_NAME).collection(HISTORY_COLLECTION);
-//   return collection.updateOne(
-//     { _id: date },
-//     {
-//       $set: {
-//         date,
-//         updatedAt: new Date(),
-//         stats,
-//         rows: enrichedRows,
-//       },
-//     },
-//     { upsert: true }
-//   );
-// }
-
 // async function main() {
 //   if (!MONGODB_URI) throw new Error("MONGODB_URI missing");
 //   const date = resolveDateArg();
 //   const client = new MongoClient(MONGODB_URI);
 //   await client.connect();
-//   try {
-//     const matchups = await loadMatchups(date);
 
-//     // league avg (optional)
-//     let leagueAvg = null;
-//     try {
-//       const leaguePath = path.join(LEAGUE_DIR, `${date}.json`);
-//       leagueAvg = JSON.parse(await fs.readFile(leaguePath, "utf8"));
-//     } catch {
-//       leagueAvg = null;
+//   try {
+//     const db = client.db(DB_NAME);
+
+//     // 1) Hämta befintligt score-dokument för datumet
+//     const scoreDoc = await db
+//       .collection("matchups-score")
+//       .findOne({ _id: date }, { projection: { data: 1 } });
+
+//     if (!scoreDoc?.data) {
+//       console.warn(`[enrich] no matchups-score.data for ${date} — skipping score update`);
 //     }
 
-//     const rows = [
-//       ...(matchups.top50?.over ?? []),
-//       ...(matchups.top50?.under ?? []),
-//     ];
+//     // 2) Hämta ev. befintligt league-avg-dokument
+//     const leagueDoc = await db
+//       .collection("matchups-league-avg")
+//       .findOne({ _id: date }, { projection: { data: 1 } });
 
-//     const enriched = [];
-//     const outcomeMap = new Map();
-//     let processed = 0;
+//     if (!leagueDoc?.data) {
+//       console.warn(`[enrich] no matchups-league-avg.data for ${date} — skipping league avg update`);
+//     }
 
-//     for (const row of rows) {
-//       console.log(
-//         `[enrich] matchId=${row.matchId} stat=${row.statKey} period=${row.period} scope=${row.scope}`
-//       );
+//     // Funktion som enrichar ett top50-objekt in-place (utan att skapa något nytt dokument)
+//     const enrichTop50 = async (top50) => {
+//       const rows = [...(top50?.over ?? []), ...(top50?.under ?? [])];
+//       const outcomeMap = new Map();
 
-//       const fullArr = await loadTeamstats(client, row.matchId);
-//       if (!fullArr.length) {
-//         console.warn(`[enrich] teamstats missing for match ${row.matchId}`);
+//       for (const row of rows) {
+//         const fullArr = await loadTeamstats(client, row.matchId);
+//         if (!fullArr.length) {
+//           console.warn(`[enrich] teamstats missing for match ${row.matchId}`);
+//         }
+//         const actual = findActualFromFull(fullArr, row.matchId, row.period, row.statKey);
+//         const outcome = evaluateMatchup(row, actual);
+//         outcomeMap.set(buildKey(row), { outcome });
 //       }
 
-//       const actual = findActualFromFull(
-//         fullArr,
-//         row.matchId,
-//         row.period,
-//         row.statKey
-//       );
-//       const outcome = evaluateMatchup(row, actual);
-//       console.log(
-//         `[enrich] outcome match=${row.matchId} stat=${row.statKey} period=${row.period} scope=${row.scope} ->`,
-//         outcome
-//       );
-
-//       enriched.push({ ...row, outcome });
-//       outcomeMap.set(buildKey(row), { outcome });
-//       processed++;
-//     }
-
-//     const annotatedScore = {
-//       ...matchups,
-//       top50: {
-//         over: annotateRows(matchups.top50?.over ?? [], outcomeMap),
-//         under: annotateRows(matchups.top50?.under ?? [], outcomeMap),
-//       },
+//       return {
+//         over: annotateRows(top50?.over ?? [], outcomeMap),
+//         under: annotateRows(top50?.under ?? [], outcomeMap),
+//       };
 //     };
 
-//     await fs.writeFile(
-//       path.join(SCORE_DIR, `${date}.json`),
-//       JSON.stringify(annotatedScore, null, 2)
-//     );
-
-//     let annotatedLeagueAvg = null;
-//     if (leagueAvg) {
-//       annotatedLeagueAvg = {
-//         ...leagueAvg,
-//         top50: {
-//           over: annotateRows(leagueAvg.top50?.over ?? [], outcomeMap),
-//           under: annotateRows(leagueAvg.top50?.under ?? [], outcomeMap),
-//         },
-//       };
-//       await fs.writeFile(
-//         path.join(LEAGUE_DIR, `${date}.json`),
-//         JSON.stringify(annotatedLeagueAvg, null, 2)
-//       );
-//     }
-
-//     await persistHistory(client, date, enriched, { processed });
-
-//     // Behåll separata collections
-//     await client
-//       .db(DB_NAME)
-//       .collection("matchups-score")
-//       .updateOne(
+//     // 3) Uppdatera matchups-score.data (om det finns)
+//     if (scoreDoc?.data) {
+//       const newTop50 = await enrichTop50(scoreDoc.data.top50);
+//       await db.collection("matchups-score").updateOne(
 //         { _id: date },
 //         {
 //           $set: {
-//             "score.top50.over": annotatedScore.top50.over,
-//             "score.top50.under": annotatedScore.top50.under,
-//             "score.updatedAt": new Date(),
+//             "data.top50.over": newTop50.over,
+//             "data.top50.under": newTop50.under,
+//             "data.updatedAt": new Date(),
 //           },
-//         },
-//         { upsert: true }
+//         }, // inga upserts -> skapar inte nytt
 //       );
-
-//     if (annotatedLeagueAvg) {
-//       await client
-//         .db(DB_NAME)
-//         .collection("matchups-league-avg")
-//         .updateOne(
-//           { _id: date },
-//           {
-//             $set: {
-//               "leagueAvg.top50.over": annotatedLeagueAvg.top50.over,
-//               "leagueAvg.top50.under": annotatedLeagueAvg.top50.under,
-//               "leagueAvg.updatedAt": new Date(),
-//             },
-//           },
-//           { upsert: true }
-//         );
+//       console.log(`[enrich] updated matchups-score for ${date}`);
 //     }
 
-//     // ---- NYTT: skriv ett konsoliderat dokument i "matchups" UTAN att läsa filer ----
-//     const matchupsDoc = {
-//       _id: date,
-//       date,
-//       updatedAt: new Date(),
-//       score: annotatedScore, // exakt payload vi skrev till data/matchups/matchup-score/<date>.json
-//       ...(annotatedLeagueAvg && { leagueAvg: annotatedLeagueAvg }), // samma för league-avg om den fanns
-//     };
+//     // 4) Uppdatera matchups-league-avg.data (om det finns)
+//     if (leagueDoc?.data) {
+//       const newTop50 = await enrichTop50(leagueDoc.data.top50);
+//       await db.collection("matchups-league-avg").updateOne(
+//         { _id: date },
+//         {
+//           $set: {
+//             "data.top50.over": newTop50.over,
+//             "data.top50.under": newTop50.under,
+//             "data.updatedAt": new Date(),
+//           },
+//         }, // inga upserts -> skapar inte nytt
+//       );
+//       console.log(`[enrich] updated matchups-league-avg for ${date}`);
+//     }
 
-//     // replaceOne => tar bort legacy-fält som "top50" i roten
-//     await client
-//       .db(DB_NAME)
-//       .collection("matchups")
-//       .replaceOne({ _id: date }, matchupsDoc, { upsert: true });
-
-//     console.log(`enriched ${processed} rows for ${date}`);
 //   } finally {
 //     await client.close();
 //   }
@@ -281,15 +198,23 @@
 // });
 
 
-
-
 import dotenv from "dotenv";
 import { MongoClient } from "mongodb";
+import fs from "fs/promises";
+import path from "path";
 
 dotenv.config({ path: ".env.local" });
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.MONGODB_DB ?? "app";
+
+const RESULTS_DIR = path.join(process.cwd(), "data", "matchups");
+const SCORE_DIR = path.join(RESULTS_DIR, "matchup-score");
+const LEAGUE_DIR = path.join(RESULTS_DIR, "matchup-league-avg");
+
+async function ensureDir(dir) {
+  await fs.mkdir(dir, { recursive: true });
+}
 
 function buildKey(row) {
   return `${row.matchId}:${row.statKey}:${row.period}:${row.scope}:${row.condition}`;
@@ -355,7 +280,8 @@ function findActualFromFull(fullArr, wantedMatchId, period, statKey) {
     if (!Array.isArray(statistics)) continue;
 
     const nodesToCheck = statistics.filter(
-      (entry) => entry?.period === period || (!entry?.period && period === "ALL")
+      (entry) =>
+        entry?.period === period || (!entry?.period && period === "ALL")
     );
 
     for (const node of nodesToCheck) {
@@ -406,7 +332,9 @@ async function main() {
       .findOne({ _id: date }, { projection: { data: 1 } });
 
     if (!scoreDoc?.data) {
-      console.warn(`[enrich] no matchups-score.data for ${date} — skipping score update`);
+      console.warn(
+        `[enrich] no matchups-score.data for ${date} — skipping score update`
+      );
     }
 
     // 2) Hämta ev. befintligt league-avg-dokument
@@ -415,7 +343,9 @@ async function main() {
       .findOne({ _id: date }, { projection: { data: 1 } });
 
     if (!leagueDoc?.data) {
-      console.warn(`[enrich] no matchups-league-avg.data for ${date} — skipping league avg update`);
+      console.warn(
+        `[enrich] no matchups-league-avg.data for ${date} — skipping league avg update`
+      );
     }
 
     // Funktion som enrichar ett top50-objekt in-place (utan att skapa något nytt dokument)
@@ -428,7 +358,12 @@ async function main() {
         if (!fullArr.length) {
           console.warn(`[enrich] teamstats missing for match ${row.matchId}`);
         }
-        const actual = findActualFromFull(fullArr, row.matchId, row.period, row.statKey);
+        const actual = findActualFromFull(
+          fullArr,
+          row.matchId,
+          row.period,
+          row.statKey
+        );
         const outcome = evaluateMatchup(row, actual);
         outcomeMap.set(buildKey(row), { outcome });
       }
@@ -439,9 +374,10 @@ async function main() {
       };
     };
 
-    // 3) Uppdatera matchups-score.data (om det finns)
+    // 3) Uppdatera matchups-score.data (om det finns) + skriv identiskt till fil
     if (scoreDoc?.data) {
       const newTop50 = await enrichTop50(scoreDoc.data.top50);
+
       await db.collection("matchups-score").updateOne(
         { _id: date },
         {
@@ -450,14 +386,27 @@ async function main() {
             "data.top50.under": newTop50.under,
             "data.updatedAt": new Date(),
           },
-        }, // inga upserts -> skapar inte nytt
+        } // inga upserts
       );
       console.log(`[enrich] updated matchups-score for ${date}`);
+
+      // Skriv samma snapshot lokalt
+      const scoreFilePayload = {
+        ...scoreDoc.data,
+        top50: newTop50,
+        updatedAt: new Date().toISOString(),
+      };
+      await ensureDir(SCORE_DIR);
+      await fs.writeFile(
+        path.join(SCORE_DIR, `${date}.json`),
+        JSON.stringify(scoreFilePayload, null, 2)
+      );
     }
 
-    // 4) Uppdatera matchups-league-avg.data (om det finns)
+    // 4) Uppdatera matchups-league-avg.data (om det finns) + skriv identiskt till fil
     if (leagueDoc?.data) {
       const newTop50 = await enrichTop50(leagueDoc.data.top50);
+
       await db.collection("matchups-league-avg").updateOne(
         { _id: date },
         {
@@ -466,11 +415,22 @@ async function main() {
             "data.top50.under": newTop50.under,
             "data.updatedAt": new Date(),
           },
-        }, // inga upserts -> skapar inte nytt
+        } // inga upserts
       );
       console.log(`[enrich] updated matchups-league-avg for ${date}`);
-    }
 
+      // Skriv samma snapshot lokalt
+      const leagueFilePayload = {
+        ...leagueDoc.data,
+        top50: newTop50,
+        updatedAt: new Date().toISOString(),
+      };
+      await ensureDir(LEAGUE_DIR);
+      await fs.writeFile(
+        path.join(LEAGUE_DIR, `${date}.json`),
+        JSON.stringify(leagueFilePayload, null, 2)
+      );
+    }
   } finally {
     await client.close();
   }
