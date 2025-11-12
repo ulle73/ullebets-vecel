@@ -1,0 +1,622 @@
+#!/usr/bin/env node
+
+import fs from "fs/promises";
+import path from "path";
+import crypto from "node:crypto";
+
+import { clientPromise } from "../lib/db.js";
+import { getMatchesForDate } from "../lib/repos/fixtures.js";
+
+const PERIODS = [
+  { value: "ALL", label: "Hela matchen" },
+  { value: "1ST", label: "Första halvlek" },
+  { value: "2ND", label: "Andra halvlek" },
+];
+
+const STATS_FOR_VIEW = [
+  { key: "shotsOnGoal", label: "Skott på mål" },
+  { key: "totalShotsOnGoal", label: "Totala skott" },
+  { key: "cornerKicks", label: "Hörnor" },
+  { key: "fouls", label: "Fouls" },
+  { key: "yellowCards", label: "Gula kort" },
+  { key: "throwIns", label: "Inkast" },
+  { key: "offsides", label: "Offsides" },
+  { key: "totalTackle", label: "Tacklingar" },
+  { key: "freeKicks", label: "Frisparkar" },
+];
+
+const RESULTS_DIR = path.join(process.cwd(), "data", "matchups");
+const SCORE_DIR = path.join(RESULTS_DIR, "matchup-score");
+const DB_NAME = process.env.MONGODB_DB || "app";
+const TEAMPROFILE_COLLECTION = "teamprofiles";
+
+function ensureDir(target) {
+  return fs.mkdir(target, { recursive: true });
+}
+
+function roundScore(value) {
+  if (!Number.isFinite(value)) return null;
+  return Math.round(value * 100) / 100;
+}
+
+function sortAndLimit(entries, limit) {
+  return entries
+    .slice()
+    .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity))
+    .slice(0, limit);
+}
+
+function toNum(value) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function getPeriodNode(metricNode, period) {
+  if (!metricNode || typeof metricNode !== "object") return null;
+  return metricNode[period] ?? metricNode.ALL ?? null;
+}
+
+function readRank(profile, type, statKey, period) {
+  const node = profile?.statistics?.[type]?.[statKey];
+  const p = node && getPeriodNode(node, period);
+  return toNum(p?.rank ?? p?.Rank);
+}
+
+function readValue(profile, type, statKey, period) {
+  const node = profile?.statistics?.[type]?.[statKey];
+  const p = node && getPeriodNode(node, period);
+  return toNum(p?.value ?? p?.Value);
+}
+
+function leagueSizeFromMeta(profile) {
+  return (
+    toNum(profile?.meta?.leagueTeamCount) ??
+    toNum(profile?.meta?.leagueSize) ??
+    toNum(profile?.meta?.teamsInLeague) ??
+    null
+  );
+}
+
+function normalizePairScore(avgPair, leagueMax, mode) {
+  const L = toNum(leagueMax) ?? 20;
+  const min = 2;
+  const max = 2 * L;
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const s = clamp(avgPair, min, max);
+  let raw;
+  if (mode === "over") raw = (max - s) / (max - min);
+  else raw = (s - min) / (max - min);
+  return Math.round(raw * 1000) / 10;
+}
+
+function adjustSinglePairForComparison(pairSum, leagueMax) {
+  if (!Number.isFinite(pairSum)) return null;
+  const L = toNum(leagueMax) ?? 20;
+  const mean = L + 1;
+  const adjusted = mean + (pairSum - mean) / Math.SQRT2;
+  const min = 2;
+  const max = 2 * L;
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  return clamp(adjusted, min, max);
+}
+
+function badgeForAvgPair(avgPair, leagueMax, mode) {
+  const L = toNum(leagueMax) ?? 20;
+  const min = 2;
+  const max = 2 * L;
+  if (mode === "over") {
+    if (avgPair === 2) return { label: "Perfekt", tone: "perfect" };
+    if (avgPair <= 3) return { label: "Nästan", tone: "almost" };
+    if (avgPair <= 5) return { label: "Stark", tone: "strong" };
+    return null;
+  }
+  if (avgPair === max) return { label: "Perfekt", tone: "perfect" };
+  if (avgPair >= max - 1) return { label: "Nästan", tone: "almost" };
+  if (avgPair >= max - 3) return { label: "Stark", tone: "strong" };
+  return null;
+}
+
+function pick(value, paths, fallback = null) {
+  for (const p of paths) {
+    const result = p
+      .split(".")
+      .reduce((acc, key) => (acc == null ? acc : acc[key]), value);
+    if (result != null) return result;
+  }
+  return fallback;
+}
+
+function toPositiveInt(value) {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
+function toScoreValue(value) {
+  if (value == null) return null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const resolved = toScoreValue(item);
+      if (resolved !== null) return resolved;
+    }
+    return null;
+  }
+  if (typeof value === "object") {
+    const keys = [
+      "current",
+      "display",
+      "total",
+      "normaltime",
+      "normalTime",
+      "regular",
+      "fullTime",
+      "ft",
+      "value",
+      "main",
+      "score",
+    ];
+    for (const key of keys) {
+      if (!(key in value)) continue;
+      const resolved = toScoreValue(value[key]);
+      if (resolved !== null) return resolved;
+    }
+  }
+  return null;
+}
+
+function normalizeMatch(item) {
+  if (!item) return null;
+  const id = String(
+    pick(
+      item,
+      ["id", "matchId", "event.id", "event.matchId"],
+      crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)
+    )
+  );
+
+  const leagueId = toPositiveInt(
+    pick(item, [
+      "tournament.uniqueTournament.id",
+      "uniqueTournament.id",
+      "tournament.id",
+      "event.tournament.uniqueTournament.id",
+      "event.tournament.id",
+    ])
+  );
+
+  const leagueName =
+    pick(item, ["tournament.name", "event.tournament.name", "league.name"]) ??
+    "Unknown";
+
+  const homeTeamId = toPositiveInt(
+    pick(item, ["homeTeam.id", "event.homeTeam.id", "home.id", "teams.home.id"]),
+  );
+  const awayTeamId = toPositiveInt(
+    pick(item, ["awayTeam.id", "event.awayTeam.id", "away.id", "teams.away.id"]),
+  );
+
+  const homeTeamName =
+    pick(item, ["homeTeam.name", "event.homeTeam.name", "home.name", "teams.home.name"]) ??
+    "—";
+  const awayTeamName =
+    pick(item, ["awayTeam.name", "event.awayTeam.name", "away.name", "teams.away.name"]) ??
+    "—";
+
+  const timestamp = Number(
+    pick(item, [
+      "startTimestamp",
+      "event.startTimestamp",
+      "timestamp",
+      "kickoffTime",
+    ])
+  );
+  const safeTimestamp = Number.isFinite(timestamp) ? timestamp : null;
+
+  return {
+    id,
+    matchId: id,
+    leagueId,
+    leagueName,
+    homeTeamId,
+    awayTeamId,
+    homeTeamName,
+    awayTeamName,
+    timestamp: safeTimestamp,
+    raw: item,
+    homeScore: toScoreValue(
+      pick(item, [
+        "homeScore",
+        "homeScore.current",
+        "homeScore.display",
+        "homeScore.total",
+        "event.homeScore",
+        "event.homeScore.current",
+        "event.homeScore.display",
+        "event.homeScore.total",
+        "score.home",
+        "scores.home",
+        "event.score.home",
+        "event.scores.home",
+        "result.home",
+        "event.result.home",
+      ])
+    ),
+    awayScore: toScoreValue(
+      pick(item, [
+        "awayScore",
+        "awayScore.current",
+        "awayScore.display",
+        "awayScore.total",
+        "event.awayScore",
+        "event.awayScore.current",
+        "event.awayScore.display",
+        "event.awayScore.total",
+        "score.away",
+        "scores.away",
+        "event.score.away",
+        "event.scores.away",
+        "result.away",
+        "event.result.away",
+      ])
+    ),
+  };
+}
+
+function resolveDateArg() {
+  const args = process.argv.slice(2);
+  const explicit = args.find((arg) => arg.startsWith("--date="));
+  const raw = explicit ? explicit.split("=", 2)[1] : args[0];
+  if (raw) {
+    const trimmed = raw.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed;
+    }
+    throw new Error("Date must be YYYY-MM-DD");
+  }
+  return new Date().toISOString().slice(0, 10);
+}
+
+function buildMatchupCacheKey(params) {
+  const leaguePart = params.leagueId ?? params.leagueName ?? "";
+  const teamPart = params.teamId ?? params.teamName ?? "";
+  const typePart = (params.matchType ?? "").toLowerCase();
+  return `${leaguePart}|${teamPart}|${typePart}`;
+}
+
+function normalizeComparableName(value) {
+  if (value == null) return null;
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function stringEquals(expected, actual) {
+  const lhs = normalizeComparableName(expected);
+  const rhs = normalizeComparableName(actual);
+  if (lhs && rhs) return lhs === rhs;
+  if (lhs) return false;
+  return true;
+}
+
+function parsePositiveInt(value) {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
+function buildIdentifier(leagueId, teamId, matchType) {
+  const league = parsePositiveInt(leagueId);
+  const team = parsePositiveInt(teamId);
+  const type = (matchType ?? "").toLowerCase();
+  if (league == null || team == null || !type) return null;
+  return `${league}:${team}:${type}`;
+}
+
+function stripDbProfile(doc) {
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
+function profileMatchesRequest(doc, params) {
+  if (!doc) return false;
+  const meta = doc.meta ?? {};
+  const { leagueId, teamId, leagueName, teamName, matchType } = params;
+  if (matchType) {
+    if (typeof meta.matchType !== "string") return false;
+    if (meta.matchType.toLowerCase() !== matchType.toLowerCase()) return false;
+  }
+  const actualTeamId = parsePositiveInt(meta.lagId ?? meta.teamId ?? doc.teamId);
+  const expectedTeamId = parsePositiveInt(teamId);
+  if (expectedTeamId != null) {
+    if (actualTeamId == null || actualTeamId !== expectedTeamId) return false;
+  } else if (
+    !stringEquals(teamName, meta.lagnamn ?? meta.teamName ?? doc.teamName ?? doc.team)
+  ) {
+    return false;
+  }
+  const actualLeagueId = parsePositiveInt(meta.ligaId ?? meta.leagueId ?? doc.leagueId);
+  const expectedLeagueId = parsePositiveInt(leagueId);
+  if (expectedLeagueId != null) {
+    if (actualLeagueId == null || actualLeagueId !== expectedLeagueId) return false;
+  } else if (!stringEquals(leagueName, meta.leagueName ?? meta.league ?? doc.leagueName ?? doc.league)) {
+    return false;
+  }
+  return true;
+}
+
+function escapeForRegex(value) {
+  return value.replace(/[|\\{}()[\]^$+*?.-]/g, "\\$&");
+}
+
+function buildCaseInsensitiveEquals(value) {
+  if (!value) return null;
+  return { $regex: `^${escapeForRegex(value)}$`, $options: "i" };
+}
+
+async function fetchProfileFromDb(client, params) {
+  const collection = client.db(DB_NAME).collection(TEAMPROFILE_COLLECTION);
+  const leagueNumeric = parsePositiveInt(params.leagueId);
+  const teamNumeric = parsePositiveInt(params.teamId);
+  const requestParams = { ...params };
+  const matchType = (params.matchType ?? "").toLowerCase();
+
+  if (leagueNumeric != null && teamNumeric != null) {
+    const identifier = buildIdentifier(leagueNumeric, teamNumeric, matchType);
+    if (identifier) {
+      const doc = await collection.findOne({ _id: identifier });
+      if (doc && profileMatchesRequest(doc, requestParams)) {
+        return stripDbProfile(doc);
+      }
+    }
+    const docByMeta = await collection.findOne({
+      "meta.ligaId": leagueNumeric,
+      "meta.lagId": teamNumeric,
+      "meta.matchType": matchType,
+    });
+    if (docByMeta && profileMatchesRequest(docByMeta, requestParams)) {
+      return stripDbProfile(docByMeta);
+    }
+  }
+
+  if (params.leagueName || params.teamName) {
+    const leagueMatcher = leagueNumeric != null ? leagueNumeric : buildCaseInsensitiveEquals(params.leagueName);
+    const teamMatcher = teamNumeric != null ? teamNumeric : buildCaseInsensitiveEquals(params.teamName);
+    const query = { "meta.matchType": matchType };
+    if (leagueNumeric != null) {
+      query["meta.ligaId"] = leagueNumeric;
+    } else if (leagueMatcher) {
+      query.leagueName = leagueMatcher;
+    }
+    if (teamNumeric != null) {
+      query["meta.lagId"] = teamNumeric;
+    } else if (teamMatcher) {
+      query["meta.lagnamn"] = teamMatcher;
+    }
+    const docByName = await collection.findOne(query);
+    if (docByName && profileMatchesRequest(docByName, requestParams)) {
+      return stripDbProfile(docByName);
+    }
+  }
+
+  return null;
+}
+
+async function buildPairs(matches, client) {
+  const pairs = [];
+  const cache = new Map();
+  const missingMatches = [];
+  for (const match of matches) {
+    const leagueName = match.leagueName ?? match.raw?.leagueName ?? null;
+    const homeParams = {
+      leagueId: match.leagueId,
+      leagueName,
+      teamId: match.homeTeamId,
+      teamName: match.homeTeamName,
+      matchType: "home",
+    };
+    const awayParams = {
+      leagueId: match.leagueId,
+      leagueName,
+      teamId: match.awayTeamId,
+      teamName: match.awayTeamName,
+      matchType: "away",
+    };
+    const homeKey = buildMatchupCacheKey(homeParams);
+    const awayKey = buildMatchupCacheKey(awayParams);
+    let homeProfile = cache.get(homeKey);
+    let awayProfile = cache.get(awayKey);
+    if (homeProfile === undefined) {
+      homeProfile = await fetchProfileFromDb(client, homeParams);
+      cache.set(homeKey, homeProfile);
+    }
+    if (awayProfile === undefined) {
+      awayProfile = await fetchProfileFromDb(client, awayParams);
+      cache.set(awayKey, awayProfile);
+    }
+    if (!homeProfile || !awayProfile) {
+      missingMatches.push({ matchId: match.matchId, hasHome: !!homeProfile, hasAway: !!awayProfile });
+      continue;
+    }
+
+    const hId = toNum(homeProfile?.meta?.ligaId) ?? toNum(match.leagueId);
+    const aId = toNum(awayProfile?.meta?.ligaId) ?? toNum(match.leagueId);
+    const sameId = hId && aId ? hId === aId : true;
+    const hName = homeProfile?.meta?.leagueName ?? leagueName;
+    const aName = awayProfile?.meta?.leagueName ?? leagueName;
+    const sameName = hName && aName ? hName === aName : true;
+    if (!sameId || !sameName) {
+      continue;
+    }
+
+    pairs.push({
+      matchId: match.matchId,
+      leagueId: hId ?? aId ?? match.leagueId ?? null,
+      leagueName: hName ?? aName ?? leagueName,
+      home: {
+        name: homeProfile?.meta?.lagnamn ?? match.homeTeamName ?? "Hemma",
+        profile: homeProfile,
+      },
+      away: {
+        name: awayProfile?.meta?.lagnamn ?? match.awayTeamName ?? "Borta",
+        profile: awayProfile,
+      },
+    });
+  }
+  return { pairs, normalizedCount: matches.length, missingMatches };
+}
+
+function buildLeagueSizeMap(pairs) {
+  const map = new Map();
+  for (const pair of pairs) {
+    const key = String(pair.leagueId ?? pair.leagueName ?? "");
+    const homeSize = leagueSizeFromMeta(pair.home.profile);
+    const awaySize = leagueSizeFromMeta(pair.away.profile);
+    const best = homeSize ?? awaySize ?? null;
+    if (best) {
+      map.set(key, best);
+    }
+  }
+  return map;
+}
+
+function buildScoreSnapshot(pairs, leagueSizeMap, limit = 50) {
+  const overEntries = [];
+  const underEntries = [];
+
+  for (const p of pairs) {
+    const leagueKey = String(p.leagueId ?? p.leagueName ?? "");
+    const leagueMax = toNum(leagueSizeMap.get(leagueKey)) ?? 20;
+
+    for (const { key: statKey, label: statLabel } of STATS_FOR_VIEW) {
+      for (const { value: periodKey } of PERIODS) {
+        const hf = readRank(p.home.profile, "for", statKey, periodKey);
+        const ha = readRank(p.home.profile, "against", statKey, periodKey);
+        const af = readRank(p.away.profile, "for", statKey, periodKey);
+        const aa = readRank(p.away.profile, "against", statKey, periodKey);
+        if (![hf, ha, af, aa].every(Number.isFinite)) continue;
+
+        const sumHome = hf + aa;
+        const sumAway = af + ha;
+        const avgPair = (sumHome + sumAway) / 2;
+
+        const matchLabel = `${p.home.name} vs ${p.away.name}`;
+        const baseEntry = {
+          match: matchLabel,
+          league: p.leagueName,
+          leagueId: p.leagueId,
+          matchId: p.matchId,
+          statKey,
+          statLabel,
+          period: periodKey,
+        };
+
+        const pushEntry = (direction, scope, scoreValue) => {
+          const rounded = roundScore(scoreValue);
+          if (rounded == null) return;
+          const entry = {
+            ...baseEntry,
+            scope,
+            condition: direction,
+            score: rounded,
+          };
+          if (direction === "over") {
+            overEntries.push(entry);
+          } else {
+            underEntries.push(entry);
+          }
+        };
+
+        const pushScoresForScope = (scope, basisValue) => {
+          const scoreBasis =
+            scope === "total"
+              ? basisValue
+              : adjustSinglePairForComparison(basisValue, leagueMax);
+          if (!Number.isFinite(scoreBasis)) return;
+          const overScore = normalizePairScore(scoreBasis, leagueMax, "over");
+          const underScore = normalizePairScore(scoreBasis, leagueMax, "under");
+          pushEntry("over", scope, overScore);
+          pushEntry("under", scope, underScore);
+        };
+
+        pushScoresForScope("total", avgPair);
+        pushScoresForScope("home", sumHome);
+        pushScoresForScope("away", sumAway);
+      }
+    }
+  }
+
+  return {
+    top50: {
+      over: sortAndLimit(overEntries, limit),
+      under: sortAndLimit(underEntries, limit),
+    },
+    stats: {
+      pairs: pairs.length,
+      overCandidates: overEntries.length,
+      underCandidates: underEntries.length,
+    },
+  };
+}
+
+async function writeSnapshot(filePath, data) {
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+}
+
+async function main() {
+  const targetDate = resolveDateArg();
+  console.log(`[matchups] Building snapshots for ${targetDate}`);
+  const client = await clientPromise;
+  try {
+    const matches = await getMatchesForDate(targetDate);
+    const normalizedMatches = matches.map(normalizeMatch).filter(Boolean);
+    const { pairs, normalizedCount, missingMatches } = await buildPairs(normalizedMatches, client);
+    const leagueSizeMap = buildLeagueSizeMap(pairs);
+    const generatedAt = new Date().toISOString();
+    const scoreData = buildScoreSnapshot(pairs, leagueSizeMap);
+    const scoreSnapshot = {
+      date: targetDate,
+      generatedAt,
+      stats: {
+        normalizedMatches: normalizedCount,
+        pairs: pairs.length,
+        missingMatches,
+        ...scoreData.stats,
+      },
+      top50: scoreData.top50,
+    };
+    await ensureDir(SCORE_DIR);
+    const scorePath = path.join(SCORE_DIR, `${targetDate}.json`);
+    await writeSnapshot(scorePath, scoreSnapshot);
+    const doc = {
+      _id: targetDate,
+      date: targetDate,
+      generatedAt,
+      files: {
+        score: path.relative(process.cwd(), scorePath),
+      },
+      score: scoreSnapshot,
+    };
+    const db = client.db(DB_NAME);
+    await db.collection("matchups-score").updateOne({ _id: targetDate }, { $set: doc }, { upsert: true });
+    console.log(`[matchups] Persisted data (${pairs.length} pairs, ${scoreSnapshot.stats.normalizedMatches} matches).`);
+  } finally {
+    await client.close(true);
+  }
+}
+
+main().catch((error) => {
+  console.error("[matchups] Skipped because", error);
+  process.exitCode = 1;
+});
+

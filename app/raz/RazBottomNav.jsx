@@ -4,8 +4,8 @@ import styles from "./page.module.css";
 
 const navItems = [
   { key: "home", label: "Hem", icon: "home" },
-  { key: "favorites", label: "Favoriter", icon: "star" },
-  { key: "add", label: "Lägg till", icon: "plus" },
+  { key: "favorites", label: "Teams", icon: "star" },
+  { key: "add", label: "Lineup", icon: "plus" },
   { key: "backtest", label: "Backtest", icon: "pulse" },
 ];
 
