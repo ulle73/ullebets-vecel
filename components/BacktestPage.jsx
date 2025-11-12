@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapUnibetOdds from "./backtest/unibetOddsMapper";
 import { getStatPatterns } from "./backtest/statPatterns";
 import { computeHistoryStats } from "./backtest/historyCalculator";
+import { getFormulaConfig } from "@/lib/backtest/formulaConfig";
 
 const translations = {
   title: "Backtest",
@@ -53,6 +54,32 @@ const translations = {
   ev_legacy_label: "",
   conceded: "conceded",
 };
+
+const FORMULA_DEFINITIONS = {
+  multiplier: { valueKey: "evPctWithMultiplier", labelKey: "ev_multiplier_label" },
+  multifactor: { valueKey: "evPctMultifactor", labelKey: "ev_multifactor_label" },
+  leagueAvg: { valueKey: "evPctLeagueAvg", labelKey: "ev_league_avg_label" },
+  base: { valueKey: "evPct", labelKey: "ev_model_label" },
+  legacy: { valueKey: "legacyEvPct", labelKey: "ev_legacy_label" },
+};
+
+const DEFAULT_RESULT_PRIORITY = ["multiplier", "multifactor", "leagueAvg", "base", "legacy"];
+
+const PRIMARY_LABELS = {
+  multiplier: "EV (multiplier)",
+  multifactor: "EV (multifaktor)",
+  leagueAvg: "EV (liga)",
+  base: "EV (modell)",
+  legacy: "EV (legacy)",
+};
+
+function getFormulaLabel(key, t) {
+  if (!key) return "";
+  const def = FORMULA_DEFINITIONS[key];
+  if (!def) return "";
+  const translated = t(def.labelKey);
+  return translated || PRIMARY_LABELS[key] || "";
+}
 
 function useTranslation() {
   const t = useCallback((key) => translations[key] ?? key, []);
@@ -131,37 +158,42 @@ function createBetKey({
     .join("::");
 }
 
-function resolvePrimaryEv(result) {
+function resolvePrimaryEv(result, statKey) {
   if (!result) return { primaryEv: null, primaryLabel: null };
-  const order = [
-    ["evPctWithMultiplier", "EV (multiplier)"],
-    ["evPctMultifactor", "EV (multifaktor)"],
-    ["evPctLeagueAvg", "EV (liga)"],
-    ["evPct", "EV (modell)"],
-    ["legacyEvPct", "EV (legacy)"],
-  ];
-  for (const [key, label] of order) {
-    const value = result[key];
+  const config = getFormulaConfig(statKey);
+  const displayOrder = Array.isArray(config?.display) ? config.display : [];
+  const priority = [...new Set([...displayOrder, ...DEFAULT_RESULT_PRIORITY])];
+  for (const key of priority) {
+    const def = FORMULA_DEFINITIONS[key];
+    if (!def) continue;
+    const value = result[def.valueKey];
     if (typeof value === "number") {
-      return { primaryEv: value, primaryLabel: label };
+      return { primaryEv: value, primaryLabel: PRIMARY_LABELS[key] || "" };
     }
   }
   return { primaryEv: null, primaryLabel: null };
 }
 
-function getEvEntries(result, t) {
-  if (!result) return [];
+function getEvEntries(result, t, statKey) {
+  const config = getFormulaConfig(statKey);
+  const order =
+    Array.isArray(config?.display) && config.display.length
+      ? config.display
+      : ["base", "leagueAvg"];
+  const limited = order.slice(0, 2);
   const entries = [];
-  const add = (value, label) => {
-    if (typeof value === "number") {
-      entries.push({ value, label });
-    }
-  };
-  add(result.evPctWithMultiplier, t("ev_multiplier_label"));
-  add(result.evPctMultifactor, t("ev_multifactor_label"));
-  add(result.evPctLeagueAvg, t("ev_league_avg_label"));
-  add(result.evPct, t("ev_model_label"));
-  add(result.legacyEvPct, t("ev_legacy_label"));
+  for (const key of limited) {
+    const def = FORMULA_DEFINITIONS[key];
+    if (!def) continue;
+    const rawValue = result?.[def.valueKey];
+    if (!Number.isFinite(rawValue)) continue;
+    const value = rawValue;
+    entries.push({
+      key,
+      value,
+      label: getFormulaLabel(key, t),
+    });
+  }
   return entries;
 }
 
@@ -528,7 +560,8 @@ export default function BacktestPage({ match }) {
   const positiveResults = useMemo(() => {
     return results
       .map((result) => {
-        const { primaryEv, primaryLabel } = resolvePrimaryEv(result);
+        const statKey = result?.bet?.statKey;
+        const { primaryEv, primaryLabel } = resolvePrimaryEv(result, statKey);
         return { ...result, primaryEv, primaryLabel };
       })
       .filter((r) => typeof r.primaryEv === "number" && r.primaryEv > 0)
@@ -847,8 +880,8 @@ export default function BacktestPage({ match }) {
                   const teamResults = resultsMap[teamKey] || {};
                   const overResult = teamResults[overKey];
                   const underResult = teamResults[underKey];
-                  const overEntries = getEvEntries(overResult, t);
-                  const underEntries = getEvEntries(underResult, t);
+                  const overEntries = getEvEntries(overResult, t, statKey);
+                  const underEntries = getEvEntries(underResult, t, statKey);
                   const concededLabel = t("conceded");
                   const historyOpponentLabel =
                     cfg.scope === "home"
@@ -907,13 +940,17 @@ export default function BacktestPage({ match }) {
                           <div className="flex flex-col gap-1">
                             {overEntries.map((entry, idx) => (
                               <div key={idx} className="flex items-baseline gap-2">
-                                <span
-                                  className={`font-semibold ${
-                                    entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
-                                  }`}
-                                >
-                                  {entry.value.toFixed(1)}%
-                                </span>
+                                {entry.value != null ? (
+                                  <span
+                                    className={`font-semibold ${
+                                      entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                    }`}
+                                  >
+                                    {entry.value.toFixed(1)}%
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-500">–</span>
+                                )}
                                 <span className="text-[7.5px] uppercase tracking-wide text-slate-400">
                                   {entry.label}
                                 </span>
@@ -940,13 +977,17 @@ export default function BacktestPage({ match }) {
                           <div className="flex flex-col gap-1">
                             {underEntries.map((entry, idx) => (
                               <div key={idx} className="flex items-baseline gap-2">
-                                <span
-                                  className={`font-semibold ${
-                                    entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
-                                  }`}
-                                >
-                                  {entry.value.toFixed(1)}%
-                                </span>
+                                {entry.value != null ? (
+                                  <span
+                                    className={`font-semibold ${
+                                      entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                    }`}
+                                  >
+                                    {entry.value.toFixed(1)}%
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-500">–</span>
+                                )}
                                 <span className="text-[7.5px] uppercase tracking-wide text-slate-400">
                                   {entry.label}
                                 </span>
