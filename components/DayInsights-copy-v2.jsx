@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { toNum } from "@/lib/utils/matchups";
+import { getStatKeyLabel } from "@/lib/utils/statKeyLabels";
 import { FilterChips, RowAvg } from "@/components/MatchupsListUI";
 
 const PERIODS = [
@@ -127,9 +128,13 @@ function toSortKey(row) {
   return -Infinity;
 }
 
-function applyFilters(rows, leagueFilter, scopeFilter, periodFilter, onlyTopBadges) {
+function applyFilters(rows, leagueFilter, statFilter, scopeFilter, periodFilter, onlyTopBadges) {
   return rows
     .filter((row) => leagueFilter === "all" || row.leagueName === leagueFilter)
+    .filter((row) => {
+      const filterKey = row.statKey ?? row.statLabel ?? null;
+      return statFilter === "all" || filterKey === statFilter;
+    })
     .filter((row) => scopeFilter === "all" || row.scope === scopeFilter)
     .filter((row) => periodFilter === "any" || row.period === periodFilter)
     .filter(
@@ -145,6 +150,7 @@ export default function BestMatchups({ date, items }) {
   const [periodFilter, setPeriodFilter] = useState(PERIOD_FILTERS[0].value);
   const [scopeFilter, setScopeFilter] = useState(SCOPE_FILTERS[0].value);
   const [leagueFilter, setLeagueFilter] = useState("all");
+  const [statFilter, setStatFilter] = useState("all");
   const [onlyTopBadges, setOnlyTopBadges] = useState(false);
   const showHistoricalOutcome = useMemo(() => isDateBeforeToday(date), [date]);
 
@@ -172,14 +178,39 @@ export default function BestMatchups({ date, items }) {
     return [{ value: "all", label: "Alla ligor" }, ...uniq.values()];
   }, [mappedOver, mappedUnder]);
 
+  const statOptions = useMemo(() => {
+    const uniq = new Map();
+    [...mappedOver, ...mappedUnder].forEach((row) => {
+      const statKey = row.statKey ?? row.statLabel ?? null;
+      if (!statKey || uniq.has(statKey)) return;
+      uniq.set(statKey, { value: statKey, label: getStatKeyLabel(statKey) });
+    });
+    return [{ value: "all", label: "Alla stattyper" }, ...uniq.values()];
+  }, [mappedOver, mappedUnder]);
+
   const overRows = useMemo(
-    () => applyFilters(mappedOver, leagueFilter, scopeFilter, periodFilter, onlyTopBadges),
-    [mappedOver, leagueFilter, scopeFilter, periodFilter, onlyTopBadges]
+    () =>
+      applyFilters(
+        mappedOver,
+        leagueFilter,
+        statFilter,
+        scopeFilter,
+        periodFilter,
+        onlyTopBadges
+      ),
+    [mappedOver, leagueFilter, statFilter, scopeFilter, periodFilter, onlyTopBadges]
   );
   const underRows = useMemo(
     () =>
-      applyFilters(mappedUnder, leagueFilter, scopeFilter, periodFilter, onlyTopBadges),
-    [mappedUnder, leagueFilter, scopeFilter, periodFilter, onlyTopBadges]
+      applyFilters(
+        mappedUnder,
+        leagueFilter,
+        statFilter,
+        scopeFilter,
+        periodFilter,
+        onlyTopBadges
+      ),
+    [mappedUnder, leagueFilter, statFilter, scopeFilter, periodFilter, onlyTopBadges]
   );
 
   const generatedAt = data?.generatedAt
@@ -210,21 +241,36 @@ export default function BestMatchups({ date, items }) {
           <FilterChips options={SCOPE_FILTERS} value={scopeFilter} onChange={setScopeFilter} />
           <FilterChips options={PERIOD_FILTERS} value={periodFilter} onChange={setPeriodFilter} />
 
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Liga
-            </label>
-            <select
-              className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              value={leagueFilter}
-              onChange={(e) => setLeagueFilter(e.target.value)}
-            >
-              {leagueOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Filter
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                aria-label="Välj liga"
+                className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                value={leagueFilter}
+                onChange={(e) => setLeagueFilter(e.target.value)}
+              >
+                {leagueOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Välj stattyp"
+                className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                value={statFilter}
+                onChange={(e) => setStatFilter(e.target.value)}
+              >
+                {statOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
