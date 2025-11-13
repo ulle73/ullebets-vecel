@@ -23,6 +23,62 @@ const SCOPE_FILTERS = [
   { value: "away", label: "Bortalaget" },
 ];
 
+function deriveOutcomeForScope(outcome, scope) {
+  if (!outcome) {
+    return {
+      outcomeValue: null,
+      outcomeHomeValue: null,
+      outcomeAwayValue: null,
+    };
+  }
+
+  const home = toNum(outcome.homeValue ?? outcome.home ?? null);
+  const away = toNum(outcome.awayValue ?? outcome.away ?? null);
+  const hasHome = Number.isFinite(home);
+  const hasAway = Number.isFinite(away);
+
+  let value = null;
+  if (scope === "home" && hasHome) {
+    value = home;
+  } else if (scope === "away" && hasAway) {
+    value = away;
+  } else if (scope === "total" && (hasHome || hasAway)) {
+    const sum = (hasHome ? home : 0) + (hasAway ? away : 0);
+    if (Number.isFinite(sum)) {
+      value = sum;
+    }
+  }
+
+  return {
+    outcomeValue: Number.isFinite(value) ? value : null,
+    outcomeHomeValue: hasHome ? home : null,
+    outcomeAwayValue: hasAway ? away : null,
+  };
+}
+
+function isDateBeforeToday(dateValue) {
+  if (!dateValue) return false;
+  let selectedUtc = null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateValue);
+  if (match) {
+    selectedUtc = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  } else {
+    const parsed = Date.parse(dateValue);
+    if (!Number.isNaN(parsed)) {
+      const normalized = new Date(parsed);
+      selectedUtc = Date.UTC(
+        normalized.getUTCFullYear(),
+        normalized.getUTCMonth(),
+        normalized.getUTCDate()
+      );
+    }
+  }
+  if (selectedUtc == null) return false;
+  const now = new Date();
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return selectedUtc < todayUtc;
+}
+
 const fetcher = async (input) => {
   const response = await fetch(input);
   if (!response.ok) {
@@ -44,6 +100,7 @@ function mapScoreEntry(entry) {
   const matchLabel = entry.match ?? "Match";
   const score = toNum(entry.score) ?? toNum(entry.sortKey) ?? 0;
   const scope = entry.scope ?? "total";
+  const outcomeInfo = deriveOutcomeForScope(entry.outcome, scope);
   return {
     matchId: entry.matchId ?? matchLabel,
     leagueName: entry.league ?? null,
@@ -58,6 +115,7 @@ function mapScoreEntry(entry) {
     badge: badgeForNormalizedScore(score),
     scoreFormat: (value) => `${value.toFixed(1)}/100`,
     scoreThresholds: DEFAULT_SCORE_THRESHOLDS,
+    ...outcomeInfo,
   };
 }
 
@@ -86,6 +144,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
   const [scopeFilter, setScopeFilter] = useState(SCOPE_FILTERS[0].value);
   const [leagueFilter, setLeagueFilter] = useState("all");
   const [onlyTopBadges, setOnlyTopBadges] = useState(false);
+  const showHistoricalOutcome = useMemo(() => isDateBeforeToday(date), [date]);
 
   const queryKey = date
     ? `/api/matchups-score?date=${encodeURIComponent(date)}&v=${profilesVersion}`
@@ -195,7 +254,11 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
             ) : overRows.length ? (
               <ol className="space-y-2">
                 {overRows.map((r) => (
-                  <RowAvg key={`o:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`} r={r} />
+                  <RowAvg
+                    key={`o:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`}
+                    r={r}
+                    showHistoricalOutcome={showHistoricalOutcome}
+                  />
                 ))}
               </ol>
             ) : (
@@ -222,7 +285,11 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
             ) : underRows.length ? (
               <ol className="space-y-2">
                 {underRows.map((r) => (
-                  <RowAvg key={`u:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`} r={r} />
+                  <RowAvg
+                    key={`u:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`}
+                    r={r}
+                    showHistoricalOutcome={showHistoricalOutcome}
+                  />
                 ))}
               </ol>
             ) : (

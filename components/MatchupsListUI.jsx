@@ -53,11 +53,22 @@ export function FilterChips({ options, value, onChange }) {
   );
 }
 
-export function RowAvg({ r }) {
+export function RowAvg({ r, showHistoricalOutcome = false }) {
   const scopeLabel = r.scopeLabel ?? deriveScopeLabel(r.scope, r.matchLabel);
   const highlightThreshold = r.scoreThresholds?.high ?? 95;
   const borderHighlight =
     r.score >= highlightThreshold ? "border-2 border-emerald-400" : "border border-gray-200";
+  const formatOutcomeNumber = (value) => {
+    if (!Number.isFinite(value)) return null;
+    return Number.isInteger(value) ? value : value.toFixed(1);
+  };
+  const formattedOutcomeValue = formatOutcomeNumber(r.outcomeValue);
+  const showOutcome = showHistoricalOutcome && formattedOutcomeValue != null;
+  const outcomeDetails = [];
+  const homeDetail = formatOutcomeNumber(r.outcomeHomeValue);
+  const awayDetail = formatOutcomeNumber(r.outcomeAwayValue);
+  if (homeDetail != null) outcomeDetails.push(`Hem ${homeDetail}`);
+  if (awayDetail != null) outcomeDetails.push(`Bort ${awayDetail}`);
 
   return (
     <li
@@ -83,6 +94,17 @@ export function RowAvg({ r }) {
               <span className="rounded bg-gray-100 px-2 py-1 text-[8.25px] font-semibold text-gray-700">
                 {r.leagueName}
               </span>
+            </div>
+          ) : null}
+          {showOutcome ? (
+            <div className="mt-2 text-xs text-gray-600">
+              <span className="font-semibold text-gray-700">Utfall:</span>
+              <span className="ml-1 text-gray-900">{formattedOutcomeValue}</span>
+              {outcomeDetails.length ? (
+                <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  {outcomeDetails.join(" · ")}
+                </span>
+              ) : null}
             </div>
           ) : null}
         </div>
