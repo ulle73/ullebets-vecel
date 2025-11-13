@@ -1,24 +1,17 @@
-name: Dump matchups
+name: Enrich matchups results
 
 on:
   schedule:
-    - cron: "0 7 * * *"
+    - cron: "0 1 * * *"  # Varje dag kl 01:00 UTC (när matcher från igår är klara)
   workflow_dispatch:
     inputs:
       target-date:
-        description: "Match date (YYYY-MM-DD), defaults to D+7."
+        description: "Date to enrich (YYYY-MM-DD), defaults to yesterday."
         required: false
-  workflow_run:
-    workflows:
-      - Import fixtures (D+7 only)
-    types:
-      - completed
 
 jobs:
-  run-matchups:
+  enrich:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,24 +24,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Set date (D+7)
+      - name: Set date (yesterday or manual)
         id: set-date
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.target-date }}" ]; then
             DATE="${{ github.event.inputs.target-date }}"
           else
-            DATE=$(date -u -d '+7 days' +'%Y-%m-%d')
+            DATE=$(date -u -d 'yesterday' +'%Y-%m-%d')
           fi
           echo "DATE=${DATE}" >> "$GITHUB_ENV"
 
-      - name: Dump matchups into MongoDB
-        run: node scripts/dump-matchups.js --date=${{ env.DATE }}
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          MONGODB_DB: ${{ secrets.MONGODB_DB }}
-
-      - name: Dump league average matchups
-        run: node scripts/dump-matchups-league-avg.js --date=${{ env.DATE }}
+      - name: Enrich matchups results
+        run: node scripts/enrich-matchups-results.js --date=${{ env.DATE }}
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB: ${{ secrets.MONGODB_DB }}
