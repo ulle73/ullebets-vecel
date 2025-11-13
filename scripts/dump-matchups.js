@@ -197,18 +197,26 @@ function normalizeMatch(item) {
     "Unknown";
 
   const homeTeamId = toPositiveInt(
-    pick(item, ["homeTeam.id", "event.homeTeam.id", "home.id", "teams.home.id"]),
+    pick(item, ["homeTeam.id", "event.homeTeam.id", "home.id", "teams.home.id"])
   );
   const awayTeamId = toPositiveInt(
-    pick(item, ["awayTeam.id", "event.awayTeam.id", "away.id", "teams.away.id"]),
+    pick(item, ["awayTeam.id", "event.awayTeam.id", "away.id", "teams.away.id"])
   );
 
   const homeTeamName =
-    pick(item, ["homeTeam.name", "event.homeTeam.name", "home.name", "teams.home.name"]) ??
-    "—";
+    pick(item, [
+      "homeTeam.name",
+      "event.homeTeam.name",
+      "home.name",
+      "teams.home.name",
+    ]) ?? "—";
   const awayTeamName =
-    pick(item, ["awayTeam.name", "event.awayTeam.name", "away.name", "teams.away.name"]) ??
-    "—";
+    pick(item, [
+      "awayTeam.name",
+      "event.awayTeam.name",
+      "away.name",
+      "teams.away.name",
+    ]) ?? "—";
 
   const timestamp = Number(
     pick(item, [
@@ -270,19 +278,37 @@ function normalizeMatch(item) {
   };
 }
 
+// ---- Range additions (minimala) ----
 function resolveDateArg() {
   const args = process.argv.slice(2);
   const explicit = args.find((arg) => arg.startsWith("--date="));
   const raw = explicit ? explicit.split("=", 2)[1] : args[0];
   if (raw) {
     const trimmed = raw.trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-      return trimmed;
-    }
-    throw new Error("Date must be YYYY-MM-DD");
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    if (/^\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed; // range
+    throw new Error("Date must be YYYY-MM-DD or YYYY-MM-DD-YYYY-MM-DD");
   }
   return new Date().toISOString().slice(0, 10);
 }
+
+function expandDateRange(maybeRange) {
+  if (!/^\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}$/.test(maybeRange))
+    return [maybeRange];
+  const [y1, m1, d1, y2, m2, d2] = maybeRange.split(/[-]/).map(Number);
+  const start = new Date(Date.UTC(y1, m1 - 1, d1));
+  const end = new Date(Date.UTC(y2, m2 - 1, d2));
+  const out = [];
+  for (
+    let dt = new Date(start);
+    dt <= end;
+    dt.setUTCDate(dt.getUTCDate() + 1)
+  ) {
+    out.push(dt.toISOString().slice(0, 10));
+  }
+  return out;
+}
+// ------------------------------------
 
 function buildMatchupCacheKey(params) {
   const leaguePart = params.leagueId ?? params.leagueName ?? "";
@@ -336,20 +362,33 @@ function profileMatchesRequest(doc, params) {
     if (typeof meta.matchType !== "string") return false;
     if (meta.matchType.toLowerCase() !== matchType.toLowerCase()) return false;
   }
-  const actualTeamId = parsePositiveInt(meta.lagId ?? meta.teamId ?? doc.teamId);
+  const actualTeamId = parsePositiveInt(
+    meta.lagId ?? meta.teamId ?? doc.teamId
+  );
   const expectedTeamId = parsePositiveInt(teamId);
   if (expectedTeamId != null) {
     if (actualTeamId == null || actualTeamId !== expectedTeamId) return false;
   } else if (
-    !stringEquals(teamName, meta.lagnamn ?? meta.teamName ?? doc.teamName ?? doc.team)
+    !stringEquals(
+      teamName,
+      meta.lagnamn ?? meta.teamName ?? doc.teamName ?? doc.team
+    )
   ) {
     return false;
   }
-  const actualLeagueId = parsePositiveInt(meta.ligaId ?? meta.leagueId ?? doc.leagueId);
+  const actualLeagueId = parsePositiveInt(
+    meta.ligaId ?? meta.leagueId ?? doc.leagueId
+  );
   const expectedLeagueId = parsePositiveInt(leagueId);
   if (expectedLeagueId != null) {
-    if (actualLeagueId == null || actualLeagueId !== expectedLeagueId) return false;
-  } else if (!stringEquals(leagueName, meta.leagueName ?? meta.league ?? doc.leagueName ?? doc.league)) {
+    if (actualLeagueId == null || actualLeagueId !== expectedLeagueId)
+      return false;
+  } else if (
+    !stringEquals(
+      leagueName,
+      meta.leagueName ?? meta.league ?? doc.leagueName ?? doc.league
+    )
+  ) {
     return false;
   }
   return true;
@@ -390,8 +429,14 @@ async function fetchProfileFromDb(client, params) {
   }
 
   if (params.leagueName || params.teamName) {
-    const leagueMatcher = leagueNumeric != null ? leagueNumeric : buildCaseInsensitiveEquals(params.leagueName);
-    const teamMatcher = teamNumeric != null ? teamNumeric : buildCaseInsensitiveEquals(params.teamName);
+    const leagueMatcher =
+      leagueNumeric != null
+        ? leagueNumeric
+        : buildCaseInsensitiveEquals(params.leagueName);
+    const teamMatcher =
+      teamNumeric != null
+        ? teamNumeric
+        : buildCaseInsensitiveEquals(params.teamName);
     const query = { "meta.matchType": matchType };
     if (leagueNumeric != null) {
       query["meta.ligaId"] = leagueNumeric;
@@ -445,7 +490,11 @@ async function buildPairs(matches, client) {
       cache.set(awayKey, awayProfile);
     }
     if (!homeProfile || !awayProfile) {
-      missingMatches.push({ matchId: match.matchId, hasHome: !!homeProfile, hasAway: !!awayProfile });
+      missingMatches.push({
+        matchId: match.matchId,
+        hasHome: !!homeProfile,
+        hasAway: !!awayProfile,
+      });
       continue;
     }
 
@@ -574,42 +623,53 @@ async function writeSnapshot(filePath, data) {
 }
 
 async function main() {
-  const targetDate = resolveDateArg();
-  console.log(`[matchups] Building snapshots for ${targetDate}`);
+  const dateArg = resolveDateArg();
+  const dates = expandDateRange(dateArg);
   const client = await clientPromise;
+
   try {
-    const matches = await getMatchesForDate(targetDate);
-    const normalizedMatches = matches.map(normalizeMatch).filter(Boolean);
-    const { pairs, normalizedCount, missingMatches } = await buildPairs(normalizedMatches, client);
-    const leagueSizeMap = buildLeagueSizeMap(pairs);
-    const generatedAt = new Date().toISOString();
-    const scoreData = buildScoreSnapshot(pairs, leagueSizeMap);
-    const scoreSnapshot = {
-      date: targetDate,
-      generatedAt,
-      stats: {
-        normalizedMatches: normalizedCount,
-        pairs: pairs.length,
-        missingMatches,
-        ...scoreData.stats,
-      },
-      top50: scoreData.top50,
-    };
-    await ensureDir(SCORE_DIR);
-    const scorePath = path.join(SCORE_DIR, `${targetDate}.json`);
-    await writeSnapshot(scorePath, scoreSnapshot);
-    const doc = {
-      _id: targetDate,
-      date: targetDate,
-      generatedAt,
-      files: {
-        score: path.relative(process.cwd(), scorePath),
-      },
-      data: scoreSnapshot,
-    };
-    const db = client.db(DB_NAME);
-    await db.collection("matchups-score").updateOne({ _id: targetDate }, { $set: doc }, { upsert: true });
-    console.log(`[matchups] Persisted data (${pairs.length} pairs, ${scoreSnapshot.stats.normalizedMatches} matches).`);
+    for (const targetDate of dates) {
+      console.log(`[matchups] Building snapshots for ${targetDate}`);
+      const matches = await getMatchesForDate(targetDate);
+      const normalizedMatches = matches.map(normalizeMatch).filter(Boolean);
+      const { pairs, normalizedCount, missingMatches } = await buildPairs(
+        normalizedMatches,
+        client
+      );
+      const leagueSizeMap = buildLeagueSizeMap(pairs);
+      const generatedAt = new Date().toISOString();
+      const scoreData = buildScoreSnapshot(pairs, leagueSizeMap);
+      const scoreSnapshot = {
+        date: targetDate,
+        generatedAt,
+        stats: {
+          normalizedMatches: normalizedCount,
+          pairs: pairs.length,
+          missingMatches,
+          ...scoreData.stats,
+        },
+        top50: scoreData.top50,
+      };
+      await ensureDir(SCORE_DIR);
+      const scorePath = path.join(SCORE_DIR, `${targetDate}.json`);
+      await writeSnapshot(scorePath, scoreSnapshot);
+      const doc = {
+        _id: targetDate,
+        date: targetDate,
+        generatedAt,
+        files: {
+          score: path.relative(process.cwd(), scorePath),
+        },
+        data: scoreSnapshot,
+      };
+      const db = client.db(DB_NAME);
+      await db
+        .collection("matchups-score")
+        .updateOne({ _id: targetDate }, { $set: doc }, { upsert: true });
+      console.log(
+        `[matchups] Persisted data (${pairs.length} pairs, ${scoreSnapshot.stats.normalizedMatches} matches).`
+      );
+    }
   } finally {
     await client.close(true);
   }
@@ -619,4 +679,3 @@ main().catch((error) => {
   console.error("[matchups] Skipped because", error);
   process.exitCode = 1;
 });
-
