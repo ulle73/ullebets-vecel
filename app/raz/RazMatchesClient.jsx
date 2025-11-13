@@ -62,7 +62,6 @@ export default function RazMatchesClient({
 }) {
   const [date, setDate] = useState(defaultDate);
   const [selectedMatchId, setSelectedMatchId] = useState(null);
-  const [teamProfilesVersion, setTeamProfilesVersion] = useState(0);
   const { cache, mutate: globalMutate } = useSWRConfig();
   const fallbackRef = useRef(initialFallback);
   const boundaryResetKeys = resetKeys.filter(Boolean);
@@ -132,7 +131,6 @@ export default function RazMatchesClient({
               revalidate: false,
               populateCache: true,
             });
-            setTeamProfilesVersion((prev) => prev + 1);
           } catch (prefetchError) {
             debugError("teamprofiles:prefetch:error", {
               key,
@@ -145,7 +143,7 @@ export default function RazMatchesClient({
       await Promise.all(Array.from({ length: concurrency }, worker));
       debug("teamprofiles:prefetch:done", { total: queue.length });
     },
-    [cache, globalMutate, setTeamProfilesVersion]
+    [cache, globalMutate]
   );
 
   const matchesKey = date ? buildMatchesByDateKey(date) : null;
@@ -462,16 +460,8 @@ export default function RazMatchesClient({
               matchesCount={matches.length}
             />
             <div className="grid gap-4 md:grid-cols-2">
-              <DayInsightsLegacy
-                date={date}
-                items={items}
-                profilesVersion={teamProfilesVersion}
-              />
-              <DayInsights
-                date={date}
-                items={items}
-                profilesVersion={teamProfilesVersion}
-              />
+                <DayInsightsLegacy date={date} items={items} />
+                <DayInsights date={date} items={items} />
             </div>
           </div>
         )}

@@ -141,7 +141,7 @@ function applyFilters(rows, leagueFilter, scopeFilter, periodFilter, onlyTopBadg
     .slice(0, 30);
 }
 
-export default function BestMatchups({ date, items, profilesVersion = 0 }) {
+export default function BestMatchups({ date, items }) {
   const [periodFilter, setPeriodFilter] = useState(PERIOD_FILTERS[0].value);
   const [scopeFilter, setScopeFilter] = useState(SCOPE_FILTERS[0].value);
   const [leagueFilter, setLeagueFilter] = useState("all");
@@ -149,7 +149,7 @@ export default function BestMatchups({ date, items, profilesVersion = 0 }) {
   const showHistoricalOutcome = useMemo(() => isDateBeforeToday(date), [date]);
 
   const queryKey = date
-    ? `/api/matchups-league-avg?date=${encodeURIComponent(date)}&v=${profilesVersion}`
+    ? `/api/matchups-league-avg?date=${encodeURIComponent(date)}`
     : null;
 
   const { data, error } = useSWR(queryKey, fetcher, { revalidateOnFocus: false });

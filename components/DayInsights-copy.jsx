@@ -139,16 +139,14 @@ function applyFilters(rows, leagueFilter, scopeFilter, periodFilter, onlyTopBadg
     .slice(0, 30);
 }
 
-export default function BestMatchups({ date, items, profilesVersion = 0 }) {
+export default function BestMatchups({ date, items }) {
   const [periodFilter, setPeriodFilter] = useState(PERIOD_FILTERS[0].value);
   const [scopeFilter, setScopeFilter] = useState(SCOPE_FILTERS[0].value);
   const [leagueFilter, setLeagueFilter] = useState("all");
   const [onlyTopBadges, setOnlyTopBadges] = useState(false);
   const showHistoricalOutcome = useMemo(() => isDateBeforeToday(date), [date]);
 
-  const queryKey = date
-    ? `/api/matchups-score?date=${encodeURIComponent(date)}&v=${profilesVersion}`
-    : null;
+  const queryKey = date ? `/api/matchups-score?date=${encodeURIComponent(date)}` : null;
 
   const { data, error } = useSWR(queryKey, fetcher, { revalidateOnFocus: false });
   const isLoading = !data && !error;

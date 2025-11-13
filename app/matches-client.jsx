@@ -57,7 +57,6 @@ function getNextDateString(currentDate) {
 export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const [date, setDate] = useState(defaultDate);
   const [selectedMatchId, setSelectedMatchId] = useState(null);
-  const [teamProfilesVersion, setTeamProfilesVersion] = useState(0);
   const { cache, mutate: globalMutate } = useSWRConfig();
   const fallbackRef = useRef(initialFallback);
 
@@ -126,7 +125,6 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
               revalidate: false,
               populateCache: true,
             });
-            setTeamProfilesVersion((prev) => prev + 1);
           } catch (prefetchError) {
             debugError("teamprofiles:prefetch:error", {
               key,
@@ -139,7 +137,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
       await Promise.all(Array.from({ length: concurrency }, worker));
       debug("teamprofiles:prefetch:done", { total: queue.length });
     },
-    [cache, globalMutate, setTeamProfilesVersion]
+    [cache, globalMutate]
   );
 
   const matchesKey = date ? buildMatchesByDateKey(date) : null;
@@ -469,17 +467,9 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
             ) : (
               <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-2">
                 {/* Kommentera ut denna rad om du vill gömma originalversionen */}
-                <DayInsightsLegacy
-                  date={date}
-                  items={items}
-                  profilesVersion={teamProfilesVersion}
-                />
+                <DayInsightsLegacy date={date} items={items} />
                 {/* Kommentera ut denna rad om du vill gömma nya prognosversionen */}
-                <DayInsights
-                  date={date}
-                  items={items}
-                  profilesVersion={teamProfilesVersion}
-                />
+                <DayInsights date={date} items={items} />
               </div>
             )}
 
