@@ -1,0 +1,96 @@
+"use client";
+
+import { deriveScopeLabel } from "@/lib/utils/matchups";
+
+export const DEFAULT_SCORE_THRESHOLDS = { high: 95, medium: 70 };
+
+export function ScoreChip({ score, formatScore, thresholds }) {
+  const base = "rounded px-3 py-1 text-xs font-bold";
+  let tone = "bg-gray-100 text-gray-700";
+  const high = thresholds?.high ?? DEFAULT_SCORE_THRESHOLDS.high;
+  const medium = thresholds?.medium ?? DEFAULT_SCORE_THRESHOLDS.medium;
+  if (score >= high) {
+    tone = "bg-emerald-100 text-emerald-800";
+  } else if (score >= medium) {
+    tone = "bg-amber-100 text-amber-800";
+  }
+  const label = formatScore ? formatScore(score) : `${score.toFixed(1)}/100`;
+  return <span className={`${base} ${tone}`}>{label}</span>;
+}
+
+export function Badge({ badge }) {
+  if (!badge) return null;
+  const base = "ml-2 rounded px-2 py-0.5 text-[8.25px] font-semibold";
+  const tone =
+    badge.tone === "perfect"
+      ? "bg-yellow-200 text-yellow-900"
+      : badge.tone === "almost"
+        ? "bg-amber-100 text-amber-800"
+        : "bg-blue-100 text-blue-800";
+  return <span className={`${base} ${tone}`}>{badge.label}</span>;
+}
+
+export function FilterChips({ options, value, onChange }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {options.map((opt) => {
+        const active = opt.value === value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${active
+                ? "border-blue-500 bg-blue-500 text-white shadow"
+                : "border-gray-300 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-600"
+              }`}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function RowAvg({ r }) {
+  const scopeLabel = r.scopeLabel ?? deriveScopeLabel(r.scope, r.matchLabel);
+  const highlightThreshold = r.scoreThresholds?.high ?? 95;
+  const borderHighlight =
+    r.score >= highlightThreshold ? "border-2 border-emerald-400" : "border border-gray-200";
+
+  return (
+    <li
+      className={`flex min-h-[100px] items-start justify-between rounded bg-white px-4 py-4 text-sm shadow-sm transition-colors ${borderHighlight}`}
+    >
+      <div className="min-w-0">
+        <div className="flex items-center">
+          <span className="truncate text-sm font-medium text-gray-900">{r.matchLabel}</span>
+          <Badge badge={r.badge} />
+        </div>
+
+        <div className="mt-2 space-y-1 text-xs text-gray-600">
+          <div className="font-medium text-gray-700 py-1">
+            {r.statLabel} · {r.period}
+          </div>
+          <div className="mt-1">
+            <span className="rounded bg-blue-50 px-2 py-1 text-[8.25px] font-semibold text-blue-700">
+              {scopeLabel}
+            </span>
+          </div>
+          {r.leagueName ? (
+            <div className="mt-2">
+              <span className="rounded bg-gray-100 px-2 py-1 text-[8.25px] font-semibold text-gray-700">
+                {r.leagueName}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="ml-3 shrink-0 text-right">
+        <ScoreChip score={r.score} formatScore={r.scoreFormat} thresholds={r.scoreThresholds} />
+      </div>
+    </li>
+  );
+}
