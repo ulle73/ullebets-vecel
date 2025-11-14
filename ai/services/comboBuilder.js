@@ -1,15 +1,74 @@
 "use client";
 
+import comboRules from "../rules/comboRules.json";
+
 const COMBO_SIZES = {
   singel: 1,
   dubblar: 2,
   tripplar: 3,
 };
 
+const comboRuleChecks = comboRules.rules.reduce((acc, rule) => {
+  acc[rule.id] = rule.description;
+  return acc;
+}, {});
+
 function clampRange(min, max) {
   const fixedMin = Number.isFinite(min) ? Math.max(1, min) : 1;
   const fixedMax = Number.isFinite(max) ? Math.max(fixedMin, max) : fixedMin + 0.5;
   return { min: fixedMin, max: fixedMax };
+}
+
+function getMatchKey(bet) {
+  if (!bet) return "unknown";
+  const candidate =
+    bet.matchId ??
+    bet.eventId ??
+    bet.matchLabel ??
+    `${bet.homeTeam ?? ""}-${bet.awayTeam ?? ""}`;
+  return String(candidate ?? "unknown");
+}
+
+function getCompositeKey(bet) {
+  return `${getMatchKey(bet)}:${bet.statKey}:${bet.scope}:${bet.period}`;
+}
+
+function uniqueStatPerMatch(current, bet) {
+  const key = getCompositeKey(bet);
+  return !current.some((entry) => getCompositeKey(entry) === key);
+}
+
+function noOppositeDirections(current, bet) {
+  const matchKey = getMatchKey(bet);
+  for (const entry of current) {
+    if (
+      getMatchKey(entry) === matchKey &&
+      entry.statKey === bet.statKey &&
+      entry.scope === bet.scope &&
+      entry.period === bet.period &&
+      entry.direction &&
+      bet.direction &&
+      entry.direction !== bet.direction
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+const RULE_CHECKS = {
+  "unique-stat-per-match": uniqueStatPerMatch,
+  "no-opposite-directions": noOppositeDirections,
+};
+
+function satisfiesRules(current, bet) {
+  for (const rule of comboRules.rules) {
+    const check = RULE_CHECKS[rule.id] ?? (() => true);
+    if (!check(current, bet)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function buildSingleCombos(bets, range) {
@@ -51,7 +110,7 @@ function buildMultiCombos(bets, size, range, maxResults = 12) {
     }
     for (let i = start; i < candidates.length; i += 1) {
       const bet = candidates[i];
-      if (current.some((entry) => entry.matchId === bet.matchId)) continue;
+      if (!satisfiesRules(current, bet)) continue;
       const nextOdds = odds * bet.odds;
       const nextEv = ev + bet.primaryEv;
       current.push(bet);

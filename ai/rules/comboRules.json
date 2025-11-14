@@ -1,0 +1,25 @@
+{
+  "description": "Regler för att bygga kombinationer från +EV-bets.",
+  "rules": [
+    {
+      "id": "unique-stat-per-match",
+      "description": "En kombination får bara innehålla en rad per match med samma statKey, scope och period. Det stoppar t.ex. över 4.5 + över 5.5 hörnor i samma match."
+    },
+    {
+      "id": "no-opposite-directions",
+      "description": "Gäller per match/statKey/scope/period: du får bara ta antingen över *eller* under. Kombinationer som innehåller både över och under på samma linje avvisas."
+    },
+    {
+      "id": "different-periods-allowed",
+      "description": "Det är OK att kombinera olika perioder så länge statKey/scopes skiljer sig: t.ex. över hörnor i 1:a halvlek + under hörnor totalt. Även över hörnor i 1:a halvlek + över hörnor i 2:a halvlek/totalt är tillåtet."
+    },
+    {
+      "id": "scope-separation",
+      "description": "Olika scopes (t.ex. total vs home/away) räknas som separata regler, så du kan kombinera total över med home över om andra regler uppfylls."
+    },
+    {
+      "id": "match-deduplication",
+      "description": "Ingen kombination får innehålla två rader från exakt samma match som delar statKey/scope/period oavsett lina eller riktning."
+    }
+  ]
+}
