@@ -22,8 +22,6 @@ import {
 } from "@/ai/utils/matchupUtils";
 import { mapBacktestResultToLine } from "@/ai/utils/positiveLineMapper";
 
-const MAX_BACKGROUND_MATCHES = 16;
-
 const SWR_OPTIONS = {
   revalidateOnFocus: false,
   revalidateIfStale: false,
@@ -93,12 +91,12 @@ export default function AIWorkspace({ defaultDate }) {
   } = useSWR(matchupsKey, fetchJson, { ...SWR_OPTIONS, revalidateOnMount: insightsActive });
 
   const topOverRows = useMemo(
-    () => matchupsData?.top50?.over?.slice(0, 20) ?? [],
+    () => matchupsData?.top50?.over?.slice(0, 50) ?? [],
     [matchupsData]
   );
 
   const topUnderRows = useMemo(
-    () => matchupsData?.top50?.under?.slice(0, 20) ?? [],
+    () => matchupsData?.top50?.under?.slice(0, 50) ?? [],
     [matchupsData]
   );
 
@@ -135,24 +133,32 @@ export default function AIWorkspace({ defaultDate }) {
 
   const targetMatches = useMemo(() => {
     if (!insightsActive) return [];
+
     const buffer = [];
     const seen = new Set();
+    const addMatch = (match) => {
+      if (!match) return;
+      const matchKey =
+        match.id ?? match.matchId ?? `${match.homeTeamName}-${match.awayTeamName}`;
+      if (!matchKey || seen.has(matchKey)) return;
+      seen.add(matchKey);
+      buffer.push(match);
+    };
+
     const rows = [...topOverRows, ...topUnderRows];
     for (const entry of rows) {
       const entryKey = entry.matchId ? String(entry.matchId) : null;
       if (!entryKey) continue;
       const match = matchLookup.get(entryKey);
-      if (!match) continue;
-      const matchKey = match.id ?? match.matchId ?? `${match.homeTeamName}-${match.awayTeamName}`;
-      if (seen.has(matchKey)) continue;
-      seen.add(matchKey);
-      buffer.push(match);
-      if (buffer.length >= MAX_BACKGROUND_MATCHES) {
-        break;
+      if (match) {
+        addMatch(match);
       }
     }
+
+    matches.forEach(addMatch);
+
     return buffer;
-  }, [insightsActive, topOverRows, topUnderRows, matchLookup]);
+  }, [insightsActive, topOverRows, topUnderRows, matchLookup, matches]);
 
   const positiveLines = useMemo(() => Object.values(positiveLineMap).flat(), [positiveLineMap]);
 

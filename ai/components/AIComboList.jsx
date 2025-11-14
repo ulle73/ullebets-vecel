@@ -22,8 +22,10 @@ export default function AIComboList({ combos }) {
           </header>
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-2xl font-semibold text-emerald-300">{combo.odds.toFixed(2)}x</p>
-              <p className="text-xs text-slate-400">{`Totalt EV ${combo.totalEv.toFixed(1)}%`}</p>
+              <p className="text-2xl font-semibold text-emerald-300">
+                {combo.totalEv.toFixed(1)}%
+              </p>
+              <p className="text-xs text-slate-400">Totalt EV för kombon</p>
             </div>
             <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-200">
               {combo.lines.length} / {combo.lines.length}
