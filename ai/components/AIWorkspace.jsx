@@ -13,6 +13,8 @@ import AIComboControls from "@/ai/components/AIComboControls";
 import AIComboList from "@/ai/components/AIComboList";
 import AIInsightsList from "@/ai/components/AIInsightsList";
 import AIPositiveLinesPanel from "@/ai/components/AIPositiveLinesPanel";
+import AIUserDatePicker from "@/ai/components/AIUserDatePicker";
+import AISpinner from "@/ai/components/AISpinner";
 import { buildCombos } from "@/ai/utils/comboBuilder";
 import {
   buildLineKey,
@@ -39,11 +41,12 @@ function makeFormatter() {
   });
 }
 
-export default function AIWorkspace({ defaultDate }) {
+function useWorkspaceController(defaultDate) {
   const [date, setDate] = useState(defaultDate);
   const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [runToken, setRunToken] = useState(0);
   const [positiveLineMap, setPositiveLineMap] = useState({});
+  const [completedMatches, setCompletedMatches] = useState({});
   const [comboLegs, setComboLegs] = useState(2);
   const [oddsRange, setOddsRange] = useState({ min: 1.8, max: 2.2 });
 
@@ -133,32 +136,21 @@ export default function AIWorkspace({ defaultDate }) {
 
   const targetMatches = useMemo(() => {
     if (!insightsActive) return [];
-
     const buffer = [];
     const seen = new Set();
-    const addMatch = (match) => {
-      if (!match) return;
-      const matchKey =
-        match.id ?? match.matchId ?? `${match.homeTeamName}-${match.awayTeamName}`;
-      if (!matchKey || seen.has(matchKey)) return;
-      seen.add(matchKey);
-      buffer.push(match);
-    };
-
     const rows = [...topOverRows, ...topUnderRows];
     for (const entry of rows) {
       const entryKey = entry.matchId ? String(entry.matchId) : null;
       if (!entryKey) continue;
       const match = matchLookup.get(entryKey);
-      if (match) {
-        addMatch(match);
-      }
+      if (!match) continue;
+      const matchKey = match.id ?? match.matchId ?? `${match.homeTeamName}-${match.awayTeamName}`;
+      if (seen.has(matchKey)) continue;
+      seen.add(matchKey);
+      buffer.push(match);
     }
-
-    matches.forEach(addMatch);
-
     return buffer;
-  }, [insightsActive, topOverRows, topUnderRows, matchLookup, matches]);
+  }, [insightsActive, topOverRows, topUnderRows, matchLookup]);
 
   const positiveLines = useMemo(() => Object.values(positiveLineMap).flat(), [positiveLineMap]);
 
@@ -232,29 +224,146 @@ export default function AIWorkspace({ defaultDate }) {
       }
       return next;
     });
+    setCompletedMatches((prev) => {
+      if (prev[matchKey]) return prev;
+      return { ...prev, [matchKey]: true };
+    });
   }, []);
 
   const handleGenerate = useCallback(() => {
     setPositiveLineMap({});
+    setCompletedMatches({});
     setRunToken((token) => token + 1);
   }, []);
 
-  const positiveMatchesCount = Object.keys(positiveLineMap).length;
   const totalBacktests = targetMatches.length;
+  const completedMatchesCount = useMemo(
+    () => Object.keys(completedMatches).length,
+    [completedMatches]
+  );
   const hasCombos = combos.length > 0;
   const positiveLineCount = positiveLines.length;
   const processing =
     insightsActive &&
-    (matchupsLoading || positiveMatchesCount < totalBacktests || !matchupsData);
+    (matchupsLoading || completedMatchesCount < totalBacktests || !matchupsData);
 
+  const generatingLabel =
+    totalBacktests > 0
+      ? `Genererar (${completedMatchesCount}/${totalBacktests} matcher klar)`
+      : "Genererar matchups…";
   const statusLabel = processing
-    ? `Genererar (${positiveMatchesCount}/${totalBacktests} matcher klar)`
+    ? generatingLabel
     : insightsActive
     ? "Klart, justera inställningarna eller kör igen"
     : "Klicka för att starta AI-generering";
 
+  return {
+    date,
+    setDate,
+    items,
+    matches,
+    matchesCount: matches.length,
+    formatTime,
+    selectedMatchId,
+    handleSelectMatch,
+    isLoading,
+    error,
+    combos,
+    comboLegs,
+    setComboLegs,
+    oddsRange,
+    handleOddsRangeChange,
+    topOverRows,
+    topUnderRows,
+    matchupsData,
+    matchupsLoading,
+    matchupsError,
+    lineCounts,
+    positiveLines,
+    insightsActive,
+    targetMatches,
+    runToken,
+    handlePositiveResults,
+    handleGenerate,
+    statusLabel,
+    totalBacktests,
+    completedMatchesCount,
+    positiveLineCount,
+    processing,
+    hasCombos,
+  };
+}
+
+function WorkspaceEngines({
+  insightsActive,
+  date,
+  items,
+  targetMatches,
+  runToken,
+  handlePositiveResults,
+}) {
+  if (!insightsActive) {
+    return null;
+  }
   return (
-    <div className="flex w-full flex-col overflow-x-hidden lg:h-full lg:min-h-0 lg:overflow-hidden">
+    <div className="sr-only" aria-hidden="true">
+      <DayInsightsLegacy date={date} items={items} />
+      <DayInsights date={date} items={items} />
+      {targetMatches.length ? (
+        <div>
+          {targetMatches.map((match) => {
+            const key = `${match.id ?? match.matchId}-${runToken}`;
+            return (
+              <BacktestPage
+                key={key}
+                match={match}
+                onPositiveResults={handlePositiveResults}
+              />
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export default function AIWorkspace({ defaultDate }) {
+  const workspace = useWorkspaceController(defaultDate);
+  const {
+    date,
+    setDate,
+    items,
+    matches,
+    formatTime,
+    handleSelectMatch,
+    selectedMatchId,
+    isLoading,
+    error,
+    handleGenerate,
+    statusLabel,
+    totalBacktests,
+    completedMatchesCount,
+    positiveLineCount,
+    combos,
+    comboLegs,
+    setComboLegs,
+    oddsRange,
+    handleOddsRangeChange,
+    topOverRows,
+    topUnderRows,
+    matchupsData,
+    matchupsLoading,
+    matchupsError,
+    lineCounts,
+    positiveLines,
+    insightsActive,
+  } = workspace;
+
+  return (
+    <div
+      className="flex w-full flex-col overflow-x-hidden overflow-y-auto lg:h-full lg:min-h-0"
+      style={{ maxHeight: "calc(100vh - 4rem)" }}
+    >
       <div className="mx-auto flex w-full flex-1 flex-col overflow-x-hidden pb-6 px-4 sm:px-6 lg:px-8">
         <div className="grid w-full gap-4 grid-cols-1 md:[grid-template-columns:1fr_2fr] xl:[grid-template-columns:1fr_2fr] auto-rows-auto">
           <LeagueTables
@@ -280,10 +389,10 @@ export default function AIWorkspace({ defaultDate }) {
                 <button
                   type="button"
                   onClick={handleGenerate}
-                  disabled={processing}
-                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-400 via-emerald-200 to-indigo-500 px-5 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-emerald-900/30 transition hover:translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900 animate-pulse"
+                  disabled={workspace.processing}
+                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-400 via-emerald-200 to-indigo-500 px-5 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-emerald-900/30 transition hover:translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900"
                 >
-                  Generate best bets for tyoday
+                  Generate best bets for today
                 </button>
               </div>
               <p className="text-xs text-slate-400">{statusLabel}</p>
@@ -295,7 +404,7 @@ export default function AIWorkspace({ defaultDate }) {
                 <p>Matcher att analysera</p>
               </div>
               <div className="rounded border border-slate-800/60 bg-slate-950/70 p-3 text-xs uppercase text-slate-400">
-                <p className="text-2xl font-semibold text-emerald-300">{positiveMatchesCount}</p>
+                <p className="text-2xl font-semibold text-emerald-300">{completedMatchesCount}</p>
                 <p>Backtests klara</p>
               </div>
               <div className="rounded border border-slate-800/60 bg-slate-950/70 p-3 text-xs uppercase text-slate-400">
@@ -330,26 +439,216 @@ export default function AIWorkspace({ defaultDate }) {
         </div>
       </div>
 
-      {insightsActive ? (
-        <div className="sr-only" aria-hidden="true">
-          <DayInsightsLegacy date={date} items={items} />
-          <DayInsights date={date} items={items} />
-          {targetMatches.length ? (
-            <div>
-              {targetMatches.map((match) => {
-                const key = `${match.id ?? match.matchId}-${runToken}`;
-                return (
-                  <BacktestPage
-                    key={key}
-                    match={match}
-                    onPositiveResults={handlePositiveResults}
-                  />
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <WorkspaceEngines {...workspace} />
     </div>
+  );
+}
+
+export function AIUserWorkspace({ defaultDate }) {
+  const workspace = useWorkspaceController(defaultDate);
+  const {
+    date,
+    setDate,
+    handleGenerate,
+    statusLabel,
+    processing,
+    insightsActive,
+    combos,
+    hasCombos,
+    totalBacktests,
+    completedMatchesCount,
+    comboLegs,
+    setComboLegs,
+    oddsRange,
+    handleOddsRangeChange,
+  } = workspace;
+
+  const [showEmptyState, setShowEmptyState] = useState(false);
+
+  const isBusy = processing;
+  const canEvaluateCombos =
+    insightsActive && !isBusy && totalBacktests > 0 && completedMatchesCount >= totalBacktests;
+  const showResults = canEvaluateCombos && hasCombos;
+  const readyForCombos = canEvaluateCombos;
+
+  const handleUserGenerate = useCallback(() => {
+    setShowEmptyState(false);
+    handleGenerate();
+  }, [handleGenerate]);
+
+  return (
+    <>
+      <div
+        className="flex min-h-screen flex-col bg-black text-white overflow-y-auto"
+        style={{ maxHeight: "calc(100vh - 4rem)" }}
+      >
+        <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+          <div className="w-full max-w-xl space-y-6">
+            <AIUserDatePicker value={date} onChange={setDate} />
+            <button
+              type="button"
+              onClick={handleUserGenerate}
+              disabled={isBusy}
+              className="ai-user-button group relative isolate flex w-full items-center justify-center overflow-hidden rounded-full bg-slate-950/80 p-[3px] text-lg font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span
+                className="ai-border-spinner pointer-events-none absolute inset-0 rounded-full bg-[conic-gradient(at_top,_#0ea5e9,_#34d399,_#a78bfa,_#0ea5e9)] opacity-80 blur-sm"
+                aria-hidden="true"
+              />
+              <span
+                className="pointer-events-none absolute inset-0 rounded-full border border-white/10 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.35),transparent_55%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.35),transparent_35%)] opacity-70 mix-blend-screen"
+                aria-hidden="true"
+              />
+              <span
+                className="ai-flow pointer-events-none absolute inset-y-0 -left-1/4 w-1/2 rounded-full bg-gradient-to-r from-white/40 via-emerald-200/40 to-transparent opacity-50 blur-2xl"
+                aria-hidden="true"
+              />
+              <span className="relative flex w-full items-center justify-center rounded-full bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 px-6 py-4 text-slate-100 shadow-[0_25px_70px_-30px_rgba(34,197,94,0.9)] transition-all duration-300 group-hover:translate-y-0.5 group-hover:shadow-[0_35px_90px_-25px_rgba(59,130,246,0.7)] group-active:scale-[0.99]">
+                <span className="ai-flicker flex items-center justify-center gap-3 text-emerald-100">
+                  <span className="ai-sparkles relative inline-flex h-10 w-10 items-center justify-center" aria-hidden="true">
+                    <span className="ai-sparkle-star absolute right-1 top-1/2 -translate-y-1/2 text-2xl">✦</span>
+                    <span className="ai-sparkle-star absolute left-1 top-0 text-base opacity-80 -rotate-12">✦</span>
+                    <span className="ai-sparkle-star ai-sparkle-star--small absolute left-1.5 bottom-0 text-sm opacity-60 rotate-6">✦</span>
+                  </span>
+                  <span className="tracking-[0.16em]">Ai generate bets</span>
+                </span>
+              </span>
+            </button>
+            <p className="text-sm text-slate-400">{statusLabel}</p>
+            {isBusy ? <AISpinner label="Analyserar matcher" /> : null}
+          </div>
+        </div>
+
+        {showResults ? (
+          <section className="w-full bg-black px-4 pb-12">
+            <div className="mx-auto flex max-w-4xl flex-col gap-6">
+              <AIComboControls
+                legs={comboLegs}
+                onLegChange={setComboLegs}
+                oddsRange={oddsRange}
+                onOddsRangeChange={handleOddsRangeChange}
+                disabled={!showResults}
+              />
+              <AIComboList combos={combos} />
+            </div>
+          </section>
+        ) : null}
+
+
+
+        {isBusy && insightsActive ? (
+          <section className="w-full px-4 pb-12">
+            <div className="mx-auto max-w-md text-center text-sm text-slate-400">
+              <p>Vi jobbar på saken… Dina matcher analyseras i bakgrunden.</p>
+            </div>
+          </section>
+        ) : null}
+
+        <WorkspaceEngines {...workspace} />
+      </div>
+      <style jsx>{`
+        .ai-border-spinner {
+          animation: aiBorderSpin 12s linear infinite;
+        }
+
+        .ai-flow {
+          animation: aiFlow 6s ease-in-out infinite;
+        }
+
+        .ai-flicker {
+          animation: aiFlicker 3.5s linear infinite;
+        }
+
+        .ai-sparkle-star {
+          display: inline-block;
+          animation-name: aiSparkle;
+          animation-duration: 4.2s;
+          animation-timing-function: ease-in-out;
+          animation-iteration-count: infinite;
+          text-shadow: 0 0 10px rgba(14, 165, 233, 0.35);
+        }
+
+        .ai-sparkle-star--small {
+          animation-name: aiSparkleSmall;
+        }
+
+        .ai-sparkle-star:nth-child(2) {
+          animation-delay: 0.6s;
+        }
+
+        .ai-sparkle-star:nth-child(3) {
+          animation-delay: 1.1s;
+        }
+
+        @keyframes aiBorderSpin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes aiFlow {
+          0% {
+            transform: translateX(-150%);
+            opacity: 0;
+          }
+          45% {
+            opacity: 0.6;
+          }
+          100% {
+            transform: translateX(180%);
+            opacity: 0;
+          }
+        }
+
+        @keyframes aiFlicker {
+          0%,
+          16%,
+          18%,
+          42%,
+          100% {
+            opacity: 1;
+            text-shadow: 0 0 12px rgba(16, 185, 129, 0.6), 0 0 24px rgba(14, 165, 233, 0.45);
+          }
+          17%,
+          40%,
+          60% {
+            opacity: 0.7;
+            text-shadow: 0 0 6px rgba(79, 70, 229, 0.5), 0 0 14px rgba(14, 165, 233, 0.35);
+          }
+          20%,
+          55%,
+          72% {
+            opacity: 0.9;
+          }
+        }
+
+        @keyframes aiSparkle {
+          0%,
+          100% {
+            opacity: 0.4;
+            transform: scale(0.8) rotate(0deg);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.1) rotate(8deg);
+          }
+        }
+
+        @keyframes aiSparkleSmall {
+          0%,
+          100% {
+            opacity: 0.45;
+            transform: scale(0.6) rotate(0deg);
+          }
+          50% {
+            opacity: 0.95;
+            transform: scale(0.85) rotate(8deg);
+          }
+        }
+      `}</style>
+    </>
   );
 }

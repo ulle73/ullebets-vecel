@@ -355,6 +355,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [autoRunToken, setAutoRunToken] = useState(0);
+  const [initialRunComplete, setInitialRunComplete] = useState(false);
   const recalcTimers = useRef({});
   const autoLoadAbort = useRef(null);
 
@@ -569,11 +570,12 @@ export default function BacktestPage({ match, onPositiveResults }) {
   }, [results]);
 
   useEffect(() => {
+    if (!initialRunComplete) return;
     if (typeof onPositiveResults !== "function") {
       return;
     }
     onPositiveResults(match, positiveResults, unibetUrl);
-  }, [match, onPositiveResults, positiveResults, unibetUrl]);
+  }, [initialRunComplete, match, onPositiveResults, positiveResults, unibetUrl]);
 
   const handleFormChange = useCallback((statKey, field) => (event) => {
     const value = event.target.value;
@@ -775,6 +777,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
       await Promise.all(promises);
     } finally {
       setLoading(false);
+      setInitialRunComplete(true);
     }
   }, [form, oddsStore, recalculateBet, teamKey]);
 
