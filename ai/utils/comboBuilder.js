@@ -1,6 +1,7 @@
 "use strict";
 
 import { canAddLineToCombo } from "@/ai/rules/comboRuleGuard";
+import { buildLineKey } from "@/ai/utils/matchupUtils";
 
 const DEFAULTS = {
   legs: 2,
@@ -29,6 +30,7 @@ export function buildCombos(lines = [], options = {}) {
     maxOdds = DEFAULTS.maxOdds,
     maxLines = DEFAULTS.maxLines,
     maxCombos = DEFAULTS.maxCombos,
+    priorityMap = {},
   } = options;
 
   const sanitizedLegs = Math.max(1, Math.min(ledsValue(legs), 4));
@@ -41,8 +43,15 @@ export function buildCombos(lines = [], options = {}) {
       ...line,
       primaryEv: settleNumber(line.primaryEv, 0),
       odds: settleNumber(line.odds, 1),
+      priority: priorityMap[buildLineKey(line)] ?? 0,
     }))
-    .sort((a, b) => (b.primaryEv || 0) - (a.primaryEv || 0))
+    .sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      if ((b.primaryEv ?? 0) !== (a.primaryEv ?? 0)) {
+        return (b.primaryEv ?? 0) - (a.primaryEv ?? 0);
+      }
+      return (b.odds ?? 0) - (a.odds ?? 0);
+    })
     .slice(0, Math.max(1, maxLines));
 
   if (!validLines.length) {

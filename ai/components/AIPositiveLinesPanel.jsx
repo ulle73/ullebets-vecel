@@ -13,6 +13,7 @@ export default function AIPositiveLinesPanel({ lines = [] }) {
           <thead className="text-[10px] uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-2 py-1">Match</th>
+              <th className="px-2 py-1">Scope</th>
               <th className="px-2 py-1">Stat</th>
               <th className="px-2 py-1">Direction</th>
               <th className="px-2 py-1">Odds</th>
@@ -23,6 +24,9 @@ export default function AIPositiveLinesPanel({ lines = [] }) {
             {sorted.map((row) => (
               <tr key={`${row.matchId}-${row.betKey}`} className="border-t border-slate-900">
                 <td className="px-2 py-1 font-semibold text-slate-100">{row.matchLabel}</td>
+                <td className="px-2 py-1 uppercase tracking-wide text-[11px] text-slate-300">
+                  {row.scope ?? "total"}
+                </td>
                 <td className="px-2 py-1">{row.statKey ?? "Stat"}</td>
                 <td className="px-2 py-1">{row.direction === "over" ? "Över" : "Under"} {row.line ?? "—"}</td>
                 <td className="px-2 py-1">{row.odds?.toFixed(2) ?? "—"}x</td>

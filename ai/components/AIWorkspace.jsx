@@ -97,13 +97,36 @@ export default function AIWorkspace({ defaultDate }) {
     [matchupsData]
   );
 
+  const allRankedRows = useMemo(() => [...topOverRows, ...topUnderRows], [topOverRows, topUnderRows]);
+
   const insightKeySet = useMemo(() => {
     const set = new Set();
-    topOverRows.concat(topUnderRows).forEach((row) => {
+    allRankedRows.forEach((row) => {
       set.add(buildMatchupKey(row));
     });
     return set;
-  }, [topOverRows, topUnderRows]);
+  }, [allRankedRows]);
+
+  const buildLineKeyFromRow = useCallback(
+    (row) => {
+      if (!row) return null;
+      const direction =
+        (row.condition ?? row.direction ?? "")
+          .toString()
+          .toLowerCase()
+          .startsWith("u")
+          ? "under"
+          : "over";
+      return buildLineKey({
+        matchId: row.matchId,
+        statKey: row.statKey ?? row.statLabel,
+        period: row.period,
+        scope: row.scope,
+        direction,
+      });
+    },
+    []
+  );
 
   const targetMatches = useMemo(() => {
     if (!insightsActive) return [];
@@ -133,14 +156,27 @@ export default function AIWorkspace({ defaultDate }) {
     return positiveLines.filter((line) => insightKeySet.has(buildLineKey(line)));
   }, [insightKeySet, positiveLines, insightsActive]);
 
+  const priorityMap = useMemo(() => {
+    const map = {};
+    allRankedRows.forEach((row) => {
+      const key = buildLineKeyFromRow(row);
+      if (!key) return;
+      const score = Number(row.score ?? row.normalizedScore ?? 0);
+      if (!Number.isFinite(score)) return;
+      map[key] = Math.max(map[key] ?? 0, score);
+    });
+    return map;
+  }, [allRankedRows, buildLineKeyFromRow]);
+
   const combos = useMemo(
     () =>
       buildCombos(insightTargetedLines, {
         legs: comboLegs,
         minOdds: oddsRange.min,
         maxOdds: oddsRange.max,
+        priorityMap,
       }),
-    [comboLegs, insightTargetedLines, oddsRange]
+    [comboLegs, insightTargetedLines, oddsRange, priorityMap]
   );
 
   const handleOddsRangeChange = useCallback(
