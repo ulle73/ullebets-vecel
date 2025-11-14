@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { computeExpectedValue } from "@/lib/backtest/engine";
+import { computeExpectedValue, calculateEVFromData } from "@/lib/backtest/engine";
 import {
   fetchTeamMatches,
   fetchLeaguesAndTeams,
+  fetchTeamProfilesBundle,
 } from "@/lib/backtest/data";
 import {
   findUnibetEventForMatch,
@@ -56,18 +57,77 @@ async function handleExpectedValue(body) {
   const params = { ...body };
   delete params.action;
   const result = await computeExpectedValue(params);
-
-  const [homeMatches, awayMatches] = await Promise.all([
-    params.homeTeam ? fetchTeamMatches(params.homeTeam, "home") : Promise.resolve([]),
-    params.awayTeam ? fetchTeamMatches(params.awayTeam, "away") : Promise.resolve([]),
-  ]);
-
-  return {
-    ...result,
-    homeMatches,
-    awayMatches,
-  };
+  return result;
 }
+
+async function handleBatchExpectedValue(body) {
+    const bets = body?.bets;
+    if (!Array.isArray(bets) || !bets.length) {
+      throw new Error("`bets` array is required for batch action");
+    }
+  
+    logServerBacktestStep("API: Batch Start", { count: bets.length });
+  
+    // 1. Deduplicate data fetching
+    const uniqueTeams = new Set();
+    bets.forEach((bet) => {
+      if (bet.homeTeam) uniqueTeams.add(bet.homeTeam);
+      if (bet.awayTeam) uniqueTeams.add(bet.awayTeam);
+    });
+  
+    const teamDataPromises = {};
+    uniqueTeams.forEach((teamName) => {
+      teamDataPromises[teamName] = {
+        profiles: fetchTeamProfilesBundle(teamName),
+        homeMatches: fetchTeamMatches(teamName, "home"),
+        awayMatches: fetchTeamMatches(teamName, "away"),
+      };
+    });
+  
+    // Wait for all data to be fetched
+    const teamData = {};
+    for (const teamName of uniqueTeams) {
+      const { profiles, homeMatches, awayMatches } = teamDataPromises[teamName];
+      teamData[teamName] = {
+        profiles: await profiles,
+        homeMatches: await homeMatches,
+        awayMatches: await awayMatches,
+      };
+    }
+  
+    logServerBacktestStep("API: Batch Data Fetched", { teams: uniqueTeams.size });
+  
+    // 2. Process bets in parallel with pre-fetched data
+    const results = await Promise.all(
+      bets.map(async (betParams) => {
+        try {
+          const homeData = teamData[betParams.homeTeam];
+          const awayData = teamData[betParams.awayTeam];
+  
+          if (!homeData || !awayData) {
+            throw new Error(`Missing data for ${betParams.homeTeam} or ${betParams.awayTeam}`);
+          }
+  
+          const fetchedData = {
+            homeBundle: homeData.profiles,
+            awayBundle: awayData.profiles,
+            homeMatchesRaw: betParams.neutralGround ? homeData.awayMatches : homeData.homeMatches,
+            awayMatchesRaw: awayData.awayMatches,
+          };
+  
+          // Call the calculation-only function
+          return await calculateEVFromData(betParams, fetchedData);
+        } catch (e) {
+          logServerBacktestError("API: Batch item error", { message: e?.message, params: betParams });
+          // Return a result that indicates an error for this specific bet
+          return { params: betParams, error: e?.message || "Unknown error" };
+        }
+      })
+    );
+  
+    logServerBacktestStep("API: Batch Complete", { results: results.length });
+    return results;
+  }
 
 async function handleUnibetOdds(body) {
   const eventId = extractUnibetEventId(body?.eventId || body?.url || body?.unibetUrl);
@@ -164,6 +224,11 @@ export async function POST(req) {
         logServerBacktestStep("API: expected value", body);
         const result = await handleExpectedValue(body);
         return json(result);
+      }
+      case "batch-expected-value": {
+        logServerBacktestStep("API: batch expected value", { count: body?.bets?.length });
+        const results = await handleBatchExpectedValue(body);
+        return json(results);
       }
       case "unibet-odds": {
         logServerBacktestStep("API: unibet odds", body);

@@ -770,11 +770,115 @@ export default function BacktestPage({ match, onPositiveResults }) {
     }
     setLoading(true);
     setError(null);
+    setLoading(true);
+    setError(null);
     try {
-      const promises = bets.map((bet) =>
-        recalculateBet(bet).catch(() => null)
-      );
-      await Promise.all(promises);
+      const betParams = [];
+      const current = oddsStore[teamKey] || {};
+      for (const [statKey, scopes] of Object.entries(current)) {
+        const cfg = form[statKey];
+        if (!cfg) continue;
+        for (const [scope, periods] of Object.entries(scopes)) {
+          for (const [period, lines] of Object.entries(periods)) {
+            for (const [line, odds] of Object.entries(lines)) {
+              const numericLine = Number(line);
+              if (odds?.over) {
+                betParams.push({
+                  homeTeam: cfg.homeTeam,
+                  awayTeam: cfg.awayTeam,
+                  over: true,
+                  line: numericLine,
+                  scope,
+                  stat: statKey,
+                  period,
+                  form: cfg.formMatches,
+                  odds: Number(odds.over),
+                  neutralGround,
+                  home_importance: cfg.home_importance,
+                  away_importance: cfg.away_importance,
+                });
+              }
+              if (odds?.under) {
+                betParams.push({
+                    homeTeam: cfg.homeTeam,
+                    awayTeam: cfg.awayTeam,
+                    over: false,
+                    line: numericLine,
+                    scope,
+                    stat: statKey,
+                    period,
+                    form: cfg.formMatches,
+                    odds: Number(odds.under),
+                    neutralGround,
+                    home_importance: cfg.home_importance,
+                    away_importance: cfg.away_importance,
+                });
+              }
+            }
+          }
+        }
+      }
+
+      if (!betParams.length) {
+        setError(t("error_missing_odds"));
+        return;
+      }
+
+      const results = await postBacktest({ action: "batch-expected-value", bets: betParams });
+      
+      const newResults = {};
+      for (const result of results) {
+        if (result && !result.error && result.params) {
+            const betKey = createBetKey({
+                homeTeam: result.params.home,
+                awayTeam: result.params.away,
+                statKey: result.params.stat,
+                scope: result.params.scope,
+                period: result.params.period,
+                line: result.params.line,
+                direction: result.params.over ? "over" : "under",
+                formMatches: result.params.form,
+                neutralGround: result.params.neutralGround,
+              });
+            const history = computeHistoryStats({
+                homeMatches: result.homeMatches,
+                awayMatches: result.awayMatches,
+                statPatterns,
+                statKey: result.params.stat,
+                scope: result.params.scope,
+                period: result.params.period,
+                line: result.params.line,
+                formMatches: result.params.form,
+                neutralGround: result.params.neutralGround,
+                homeTeam: result.params.home,
+                awayTeam: result.params.away,
+            });
+            newResults[betKey] = { 
+                ...result, 
+                history, 
+                bet: {
+                    statKey: result.params.stat,
+                    line: result.params.line,
+                    direction: result.params.over ? "over" : "under",
+                    scope: result.params.scope,
+                    period: result.params.period,
+                    odds: result.params.odds,
+                    homeTeam: result.params.home,
+                    awayTeam: result.params.away,
+                    key: betKey,
+                }
+            };
+        }
+      }
+
+      setResultsMap((prev) => {
+        const next = { ...prev };
+        next[teamKey] = { ...(next[teamKey] || {}), ...newResults };
+        return next;
+      });
+
+    } catch (err) {
+        setError(err.message || t("error_generic"));
     } finally {
       setLoading(false);
       setInitialRunComplete(true);
