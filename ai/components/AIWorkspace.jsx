@@ -14,7 +14,12 @@ import AIComboList from "@/ai/components/AIComboList";
 import AIInsightsList from "@/ai/components/AIInsightsList";
 import AIPositiveLinesPanel from "@/ai/components/AIPositiveLinesPanel";
 import { buildCombos } from "@/ai/utils/comboBuilder";
-import { buildLineKey, buildMatchLookup, buildMatchupKey } from "@/ai/utils/matchupUtils";
+import {
+  buildLineKey,
+  buildMatchLookup,
+  buildMatchupKey,
+  buildMatchLabelSignature,
+} from "@/ai/utils/matchupUtils";
 import { mapBacktestResultToLine } from "@/ai/utils/positiveLineMapper";
 
 const MAX_BACKGROUND_MATCHES = 16;
@@ -150,6 +155,21 @@ export default function AIWorkspace({ defaultDate }) {
   }, [insightsActive, topOverRows, topUnderRows, matchLookup]);
 
   const positiveLines = useMemo(() => Object.values(positiveLineMap).flat(), [positiveLineMap]);
+
+  const lineCounts = useMemo(() => {
+    const map = new Map();
+    positiveLines.forEach((line) => {
+      const idKey = buildLineKey(line);
+      if (idKey) {
+        map.set(idKey, (map.get(idKey) ?? 0) + 1);
+      }
+      const labelKey = buildMatchLabelSignature(line);
+      if (labelKey) {
+        map.set(labelKey, (map.get(labelKey) ?? 0) + 1);
+      }
+    });
+    return map;
+  }, [positiveLines]);
 
   const insightTargetedLines = useMemo(() => {
     if (!insightsActive) return [];
@@ -295,6 +315,7 @@ export default function AIWorkspace({ defaultDate }) {
               generatedAt={matchupsData?.generatedAt ?? null}
               isLoading={matchupsLoading}
               error={matchupsError}
+              lineCounts={lineCounts}
             />
 
             <AIPositiveLinesPanel lines={positiveLines} />
