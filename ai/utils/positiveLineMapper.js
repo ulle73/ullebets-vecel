@@ -1,6 +1,6 @@
 "use strict";
 
-export function mapBacktestResultToLine(match, result) {
+export function mapBacktestResultToLine(match, result, unibetUrl = null) {
   if (!match || !result) {
     return null;
   }
@@ -34,5 +34,6 @@ export function mapBacktestResultToLine(match, result) {
       home,
       away,
     },
+    unibetUrl: unibetUrl ?? match.unibetUrl ?? match.raw?.unibetUrl ?? null,
   };
 }

@@ -539,7 +539,7 @@ function buildLeagueSizeMap(pairs) {
   return map;
 }
 
-function buildScoreSnapshot(pairs, leagueSizeMap, limit = 50) {
+function buildScoreSnapshot(pairs, leagueSizeMap, limit = 200) {
   const overEntries = [];
   const underEntries = [];
 

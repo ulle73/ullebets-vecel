@@ -572,8 +572,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
     if (typeof onPositiveResults !== "function") {
       return;
     }
-    onPositiveResults(match, positiveResults);
-  }, [match, onPositiveResults, positiveResults]);
+    onPositiveResults(match, positiveResults, unibetUrl);
+  }, [match, onPositiveResults, positiveResults, unibetUrl]);
 
   const handleFormChange = useCallback((statKey, field) => (event) => {
     const value = event.target.value;
