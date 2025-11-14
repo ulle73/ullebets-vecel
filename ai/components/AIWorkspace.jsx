@@ -214,13 +214,14 @@ export default function AIWorkspace({ defaultDate }) {
     [setOddsRange]
   );
 
-  const handlePositiveResults = useCallback((match, results) => {
+  const handlePositiveResults = useCallback((match, results, unibetUrl = null) => {
     if (!match || !results) {
       return;
     }
     const matchKey = match.id ?? match.matchId ?? `${match.homeTeamName}-${match.awayTeamName}`;
-    const mapped = results
-      .map((result) => mapBacktestResultToLine(match, result))
+    const safeResults = Array.isArray(results) ? results : [];
+    const mapped = safeResults
+      .map((result) => mapBacktestResultToLine(match, result, unibetUrl))
       .filter((line) => line && typeof line.primaryEv === "number");
     setPositiveLineMap((prev) => {
       const next = { ...prev };

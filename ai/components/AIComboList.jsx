@@ -1,5 +1,22 @@
 "use client";
 
+function buildMatchUrlEntries(lines = []) {
+  const map = new Map();
+  lines.forEach((line) => {
+    const url = line?.unibetUrl;
+    if (!url) return;
+    const label = line.matchLabel || line.match || "Match";
+    if (!map.has(label)) {
+      map.set(label, new Set());
+    }
+    map.get(label).add(url);
+  });
+  return Array.from(map.entries()).map(([label, urls]) => ({
+    label,
+    urls: Array.from(urls),
+  }));
+}
+
 export default function AIComboList({ combos }) {
   if (!combos || !combos.length) {
     return (
@@ -11,7 +28,9 @@ export default function AIComboList({ combos }) {
 
   return (
     <div className="space-y-3">
-      {combos.map((combo, index) => (
+      {combos.map((combo, index) => {
+        const matchUrlEntries = buildMatchUrlEntries(combo.lines);
+        return (
         <article
           key={combo.id || `${index}-${combo.odds}`}
           className="rounded-lg border border-slate-800 bg-gradient-to-b from-slate-900/80 to-slate-900/50 p-3 shadow shadow-slate-900/20"
@@ -60,8 +79,32 @@ export default function AIComboList({ combos }) {
             </li>
           ))}
         </ul>
+          {matchUrlEntries.length ? (
+            <div className="mt-3 border-t border-slate-900/40 pt-2">
+            
+              <ul className="mt-1 space-y-1 text-[11px] text-slate-500">
+                {matchUrlEntries.map(({ label, urls }) => (
+                  <li key={`${combo.id}-${label}`} className="space-y-0.5">
+                  
+                    {urls.map((url, idx) => (
+                      <a
+                        key={`${combo.id}-${label}-${idx}`}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="block truncate text-[10px] text-slate-500 hover:text-slate-300"
+                      >
+                        {url}
+                      </a>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </article>
-      ))}
+        );
+      })}
     </div>
   );
 }
