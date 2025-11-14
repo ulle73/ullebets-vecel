@@ -31,30 +31,33 @@ export default function AIComboList({ combos }) {
           </div>
           <ul className="mt-3 space-y-2 border-t border-slate-900/50 pt-2 text-sm text-slate-200">
             {combo.lines.map((line) => (
-              <li key={`${combo.id}-${line.betKey ?? line.statKey}-${line.direction}`}>
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-semibold text-slate-100">{line.matchLabel}</span>
-                  <span className="text-xs uppercase tracking-wide text-slate-400">
-                    {line.direction === "over" ? "Över" : "Under"} {line.line ?? "—"}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-                  <span>
-                    Odds: <span className="text-emerald-300">{line.odds?.toFixed(2) ?? "—"}x</span>
-                  </span>
-                  <span>
-                    Stat: <span className="text-slate-200">{line.statKey ?? "–"}</span>
-                  </span>
-                  <span>
-                    Period: <span className="text-slate-200">{line.period}</span>
-                  </span>
-                  <span>
-                    Scope: <span className="text-slate-200">{line.scope}</span>
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
+            <li key={`${combo.id}-${line.betKey ?? line.statKey}-${line.direction}`} className="space-y-1">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="font-semibold text-slate-100">{line.matchLabel}</span>
+                <span className="text-xs uppercase tracking-wide text-slate-400">
+                  {line.direction === "over" ? "Över" : "Under"} {line.line ?? "—"}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+                <span>
+                  Odds: <span className="text-emerald-300">{line.odds?.toFixed(2) ?? "—"}x</span>
+                </span>
+                <span>
+                  EV: <span className="text-emerald-300">{line.primaryEv?.toFixed(1) ?? "0"}%</span>
+                </span>
+                <span>
+                  Stat: <span className="text-slate-200">{line.statKey ?? "–"}</span>
+                </span>
+                <span>
+                  Period: <span className="text-slate-200">{line.period}</span>
+                </span>
+                <span>
+                  Scope: <span className="text-slate-200">{line.scope}</span>
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
         </article>
       ))}
     </div>
