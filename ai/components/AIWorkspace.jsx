@@ -536,13 +536,13 @@ export function AIUserWorkspace({ defaultDate }) {
 
 
 
-        {isBusy && insightsActive ? (
+        {/* {isBusy && insightsActive ? (
           <section className="w-full px-4 pb-12">
             <div className="mx-auto max-w-md text-center text-sm text-slate-400">
               <p>Vi jobbar på saken… Dina matcher analyseras i bakgrunden.</p>
             </div>
           </section>
-        ) : null}
+        ) : null} */}
 
         <WorkspaceEngines {...workspace} />
       </div>
