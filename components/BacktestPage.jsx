@@ -344,7 +344,7 @@ async function postBacktest(body, options = {}) {
   return res.json();
 }
 
-export default function BacktestPage({ match }) {
+export default function BacktestPage({ match, onPositiveResults }) {
   const { t } = useTranslation();
   const statPatterns = useMemo(() => getStatPatterns(t), [t]);
   const [form, setForm] = useState(() => createInitialForm(statPatterns, match));
@@ -567,6 +567,13 @@ export default function BacktestPage({ match }) {
       .filter((r) => typeof r.primaryEv === "number" && r.primaryEv > 0)
       .sort((a, b) => b.primaryEv - a.primaryEv);
   }, [results]);
+
+  useEffect(() => {
+    if (typeof onPositiveResults !== "function") {
+      return;
+    }
+    onPositiveResults(match, positiveResults);
+  }, [match, onPositiveResults, positiveResults]);
 
   const handleFormChange = useCallback((statKey, field) => (event) => {
     const value = event.target.value;
