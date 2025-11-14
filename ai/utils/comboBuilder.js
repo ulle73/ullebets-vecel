@@ -1,5 +1,7 @@
 "use strict";
 
+import { canAddLineToCombo } from "@/ai/rules/comboRuleGuard";
+
 const DEFAULTS = {
   legs: 2,
   minOdds: 1.8,
@@ -65,7 +67,7 @@ export function buildCombos(lines = [], options = {}) {
     });
   }
 
-  function walk(start, currentLines, currentOdds, currentEv, usedMatches) {
+  function walk(start, currentLines, currentOdds, currentEv) {
     if (currentLines.length === legsTarget) {
       if (currentOdds >= sanitizedMinOdds && currentOdds <= sanitizedMaxOdds) {
         recordCombo(currentLines, currentOdds, currentEv);
@@ -78,29 +80,31 @@ export function buildCombos(lines = [], options = {}) {
         break;
       }
       const candidate = validLines[i];
-      const matchKey = candidate.matchId ?? candidate.matchLabel ?? `${i}`;
-      if (usedMatches.has(matchKey)) continue;
       const nextOdds = currentOdds * (candidate.odds || 1);
       if (nextOdds > sanitizedMaxOdds * 1.25) {
         continue;
       }
+      if (!canAddLineToCombo(currentLines, candidate)) {
+        continue;
+      }
       currentLines.push(candidate);
-      usedMatches.add(matchKey);
-      walk(i + 1, currentLines, nextOdds, currentEv + (candidate.primaryEv || 0), usedMatches);
-      usedMatches.delete(matchKey);
+      walk(i + 1, currentLines, nextOdds, currentEv + (candidate.primaryEv || 0));
       currentLines.pop();
     }
   }
 
   if (legsTarget === 1) {
     validLines.forEach((line) => {
+      if (!canAddLineToCombo([], line)) {
+        return;
+      }
       const totalOdds = line.odds;
       if (totalOdds >= sanitizedMinOdds && totalOdds <= sanitizedMaxOdds) {
         recordCombo([line], totalOdds, line.primaryEv || 0);
       }
     });
   } else {
-    walk(0, [], 1, 0, new Set());
+    walk(0, [], 1, 0);
   }
 
   combos.sort((a, b) => b.totalEv - a.totalEv);
