@@ -492,7 +492,7 @@ export function AIUserWorkspace({ defaultDate }) {
               className="ai-user-button group relative isolate flex w-full items-center justify-center overflow-hidden rounded-full bg-slate-950/80 p-[3px] text-lg font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span
-                className="ai-border-spinner pointer-events-none absolute inset-0 rounded-full bg-[conic-gradient(at_top,_#0ea5e9,_#34d399,_#a78bfa,_#0ea5e9)] opacity-80 blur-sm"
+                className="ai-border-spinner pointer-events-none absolute inset-0 bg-[conic-gradient(at_top,_#0ea5e9,_#34d399,_#a78bfa,_#0ea5e9)] opacity-80 blur-sm"
                 aria-hidden="true"
               />
               <span
