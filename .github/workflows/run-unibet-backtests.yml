@@ -1,0 +1,37 @@
+name: Run Unibet Backtests
+
+on:
+  schedule:
+    - cron: "0 5 * * *" # 06:00 Stockholm
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Datum att köra (YYYY-MM-DD). Lämna tomt för dagens datum."
+        required: false
+
+jobs:
+  unibet-backtests:
+    runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Unibet backtests
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            node scripts/run-unibet-backtests.js --date="${{ github.event.inputs.date }}"
+          else
+            node scripts/run-unibet-backtests.js
+          fi

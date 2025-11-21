@@ -1,4 +1,4 @@
-import { getTeamAliases } from "./teamNameAliases";
+import { getTeamAliases } from "./teamNameAliases.js";
 
 const STAT_MAP = [
   { key: "shotsOnGoal", regex: /(Totala|Totalt antal) skott på mål/i },

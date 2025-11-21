@@ -39,6 +39,8 @@ function extractUnibetEventId(input) {
   return numeric ? numeric[0] : null;
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function fetchUnibetOdds(eventId) {
   if (!eventId) {
     throw new Error("Missing Unibet event id");
@@ -168,7 +170,16 @@ async function handleAutoUnibetOdds(body) {
     throw new Error("Saknar lag för automatisk Unibet-hämtning");
   }
 
-  const match = await findUnibetEventForMatch(matchInfo);
+  let match = await findUnibetEventForMatch(matchInfo);
+  if (!match) {
+    console.warn("Unibet auto: initial lookup miss, retrying with refresh", {
+      league: matchInfo.leagueName,
+      home: matchInfo.homeTeam,
+      away: matchInfo.awayTeam,
+    });
+    await sleep(1500);
+    match = await findUnibetEventForMatch(matchInfo, { forceRefresh: true });
+  }
   if (!match) {
     throw new Error("Kunde inte hitta match i Unibets listView");
   }

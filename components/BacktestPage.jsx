@@ -358,6 +358,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
   const [initialRunComplete, setInitialRunComplete] = useState(false);
   const recalcTimers = useRef({});
   const autoLoadAbort = useRef(null);
+  const lastAutoRunToken = useRef(0);
 
   const homeTeam = match?.homeTeamName || form[Object.keys(form)[0]]?.homeTeam || "";
   const awayTeam = match?.awayTeamName || form[Object.keys(form)[0]]?.awayTeam || "";
@@ -730,7 +731,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
     [scheduleRecalculate, teamKey]
   );
 
-  const handleCalculateAll = useCallback(async () => {
+  const handleCalculateAll = useCallback(async ({ suppressMissingOddsError = false } = {}) => {
     const bets = [];
     const current = oddsStore[teamKey] || {};
     for (const [statKey, scopes] of Object.entries(current)) {
@@ -765,7 +766,9 @@ export default function BacktestPage({ match, onPositiveResults }) {
       }
     }
     if (!bets.length) {
-      setError(t("error_missing_odds"));
+      if (!suppressMissingOddsError) {
+        setError(t("error_missing_odds"));
+      }
       return;
     }
     setLoading(true);
@@ -820,7 +823,9 @@ export default function BacktestPage({ match, onPositiveResults }) {
       }
 
       if (!betParams.length) {
-        setError(t("error_missing_odds"));
+        if (!suppressMissingOddsError) {
+          setError(t("error_missing_odds"));
+        }
         return;
       }
 
@@ -889,7 +894,11 @@ export default function BacktestPage({ match, onPositiveResults }) {
     if (!autoRunToken) {
       return;
     }
-    handleCalculateAll();
+    if (lastAutoRunToken.current === autoRunToken) {
+      return;
+    }
+    lastAutoRunToken.current = autoRunToken;
+    handleCalculateAll({ suppressMissingOddsError: true });
   }, [autoRunToken, handleCalculateAll]);
 
   const handleLoadOdds = useCallback(async () => {
@@ -1281,7 +1290,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
             <button
               type="button"
-              onClick={handleCalculateAll}
+              onClick={() => handleCalculateAll()}
               className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500"
               disabled={loading}
             >
