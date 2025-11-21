@@ -626,10 +626,15 @@ async function processMatch(match, collection) {
   );
 
   console.log(
-    `   💾 Sparade ${lines.length} marknader till ${COLLECTION_NAME} (document ${slug})`
+    `   ✅ Sparade ${lines.length} marknader till ${COLLECTION_NAME} (document ${slug})`
   );
 
-  return { slug, lineCount: lines.length };
+  return {
+    slug,
+    lineCount: lines.length,
+    homeTeam: match.canonicalHome,
+    awayTeam: match.canonicalAway,
+  };
 }
 
 async function main() {
@@ -639,10 +644,12 @@ async function main() {
     throw new Error(`Ogiltigt datumformat: ${date}`);
   }
   const targetDateLabel = formatDateInZone(targetDate);
-  console.log(`🎯 Kör Unibet-backtests för datum ${targetDateLabel} (${TIME_ZONE})`);
+  console.log(
+    `✅ Kör Unibet-backtests för datum ${targetDateLabel} (${TIME_ZONE})`
+  );
 
   const events = await fetchListView();
-  console.log(`📥 Hämtade ${events.length} events från Unibet listView`);
+  console.log(`⚽️ Hämtade ${events.length} events från Unibet listView`);
 
   const matches = getMatchesForDate(events, targetDate);
   console.log(`✅ ${matches.length} matcher matchade datumet och konfigurationen`);
@@ -657,16 +664,37 @@ async function main() {
   const collection = db.collection(COLLECTION_NAME);
 
   let processed = 0;
+  let totalLinesSaved = 0;
+  const summaries = [];
   for (const match of matches) {
     const result = await processMatch(match, collection);
     if (result) {
       processed += 1;
+      totalLinesSaved += result.lineCount;
+      summaries.push(result);
+    }
+  }
+
+  if (summaries.length) {
+    console.log("\nℹ️   Matchöversikt");
+    for (const entry of summaries) {
+      console.log(
+        `   ⚽️ ${entry.homeTeam} vs ${entry.awayTeam}: ${entry.lineCount} linjer`
+      );
     }
   }
 
   console.log(
-    `🎉 Klar! Backtests sparade för ${processed}/${matches.length} matcher i ${COLLECTION_NAME}.`
+    `\nℹ️  Totalt sparade backtests (linjer): ${totalLinesSaved} i ${processed} matcher`
   );
+  console.log(
+    `✅ Klar! Backtests sparade för ${processed}/${matches.length} matcher i ${COLLECTION_NAME}.`
+  );
+
+  if (typeof client.close === "function") {
+    await client.close();
+    console.log("✅ Stängde MongoDB-anslutningen.");
+  }
 }
 
 main().catch((error) => {
