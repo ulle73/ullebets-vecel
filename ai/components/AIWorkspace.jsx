@@ -23,6 +23,7 @@ import {
   buildMatchLabelSignature,
 } from "@/ai/utils/matchupUtils";
 import { mapBacktestResultToLine } from "@/ai/utils/positiveLineMapper";
+import mapUnibetOdds from "../../components/backtest/unibetOddsMapper"; // Import mapUnibetOdds
 
 const SWR_OPTIONS = {
   revalidateOnFocus: false,
@@ -41,6 +42,22 @@ function makeFormatter() {
   });
 }
 
+async function postBacktest(body, options = {}) {
+  const { signal } = options;
+  const res = await fetch("/api/backtest", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    const message = payload?.message || `${res.status}`;
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 function useWorkspaceController(defaultDate) {
   const [date, setDate] = useState(defaultDate);
   const [selectedMatchId, setSelectedMatchId] = useState(null);
@@ -49,6 +66,7 @@ function useWorkspaceController(defaultDate) {
   const [completedMatches, setCompletedMatches] = useState({});
   const [comboLegs, setComboLegs] = useState(2);
   const [oddsRange, setOddsRange] = useState({ min: 1.8, max: 2.2 });
+  const [matchOddsMap, setMatchOddsMap] = useState({}); // New state for batch odds
 
   const formatter = useMemo(makeFormatter, []);
   const formatTime = useCallback(
@@ -230,11 +248,75 @@ function useWorkspaceController(defaultDate) {
     });
   }, []);
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     setPositiveLineMap({});
     setCompletedMatches({});
+    setMatchOddsMap({}); // Clear previous odds
     setRunToken((token) => token + 1);
-  }, []);
+
+    // Fetch odds for all target matches in batch
+    if (!targetMatches.length) return;
+
+    const matchInfos = targetMatches.map(match => ({
+        matchId: match.matchId,
+        eventId: match.eventId,
+        homeTeam: match.homeTeamName,
+        awayTeam: match.awayTeamName,
+        leagueName: match.leagueName,
+        timestamp: match.timestamp,
+        start: match.start,
+    }));
+
+    try {
+        const batchOddsResponse = await postBacktest({
+            action: 'batch-auto-unibet-odds',
+            matches: matchInfos,
+        });
+       
+        const newMatchOddsMap = {};
+        for (const item of batchOddsResponse) {
+            if (item.error) {
+                console.error(`Error fetching odds for match ${item.matchInfo?.matchId || item.matchInfo?.eventId}: ${item.error}`);
+                continue;
+            }
+            const matchId = item.matchInfo?.matchId || item.matchInfo?.eventId;
+            if (matchId) {
+                const tuples = mapUnibetOdds(
+                    item.odds,
+                    item.matched?.home || item.matchInfo?.homeTeam,
+                    item.matched?.away || item.matchInfo?.awayTeam
+                );
+                // Convert tuples to the oddsStore format expected by BacktestPage
+                const oddsStoreForMatch = {};
+                if(tuples.length > 0) { // Only process if there are actual odds
+                  const teamKey = `${item.matchInfo?.homeTeam}-${item.matchInfo?.awayTeam}`; // Reconstruct teamKey
+                  for (const tuple of tuples) {
+                      const { statKey, scope, period, line, odds } = tuple;
+                      if (!oddsStoreForMatch[statKey]) oddsStoreForMatch[statKey] = {};
+                      if (!oddsStoreForMatch[statKey][scope]) oddsStoreForMatch[statKey][scope] = {};
+                      if (!oddsStoreForMatch[statKey][scope][period]) oddsStoreForMatch[statKey][scope][period] = {};
+                      
+                      const numericLine = Number(line);
+                      const lineStore = {
+                          ...(oddsStoreForMatch[statKey][scope][period][numericLine] || { over: "", under: "" }),
+                      };
+                      if (odds.over != null) lineStore.over = odds.over;
+                      if (odds.under != null) lineStore.under = odds.under;
+                      oddsStoreForMatch[statKey][scope][period][numericLine] = lineStore;
+                  }
+                  newMatchOddsMap[matchId] = { [teamKey]: oddsStoreForMatch }; // Wrap in the actual teamKey
+                }
+            }
+        }
+        setMatchOddsMap(newMatchOddsMap);
+        // After fetching odds, we can proceed to trigger backtests
+        // The BacktestPage instances will receive these odds via initialOdds prop
+    } catch (error) {
+        console.error("Error in batch odds fetching:", error);
+        // Handle error, e.g., set an error state in the workspace
+    }
+
+  }, [targetMatches]);
 
   const totalBacktests = targetMatches.length;
   const completedMatchesCount = useMemo(
@@ -301,6 +383,7 @@ function WorkspaceEngines({
   targetMatches,
   runToken,
   handlePositiveResults,
+  matchOddsMap, // Receive the new state
 }) {
   if (!insightsActive) {
     return null;
@@ -313,11 +396,14 @@ function WorkspaceEngines({
         <div>
           {targetMatches.map((match) => {
             const key = `${match.id ?? match.matchId}-${runToken}`;
+            const matchId = match.matchId ?? match.eventId; // Use matchId or eventId to key into matchOddsMap
+            const initialOdds = matchId ? matchOddsMap[matchId] : undefined;
             return (
               <BacktestPage
                 key={key}
                 match={match}
                 onPositiveResults={handlePositiveResults}
+                initialOdds={initialOdds} // Pass initial odds
               />
             );
           })}
@@ -357,6 +443,7 @@ export default function AIWorkspace({ defaultDate }) {
     lineCounts,
     positiveLines,
     insightsActive,
+    matchOddsMap, // Destructure matchOddsMap here
   } = workspace;
 
   return (
@@ -439,7 +526,7 @@ export default function AIWorkspace({ defaultDate }) {
         </div>
       </div>
 
-      <WorkspaceEngines {...workspace} />
+      <WorkspaceEngines {...workspace} matchOddsMap={matchOddsMap} />
     </div>
   );
 }

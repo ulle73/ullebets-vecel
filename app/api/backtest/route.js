@@ -221,6 +221,66 @@ async function handleLeagues() {
   return { leagues };
 }
 
+async function handleBatchAutoUnibetOdds(body) {
+  const matchesToProcess = body?.matches;
+  if (!Array.isArray(matchesToProcess) || !matchesToProcess.length) {
+    throw new Error("`matches` array is required for batch auto Unibet odds action");
+  }
+
+  logServerBacktestStep("API: Batch Auto Unibet Odds Start", { count: matchesToProcess.length });
+
+  const results = await Promise.all(matchesToProcess.map(async (matchInfo) => {
+    try {
+      const directEventId = extractUnibetEventId(matchInfo?.eventId);
+      if (directEventId) {
+        const odds = await handleUnibetOdds({ eventId: directEventId });
+        return {
+          ...odds,
+          eventUrl: `${UNIBET_EVENT_BASE_URL.replace(/\/$/, "")}/${directEventId}`,
+          matchInfo,
+        };
+      }
+
+      if (!matchInfo.homeTeam || !matchInfo.awayTeam) {
+        return { matchInfo, error: "Saknar lag för automatisk Unibet-hämtning" };
+      }
+
+      let match = await findUnibetEventForMatch(matchInfo);
+      if (!match) {
+        console.warn("Unibet auto: initial lookup miss, retrying with refresh", {
+          league: matchInfo.leagueName,
+          home: matchInfo.homeTeam,
+          away: matchInfo.awayTeam,
+        });
+        await sleep(1500);
+        match = await findUnibetEventForMatch(matchInfo, { forceRefresh: true });
+      }
+      if (!match) {
+        return { matchInfo, error: "Kunde inte hitta match i Unibets listView" };
+      }
+
+      const odds = await handleUnibetOdds({ eventId: match.eventId });
+      return {
+        ...odds,
+        eventUrl: match.eventUrl,
+        matched: {
+          home: match.homeTeam,
+          away: match.awayTeam,
+          league: match.league,
+          start: match.start,
+        },
+        matchInfo,
+      };
+    } catch (e) {
+      logServerBacktestError("API: Batch Auto Unibet Odds item error", { message: e?.message, matchInfo });
+      return { matchInfo, error: e?.message || "Unknown error" };
+    }
+  }));
+
+  logServerBacktestStep("API: Batch Auto Unibet Odds Complete", { results: results.length });
+  return results;
+}
+
 export async function POST(req) {
   try {
     const body = parseJsonBody(await req.json().catch(() => null));
@@ -250,6 +310,11 @@ export async function POST(req) {
         logServerBacktestStep("API: auto unibet odds", body);
         const odds = await handleAutoUnibetOdds(body);
         return json(odds);
+      }
+      case "batch-auto-unibet-odds": { // New case
+        logServerBacktestStep("API: batch auto unibet odds", { count: body?.matches?.length });
+        const results = await handleBatchAutoUnibetOdds(body);
+        return json(results);
       }
       case "team-stats": {
         logServerBacktestStep("API: team stats", body);

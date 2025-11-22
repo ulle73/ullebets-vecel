@@ -344,13 +344,12 @@ async function postBacktest(body, options = {}) {
   return res.json();
 }
 
-export default function BacktestPage({ match, onPositiveResults }) {
+export default function BacktestPage({ match, onPositiveResults, initialOdds }) {
   const { t } = useTranslation();
   const statPatterns = useMemo(() => getStatPatterns(t), [t]);
   const [form, setForm] = useState(() => createInitialForm(statPatterns, match));
-  const [unibetUrl, setUnibetUrl] = useState("");
   const [neutralGround, setNeutralGround] = useState(false);
-  const [oddsStore, setOddsStore] = useState({ default: {} });
+  const [oddsStore, setOddsStore] = useState(() => initialOdds || { default: {} });
   const [resultsMap, setResultsMap] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -439,104 +438,6 @@ export default function BacktestPage({ match, onPositiveResults }) {
     },
     [statPatterns, teamKey]
   );
-
-  const autoMatchHome = match?.homeTeamName || "";
-  const autoMatchAway = match?.awayTeamName || "";
-  const autoMatchId =
-    match?.matchId || match?.id || match?.eventId || match?.raw?.eventId || null;
-  const autoEventId =
-    match?.eventId ||
-    match?.raw?.event?.id ||
-    match?.raw?.eventId ||
-    match?.raw?.match?.event?.id ||
-    null;
-  const autoLeagueName =
-    match?.leagueName || match?.league?.name || match?.raw?.league?.name || null;
-  const autoTimestamp =
-    match?.timestamp ??
-    match?.startTimestamp ??
-    match?.raw?.startTimestamp ??
-    match?.raw?.event?.startTimestamp ??
-    null;
-  const autoStart = match?.start || match?.raw?.event?.start || null;
-
-  useEffect(() => {
-    if (!autoMatchHome || !autoMatchAway) {
-      return undefined;
-    }
-
-    const controller = new AbortController();
-    if (autoLoadAbort.current) {
-      autoLoadAbort.current.abort();
-    }
-    autoLoadAbort.current = controller;
-
-    setLoading(true);
-    setError(null);
-
-    const payload = {
-      action: "auto-unibet-odds",
-      matchId: autoMatchId,
-      eventId: autoEventId,
-      homeTeam: autoMatchHome,
-      awayTeam: autoMatchAway,
-      leagueName: autoLeagueName,
-      timestamp: autoTimestamp,
-      start: autoStart,
-    };
-
-    postBacktest(payload, { signal: controller.signal })
-      .then((data) => {
-        if (controller.signal.aborted) {
-          return;
-        }
-        const tuples = mapUnibetOdds(
-          data?.odds,
-          data?.matched?.home || autoMatchHome,
-          data?.matched?.away || autoMatchAway
-        );
-        if (tuples.length) {
-          applyOddsTuples(tuples);
-          setAutoRunToken((token) => token + 1);
-        }
-        const url =
-          data?.eventUrl ||
-          (data?.eventId
-            ? `https://www.unibet.se/betting/sports/event/${data.eventId}`
-            : null);
-        if (url) {
-          setUnibetUrl(url);
-        }
-      })
-      .catch((err) => {
-        if (controller.signal.aborted) {
-          return;
-        }
-        setError(err.message || t("error_generic"));
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-        if (autoLoadAbort.current === controller) {
-          autoLoadAbort.current = null;
-        }
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, [
-    applyOddsTuples,
-    autoEventId,
-    autoLeagueName,
-    autoMatchAway,
-    autoMatchHome,
-    autoMatchId,
-    autoStart,
-    autoTimestamp,
-    t,
-  ]);
 
   const statNames = useMemo(
     () => ({
@@ -773,54 +674,24 @@ export default function BacktestPage({ match, onPositiveResults }) {
     }
     setLoading(true);
     setError(null);
-    setLoading(true);
-    setError(null);
     try {
-      const betParams = [];
-      const current = oddsStore[teamKey] || {};
-      for (const [statKey, scopes] of Object.entries(current)) {
-        const cfg = form[statKey];
-        if (!cfg) continue;
-        for (const [scope, periods] of Object.entries(scopes)) {
-          for (const [period, lines] of Object.entries(periods)) {
-            for (const [line, odds] of Object.entries(lines)) {
-              const numericLine = Number(line);
-              if (odds?.over) {
-                betParams.push({
-                  homeTeam: cfg.homeTeam,
-                  awayTeam: cfg.awayTeam,
-                  over: true,
-                  line: numericLine,
-                  scope,
-                  stat: statKey,
-                  period,
-                  form: cfg.formMatches,
-                  odds: Number(odds.over),
-                  neutralGround,
-                  home_importance: cfg.home_importance,
-                  away_importance: cfg.away_importance,
-                });
-              }
-              if (odds?.under) {
-                betParams.push({
-                    homeTeam: cfg.homeTeam,
-                    awayTeam: cfg.awayTeam,
-                    over: false,
-                    line: numericLine,
-                    scope,
-                    stat: statKey,
-                    period,
-                    form: cfg.formMatches,
-                    odds: Number(odds.under),
-                    neutralGround,
-                    home_importance: cfg.home_importance,
-                    away_importance: cfg.away_importance,
-                });
-              }
-            }
-          }
-        }
-      }
+      const betParams = bets.map(bet => {
+        const cfg = form[bet.statKey];
+        return {
+          homeTeam: cfg.homeTeam,
+          awayTeam: cfg.awayTeam,
+          over: bet.direction === "over",
+          line: bet.line,
+          scope: bet.scope,
+          stat: bet.statKey,
+          period: bet.period,
+          form: cfg.formMatches,
+          odds: bet.oddsValue,
+          neutralGround,
+          home_importance: cfg.home_importance,
+          away_importance: cfg.away_importance,
+        };
+      });
 
       if (!betParams.length) {
         if (!suppressMissingOddsError) {
@@ -888,7 +759,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
       setLoading(false);
       setInitialRunComplete(true);
     }
-  }, [form, oddsStore, recalculateBet, teamKey]);
+  }, [form, oddsStore, teamKey, statPatterns, t, neutralGround]);
 
   useEffect(() => {
     if (!autoRunToken) {
@@ -1229,22 +1100,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
             </div>
           </header>
 
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <input
-              className="flex-1 rounded border border-slate-600 bg-slate-950 px-3 py-2 text-sm"
-              placeholder={t("unibet_placeholder")}
-              value={unibetUrl}
-              onChange={(event) => setUnibetUrl(event.target.value)}
-            />
-            <button
-              type="button"
-              onClick={handleLoadOdds}
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500"
-              disabled={loading}
-            >
-              {t("load_odds")}
-            </button>
-          </div>
+
 
           <div className="mb-6 grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
