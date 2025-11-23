@@ -1,0 +1,34 @@
+# Machine Learning - Generated files
+
+# Training datasets (can be regenerated)
+data/datasets/*.jsonl
+
+# Trained models (should be backed up but not in git)
+models/trained/**/*.json
+models/trained/**/*.onnx
+models/trained/**/*.pkl
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Model training logs
+*.log
+wandb/
+
+# Temporary files
+*.tmp
+*.bak
+/node_modules

@@ -1,0 +1,20 @@
+{
+  "name": "betting-ml",
+  "version": "1.0.0",
+  "description": "Machine learning pipeline for betting formula optimization",
+  "type": "module",
+  "scripts": {
+    "extract": "node data/extract/extractTrainingData.js",
+    "train": "node models/train/trainModel.js",
+    "train:python": "python models/train/trainModel.py",
+    "evaluate": "node models/evaluate/evaluate.js",
+    "pipeline": "node scripts/runPipeline.js"
+  },
+  "dependencies": {
+    "onnxruntime-node": "^1.16.0",
+    "mathjs": "^12.0.0"
+  },
+  "devDependencies": {
+    "@tensorflow/tfjs-node": "^4.14.0"
+  }
+}
