@@ -1,0 +1,146 @@
+{
+  "totalShotsOnGoal": {
+    "weights": {
+      "wma_home": 0.5,
+      "wma_away": 0.5,
+      "opta_rank_diff": 0.5,
+      "opta_rating_diff": 0.5,
+      "home_rank_for_all": 0.5,
+      "away_rank_against_all": 0.5,
+      "matchup_score": 0.5,
+      "home_1h": 0.2,
+      "home_2h": 0.2,
+      "away_1h": 0.2,
+      "away_2h": 0.2,
+      "home_advantage": 0.5
+    },
+    "bias": -2,
+    "avgError": 3.806811103882095
+  },
+  "shotsOnGoal": {
+    "weights": {
+      "wma_home": 0.5,
+      "wma_away": 0.2,
+      "opta_rank_diff": 0.2,
+      "opta_rating_diff": 0.2,
+      "home_rank_for_all": 0.8,
+      "away_rank_against_all": 0.8,
+      "matchup_score": 1,
+      "home_1h": 0,
+      "home_2h": 0,
+      "away_1h": 0,
+      "away_2h": 0,
+      "home_advantage": 0.2
+    },
+    "bias": 0,
+    "avgError": 1.750272228958562
+  },
+  "cornerKicks": {
+    "weights": {
+      "wma_home": 0.5,
+      "wma_away": 0.2,
+      "opta_rank_diff": 0.2,
+      "opta_rating_diff": 0.2,
+      "home_rank_for_all": 0.2,
+      "away_rank_against_all": 0.2,
+      "matchup_score": 0.2,
+      "home_1h": 0.8,
+      "home_2h": 0.8,
+      "away_1h": 0.5,
+      "away_2h": 0.5,
+      "home_advantage": 0.2
+    },
+    "bias": 2,
+    "avgError": 2.9751930741709796
+  },
+  "throwIns": {
+    "weights": {
+      "wma_home": 0.5,
+      "wma_away": 0.5,
+      "opta_rank_diff": 0.5,
+      "opta_rating_diff": 0.5,
+      "home_rank_for_all": 0.5,
+      "away_rank_against_all": 0.5,
+      "matchup_score": 0.5,
+      "home_1h": 0.2,
+      "home_2h": 0.2,
+      "away_1h": 0.2,
+      "away_2h": 0.2,
+      "home_advantage": 0.5
+    },
+    "bias": 0,
+    "avgError": 3.9553020503370533
+  },
+  "fouls": {
+    "weights": {
+      "wma_home": 0.5,
+      "wma_away": 0.2,
+      "opta_rank_diff": 0.8,
+      "opta_rating_diff": 0.8,
+      "home_rank_for_all": 0.5,
+      "away_rank_against_all": 0.5,
+      "matchup_score": 0.5,
+      "home_1h": 0,
+      "home_2h": 0,
+      "away_1h": 0,
+      "away_2h": 0,
+      "home_advantage": 0.2
+    },
+    "bias": 2,
+    "avgError": 2.5266380799292527
+  },
+  "offsides": {
+    "weights": {
+      "wma_home": 0.5,
+      "wma_away": 0.2,
+      "opta_rank_diff": 0.2,
+      "opta_rating_diff": 0.2,
+      "home_rank_for_all": 0.2,
+      "away_rank_against_all": 0.2,
+      "matchup_score": 0.2,
+      "home_1h": 0.8,
+      "home_2h": 0.8,
+      "away_1h": 0.5,
+      "away_2h": 0.5,
+      "home_advantage": 0.2
+    },
+    "bias": 0,
+    "avgError": 1.2489631474464997
+  },
+  "goalKicks": {
+    "weights": {
+      "wma_home": 0.5,
+      "wma_away": 0.2,
+      "opta_rank_diff": 0.2,
+      "opta_rating_diff": 0.2,
+      "home_rank_for_all": 0.8,
+      "away_rank_against_all": 0.8,
+      "matchup_score": 1,
+      "home_1h": 0,
+      "home_2h": 0,
+      "away_1h": 0,
+      "away_2h": 0,
+      "home_advantage": 0.2
+    },
+    "bias": 0,
+    "avgError": 2.3099329550835472
+  },
+  "yellowCards": {
+    "weights": {
+      "wma_home": 0.5,
+      "wma_away": 0.5,
+      "opta_rank_diff": 0.5,
+      "opta_rating_diff": 0.5,
+      "home_rank_for_all": 0.5,
+      "away_rank_against_all": 0.5,
+      "matchup_score": 0.5,
+      "home_1h": 0.2,
+      "home_2h": 0.2,
+      "away_1h": 0.2,
+      "away_2h": 0.2,
+      "home_advantage": 0.5
+    },
+    "bias": -2,
+    "avgError": 0.9072507564993286
+  }
+}

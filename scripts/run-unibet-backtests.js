@@ -362,30 +362,54 @@ async function fetchEventOdds(eventId) {
 }
 
 function collectEvDetails(result) {
-  return {
-    evPctWithMultiplier: toNumber(result?.evPctWithMultiplier),
-    evPctMultifactor: toNumber(result?.evPctMultifactor),
-    evPctLeagueAvg: toNumber(result?.evPctLeagueAvg),
-    evPct: toNumber(result?.evPct),
-    legacyEvPct: toNumber(result?.legacyEvPct),
-  };
+  if (!result || typeof result !== "object") return {};
+  
+  // Dynamically collect all EV-related fields from result
+  const evDetails = {};
+  
+  for (const [key, value] of Object.entries(result)) {
+    // Include all evPct* fields and other relevant EV metrics
+    if (key.startsWith("evPct") || key === "legacyEvPct" || key.includes("Ev")) {
+      const numericValue = toNumber(value);
+      if (numericValue !== null) {
+        evDetails[key] = numericValue;
+      }
+    }
+  }
+  
+  return evDetails;
 }
 
 function resolvePrimaryEvValue(evDetails) {
   if (!evDetails) return null;
+  
+  // Preferred order for selecting primary EV (keep existing ones first for backward compatibility)
   const preferredOrder = [
+    "evPctUniversalOptimized",  // New optimized formula gets highest priority
     "evPctWithMultiplier",
     "evPctMultifactor",
+    "evPctOptaCombined",
+    "evPctOptaPlusBase",
     "evPctLeagueAvg",
     "evPct",
     "legacyEvPct",
   ];
+  
+  // First try preferred formulas
   for (const key of preferredOrder) {
     const value = evDetails[key];
     if (typeof value === "number") {
       return value;
     }
   }
+  
+  // If none of the preferred ones exist, return first available numeric value
+  for (const [key, value] of Object.entries(evDetails)) {
+    if (typeof value === "number") {
+      return value;
+    }
+  }
+  
   return null;
 }
 
