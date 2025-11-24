@@ -27,22 +27,43 @@ function getTeamIconUrl(teamId) {
 function formatPeriodText(period) {
   if (period === "1ST" || period === "1st") return "1:a halvlek";
   if (period === "2ND" || period === "2nd") return "2:a halvlek";
-  return "ALL";
+  return "";
 }
 
 function formatStatText(statKey) {
   const statNames = {
-    cornerKicks: "cornerKicks", // Keep raw for "tech" look or map if desired
-    yellowCards: "yellowCards",
+    cornerKicks: "hörnor",
+    yellowCards: "gula kort",
     fouls: "fouls",
-    shotsOnGoal: "shotsOnGoal",
-    totalShots: "totalShots",
-    freeKicks: "freeKicks",
-    throwIns: "throwIns",
+    shotsOnGoal: "skott på mål",
+    totalShots: "skott",
+    freeKicks: "frisparkar",
+    throwIns: "inkast",
     offsides: "offsides",
-    totalTackle: "totalTackle",
+    totalTackle: "tacklingar",
   };
   return statNames[statKey] || statKey;
+}
+
+function getBetDescription(line) {
+  const homeTeam = line.teams?.home || "";
+  const awayTeam = line.teams?.away || "";
+  const direction = line.direction === "over" ? "över" : "under";
+  const stat = formatStatText(line.statKey);
+  const period = formatPeriodText(line.period);
+  const lineValue = line.line;
+
+  // Determine subject based on scope
+  let subject = "";
+  if (line.scope === "home") subject = homeTeam;
+  else if (line.scope === "away") subject = awayTeam;
+  else subject = `${homeTeam} vs ${awayTeam}`;
+
+  // Construct sentence: "Barcelona över 4.5 hörnor (1:a halvlek)"
+  let sentence = `${subject} ${direction} ${lineValue} ${stat}`;
+  if (period) sentence += ` (${period})`;
+
+  return sentence;
 }
 
 // Icons
@@ -80,7 +101,7 @@ export default function AIComboList({ combos, priorityMap = {} }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {combos.map((combo, index) => {
         const matchUrlEntries = buildMatchUrlEntries(combo.lines);
         const evPercent = combo.totalEv || 0;
@@ -92,56 +113,79 @@ export default function AIComboList({ combos, priorityMap = {} }) {
         });
         const avgMatchupScore = matchupScores.reduce((a, b) => a + b, 0) / matchupScores.length || 0;
 
-        // Determine colors based on EV/Type (Green theme as default/high EV)
-        const mainColor = "emerald"; // Could be dynamic
-        const headerGradient = "bg-gradient-to-r from-emerald-900/20 to-emerald-950/40";
-        const borderColor = "border-emerald-500/30";
-        const glowColor = "shadow-[0_0_15px_rgba(16,185,129,0.15)]";
+        // Determine theme based on combo type
+        let themeColor = "emerald"; // default green
+        let glowShadow = "shadow-[0_0_25px_rgba(16,185,129,0.1)]";
+        let borderColor = "border-emerald-500/40";
+        let headerGradient = "bg-gradient-to-r from-emerald-900/30 to-emerald-950/50";
+        let progressBarGradient = "bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-200";
+        let evTextColor = "text-emerald-300";
+
+        const isCombo = combo.lines.length > 1;
+        const isAllUnder = combo.lines.every(l => l.direction === 'under');
+
+        if (isCombo) {
+          // Blue theme for combos
+          themeColor = "blue";
+          glowShadow = "shadow-[0_0_25px_rgba(59,130,246,0.15)]";
+          borderColor = "border-blue-500/40";
+          headerGradient = "bg-gradient-to-r from-blue-900/30 to-blue-950/50";
+          progressBarGradient = "bg-gradient-to-r from-blue-400 via-blue-300 to-blue-200";
+          evTextColor = "text-blue-300";
+        } else if (isAllUnder) {
+          // Purple theme for under bets
+          themeColor = "purple";
+          glowShadow = "shadow-[0_0_25px_rgba(168,85,247,0.15)]";
+          borderColor = "border-purple-500/40";
+          headerGradient = "bg-gradient-to-r from-purple-900/30 to-purple-950/50";
+          progressBarGradient = "bg-gradient-to-r from-purple-400 via-purple-300 to-purple-200";
+          evTextColor = "text-purple-300";
+        }
 
         return (
           <article
             key={combo.id || `${index}-${combo.odds}`}
-            className={`overflow-hidden rounded-2xl border ${borderColor} bg-[#020617] ${glowColor}`}
+            className={`overflow-hidden rounded-2xl border ${borderColor} bg-[#020617] ${glowShadow} transition-all duration-300 hover:shadow-[0_0_40px_rgba(16,185,129,0.2)]`}
           >
             {/* HEADER SECTION */}
-            <div className={`${headerGradient} border-b border-white/5 p-5`}>
+            <div className={`${headerGradient} border-b border-white/5 p-6`}>
               {/* Top Row: Label & Count */}
-              <div className="mb-1 flex justify-between text-[10px] font-medium tracking-widest text-slate-400">
+              <div className="mb-2 flex justify-between text-[11px] font-bold tracking-widest text-slate-400">
                 <span>COMBO {index + 1}</span>
                 <span>{combo.lines.length} SPEL</span>
               </div>
 
               {/* Main Row: EV & Progress Bar */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 {/* EV Percentage */}
                 <div className="flex flex-col">
-                  <span className="text-5xl font-bold tracking-tighter text-emerald-300 drop-shadow-[0_0_8px_rgba(110,231,183,0.3)]">
+                  <span className={`text-6xl font-bold tracking-tighter ${evTextColor} drop-shadow-[0_0_15px_rgba(110,231,183,0.4)]`}>
                     {evPercent.toFixed(1)}%
                   </span>
-                  <span className="text-[10px] font-medium text-slate-500">
+                  <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
                     Total EV för kombon
                   </span>
                 </div>
 
                 {/* Progress Bar */}
                 <div className="relative flex-1">
-                  <div className="h-3 w-full overflow-hidden rounded-full bg-slate-800/50">
+                  <div className="h-4 w-full overflow-hidden rounded-full bg-slate-800/50 shadow-inner">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.6)]"
+                      className={`h-full rounded-full ${progressBarGradient} shadow-[0_0_20px_rgba(52,211,153,0.8)]`}
                       style={{ width: `${Math.min(100, avgMatchupScore)}%` }}
                     />
                   </div>
                 </div>
 
                 {/* Count Badge */}
-                <div className="flex h-6 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">
+                <div className={`flex h-8 w-14 items-center justify-center rounded-full bg-${themeColor}-500/20 text-sm font-bold text-${themeColor}-400 ring-1 ring-${themeColor}-500/30`}>
                   {combo.lines.length}/{combo.lines.length}
                 </div>
               </div>
             </div>
 
             {/* BODY SECTION */}
-            <div className="p-5">
+            <div className="p-6">
               <ul className="space-y-6">
                 {combo.lines.map((line, lineIndex) => {
                   const homeTeam = line.teams?.home || "";
@@ -151,58 +195,78 @@ export default function AIComboList({ combos, priorityMap = {} }) {
                   const homeIcon = getTeamIconUrl(homeTeamId);
                   const awayIcon = getTeamIconUrl(awayTeamId);
 
-                  const direction = line.direction === "over" ? "OVER" : "UNDER";
-                  const stat = formatStatText(line.statKey);
-                  const period = formatPeriodText(line.period);
-                  const scope = line.scope || "total";
+                  const description = getBetDescription(line);
+
+                  // Determine line-specific glow color
+                  let lineBorderColor = "border-emerald-500/30";
+                  let lineGlow = "shadow-[0_0_15px_rgba(16,185,129,0.1)]";
+                  let lineHoverGlow = "hover:shadow-[0_0_25px_rgba(16,185,129,0.2)] hover:border-emerald-400/50";
+                  let oddsColor = "text-emerald-400";
+
+                  if (isCombo) {
+                    lineBorderColor = "border-blue-500/30";
+                    lineGlow = "shadow-[0_0_15px_rgba(59,130,246,0.1)]";
+                    lineHoverGlow = "hover:shadow-[0_0_25px_rgba(59,130,246,0.2)] hover:border-blue-400/50";
+                    oddsColor = "text-blue-400";
+                  } else if (line.direction === 'under') {
+                    lineBorderColor = "border-purple-500/30";
+                    lineGlow = "shadow-[0_0_15px_rgba(168,85,247,0.1)]";
+                    lineHoverGlow = "hover:shadow-[0_0_25px_rgba(168,85,247,0.2)] hover:border-purple-400/50";
+                    oddsColor = "text-purple-400";
+                  }
 
                   return (
-                    <li key={`${combo.id}-${lineIndex}`} className="space-y-3">
-                      {/* Match Header Row */}
-                      <div className="flex items-center justify-between">
-                        {/* Teams */}
-                        <div className="flex items-center gap-3">
-                          {homeIcon && (
-                            <img src={homeIcon} alt={homeTeam} className="h-6 w-6 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
-                          )}
-                          <span className="text-lg font-bold text-slate-100">{homeTeam}</span>
-                          <span className="text-sm font-medium text-slate-500">vs</span>
-                          <span className="text-lg font-bold text-slate-100">{awayTeam}</span>
-                          {awayIcon && (
-                            <img src={awayIcon} alt={awayTeam} className="h-6 w-6 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
-                          )}
+                    <li
+                      key={`${combo.id}-${lineIndex}`}
+                      className={`relative overflow-hidden rounded-xl p-5`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        {/* LEFT: Icons & Info */}
+                        <div className="flex flex-col gap-3">
+                          {/* Team Icons */}
+                          <div className="flex items-center gap-4">
+                            {homeIcon && (
+                              <img src={homeIcon} alt={homeTeam} className="h-16 w-16 object-contain drop-shadow-lg" onError={(e) => { e.target.style.display = 'none'; }} />
+                            )}
+                            <span className="text-sm font-bold text-slate-500">vs</span>
+                            {awayIcon && (
+                              <img src={awayIcon} alt={awayTeam} className="h-16 w-16 object-contain drop-shadow-lg" onError={(e) => { e.target.style.display = 'none'; }} />
+                            )}
+                          </div>
+
+                          {/* Description Sentence */}
+                          <div>
+                            <p className="text-xl font-bold text-slate-100 leading-tight">
+                              {description}
+                            </p>
+                          </div>
+
+                          {/* Stats Row */}
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-slate-400 mt-1">
+                            <span className="text-slate-300">
+                              EV: <span className={oddsColor}>{line.primaryEv?.toFixed(1)}%</span>
+                            </span>
+
+                            <div className="flex items-center gap-1.5">
+                              <GlobeIcon />
+                              <span><span className="text-slate-300">{formatStatText(line.statKey)}</span></span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <PinIcon />
+                              <span><span className="text-slate-300">{line.scope || "total"}</span></span>
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Bet Type */}
-                        <div className="text-right">
-                          <span className="text-xs font-medium tracking-wider text-slate-400">
-                            {direction} {line.line}
+                        {/* RIGHT: Odds & Line */}
+                        <div className="flex flex-col items-end justify-center min-w-[80px]">
+                          <span className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-1">
+                            Odds
                           </span>
-                        </div>
-                      </div>
-
-                      {/* Stats Row */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-slate-400">
-                        <span className="text-slate-300">
-                          Odds: <span className="text-emerald-400">{line.odds?.toFixed(2)}x</span>
-                        </span>
-                        <span className="text-slate-300">
-                          EV: <span className="text-emerald-400">{line.primaryEv?.toFixed(1)}%</span>
-                        </span>
-
-                        <div className="flex items-center gap-1.5">
-                          <GlobeIcon />
-                          <span>Stat: <span className="text-slate-200">{stat}</span></span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <CalendarIcon />
-                          <span>Period: <span className="text-slate-200">{period}</span></span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <PinIcon />
-                          <span>Scope: <span className="text-slate-200">{scope}</span></span>
+                          <span className={`text-6xl font-bold ${oddsColor} tracking-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]`}>
+                            {line.odds?.toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     </li>
@@ -212,23 +276,20 @@ export default function AIComboList({ combos, priorityMap = {} }) {
 
               {/* Links Section */}
               {matchUrlEntries.length > 0 && (
-                <div className="mt-6 space-y-3">
+                <div className="mt-2 space-y-3 pt-2">
                   {matchUrlEntries.map(({ label, urls }) => (
                     <div key={`${combo.id}-${label}`} className="space-y-2">
                       {urls.map((url, idx) => (
-                        <div key={idx} className="space-y-2">
-                          <div className="truncate text-[10px] text-slate-600">
-                            {url}
-                          </div>
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            className="block w-full rounded-full border border-emerald-500/30 bg-emerald-500/5 py-2.5 text-center text-sm font-semibold text-emerald-400 transition-all hover:bg-emerald-500/10 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                          >
-                            Betting vs Unibet
-                          </a>
-                        </div>
+                        <a
+                          key={idx}
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className={`group relative block w-full overflow-hidden rounded-full border ${borderColor} bg-${themeColor}-950/30 py-3 text-center text-sm font-bold text-${themeColor}-300 transition-all hover:border-${themeColor}-400/60 hover:bg-${themeColor}-900/40 hover:text-${themeColor}-200 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]`}
+                        >
+                          <span className="relative z-10">Bet on Unibet</span>
+                          <div className={`absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-${themeColor}-500/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100`} />
+                        </a>
                       ))}
                     </div>
                   ))}
