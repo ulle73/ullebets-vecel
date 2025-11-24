@@ -23,6 +23,7 @@ import {
   buildMatchLabelSignature,
 } from "@/ai/utils/matchupUtils";
 import { mapBacktestResultToLine } from "@/ai/utils/positiveLineMapper";
+import { saveGeneratedResults, loadGeneratedResults } from "@/ai/utils/aiStorageUtils";
 
 const SWR_OPTIONS = {
   revalidateOnFocus: false,
@@ -49,6 +50,7 @@ function useWorkspaceController(defaultDate) {
   const [completedMatches, setCompletedMatches] = useState({});
   const [comboLegs, setComboLegs] = useState(2);
   const [oddsRange, setOddsRange] = useState({ min: 1.8, max: 2.2 });
+  const [isLoadingFromStorage, setIsLoadingFromStorage] = useState(false);
 
   const formatter = useMemo(makeFormatter, []);
   const formatTime = useCallback(
@@ -62,6 +64,28 @@ function useWorkspaceController(defaultDate) {
   const items = useMemo(() => data?.items ?? [], [data]);
   const matches = useMemo(() => items.map(normalizeMatch), [items]);
   const matchLookup = useMemo(() => buildMatchLookup(matches), [matches]);
+
+  // Load saved results from localStorage when date changes
+  useEffect(() => {
+    if (!date) return;
+
+    setIsLoadingFromStorage(true);
+    const savedResults = loadGeneratedResults(date);
+
+    if (savedResults) {
+      // Restore saved state
+      setPositiveLineMap(savedResults.positiveLineMap || {});
+      setCompletedMatches(savedResults.completedMatches || {});
+      setRunToken((token) => token + 1);
+    } else {
+      // No saved results, clear previous state
+      setPositiveLineMap({});
+      setCompletedMatches({});
+      setRunToken(0);
+    }
+
+    setIsLoadingFromStorage(false);
+  }, [date]);
 
   useEffect(() => {
     if (!selectedMatchId) {
@@ -154,6 +178,27 @@ function useWorkspaceController(defaultDate) {
 
   const positiveLines = useMemo(() => Object.values(positiveLineMap).flat(), [positiveLineMap]);
 
+  // Save results to localStorage when generation is complete
+  useEffect(() => {
+    if (!date || !insightsActive || matchupsLoading || !matchupsData) {
+      return;
+    }
+
+    const totalBacktests = targetMatches.length;
+    const completedCount = Object.keys(completedMatches).length;
+
+    // Only save when all backtests are complete
+    if (totalBacktests > 0 && completedCount >= totalBacktests) {
+      saveGeneratedResults(date, {
+        positiveLineMap,
+        completedMatches,
+        topOverRows,
+        topUnderRows,
+        matchupsData,
+      });
+    }
+  }, [date, insightsActive, matchupsLoading, matchupsData, targetMatches, completedMatches, positiveLineMap, topOverRows, topUnderRows]);
+
   const lineCounts = useMemo(() => {
     const map = new Map();
     positiveLines.forEach((line) => {
@@ -231,6 +276,7 @@ function useWorkspaceController(defaultDate) {
   }, []);
 
   const handleGenerate = useCallback(() => {
+    // Clear current state and start fresh generation
     setPositiveLineMap({});
     setCompletedMatches({});
     setRunToken((token) => token + 1);
@@ -254,8 +300,8 @@ function useWorkspaceController(defaultDate) {
   const statusLabel = processing
     ? generatingLabel
     : insightsActive
-    ? "Klart, justera inställningarna eller kör igen"
-    : "Klicka för att starta AI-generering";
+      ? "Klart, justera inställningarna eller kör igen"
+      : "Klicka för att starta AI-generering";
 
   return {
     date,

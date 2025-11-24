@@ -15,6 +15,7 @@ const TEAM_NAME_ALIASES = {
   Corinthians: ["Corinthians-SP"],
   Palmeiras: ["Palmeiras-SP"],
   Mirassol: ["Mirassol-SP"],
+  Ceará: ["Ceará-CE", "Ceara"],
   Bahia: ["Bahia-BA"],
   Fortaleza: ["Fortaleza-CE"],
   Vitória: ["Vitória-BA"],

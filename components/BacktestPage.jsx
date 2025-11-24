@@ -226,14 +226,14 @@ function getHitSummary(result, direction, t, options = {}) {
       direction === "over"
         ? t("over")
         : scope === "total"
-        ? t("under")
-        : opponentLabel || t("under");
+          ? t("under")
+          : opponentLabel || t("under");
     const entry =
       direction === "over"
         ? result.history.over
         : scope === "total"
-        ? result.history.under ?? result.history.over
-        : result.history.opponent ?? result.history.under;
+          ? result.history.under ?? result.history.over
+          : result.history.opponent ?? result.history.under;
     const formatted = formatEntry(entry, labelText);
     if (formatted) {
       return formatted;
@@ -485,34 +485,91 @@ export default function BacktestPage({ match, onPositiveResults }) {
       start: autoStart,
     };
 
-    postBacktest(payload, { signal: controller.signal })
-      .then((data) => {
+    // Retry logic with exponential backoff
+    const fetchWithRetry = async (maxRetries = 3) => {
+      let lastError;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
         if (controller.signal.aborted) {
+          return { success: false, aborted: true };
+        }
+
+        try {
+          console.log(
+            `[BacktestPage] Attempt ${attempt}/${maxRetries} for ${autoMatchHome} vs ${autoMatchAway}`
+          );
+          const data = await postBacktest(payload, { signal: controller.signal });
+          console.log(
+            `[BacktestPage] Success on attempt ${attempt} for ${autoMatchHome} vs ${autoMatchAway}`
+          );
+          return { success: true, data };
+        } catch (err) {
+          lastError = err;
+          console.warn(
+            `[BacktestPage] Attempt ${attempt}/${maxRetries} failed for ${autoMatchHome} vs ${autoMatchAway}:`,
+            err.message
+          );
+
+          if (attempt < maxRetries && !controller.signal.aborted) {
+            const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+            console.log(`[BacktestPage] Retrying in ${delay}ms...`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
+        }
+      }
+
+      console.error(
+        `[BacktestPage] All ${maxRetries} attempts failed for ${autoMatchHome} vs ${autoMatchAway}:`,
+        lastError?.message
+      );
+      return { success: false, error: lastError };
+    };
+
+    fetchWithRetry()
+      .then((result) => {
+        if (controller.signal.aborted || result.aborted) {
           return;
         }
-        const tuples = mapUnibetOdds(
-          data?.odds,
-          data?.matched?.home || autoMatchHome,
-          data?.matched?.away || autoMatchAway
-        );
-        if (tuples.length) {
-          applyOddsTuples(tuples);
-          setAutoRunToken((token) => token + 1);
-        }
-        const url =
-          data?.eventUrl ||
-          (data?.eventId
-            ? `https://www.unibet.se/betting/sports/event/${data.eventId}`
-            : null);
-        if (url) {
-          setUnibetUrl(url);
+
+        if (result.success && result.data) {
+          const tuples = mapUnibetOdds(
+            result.data?.odds,
+            result.data?.matched?.home || autoMatchHome,
+            result.data?.matched?.away || autoMatchAway
+          );
+          if (tuples.length) {
+            applyOddsTuples(tuples);
+            setAutoRunToken((token) => token + 1);
+          }
+          const url =
+            result.data?.eventUrl ||
+            (result.data?.eventId
+              ? `https://www.unibet.se/betting/sports/event/${result.data.eventId}`
+              : null);
+          if (url) {
+            setUnibetUrl(url);
+          }
+        } else {
+          // Failed after all retries - set error but still notify completion
+          const errorMsg = result.error?.message || t("error_generic");
+          setError(errorMsg);
+
+          // Notify with empty results so the match is marked as completed
+          if (typeof onPositiveResults === "function") {
+            onPositiveResults(match, [], null);
+          }
         }
       })
       .catch((err) => {
         if (controller.signal.aborted) {
           return;
         }
+        console.error("[BacktestPage] Unexpected error:", err);
         setError(err.message || t("error_generic"));
+
+        // Notify with empty results so the match is marked as completed
+        if (typeof onPositiveResults === "function") {
+          onPositiveResults(match, [], null);
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) {
@@ -536,6 +593,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
     autoStart,
     autoTimestamp,
     t,
+    match,
+    onPositiveResults,
   ]);
 
   const statNames = useMemo(
@@ -803,18 +862,18 @@ export default function BacktestPage({ match, onPositiveResults }) {
               }
               if (odds?.under) {
                 betParams.push({
-                    homeTeam: cfg.homeTeam,
-                    awayTeam: cfg.awayTeam,
-                    over: false,
-                    line: numericLine,
-                    scope,
-                    stat: statKey,
-                    period,
-                    form: cfg.formMatches,
-                    odds: Number(odds.under),
-                    neutralGround,
-                    home_importance: cfg.home_importance,
-                    away_importance: cfg.away_importance,
+                  homeTeam: cfg.homeTeam,
+                  awayTeam: cfg.awayTeam,
+                  over: false,
+                  line: numericLine,
+                  scope,
+                  stat: statKey,
+                  period,
+                  form: cfg.formMatches,
+                  odds: Number(odds.under),
+                  neutralGround,
+                  home_importance: cfg.home_importance,
+                  away_importance: cfg.away_importance,
                 });
               }
             }
@@ -830,49 +889,49 @@ export default function BacktestPage({ match, onPositiveResults }) {
       }
 
       const results = await postBacktest({ action: "batch-expected-value", bets: betParams });
-      
+
       const newResults = {};
       for (const result of results) {
         if (result && !result.error && result.params) {
-            const betKey = createBetKey({
-                homeTeam: result.params.home,
-                awayTeam: result.params.away,
-                statKey: result.params.stat,
-                scope: result.params.scope,
-                period: result.params.period,
-                line: result.params.line,
-                direction: result.params.over ? "over" : "under",
-                formMatches: result.params.form,
-                neutralGround: result.params.neutralGround,
-              });
-            const history = computeHistoryStats({
-                homeMatches: result.homeMatches,
-                awayMatches: result.awayMatches,
-                statPatterns,
-                statKey: result.params.stat,
-                scope: result.params.scope,
-                period: result.params.period,
-                line: result.params.line,
-                formMatches: result.params.form,
-                neutralGround: result.params.neutralGround,
-                homeTeam: result.params.home,
-                awayTeam: result.params.away,
-            });
-            newResults[betKey] = { 
-                ...result, 
-                history, 
-                bet: {
-                    statKey: result.params.stat,
-                    line: result.params.line,
-                    direction: result.params.over ? "over" : "under",
-                    scope: result.params.scope,
-                    period: result.params.period,
-                    odds: result.params.odds,
-                    homeTeam: result.params.home,
-                    awayTeam: result.params.away,
-                    key: betKey,
-                }
-            };
+          const betKey = createBetKey({
+            homeTeam: result.params.home,
+            awayTeam: result.params.away,
+            statKey: result.params.stat,
+            scope: result.params.scope,
+            period: result.params.period,
+            line: result.params.line,
+            direction: result.params.over ? "over" : "under",
+            formMatches: result.params.form,
+            neutralGround: result.params.neutralGround,
+          });
+          const history = computeHistoryStats({
+            homeMatches: result.homeMatches,
+            awayMatches: result.awayMatches,
+            statPatterns,
+            statKey: result.params.stat,
+            scope: result.params.scope,
+            period: result.params.period,
+            line: result.params.line,
+            formMatches: result.params.form,
+            neutralGround: result.params.neutralGround,
+            homeTeam: result.params.home,
+            awayTeam: result.params.away,
+          });
+          newResults[betKey] = {
+            ...result,
+            history,
+            bet: {
+              statKey: result.params.stat,
+              line: result.params.line,
+              direction: result.params.over ? "over" : "under",
+              scope: result.params.scope,
+              period: result.params.period,
+              odds: result.params.odds,
+              homeTeam: result.params.home,
+              awayTeam: result.params.away,
+              key: betKey,
+            }
+          };
         }
       }
 
@@ -883,7 +942,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
       });
 
     } catch (err) {
-        setError(err.message || t("error_generic"));
+      setError(err.message || t("error_generic"));
     } finally {
       setLoading(false);
       setInitialRunComplete(true);
@@ -1010,8 +1069,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
                     cfg.scope === "home"
                       ? `${awayTeam || t("scope_away")} ${concededLabel}`.trim()
                       : cfg.scope === "away"
-                      ? `${homeTeam || t("scope_home")} ${concededLabel}`.trim()
-                      : t("under");
+                        ? `${homeTeam || t("scope_home")} ${concededLabel}`.trim()
+                        : t("under");
                   const overHistory = getHitSummary(overResult || underResult, "over", t, {
                     scope: cfg.scope,
                     opponentLabel: historyOpponentLabel,
@@ -1065,9 +1124,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
                               <div key={idx} className="flex items-baseline gap-2">
                                 {entry.value != null ? (
                                   <span
-                                    className={`font-semibold ${
-                                      entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
-                                    }`}
+                                    className={`font-semibold ${entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                      }`}
                                   >
                                     {entry.value.toFixed(1)}%
                                   </span>
@@ -1102,9 +1160,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
                               <div key={idx} className="flex items-baseline gap-2">
                                 {entry.value != null ? (
                                   <span
-                                    className={`font-semibold ${
-                                      entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
-                                    }`}
+                                    className={`font-semibold ${entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                      }`}
                                   >
                                     {entry.value.toFixed(1)}%
                                   </span>
@@ -1141,9 +1198,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
                                       <div key={idx} className="flex items-center justify-between gap-4">
                                         <span className="text-left text-slate-200">{entry.label}</span>
                                         <span
-                                          className={`font-semibold ${
-                                            entry.highlight ? "text-emerald-300" : "text-rose-300"
-                                          }`}
+                                          className={`font-semibold ${entry.highlight ? "text-emerald-300" : "text-rose-300"
+                                            }`}
                                         >
                                           {entry.value}
                                         </span>
@@ -1175,9 +1231,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
                                       <div key={idx} className="flex items-center justify-between gap-4">
                                         <span className="text-left text-slate-200">{entry.label}</span>
                                         <span
-                                          className={`font-semibold ${
-                                            entry.highlight ? "text-emerald-300" : "text-rose-300"
-                                          }`}
+                                          className={`font-semibold ${entry.highlight ? "text-emerald-300" : "text-rose-300"
+                                            }`}
                                         >
                                           {entry.value}
                                         </span>
