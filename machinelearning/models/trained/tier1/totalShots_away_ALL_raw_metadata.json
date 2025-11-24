@@ -1,0 +1,22 @@
+{
+  "stat_key": "totalShots",
+  "scope": "away",
+  "period": "ALL",
+  "model_type": "xgboost_tier1",
+  "n_train_samples": 9,
+  "n_val_samples": 128,
+  "feature_dim": 23,
+  "metrics": {
+    "train_mae": 0.0010164049454033375,
+    "val_mae": 4.9450297355651855,
+    "val_rmse": 5.973134612342833,
+    "val_r2": -1.2220385074615479
+  },
+  "feature_importance": {
+    "feature_2": 0.43449002504348755,
+    "feature_1": 0.31989508867263794,
+    "feature_0": 0.24560631811618805,
+    "feature_3": 8.516256457369309e-06,
+    "feature_22": 0.0
+  }
+}

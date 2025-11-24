@@ -1,0 +1,16 @@
+{
+  "stat_key": "totalShots",
+  "scope": "total",
+  "period": "ALL",
+  "model_type": "xgboost_tier2_stacking",
+  "has_tier1": true,
+  "n_train_samples": 17,
+  "n_val_samples": 197,
+  "feature_dim": 34,
+  "metrics": {
+    "train_mae": 0.04173604026436806,
+    "val_mae": 7.638218402862549,
+    "val_rmse": 9.578873721755796,
+    "val_r2": -1.3414208889007568
+  }
+}

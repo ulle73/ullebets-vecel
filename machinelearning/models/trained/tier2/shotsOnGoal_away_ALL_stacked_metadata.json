@@ -1,0 +1,16 @@
+{
+  "stat_key": "shotsOnGoal",
+  "scope": "away",
+  "period": "ALL",
+  "model_type": "xgboost_tier2_stacking",
+  "has_tier1": true,
+  "n_train_samples": 6,
+  "n_val_samples": 76,
+  "feature_dim": 34,
+  "metrics": {
+    "train_mae": 0.07782983779907227,
+    "val_mae": 4.796884059906006,
+    "val_rmse": 5.614216619722989,
+    "val_r2": -7.114830017089844
+  }
+}

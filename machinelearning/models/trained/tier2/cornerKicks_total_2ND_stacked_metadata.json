@@ -1,0 +1,16 @@
+{
+  "stat_key": "cornerKicks",
+  "scope": "total",
+  "period": "2ND",
+  "model_type": "xgboost_tier2_stacking",
+  "has_tier1": true,
+  "n_train_samples": 26,
+  "n_val_samples": 322,
+  "feature_dim": 38,
+  "metrics": {
+    "train_mae": 0.02491224743425846,
+    "val_mae": 3.8858489990234375,
+    "val_rmse": 4.231136646189246,
+    "val_r2": -3.820810317993164
+  }
+}

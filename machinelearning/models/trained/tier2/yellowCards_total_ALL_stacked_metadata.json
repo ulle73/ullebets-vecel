@@ -1,0 +1,16 @@
+{
+  "stat_key": "yellowCards",
+  "scope": "total",
+  "period": "ALL",
+  "model_type": "xgboost_tier2_stacking",
+  "has_tier1": true,
+  "n_train_samples": 28,
+  "n_val_samples": 302,
+  "feature_dim": 34,
+  "metrics": {
+    "train_mae": 0.004033565521240234,
+    "val_mae": 1.5428167581558228,
+    "val_rmse": 1.9298022772751153,
+    "val_r2": -0.1640152931213379
+  }
+}

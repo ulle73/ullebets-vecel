@@ -1,0 +1,22 @@
+{
+  "stat_key": "cornerKicks",
+  "scope": "home",
+  "period": "ALL",
+  "model_type": "xgboost_tier1",
+  "n_train_samples": 31,
+  "n_val_samples": 390,
+  "feature_dim": 23,
+  "metrics": {
+    "train_mae": 0.00017555298109073192,
+    "val_mae": 2.8527588844299316,
+    "val_rmse": 3.475875683781571,
+    "val_r2": -1.3774406909942627
+  },
+  "feature_importance": {
+    "feature_0": 0.3409735858440399,
+    "feature_1": 0.32989516854286194,
+    "feature_2": 0.32913127541542053,
+    "feature_19": 0.0,
+    "feature_22": 0.0
+  }
+}
