@@ -538,7 +538,7 @@ export function AIUserWorkspace({ defaultDate }) {
               type="button"
               onClick={handleUserGenerate}
               disabled={isBusy}
-              className="ai-user-button group relative isolate flex w-full items-center justify-center overflow-hidden rounded-full bg-slate-950/80 p-[3px] text-lg font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:cursor-not-allowed disabled:opacity-60"
+              className="ai-user-button group relative isolate flex w-full items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-emerald-400 via-emerald-200 to-indigo-500 p-[3px] text-lg font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span
                 className="ai-border-spinner pointer-events-none absolute inset-0 bg-[conic-gradient(at_top,_#0ea5e9,_#34d399,_#a78bfa,_#0ea5e9)] opacity-80 blur-sm"
@@ -552,7 +552,7 @@ export function AIUserWorkspace({ defaultDate }) {
                 className="ai-flow pointer-events-none absolute inset-y-0 -left-1/4 w-1/2 rounded-full bg-gradient-to-r from-white/40 via-emerald-200/40 to-transparent opacity-50 blur-2xl"
                 aria-hidden="true"
               />
-              <span className="relative flex w-full items-center justify-center rounded-full bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 px-6 py-4 text-slate-100 shadow-[0_25px_70px_-30px_rgba(34,197,94,0.9)] transition-all duration-300 group-hover:translate-y-0.5 group-hover:shadow-[0_35px_90px_-25px_rgba(59,130,246,0.7)] group-active:scale-[0.99]">
+              <span className="relative flex w-full items-center justify-center rounded-full bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 px-6 py-4 text-slate-100 shadow-[0_25px_70px_-30px_rgba(34,197,94,0.9)] transition-all duration-300 group-active:scale-[0.99]">
                 <span className="ai-flicker flex items-center justify-center gap-3 text-emerald-100">
                   <span className="ai-sparkles relative inline-flex h-10 w-10 items-center justify-center" aria-hidden="true">
                     <span className="ai-sparkle-star absolute right-1 top-1/2 -translate-y-1/2 text-2xl">✦</span>
