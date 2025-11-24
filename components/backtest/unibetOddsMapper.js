@@ -18,7 +18,11 @@ function parseLine(raw) {
   if (raw == null) return null;
   const numeric = Number(raw);
   if (!Number.isFinite(numeric)) return null;
-  if (Math.abs(numeric) >= 1000) {
+  
+  // Unibet API sometimes sends values × 1000
+  // e.g., 5.5 corners → 5500, but sometimes buggy and sends 500 instead of 5000
+  // Safe threshold: anything >= 100 is likely ×1000 format
+  if (Math.abs(numeric) >= 100) {
     return Number((numeric / 1000).toFixed(1));
   }
   return Number(numeric.toFixed(2));

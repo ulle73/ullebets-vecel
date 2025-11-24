@@ -9,9 +9,10 @@
  * @param {string} statKey - Statistic key to calculate
  * @param {number} window - Number of matches to include
  * @param {Date} beforeDate - Only include matches before this date
+ * @param {string} mode - 'for' (own stats) or 'against' (opponent stats)
  * @returns {number} - WMA value
  */
-export function calculateWMA(matches, statKey, window, beforeDate) {
+export function calculateWMA(matches, statKey, window, beforeDate, mode = 'for') {
   if (!matches || matches.length === 0) return 0;
   
   // Filter matches before the given date
@@ -30,7 +31,7 @@ export function calculateWMA(matches, statKey, window, beforeDate) {
   
   for (let i = 0; i < relevantMatches.length; i++) {
     const weight = Math.pow(0.9, i); // Exponential decay
-    const value = extractStatValue(relevantMatches[i], statKey);
+    const value = extractStatValue(relevantMatches[i], statKey, mode);
     
     weightedSum += value * weight;
     totalWeight += weight;
@@ -41,18 +42,33 @@ export function calculateWMA(matches, statKey, window, beforeDate) {
 
 /**
  * Extract stat value from match data
+ * @param {string} mode - 'for' (own team) or 'against' (opponent)
  */
-function extractStatValue(match, statKey) {
+function extractStatValue(match, statKey, mode = 'for') {
   // Try matchDetails first
   if (match.matchDetails?.statistics) {
-    for (const statGroup of match.matchDetails.statistics) {
+    // Handle both array and object formats
+    const stats = Array.isArray(match.matchDetails.statistics)
+      ? match.matchDetails.statistics
+      : Object.values(match.matchDetails.statistics);
+    
+    for (const statGroup of stats) {
       if (!statGroup.groups) continue;
       
       for (const group of statGroup.groups) {
         const item = group.statisticsItems?.find(i => i.key === statKey);
         if (item) {
-          // Return home or away value depending on context
-          const value = parseInt(item.homeValue || item.awayValue || '0');
+          // For home stats: FOR = homeValue, AGAINST = awayValue
+          // For away stats: FOR = awayValue, AGAINST = homeValue
+          const isHome = match._importMeta?.teamRole === 'home';
+          let value;
+          
+          if (mode === 'for') {
+            value = parseInt(isHome ? item.homeValue : item.awayValue || '0');
+          } else { // 'against'
+            value = parseInt(isHome ? item.awayValue : item.homeValue || '0');
+          }
+          
           return isNaN(value) ? 0 : value;
         }
       }

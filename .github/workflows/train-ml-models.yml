@@ -76,9 +76,9 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # Add trained models and metadata
-          git add machinelearning/models/trained/tier1/*.json
-          git add machinelearning/models/trained/tier2/*.json
+          # Add trained models and metadata (force add to override gitignore)
+          git add -f machinelearning/models/trained/tier1/*.json
+          git add -f machinelearning/models/trained/tier2/*.json
           
           # Check if there are changes
           if git diff --staged --quiet; then

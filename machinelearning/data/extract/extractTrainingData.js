@@ -137,6 +137,12 @@ export async function extractTrainingData() {
     for (const line of match.lines) {
       if (!line.actual || line.actual === null) continue; // Skip incomplete
       
+      // Sanity check: Skip lines with unreasonable values (data quality issue)
+      if (line.line > 100) {
+        console.log(`  ⚠️  Skipping line with unreasonable value: ${line.statKey} line=${line.line}`);
+        continue;
+      }
+      
       const { statKey, scope, period } = line;
       const datasetKey = `${statKey}_${scope}_${period}`;
       
@@ -261,32 +267,93 @@ async function buildSample({
   const matchupScore = (homeProfile.rankFor || 50) / (awayProfile.rankAgainst || 50);
   raw_features.push(matchupScore);
   
-  // Historical WMA (if teamstats available)
+  // Historical WMA - OFFENSIVE (own stats)
   if (homeStats && awayStats) {
-    const homeWMA_recent = calculateWMA(homeStats.full, statKey, 5, matchDate);
-    const homeWMA_medium = calculateWMA(homeStats.full, statKey, 15, matchDate);
-    const homeWMA_long = calculateWMA(homeStats.full, statKey, 30, matchDate);
+    const homeWMA_recent = calculateWMA(homeStats.full, statKey, 5, matchDate, 'for');
+    const homeWMA_medium = calculateWMA(homeStats.full, statKey, 15, matchDate, 'for');
+    const homeWMA_long = calculateWMA(homeStats.full, statKey, 30, matchDate, 'for');
     
-    const awayWMA_recent = calculateWMA(awayStats.full, statKey, 5, matchDate);
-    const awayWMA_medium = calculateWMA(awayStats.full, statKey, 15, matchDate);
-    const awayWMA_long = calculateWMA(awayStats.full, statKey, 30, matchDate);
+    const awayWMA_recent = calculateWMA(awayStats.full, statKey, 5, matchDate, 'for');
+    const awayWMA_medium = calculateWMA(awayStats.full, statKey, 15, matchDate, 'for');
+    const awayWMA_long = calculateWMA(awayStats.full, statKey, 30, matchDate, 'for');
     
     raw_features.push(homeWMA_recent, homeWMA_medium, homeWMA_long);
     raw_features.push(awayWMA_recent, awayWMA_medium, awayWMA_long);
+    
+    // Historical WMA - DEFENSIVE (opponent stats against them)
+    const homeWMA_recent_against = calculateWMA(homeStats.full, statKey, 5, matchDate, 'against');
+    const homeWMA_medium_against = calculateWMA(homeStats.full, statKey, 15, matchDate, 'against');
+    const homeWMA_long_against = calculateWMA(homeStats.full, statKey, 30, matchDate, 'against');
+    
+    const awayWMA_recent_against = calculateWMA(awayStats.full, statKey, 5, matchDate, 'against');
+    const awayWMA_medium_against = calculateWMA(awayStats.full, statKey, 15, matchDate, 'against');
+    const awayWMA_long_against = calculateWMA(awayStats.full, statKey, 30, matchDate, 'against');
+    
+    raw_features.push(homeWMA_recent_against, homeWMA_medium_against, homeWMA_long_against);
+    raw_features.push(awayWMA_recent_against, awayWMA_medium_against, awayWMA_long_against);
   } else {
-    // Fill with zeros if no historical data
-    raw_features.push(0, 0, 0, 0, 0, 0);
+    // Fill with zeros if no historical data (6 offensive + 6 defensive = 12)
+    raw_features.push(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   }
   
-  // Period-specific features (if not ALL)
-  if (period !== 'ALL') {
-    const home1H = homeProfile.statistics?.[statKey]?.['1ST']?.value || 0;
-    const home2H = homeProfile.statistics?.[statKey]?.['2ND']?.value || 0;
-    const away1H = awayProfile.statistics?.[statKey]?.['1ST']?.value || 0;
-    const away2H = awayProfile.statistics?.[statKey]?.['2ND']?.value || 0;
+  // Period-specific features with FOR/AGAINST separation
+  // For all three periods: 1ST, 2ND, ALL
+  const periods = ['1ST', '2ND', 'ALL'];
+  
+  for (const p of periods) {
+    // HOME OFFENSIVE (for) - home team's own stats
+    const home_for_value = homeProfile.statistics?.[statKey]?.[p]?.value || 0;
+    const home_for_rank = homeProfile.statistics?.[statKey]?.[p]?.rank || 50;
     
-    raw_features.push(home1H, home2H, away1H, away2H);
+    // HOME DEFENSIVE (against) - what opponents do against home team
+    const home_against_value = homeProfile.against?.[statKey]?.[p]?.value || 0;
+    const home_against_rank = homeProfile.against?.[statKey]?.[p]?.rank || 50;
+    
+    // AWAY OFFENSIVE (for) - away team's own stats
+    const away_for_value = awayProfile.statistics?.[statKey]?.[p]?.value || 0;
+    const away_for_rank = awayProfile.statistics?.[statKey]?.[p]?.rank || 50;
+    
+    // AWAY DEFENSIVE (against) - what opponents do against away team
+    const away_against_value = awayProfile.against?.[statKey]?.[p]?.value || 0;
+    const away_against_rank = awayProfile.against?.[statKey]?.[p]?.rank || 50;
+    
+    raw_features.push(
+      home_for_value, home_for_rank,
+      home_against_value, home_against_rank,
+      away_for_value, away_for_rank,
+      away_against_value, away_against_rank
+    );
   }
+  // Total period features: 3 periods × 8 features = 24 features
+
+  // === SITUATIONAL FEATURES ===
+  
+  // First Goal Impact
+  const home_scoreFirst_pct = homeProfile.firstGoal?.scoreFirstPercentage || 50;
+  const away_scoreFirst_pct = awayProfile.firstGoal?.scoreFirstPercentage || 50;
+  const scoreFirst_diff = home_scoreFirst_pct - away_scoreFirst_pct;
+  raw_features.push(home_scoreFirst_pct, away_scoreFirst_pct, scoreFirst_diff);
+  
+  // Shots per minute by game state (leading/trailing/tied)
+  const home_shotsPerMin_leading = homeProfile.shotsPerMinute?.leading || 0;
+  const home_shotsPerMin_trailing = homeProfile.shotsPerMinute?.trailing || 0;
+  const home_shotsPerMin_tied = homeProfile.shotsPerMinute?.tied || 0;
+  
+  const away_shotsPerMin_leading = awayProfile.shotsPerMinute?.leading || 0;
+  const away_shotsPerMin_trailing = awayProfile.shotsPerMinute?.trailing || 0;
+  const away_shotsPerMin_tied = awayProfile.shotsPerMinute?.tied || 0;
+  
+  raw_features.push(
+    home_shotsPerMin_leading, home_shotsPerMin_trailing, home_shotsPerMin_tied,
+    away_shotsPerMin_leading, away_shotsPerMin_trailing, away_shotsPerMin_tied
+  );
+  
+  // Shots per 10 minutes average
+  const home_shotsPer10Min = homeProfile.shotsPerTenMinutes?.avg || 0;
+  const away_shotsPer10Min = awayProfile.shotsPerTenMinutes?.avg || 0;
+  raw_features.push(home_shotsPer10Min, away_shotsPer10Min);
+  
+  // Situational features total: 3 + 6 + 2 = 11 features
   
   // Home advantage
   raw_features.push(1); // Always 1 (binary indicator)
