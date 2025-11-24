@@ -337,6 +337,7 @@ function useWorkspaceController(defaultDate) {
     positiveLineCount,
     processing,
     hasCombos,
+    priorityMap,
   };
 }
 
@@ -403,6 +404,7 @@ export default function AIWorkspace({ defaultDate }) {
     lineCounts,
     positiveLines,
     insightsActive,
+    priorityMap,
   } = workspace;
 
   return (
@@ -468,7 +470,7 @@ export default function AIWorkspace({ defaultDate }) {
             />
 
             <div>
-              <AIComboList combos={combos} />
+              <AIComboList combos={combos} priorityMap={priorityMap} />
             </div>
 
             <AIInsightsList
@@ -507,6 +509,7 @@ export function AIUserWorkspace({ defaultDate }) {
     setComboLegs,
     oddsRange,
     handleOddsRangeChange,
+    priorityMap,
   } = workspace;
 
   const [showEmptyState, setShowEmptyState] = useState(false);
@@ -575,7 +578,7 @@ export function AIUserWorkspace({ defaultDate }) {
                 onOddsRangeChange={handleOddsRangeChange}
                 disabled={!showResults}
               />
-              <AIComboList combos={combos} />
+              <AIComboList combos={combos} priorityMap={priorityMap} />
             </div>
           </section>
         ) : null}

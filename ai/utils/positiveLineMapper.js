@@ -13,6 +13,8 @@ export function mapBacktestResultToLine(match, result, unibetUrl = null) {
   const matchId = match.matchId ?? match.id ?? null;
   const home = match.homeTeamName ?? "";
   const away = match.awayTeamName ?? "";
+  const homeTeamId = match.homeTeam?.id ?? match.homeTeamId ?? null;
+  const awayTeamId = match.awayTeam?.id ?? match.awayTeamId ?? null;
   const label = [home, away].filter(Boolean).join(" vs ");
   const oddsValue = Number(bet.odds);
   const lineValue = Number(bet.line);
@@ -33,6 +35,8 @@ export function mapBacktestResultToLine(match, result, unibetUrl = null) {
     teams: {
       home,
       away,
+      homeId: homeTeamId,
+      awayId: awayTeamId,
     },
     unibetUrl: unibetUrl ?? match.unibetUrl ?? match.raw?.unibetUrl ?? null,
   };
