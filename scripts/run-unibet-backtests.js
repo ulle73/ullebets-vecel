@@ -680,7 +680,7 @@ async function main() {
 
   if (!matches.length) {
     console.log("Inga matcher att bearbeta för valt datum.");
-    return;
+    process.exit(0); // Exit cleanly with success code
   }
 
   const client = await clientPromise;
