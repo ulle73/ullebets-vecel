@@ -513,16 +513,18 @@ async function step4BatchEV(dateStr, { matchLookup, matchups, bets }) {
     }
   });
 
-  const lines = positive.map((r, idx) => {
+  const lines = positive.map((r) => {
     const params = r.params || {};
     const direction = params.over ? "over" : "under";
-    const fallbackBet = bets[idx];
+
+    // IMPORTANT: preserve matchId from original bet order (batch results are aligned)
+    const fallbackBet = bets[positive.indexOf(r)] || null;
     const matchId = params.matchId ?? fallbackBet?.matchId ?? null;
     const row = matchId ? rowByMatchId.get(String(matchId)) : null;
     const match = matchId ? matchLookup.get(String(matchId)) : null;
 
-    return {
-      betKey: buildBetKey({
+    const betKey =
+      buildBetKey({
         homeTeam: params.home ?? fallbackBet?.homeTeam,
         awayTeam: params.away ?? fallbackBet?.awayTeam,
         stat: params.stat,
@@ -533,7 +535,10 @@ async function step4BatchEV(dateStr, { matchLookup, matchups, bets }) {
         form: params.form,
         neutralGround: params.neutralGround,
         matchId: matchId,
-      }),
+      }) || buildBetKey(fallbackBet || {});
+
+    return {
+      betKey,
       matchId,
       matchLabel:
         (params.home && params.away && `${params.home} vs ${params.away}`) ||
@@ -570,7 +575,15 @@ async function step4BatchEV(dateStr, { matchLookup, matchups, bets }) {
     };
   });
 
-  const insightLines = lines.filter((line) => insightKeySet.has(buildLineKey(line)));
+  const insightLines = lines.filter((line) => {
+    const key = buildLineKey(line);
+    const hasMatchId = !!line.matchId;
+    if (!hasMatchId) {
+      // If matchId missing, skip; helps debugging
+      return false;
+    }
+    return insightKeySet.has(key);
+  });
 
   if (!insightLines.length && lines.length) {
     const sample = lines.slice(0, 5).map((l) => {

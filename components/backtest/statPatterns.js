@@ -45,7 +45,7 @@
         if (period === "1ST") return [4.5, 5.5, 6.5, 7.5, 8.5, 9.5];
         if (period === "2ND") return [4.5, 5.5, 6.5, 7.5, 8.5, 9.5];
       } else {
-        if (period === "ALL") return [4.5, 5.5, 6.5, 7.5, 8.5, 9.5];
+        if (period === "ALL") return [1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5];
         if (period === "1ST") return [2.5, 3.5, 4.5, 5.5, 6.5, 7.5];
         if (period === "2ND") return [2.5, 3.5, 4.5, 5.5, 6.5, 7.5];
       }
