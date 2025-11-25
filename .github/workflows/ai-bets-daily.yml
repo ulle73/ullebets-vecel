@@ -1,0 +1,20 @@
+name: Daily AI Bets Generation
+
+on:
+  schedule:
+    # Runs at 09:00 Stockholm time (08:00 UTC in winter, 07:00 UTC in summer)
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  generate-bets:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger AI Generation API
+        run: |
+          curl -X POST "${{ secrets.VERCEL_APP_URL }}/api/ai/generate-daily" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            --fail-with-body \
+            --show-error
