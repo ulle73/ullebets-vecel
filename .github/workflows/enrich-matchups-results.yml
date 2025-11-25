@@ -2,7 +2,7 @@ name: Enrich matchups results
 
 on:
   schedule:
-    - cron: "0 1 * * *"  # Varje dag kl 01:00 UTC (när matcher från igår är klara)
+    - cron: "0 7 * * *"  # Varje dag kl 01:00 UTC (när matcher från igår är klara)
   workflow_dispatch:
     inputs:
       target-date:
