@@ -20,9 +20,16 @@ export async function POST(request) {
     
     console.log(`[AI Daily] Starting generation for ${dateStr}`);
 
+    // Determine base URL from request
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const host = request.headers.get('host') || 'localhost:3000';
+    const baseUrl = `${protocol}://${host}`;
+    
+    console.log(`[AI Daily] Using base URL: ${baseUrl}`);
+
     // 1. Fetch matchups-score
     const matchupsRes = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/matchups-score?date=${dateStr}`,
+      `${baseUrl}/api/matchups-score?date=${dateStr}`,
       { cache: 'no-store' }
     );
     
@@ -47,7 +54,6 @@ export async function POST(request) {
     console.log(`[AI Daily] Processing ${uniqueMatches.size} unique matches`);
 
     const allBets = [];
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
     // 2. For each match, get Unibet odds
     for (const [matchId, match] of uniqueMatches) {
