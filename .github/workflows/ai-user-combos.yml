@@ -1,0 +1,38 @@
+name: AI User Combos
+
+on:
+  schedule:
+    - cron: "0 10 * * *" # 09:00 Stockholm
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Datum att köra (YYYY-MM-DD). Lämna tomt för dagens datum."
+        required: false
+
+jobs:
+  ai-user-combos:
+    runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ vars.MONGODB_DB || secrets.MONGODB_DB }}
+      BASE_URL: ${{ secrets.VERCEL_APP_URL }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate AI User Combos
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            node scripts/generate-ai-user-combos.js --date="${{ github.event.inputs.date }}"
+          else
+            node scripts/generate-ai-user-combos.js
+          fi
