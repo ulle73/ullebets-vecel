@@ -2,19 +2,28 @@ name: Daily AI Bets Generation
 
 on:
   schedule:
-    # Runs at 09:00 Stockholm time (08:00 UTC in winter, 07:00 UTC in summer)
-    - cron: '0 8 * * *'
-  workflow_dispatch: # Allow manual trigger
+    - cron: '0 10 * * *' # 09:00 Stockholm time
+  workflow_dispatch:
 
 jobs:
   generate-bets:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Trigger AI Generation API
-        run: |
-          curl -X POST "${{ secrets.VERCEL_APP_URL }}/api/ai/generate-daily" \
-            -H "Content-Type: application/json" \
-            -d '{}' \
-            --fail-with-body \
-            --show-error
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Daily AI Generation
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ vars.MONGODB_DB || 'app' }}
+          BASE_URL: ${{ secrets.VERCEL_APP_URL }}
+        run: node scripts/generate-daily-bets.js
