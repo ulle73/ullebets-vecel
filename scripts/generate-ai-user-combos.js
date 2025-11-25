@@ -572,6 +572,8 @@ async function step4BatchEV(dateStr, { matchLookup, matchups, bets }) {
             direction,
           })
         ] ?? null,
+      actual: null,
+      win: null,
     };
   });
 
@@ -684,6 +686,8 @@ async function step4BatchEV(dateStr, { matchLookup, matchups, bets }) {
       evPctMultifactor: l.evPctMultifactor,
       evPctUniversalOptimized: l.evPctUniversalOptimized,
       matchupScore: l.matchupScore,
+      actual: l.actual ?? null,
+      win: l.win ?? null,
     })),
   }));
 
