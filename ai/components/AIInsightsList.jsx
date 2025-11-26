@@ -45,85 +45,126 @@ export default function AIInsightsList({
     return 0;
   };
 
-  const renderRows = (rows) =>
+  const renderCards = (rows, type) =>
     rows.length ? (
-      <ol className="space-y-2">
+      <div className="flex flex-col gap-4">
         {rows.map((row) => {
           const comboCount = resolveCount(row);
           return (
-            <li
+            <div
               key={`${row.matchId}-${row.statKey}-${row.period}-${row.scope}-${row.condition}`}
-              className="rounded border border-slate-800/50 bg-slate-900/70 px-3 py-2 text-xs text-slate-200"
+              className="group relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-all hover:border-slate-600 hover:bg-slate-900 hover:shadow-lg hover:shadow-emerald-900/10"
             >
-              <p className="text-[11px] uppercase text-slate-400">
-                {row.league ?? "Liga"} • {row.match}
-              </p>
-              <p className="text-sm font-semibold text-slate-100">
-                {row.statLabel ?? row.statKey ?? "Stat"} ({row.condition}) {row.period} • {row.scope}
-              </p>
-              <p className="text-[11px] text-slate-400">
-                Score:{" "}
-                <span className="font-semibold text-emerald-300">
-                  {row.score?.toFixed?.(1) ?? row.score ?? "—"}
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    {row.league ?? "Liga"}
+                  </p>
+                  <h4 className="text-lg font-bold text-slate-100 group-hover:text-white">
+                    {row.match}
+                  </h4>
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="inline-flex items-center rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300">
+                      {row.statLabel ?? row.statKey ?? "Stat"}
+                    </span>
+                    <span className="text-sm text-slate-400">
+                      {row.period} • {row.scope}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="flex flex-col items-end">
+                    <span className="text-xs text-slate-500">Score</span>
+                    <span className="text-2xl font-bold text-emerald-400">
+                      {row.score?.toFixed?.(1) ?? row.score ?? "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between border-t border-slate-800/50 pt-3">
+                <span className={type === 'over' ? "text-sm font-bold text-emerald-400" : "text-sm font-bold text-purple-400"}>
+                  {type === 'over' ? 'ÖVER' : 'UNDER'} {row.condition}
                 </span>
-              </p>
-              {comboCount ? (
-                <p className="text-[10px] text-emerald-300">
-                  Found {comboCount} +EV line{comboCount === 1 ? "" : "s"}
-                </p>
-              ) : null}
-            </li>
+                {comboCount > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    {comboCount} +EV Lines
+                  </span>
+                )}
+              </div>
+            </div>
           );
         })}
-      </ol>
+      </div>
     ) : (
-      <div className="rounded border border-dashed border-slate-800 bg-slate-950/40 p-3 text-xs uppercase tracking-wider text-slate-500">
-        Ingen data
+      <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-950/30 text-sm text-slate-500">
+        Inga {type === 'over' ? 'överspel' : 'underspel'} hittades
       </div>
     );
 
   const headerInfo = generatedAt
-    ? `Senast uppdaterat ${new Date(generatedAt).toLocaleString("sv-SE", {
-        dateStyle: "medium",
-        timeStyle: "short",
-        timeZone: "UTC",
-      })}`
-    : "Matchups-data saknas";
+    ? `Uppdaterad ${new Date(generatedAt).toLocaleString("sv-SE", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`
+    : "";
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-6 text-center text-red-200">
+        <p className="font-semibold">Kunde inte hämta analyser</p>
+        <p className="text-sm opacity-70">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between text-xs uppercase tracking-wide text-slate-400">
-        <span>Matchups – topp 20</span>
-        <span>{headerInfo}</span>
-      </div>
-      {error ? (
-        <div className="rounded border border-red-600/40 bg-red-900/30 px-3 py-2 text-xs text-red-100">
-          {error.message ?? "Kunde inte hämta matchups."}
-        </div>
-      ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          <section>
-            <p className="text-[11px] uppercase tracking-wide text-emerald-300">Över</p>
-            {isLoading ? (
-              <div className="rounded border border-dashed border-slate-800/50 bg-slate-950/60 p-3 text-center text-xs text-slate-500">
-                Laddar…
-              </div>
-            ) : (
-              renderRows(overRows)
-            )}
-          </section>
-          <section>
-            <p className="text-[11px] uppercase tracking-wide text-purple-300">Under</p>
-            {isLoading ? (
-              <div className="rounded border border-dashed border-slate-800/50 bg-slate-950/60 p-3 text-center text-xs text-slate-500">
-                Laddar…
-              </div>
-            ) : (
-              renderRows(underRows)
-            )}
-          </section>
+    <div className="w-full">
+      {headerInfo && (
+        <div className="mb-6 flex justify-end">
+          <span className="text-xs text-slate-500">{headerInfo}</span>
         </div>
       )}
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Left Column: Over Games */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
+            <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+            <h3 className="text-lg font-bold text-slate-200">Överspel</h3>
+          </div>
+          {isLoading ? (
+            <div className="space-y-4 animate-pulse">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-40 rounded-xl bg-slate-900/50 border border-slate-800" />
+              ))}
+            </div>
+          ) : (
+            renderCards(overRows, 'over')
+          )}
+        </section>
+
+        {/* Right Column: Under Games */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
+            <div className="h-2 w-2 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
+            <h3 className="text-lg font-bold text-slate-200">Underspel</h3>
+          </div>
+          {isLoading ? (
+            <div className="space-y-4 animate-pulse">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-40 rounded-xl bg-slate-900/50 border border-slate-800" />
+              ))}
+            </div>
+          ) : (
+            renderCards(underRows, 'under')
+          )}
+        </section>
+      </div>
     </div>
   );
 }
