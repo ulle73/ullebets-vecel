@@ -1,3 +1,5 @@
+
+
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -69,44 +71,6 @@ async function readJSON(filePath) {
     return null;
   }
 }
-
-// async function loadTeamStats(teamstatsCollection, team, matchType, filePath) {
-//   const teamId = team?.id ?? team?.teamId;
-  
-//    const idS = String(teamId);
-//    const idN = Number.isFinite(Number(teamId)) ? Number(teamId) : null;
-
-//   if (teamstatsCollection && teamId != null) {
-//     const document = await teamstatsCollection.findOne(
-//       {
-//         "_importMeta.teamId": String(teamId),
-//         "_importMeta.teamRole": matchType,
-//       },
-//       {
-//         projection: { full: 1, "_importMeta.importedAt": 1 },
-//       }
-//     );
-
-//     if (Array.isArray(document?.full) && document.full.length) {
-//       return {
-//         matches: document.full,
-//         source: "database",
-//         importedAt: document._importMeta?.importedAt ?? null,
-//       };
-//     }
-//   }
-
-//   const teamStatsFromFile = await readJSON(filePath);
-//   if (Array.isArray(teamStatsFromFile?.full) && teamStatsFromFile.full.length) {
-//     return {
-//       matches: teamStatsFromFile.full,
-//       source: "file",
-//       importedAt: null,
-//     };
-//   }
-
-//   return null;
-// }
 
 async function loadTeamStats(teamstatsCollection, team, matchType, filePath) {
   const teamId = team?.id ?? team?.teamId;
@@ -252,16 +216,107 @@ function computeStatistics(matches, matchType) {
   return stats;
 }
 
+// --- FUNKTION FÖR ATT EXTRAHERA HISTORIKDATA (Korrigerad) ---
+function computeMatchHistory(matches, matchType, teamId, statKeys, periods) {
+  const history = {};
+
+  for (const match of matches) {
+    const matchId = match.matchId;
+    
+    // FIX: Fallback till timestamp om date-sträng saknas
+    let date = match.date;
+    if (!date && typeof match.timestamp === 'number') {
+        // Konvertera Unix sekunder till YYYY-MM-DD sträng
+        date = new Date(match.timestamp * 1000).toISOString().split('T')[0];
+    }
+    // SLUT PÅ FIX
+
+    // Bestäm om laget (teamId) var hemma- eller bortalag i den RÅA matchdatan
+    const isHomeMatch = match.homeTeamId === teamId;
+
+    // Vi bygger profilen för matchType ("home" eller "away"). Vi inkluderar endast matcher som matchar profiltypen.
+    const correctPerspective = (matchType === 'home' && isHomeMatch) || (matchType === 'away' && !isHomeMatch); 
+    
+    if (!correctPerspective) continue;
+
+    const teamValueKey = isHomeMatch ? 'homeValue' : 'awayValue';
+    const oppValueKey = isHomeMatch ? 'awayValue' : 'homeValue';
+    const oppName = isHomeMatch ? match.awayTeamName : match.homeTeamName;
+
+    if (!match.matchDetails || !match.matchDetails.statistics) continue;
+
+    for (const period of periods) {
+        const items = getStatisticsItems(match.matchDetails.statistics, period);
+        
+        for (const statKey of statKeys) {
+            const loweredKey = statKey.toLowerCase();
+            const statItem = items.find(item => item.key?.toLowerCase() === loweredKey);
+            
+            if (!statItem) continue;
+
+            let teamValue = statItem[teamValueKey];
+            let oppValue = statItem[oppValueKey];
+            
+            // Hantera specialfallet FreeKicks precis som i extractStatValues
+            if (loweredKey === "freekicks") {
+                const offsidesItem = items.find(item => item.key?.toLowerCase() === "offsides");
+                
+                if (typeof teamValue === "number") {
+                    const opponentOffsides = isHomeMatch ? offsidesItem?.awayValue : offsidesItem?.homeValue;
+                    if (typeof opponentOffsides === "number") {
+                        teamValue += opponentOffsides;
+                    }
+                }
+                if (typeof oppValue === "number") {
+                    const teamOffsides = isHomeMatch ? offsidesItem?.homeValue : offsidesItem?.awayValue;
+                    if (typeof teamOffsides === "number") {
+                        oppValue += teamOffsides;
+                    }
+                }
+            }
+
+            if (typeof teamValue === 'number' && typeof oppValue === 'number') {
+                const historyItem = {
+                    matchId: matchId,
+                    date: date, // ANVÄNDER DET KORRIGERADE DATUMET
+                    opp: oppName,
+                    val: teamValue, // Lagets värde
+                    oppVal: oppValue // Motståndarens värde
+                };
+
+                const historyKey = `${statKey}_${period}`;
+
+                if (!history[historyKey]) {
+                    history[historyKey] = [];
+                }
+                
+                // Lägg till historikposten (behåller ordningen från matches-arrayen)
+                history[historyKey].push(historyItem);
+            }
+        }
+    }
+  }
+  return history;
+}
+// --- SLUT PÅ FUNKTION ---
+
+// --- FUNKTION FÖR ATT BYGGA GAMES ARRAY (Korrigerad) ---
 function buildGames(matches) {
   if (!Array.isArray(matches)) {
     return [];
   }
-  return matches.map((match) => ({
-    matchId: match.matchId,
-    date: match.date,
-    timestamp: match.timestamp,
-  }));
+  return matches.map((match) => {
+    // FIX: Fallback till timestamp för date-fältet
+    const dateValue = match.date ?? (typeof match.timestamp === 'number' ? new Date(match.timestamp * 1000).toISOString().split('T')[0] : null);
+    
+    return {
+      matchId: match.matchId,
+      date: dateValue, // ANVÄNDER DET KORRIGERADE DATUMET
+      timestamp: match.timestamp,
+    };
+  });
 }
+// --- SLUT PÅ FUNKTION ---
 
 function resolveLatestSavedAt(matches) {
   if (!Array.isArray(matches)) {
@@ -719,7 +774,7 @@ function computeSpecialsLeagueAverage(profiles) {
 
   const sortedLabels = Array.from(windowLabels).sort((a, b) => {
     const parseLabel = (label) => {
-      const match = label.match(/d+/);
+      const match = label.match(/\d+/);
       return match ? parseInt(match[0], 10) : 0;
     };
     return parseLabel(a) - parseLabel(b);
@@ -977,6 +1032,7 @@ async function saveProfilesToDatabase(collection, profiles, generatedAt) {
   const timestamp = generatedAt ?? new Date().toISOString();
   const operations = profiles.map(({ leagueName, profile }) => {
     const meta = profile.meta ?? {};
+    // ID:n behålls som orginal (utan -test)
     const identifier = `${meta.ligaId ?? "unknown"}:${meta.lagId ?? "unknown"}:${meta.matchType ?? "unknown"}`;
     const document = {
       _id: identifier,
@@ -1000,13 +1056,14 @@ async function saveProfilesToDatabase(collection, profiles, generatedAt) {
     await collection.bulkWrite(chunk, { ordered: false });
   }
 
-  console.log(`Success: Upserted ${operations.length} team profiles into MongoDB`);
+  console.log(`Success: Upserted ${operations.length} team profiles into MongoDB collection: ${collection.collectionName}`);
 }
 
 async function main() {
   const dataDir = path.resolve(__dirname, "../data");
   const teamStatsDir = path.join(dataDir, "teamstats");
-  const teamProfilesDir = path.join(dataDir, "teamprofiles");
+  const teamProfilesDir = path.join(dataDir, "teamprofiles"); // ORIGINAL: Spara till teamprofiles-mappen
+  // const teamProfilesDir = path.join(dataDir, "teamprofiles-test"); // TEST: Spara till teamprofiles-test-mappen
   const leaguesPath = path.join(dataDir, "leagues-and-teams.json");
 
   const leaguesData = await readJSON(leaguesPath);
@@ -1021,7 +1078,8 @@ async function main() {
   try {
     const db = client.db(process.env.MONGODB_DB || "app");
     const teamstatsCollection = db.collection("teamstats");
-    const teamprofilesCollection = db.collection("teamprofiles");
+    const teamprofilesCollection = db.collection("teamprofiles"); // ORIGINAL: Spara till teamprofiles collection
+    // const teamprofilesCollection = db.collection("teamprofiles-test"); // TEST: Spara till teamprofiles-test collection
     const profilesForDatabase = [];
 
     for (const [leagueName, leagueInfo] of Object.entries(leaguesData)) {
@@ -1059,7 +1117,26 @@ async function main() {
             resolveLatestSavedAt(matches) ?? importedAt ?? new Date().toISOString();
           const statistics = computeStatistics(matches, matchType);
           const specials = computeSpecials(matches, matchType);
-          const teamFileName = `${sanitizeFileComponent(team.name)}_${matchType}.json`;
+          
+          // --- INTEGRATION AV HISTORIK-LOGIKEN HÄR (ÅTERINFÖRD) ---
+          const teamId = team.id;
+          const matchHistory = computeMatchHistory(matches, matchType, teamId, STAT_KEYS, PERIODS);
+          
+          // Mappa in historikdatan i den befintliga statistiken-strukturen
+          for (const keyPeriod in matchHistory) {
+              const [statKey, period] = keyPeriod.split('_'); 
+
+              if (statistics.for[statKey] && statistics.for[statKey][period]) {
+                  statistics.for[statKey][period].history = matchHistory[keyPeriod];
+              }
+              if (statistics.against[statKey] && statistics.against[statKey][period]) {
+                  statistics.against[statKey][period].history = matchHistory[keyPeriod];
+              }
+          }
+          // --- SLUT PÅ INTEGRATION ---
+          
+          // Filnamnet har INTE -test
+          const teamFileName = `${sanitizeFileComponent(team.name)}_${matchType}.json`; 
           const outputPath = path.join(leagueOutputDir, teamFileName);
 
           const profile = {
@@ -1087,7 +1164,8 @@ async function main() {
 
       for (const file of filesToWrite) {
         await fs.writeFile(file.outputPath, JSON.stringify(file.profile, null, 2), "utf-8");
-        console.log(`Success: Created profile ${path.relative(dataDir, file.outputPath)}`);
+        // Loggen visar sökvägen till test-mappen
+        console.log(`Success: Created test profile ${path.relative(dataDir, file.outputPath)}`); 
       }
     }
 

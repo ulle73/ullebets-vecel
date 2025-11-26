@@ -2,6 +2,8 @@
 
 import { buildLineKey } from "@/ai/utils/matchupUtils";
 import clsx from "clsx";
+import { useState, useRef } from "react";
+import AIStatsPopup from "./AIStatsPopup";
 
 function buildMatchUrlEntries(lines = []) {
   const map = new Map();
@@ -120,6 +122,18 @@ const PinIcon = () => (
 );
 
 export default function AIComboList({ combos, priorityMap = {} }) {
+  const [activePopup, setActivePopup] = useState(null); // { comboId, lineIndex }
+  const triggerRefs = useRef({}); // Store refs for each info button
+
+  const handleInfoClick = (comboId, lineIndex) => {
+    const key = `${comboId}-${lineIndex}`;
+    if (activePopup?.key === key) {
+      setActivePopup(null);
+    } else {
+      setActivePopup({ key, comboId, lineIndex });
+    }
+  };
+
   if (!combos || !combos.length) {
     return (
       <div className="rounded border border-dashed border-slate-700 bg-slate-950/40 p-4 text-center text-xs uppercase tracking-wider text-slate-400">
@@ -268,6 +282,7 @@ export default function AIComboList({ combos, priorityMap = {} }) {
               const awayTeamId = line.teams?.awayId;
               const homeIcon = getTeamIconUrl(homeTeamId);
               const awayIcon = getTeamIconUrl(awayTeamId);
+              const uniqueKey = `${combo.id}-${lineIndex}`;
 
               const description = getBetDescription(line);
 
@@ -282,7 +297,7 @@ export default function AIComboList({ combos, priorityMap = {} }) {
 
               return (
                 <li
-                  key={`${combo.id}-${lineIndex}`}
+                  key={uniqueKey}
                   className={`relative overflow-hidden rounded-xl p-5`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -347,6 +362,28 @@ export default function AIComboList({ combos, priorityMap = {} }) {
                               {line.scope || "total"}
                             </span>
                           </span>
+                        </div>
+
+                        {/* Info Button */}
+                        <div className="relative">
+                          <button
+                            ref={(el) => (triggerRefs.current[uniqueKey] = el)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleInfoClick(combo.id, lineIndex);
+                            }}
+                            className="flex items-center gap-1.5 rounded-full bg-slate-800/50 px-2 py-0.5 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+                          >
+                            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] font-bold">i</span>
+                            <span>Info</span>
+                          </button>
+
+                          <AIStatsPopup
+                            line={line}
+                            isOpen={activePopup?.key === uniqueKey}
+                            onClose={() => setActivePopup(null)}
+                            triggerRef={{ current: triggerRefs.current[uniqueKey] }}
+                          />
                         </div>
                       </div>
                     </div>
