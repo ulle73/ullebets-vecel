@@ -30,7 +30,6 @@ const SWR_OPTIONS = {
   revalidateIfStale: false,
   revalidateOnReconnect: false,
   dedupingInterval: 60000,
-  keepPreviousData: true,
 };
 
 function makeFormatter() {
@@ -61,7 +60,18 @@ function useWorkspaceController(defaultDate) {
   const matchesKey = date ? buildMatchesByDateKey(date) : null;
   const { data, error, isLoading } = useSWR(matchesKey, fetchJson, SWR_OPTIONS);
 
-  const items = useMemo(() => data?.items ?? [], [data]);
+  const items = useMemo(() => {
+    const result = data?.items ?? [];
+    console.log("[AIWorkspace] items from SWR:", {
+      date,
+      matchesKey,
+      dataDate: data?.date,
+      itemsCount: result.length,
+      sampleIds: result.slice(0, 3).map(i => i.id),
+    });
+    return result;
+  }, [data, date, matchesKey]);
+
   const matches = useMemo(() => items.map(normalizeMatch), [items]);
   const matchLookup = useMemo(() => buildMatchLookup(matches), [matches]);
 

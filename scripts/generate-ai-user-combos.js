@@ -4,12 +4,23 @@ dotenv.config({ path: ".env.local" });
 import { DateTime } from "luxon";
 import { MongoClient } from "mongodb";
 import mapUnibetOdds from "../components/backtest/unibetOddsMapper.js";
+import { getFormulaConfig } from "../lib/backtest/formulaConfig.js";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.MONGODB_DB || "app";
 const RESULTS_COLLECTION = "ai-generated-bets";
 const SOURCE = "ai-user";
+
+const FORMULA_DEFINITIONS = {
+  multiplier: { valueKey: "evPctWithMultiplier" },
+  multifactor: { valueKey: "evPctMultifactor" },
+  leagueAvg: { valueKey: "evPctLeagueAvg" },
+  base: { valueKey: "evPct" },
+  legacy: { valueKey: "legacyEvPct" },
+};
+
+const DEFAULT_RESULT_PRIORITY = ["multiplier", "multifactor", "leagueAvg", "base", "legacy"];
 
 function todaySE() {
   return DateTime.now().setZone("Europe/Stockholm").toFormat("yyyy-MM-dd");
@@ -207,6 +218,22 @@ function buildBetKey({
     neutralGround ? "N" : "H",
   ];
   return parts.join("|");
+}
+
+function resolvePrimaryEv(result, statKey) {
+  if (!result) return { primaryEv: null };
+  const config = getFormulaConfig(statKey);
+  const displayOrder = Array.isArray(config?.display) ? config.display : [];
+  const priority = [...new Set([...displayOrder, ...DEFAULT_RESULT_PRIORITY])];
+  for (const key of priority) {
+    const def = FORMULA_DEFINITIONS[key];
+    if (!def) continue;
+    const value = result[def.valueKey];
+    if (typeof value === "number") {
+      return { primaryEv: value };
+    }
+  }
+  return { primaryEv: null };
 }
 async function run() {
   const dateArg = process.argv.find((arg) => arg.startsWith("--date="));
@@ -483,15 +510,14 @@ async function step4BatchEV(dateStr, { matchLookup, matchups, bets }) {
   const results = Array.isArray(payload) ? payload : payload.results || [];
   console.log(`[AI User Combos v2] Step4: got ${results.length} results`);
 
-  const positive = results.filter(
-    (r) =>
-      (r.evPct && r.evPct > 0) ||
-      (r.evPctMultifactor && r.evPctMultifactor > 0) ||
-      (r.evPctUniversalOptimized && r.evPctUniversalOptimized > 0)
-  );
-  console.log(
-    `[AI User Combos v2] Step4: +EV results ${positive.length} (primary EV > 0 across variants)`
-  );
+  const mappedWithEv = results.map((r) => {
+    const params = r.params || {};
+    const { primaryEv } = resolvePrimaryEv(r, params.stat);
+    return { raw: r, primaryEv };
+  });
+
+  const positive = mappedWithEv.filter((x) => typeof x.primaryEv === "number" && x.primaryEv > 0);
+  console.log(`[AI User Combos v2] Step4: +EV results ${positive.length} (primaryEv > 0)`);
 
   // Build helpers for mapping and filtering
   const allRows = [...(matchups.overRows || []), ...(matchups.underRows || [])];
@@ -513,12 +539,13 @@ async function step4BatchEV(dateStr, { matchLookup, matchups, bets }) {
     }
   });
 
-  const lines = positive.map((r) => {
+  const lines = positive.map((x) => {
+    const r = x.raw;
     const params = r.params || {};
     const direction = params.over ? "over" : "under";
 
     // IMPORTANT: preserve matchId from original bet order (batch results are aligned)
-    const fallbackBet = bets[positive.indexOf(r)] || null;
+    const fallbackBet = bets[results.indexOf(r)] || null;
     const matchId = params.matchId ?? fallbackBet?.matchId ?? null;
     const row = matchId ? rowByMatchId.get(String(matchId)) : null;
     const match = matchId ? matchLookup.get(String(matchId)) : null;
@@ -558,9 +585,12 @@ async function step4BatchEV(dateStr, { matchLookup, matchups, bets }) {
       direction,
       line: params.line,
       odds: params.odds,
-      primaryEv: r.evPctUniversalOptimized ?? r.evPctMultifactor ?? r.evPct ?? null,
+      primaryEv: x.primaryEv,
       evPct: r.evPct ?? null,
       evPctMultifactor: r.evPctMultifactor ?? null,
+      evPctLeagueAvg: r.evPctLeagueAvg ?? null,
+      evPctWithMultiplier: r.evPctWithMultiplier ?? null,
+      legacyEvPct: r.legacyEvPct ?? null,
       evPctUniversalOptimized: r.evPctUniversalOptimized ?? null,
       matchupScore:
         priorityMap[
@@ -684,6 +714,9 @@ async function step4BatchEV(dateStr, { matchLookup, matchups, bets }) {
       primaryEv: l.primaryEv,
       evPct: l.evPct,
       evPctMultifactor: l.evPctMultifactor,
+      evPctLeagueAvg: l.evPctLeagueAvg,
+      evPctWithMultiplier: l.evPctWithMultiplier,
+      legacyEvPct: l.legacyEvPct,
       evPctUniversalOptimized: l.evPctUniversalOptimized,
       matchupScore: l.matchupScore,
       actual: l.actual ?? null,
