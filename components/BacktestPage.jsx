@@ -474,6 +474,17 @@ export default function BacktestPage({ match, onPositiveResults }) {
     setLoading(true);
     setError(null);
 
+    console.log("[BacktestPage] auto-unibet-odds payload:", {
+      matchId: autoMatchId,
+      homeTeam: autoMatchHome,
+      awayTeam: autoMatchAway,
+      leagueName: autoLeagueName,
+      timestamp: autoTimestamp,
+      start: autoStart,
+      hasTimestamp: !!autoTimestamp,
+      hasStart: !!autoStart,
+    });
+
     const payload = {
       action: "auto-unibet-odds",
       matchId: autoMatchId,
