@@ -101,6 +101,7 @@ function calculateAverage(values) {
 export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const popupRef = useRef(null);
+  const hasLoggedRef = useRef(false);
 
   // Calculate position relative to trigger
   useEffect(() => {
@@ -136,73 +137,70 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
     };
   }, [isOpen, onClose, triggerRef]);
 
-  if (!isOpen) return null;
-
   const { backtest, teams, direction, line: lineValue, statKey, period, scope } = line;
   const homeTeam = teams?.home || "Hemmalag";
   const awayTeam = teams?.away || "Bortalag";
   const isOver = direction === 'over';
+  const isTotalScope = scope === 'total';
+
   const teamName = scope === 'away' ? awayTeam : homeTeam;
   const opponentName = scope === 'away' ? homeTeam : awayTeam;
   const teamRole = scope === 'away' ? 'Borta' : 'Hemma';
   const opponentRole = scope === 'away' ? 'Hemma' : 'Borta';
-
   // Extract data
   const teamStats = backtest?.teamStats || {};
   const opponentStats = backtest?.opponentStats || {};
 
+  console.log("--- AIStatsPopup DEBUG ---");
+  console.log("Team:", teamName, "Role:", teamRole);
+  console.log("Opponent:", opponentName, "Role:", opponentRole);
+  console.log("StatKey:", statKey, "Period:", period, "Scope:", scope);
+  console.log("Backtest Object:", backtest);
+  console.log("Team Stats History Length:", teamStats.history?.length);
+  console.log("Opponent Stats History Length:", opponentStats.history?.length);
+  if (teamStats.history?.length > 0) {
+    console.log("First Team Match:", teamStats.history[0]);
+  }
+
   // History
-  const teamHistory = Array.isArray(teamStats.history) ? teamStats.history : [];
-  const sortedTeamHistory = [...teamHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+  // Trusting the order from engine.js/database which should be sorted by date descending
+  const sortedTeamHistory = Array.isArray(teamStats.history) ? teamStats.history : [];
+  const sortedOppHistory = Array.isArray(opponentStats.history) ? opponentStats.history : [];
 
-  const opponentHistory = Array.isArray(opponentStats.history) ? opponentStats.history : [];
-  const sortedOppHistory = [...opponentHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+  // Debug log to trace history ordering issues
+  useEffect(() => {
+    if (isOpen && !hasLoggedRef.current) {
+      hasLoggedRef.current = true;
+      const dbg = {
+        statKey,
+        period,
+        scope,
+        isTotalScope,
+        teamHistory: sortedTeamHistory.slice(0, 15).map((m) => ({
+          date: m.date,
+          ts: m.timestamp,
+          val: m.val,
+          oppVal: m.oppVal,
+          opp: m.opp,
+        })),
+        oppHistory: sortedOppHistory.slice(0, 15).map((m) => ({
+          date: m.date,
+          ts: m.timestamp,
+          val: m.val,
+          oppVal: m.oppVal,
+          opp: m.opp,
+        })),
+      };
+      console.log("[AIStatsPopup] history debug", dbg);
+    }
+    if (!isOpen) {
+      hasLoggedRef.current = false;
+    }
+  }, [isOpen, sortedTeamHistory, sortedOppHistory, statKey, period, scope, isTotalScope]);
 
-  // --- TEAM CALCULATIONS ---
-  const teamValues = sortedTeamHistory.map(m => m.val);
-  const teamAvg = calculateAverage(teamValues);
-  const teamMedian = calculateMedian(teamValues);
+  if (!isOpen) return null;
 
-  const teamTotalMatches = sortedTeamHistory.length;
-  const teamHits = sortedTeamHistory.filter(m => isOver ? m.val > lineValue : m.val < lineValue).length;
-  const teamHitRatePercent = teamTotalMatches > 0 ? Math.round((teamHits / teamTotalMatches) * 100) : 0;
-
-  const teamLast5 = sortedTeamHistory.slice(0, 5);
-  const teamLast5Hits = teamLast5.map(m => isOver ? m.val > lineValue : m.val < lineValue);
-
-  const teamLast10 = sortedTeamHistory.slice(0, 10);
-  const teamLast10Hits = teamLast10.map(m => isOver ? m.val > lineValue : m.val < lineValue);
-
-  // --- OPPONENT CALCULATIONS (Conceded) ---
-  // Using oppVal from opponent history
-  const oppValues = sortedOppHistory.map(m => m.oppVal);
-  const oppAvg = calculateAverage(oppValues);
-  const oppMedian = calculateMedian(oppValues);
-
-  const oppTotalMatches = sortedOppHistory.length;
-  const oppHits = sortedOppHistory.filter(m => isOver ? m.oppVal > lineValue : m.oppVal < lineValue).length;
-  const oppHitRatePercent = oppTotalMatches > 0 ? Math.round((oppHits / oppTotalMatches) * 100) : 0;
-
-  const oppLast5 = sortedOppHistory.slice(0, 5);
-  const oppLast5Hits = oppLast5.map(m => isOver ? m.oppVal > lineValue : m.oppVal < lineValue);
-
-  const oppLast10 = sortedOppHistory.slice(0, 10);
-  const oppLast10Hits = oppLast10.map(m => isOver ? m.oppVal > lineValue : m.oppVal < lineValue);
-
-  // --- H2H ---
-  const currentOpponentName = opponentName;
-  const h2hMatch = sortedTeamHistory.find(m => {
-    if (!m.opp || !currentOpponentName) return false;
-    const hOpp = m.opp.toLowerCase();
-    const cOpp = currentOpponentName.toLowerCase();
-    return hOpp.includes(cOpp) || cOpp.includes(hOpp);
-  });
-
-  const h2hText = h2hMatch
-    ? `I senaste mötet (${h2hMatch.date}) fick ${teamName} ${h2hMatch.val} ${translateStatKey(statKey)}.`
-    : "Ingen senaste H2H hittades.";
-
-
+  // Helper to render hits
   const renderHits = (hits, values) => (
     <div className="flex gap-1.5">
       {hits.map((hit, i) => (
@@ -216,105 +214,328 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
     </div>
   );
 
-  return createPortal(
-    <div
-      ref={popupRef}
-      className="absolute z-50 w-96 -translate-x-1/2 -translate-y-full transform rounded-2xl border border-white/10 bg-[#1a1b26]/95 p-5 shadow-2xl backdrop-blur-md transition-all duration-200 animate-in fade-in zoom-in-95"
-      style={{ top: position.top, left: position.left }}
-    >
-      {/* Header / Title */}
-      <div className="mb-4 flex items-start justify-between border-b border-white/5 pb-3">
-        <div>
-          <h4 className="text-base font-bold text-white leading-tight">
-            {teamName} – {isOver ? 'Över' : 'Under'} {lineValue} {translateStatKey(statKey)}
-          </h4>
-          <p className="text-xs text-slate-400 mt-0.5 uppercase tracking-wide">
-            {translatePeriod(period)}
-          </p>
+  // --- RENDER LOGIC ---
+
+  if (isTotalScope) {
+    // --- TOTAL SCOPE CALCULATIONS ---
+
+    // 1. Combined FOR (Team A For + Team B For)
+    // We pair up the histories by index. This assumes roughly similar number of matches.
+    const combinedForValues = [];
+    const minLenFor = Math.min(sortedTeamHistory.length, sortedOppHistory.length);
+    for (let i = 0; i < minLenFor; i++) {
+      // Note: sortedOppHistory contains the OTHER team's stats. 
+      // m.val is what THEY created.
+      const valA = sortedTeamHistory[i].val;
+      const valB = sortedOppHistory[i].val;
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        combinedForValues.push(valA + valB);
+      }
+    }
+
+    const combinedForAvg = calculateAverage(combinedForValues);
+    const combinedForMedian = calculateMedian(combinedForValues);
+
+    const combinedForTotalMatches = combinedForValues.length;
+    const combinedForHits = combinedForValues.filter(total => isOver ? total > lineValue : total < lineValue).length;
+    const combinedForHitRatePercent = combinedForTotalMatches > 0 ? Math.round((combinedForHits / combinedForTotalMatches) * 100) : 0;
+
+    const combinedForLast5Values = combinedForValues.slice(0, 5);
+    const combinedForLast5Hits = combinedForLast5Values.map(total => isOver ? total > lineValue : total < lineValue);
+
+    const combinedForLast10Values = combinedForValues.slice(0, 10);
+    const combinedForLast10Hits = combinedForLast10Values.map(total => isOver ? total > lineValue : total < lineValue);
+
+    // 2. Combined AGAINST (Team A Against + Team B Against)
+    const combinedAgainstValues = [];
+    const minLenAgainst = Math.min(sortedTeamHistory.length, sortedOppHistory.length);
+    for (let i = 0; i < minLenAgainst; i++) {
+      // m.oppVal is what THEY allowed.
+      const valA = sortedTeamHistory[i].oppVal;
+      const valB = sortedOppHistory[i].oppVal;
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        combinedAgainstValues.push(valA + valB);
+      }
+    }
+
+    const combinedAgainstAvg = calculateAverage(combinedAgainstValues);
+    const combinedAgainstMedian = calculateMedian(combinedAgainstValues);
+
+    const combinedAgainstTotalMatches = combinedAgainstValues.length;
+    const combinedAgainstHits = combinedAgainstValues.filter(total => isOver ? total > lineValue : total < lineValue).length;
+    const combinedAgainstHitRatePercent = combinedAgainstTotalMatches > 0 ? Math.round((combinedAgainstHits / combinedAgainstTotalMatches) * 100) : 0;
+
+    const combinedAgainstLast5Values = combinedAgainstValues.slice(0, 5);
+    const combinedAgainstLast5Hits = combinedAgainstLast5Values.map(total => isOver ? total > lineValue : total < lineValue);
+
+    const combinedAgainstLast10Values = combinedAgainstValues.slice(0, 10);
+    const combinedAgainstLast10Hits = combinedAgainstLast10Values.map(total => isOver ? total > lineValue : total < lineValue);
+
+    // 3. H2H Total
+    const h2hMatch = sortedTeamHistory.find(m => {
+      if (!m.opp || !opponentName) return false;
+      const hOpp = m.opp.toLowerCase();
+      const cOpp = opponentName.toLowerCase();
+      return hOpp.includes(cOpp) || cOpp.includes(hOpp);
+    });
+
+    const h2hTotalValue = h2hMatch ? h2hMatch.val + (h2hMatch.oppVal || 0) : null;
+    const h2hText = h2hMatch && h2hTotalValue !== null
+      ? `I senaste mötet (${h2hMatch.date}) fick matchen ${h2hTotalValue} totala ${translateStatKey(statKey)}.`
+      : "Ingen senaste H2H hittades.";
+
+    return createPortal(
+      <div
+        ref={popupRef}
+        className="absolute z-50 w-96 -translate-x-1/2 -translate-y-full transform rounded-2xl border border-white/10 bg-[#1a1b26]/95 p-5 shadow-2xl backdrop-blur-md transition-all duration-200 animate-in fade-in zoom-in-95"
+        style={{ top: position.top, left: position.left }}
+      >
+        {/* Header / Title */}
+        <div className="mb-4 flex items-start justify-between border-b border-white/5 pb-3">
+          <div>
+            <h4 className="text-base font-bold text-white leading-tight">
+              [Match] – {isOver ? 'Över' : 'Under'} {lineValue} {translateStatKey(statKey)}
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5 uppercase tracking-wide">
+              HELA MATCHEN
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full bg-white/5 p-1 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <CloseIcon className="w-4 h-4" />
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="rounded-full bg-white/5 p-1 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
-        >
-          <CloseIcon className="w-4 h-4" />
-        </button>
-      </div>
 
-      <div className="space-y-6 text-sm">
+        <div className="space-y-6 text-sm">
 
-        {/* 1. Team Stats */}
-        <div>
-          <h5 className="font-bold text-emerald-400 mb-2 flex items-center gap-2">
-            1. {teamName} {translateStatKey(statKey)} ({teamRole})
-          </h5>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-emerald-500/20">
-            <div className="flex justify-between">
-              <span>Snitt:</span>
-              <span className="font-mono text-white">{teamAvg}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Median:</span>
-              <span className="font-mono text-white">{teamMedian}</span>
-            </div>
-            <div className="flex justify-between col-span-2">
-              <span>Andel {isOver ? '≥' : '<'} {lineValue}:</span>
-              <span className="font-mono text-white">{teamHits}/{teamTotalMatches} ({teamHitRatePercent}%)</span>
-            </div>
-            <div className="flex justify-between col-span-2 items-start mt-1">
-              <span>Senaste 5:</span>
-              {renderHits(teamLast5Hits, teamLast5.map(m => m.val))}
-            </div>
-            <div className="flex justify-between col-span-2 items-start">
-              <span>Senaste 10:</span>
-              {renderHits(teamLast10Hits, teamLast10.map(m => m.val))}
+          {/* 1. Combined FOR */}
+          <div>
+            <h5 className="font-bold text-emerald-400 mb-1 flex items-center gap-2">
+              1. Totala {translateStatKey(statKey)} – Combined FOR (Båda lagen)
+            </h5>
+            <p className="text-xs text-slate-400 mb-2 pl-2">Summan av vad lagen själva skapar</p>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-emerald-500/20">
+              <div className="flex justify-between">
+                <span>Snitt:</span>
+                <span className="font-mono text-white">{combinedForAvg}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Median:</span>
+                <span className="font-mono text-white">{combinedForMedian}</span>
+              </div>
+              <div className="flex justify-between col-span-2">
+                <span>Andel {isOver ? '≥' : '<'} {lineValue}:</span>
+                <span className="font-mono text-white">{combinedForHits}/{combinedForTotalMatches} ({combinedForHitRatePercent}%)</span>
+              </div>
+              <div className="flex justify-between col-span-2 items-start mt-1">
+                <span>Senaste 5:</span>
+                {renderHits(combinedForLast5Hits, combinedForLast5Values)}
+              </div>
+              <div className="flex justify-between col-span-2 items-start">
+                <span>Senaste 10:</span>
+                {renderHits(combinedForLast10Hits, combinedForLast10Values)}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* 2. Opponent Stats */}
-        <div>
-          <h5 className="font-bold text-indigo-400 mb-2 flex items-center gap-2">
-            2. {opponentName} {translateStatKey(statKey)} emot ({opponentRole})
-          </h5>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-indigo-500/20">
-            <div className="flex justify-between">
-              <span>Snitt:</span>
-              <span className="font-mono text-white">{oppAvg}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Median:</span>
-              <span className="font-mono text-white">{oppMedian}</span>
-            </div>
-            <div className="flex justify-between col-span-2">
-              <span>Andel {isOver ? '≥' : '<'} {lineValue} emot:</span>
-              <span className="font-mono text-white">{oppHits}/{oppTotalMatches} ({oppHitRatePercent}%)</span>
-            </div>
-            <div className="flex justify-between col-span-2 items-start mt-1">
-              <span>Senaste 5:</span>
-              {renderHits(oppLast5Hits, oppLast5.map(m => m.oppVal))}
-            </div>
-            <div className="flex justify-between col-span-2 items-start">
-              <span>Senaste 10:</span>
-              {renderHits(oppLast10Hits, oppLast10.map(m => m.oppVal))}
+          {/* 2. Combined AGAINST */}
+          <div>
+            <h5 className="font-bold text-indigo-400 mb-1 flex items-center gap-2">
+              2. Totala {translateStatKey(statKey)} – Combined AGAINST (Båda lagen)
+            </h5>
+            <p className="text-xs text-slate-400 mb-2 pl-2">Summan av vad lagen tillåter motståndaren att skapa</p>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-indigo-500/20">
+              <div className="flex justify-between">
+                <span>Snitt:</span>
+                <span className="font-mono text-white">{combinedAgainstAvg}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Median:</span>
+                <span className="font-mono text-white">{combinedAgainstMedian}</span>
+              </div>
+              <div className="flex justify-between col-span-2">
+                <span>Andel {isOver ? '≥' : '<'} {lineValue} emot:</span>
+                <span className="font-mono text-white">{combinedAgainstHits}/{combinedAgainstTotalMatches} ({combinedAgainstHitRatePercent}%)</span>
+              </div>
+              <div className="flex justify-between col-span-2 items-start mt-1">
+                <span>Senaste 5:</span>
+                {renderHits(combinedAgainstLast5Hits, combinedAgainstLast5Values)}
+              </div>
+              <div className="flex justify-between col-span-2 items-start">
+                <span>Senaste 10:</span>
+                {renderHits(combinedAgainstLast10Hits, combinedAgainstLast10Values)}
+              </div>
             </div>
           </div>
+
+          {/* 3. H2H */}
+          <div>
+            <h5 className="font-bold text-slate-200 mb-1 text-xs uppercase tracking-wider">
+              INBÖRDES MÖTEN (HELA MATCHEN)
+            </h5>
+            <p className="text-xs text-slate-400 pl-2">
+              {h2hText}
+            </p>
+          </div>
+
         </div>
 
-        {/* 3. H2H */}
-        <div>
-          <h5 className="font-bold text-slate-200 mb-1 text-xs uppercase tracking-wider">
-            Inbördes möten ({translatePeriod(period)})
-          </h5>
-          <p className="text-xs text-slate-400 pl-2">
-            {h2hText}
-          </p>
+        {/* Arrow at bottom */}
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 border-b border-r border-white/10 bg-[#1a1b26]"></div>
+      </div>,
+      document.body
+    );
+
+  } else {
+    // --- STANDARD SCOPE CALCULATIONS (Existing Logic) ---
+
+    // Team Stats
+    const teamValues = sortedTeamHistory.map(m => m.val);
+    const teamAvg = calculateAverage(teamValues);
+    const teamMedian = calculateMedian(teamValues);
+
+    const teamTotalMatches = sortedTeamHistory.length;
+    const teamHits = sortedTeamHistory.filter(m => isOver ? m.val > lineValue : m.val < lineValue).length;
+    const teamHitRatePercent = teamTotalMatches > 0 ? Math.round((teamHits / teamTotalMatches) * 100) : 0;
+
+    const teamLast5 = sortedTeamHistory.slice(0, 5);
+    const teamLast5Hits = teamLast5.map(m => isOver ? m.val > lineValue : m.val < lineValue);
+
+    const teamLast10 = sortedTeamHistory.slice(0, 10);
+    const teamLast10Hits = teamLast10.map(m => isOver ? m.val > lineValue : m.val < lineValue);
+
+    // Opponent Stats (Conceded)
+    const oppValues = sortedOppHistory.map(m => m.oppVal);
+    const oppAvg = calculateAverage(oppValues);
+    const oppMedian = calculateMedian(oppValues);
+
+    const oppTotalMatches = sortedOppHistory.length;
+    const oppHits = sortedOppHistory.filter(m => isOver ? m.oppVal > lineValue : m.oppVal < lineValue).length;
+    const oppHitRatePercent = oppTotalMatches > 0 ? Math.round((oppHits / oppTotalMatches) * 100) : 0;
+
+    const oppLast5 = sortedOppHistory.slice(0, 5);
+    const oppLast5Hits = oppLast5.map(m => isOver ? m.oppVal > lineValue : m.oppVal < lineValue);
+
+    const oppLast10 = sortedOppHistory.slice(0, 10);
+    const oppLast10Hits = oppLast10.map(m => isOver ? m.oppVal > lineValue : m.oppVal < lineValue);
+
+    // H2H
+    const currentOpponentName = opponentName;
+    const h2hMatch = sortedTeamHistory.find(m => {
+      if (!m.opp || !currentOpponentName) return false;
+      const hOpp = m.opp.toLowerCase();
+      const cOpp = currentOpponentName.toLowerCase();
+      return hOpp.includes(cOpp) || cOpp.includes(hOpp);
+    });
+
+    const h2hText = h2hMatch
+      ? `I senaste mötet (${h2hMatch.date}) fick ${teamName} ${h2hMatch.val} ${translateStatKey(statKey)}.`
+      : "Ingen senaste H2H hittades.";
+
+    return createPortal(
+      <div
+        ref={popupRef}
+        className="absolute z-50 w-96 -translate-x-1/2 -translate-y-full transform rounded-2xl border border-white/10 bg-[#1a1b26]/95 p-5 shadow-2xl backdrop-blur-md transition-all duration-200 animate-in fade-in zoom-in-95"
+        style={{ top: position.top, left: position.left }}
+      >
+        {/* Header / Title */}
+        <div className="mb-4 flex items-start justify-between border-b border-white/5 pb-3">
+          <div>
+            <h4 className="text-base font-bold text-white leading-tight">
+              {teamName} – {isOver ? 'Över' : 'Under'} {lineValue} {translateStatKey(statKey)}
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5 uppercase tracking-wide">
+              {translatePeriod(period)}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full bg-white/5 p-1 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <CloseIcon className="w-4 h-4" />
+          </button>
         </div>
 
-      </div>
+        <div className="space-y-6 text-sm">
 
-      {/* Arrow at bottom */}
-      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 border-b border-r border-white/10 bg-[#1a1b26]"></div>
-    </div>,
-    document.body
-  );
+          {/* 1. Team Stats */}
+          <div>
+            <h5 className="font-bold text-emerald-400 mb-2 flex items-center gap-2">
+              1. {teamName} {translateStatKey(statKey)} ({teamRole})
+            </h5>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-emerald-500/20">
+              <div className="flex justify-between">
+                <span>Snitt:</span>
+                <span className="font-mono text-white">{teamAvg}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Median:</span>
+                <span className="font-mono text-white">{teamMedian}</span>
+              </div>
+              <div className="flex justify-between col-span-2">
+                <span>Andel {isOver ? '≥' : '<'} {lineValue}:</span>
+                <span className="font-mono text-white">{teamHits}/{teamTotalMatches} ({teamHitRatePercent}%)</span>
+              </div>
+              <div className="flex justify-between col-span-2 items-start mt-1">
+                <span>Senaste 5:</span>
+                {renderHits(teamLast5Hits, teamLast5.map(m => m.val))}
+              </div>
+              <div className="flex justify-between col-span-2 items-start">
+                <span>Senaste 10:</span>
+                {renderHits(teamLast10Hits, teamLast10.map(m => m.val))}
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Opponent Stats */}
+          <div>
+            <h5 className="font-bold text-indigo-400 mb-2 flex items-center gap-2">
+              2. {opponentName} {translateStatKey(statKey)} emot ({opponentRole})
+            </h5>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-indigo-500/20">
+              <div className="flex justify-between">
+                <span>Snitt:</span>
+                <span className="font-mono text-white">{oppAvg}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Median:</span>
+                <span className="font-mono text-white">{oppMedian}</span>
+              </div>
+              <div className="flex justify-between col-span-2">
+                <span>Andel {isOver ? '≥' : '<'} {lineValue} emot:</span>
+                <span className="font-mono text-white">{oppHits}/{oppTotalMatches} ({oppHitRatePercent}%)</span>
+              </div>
+              <div className="flex justify-between col-span-2 items-start mt-1">
+                <span>Senaste 5:</span>
+                {renderHits(oppLast5Hits, oppLast5.map(m => m.oppVal))}
+              </div>
+              <div className="flex justify-between col-span-2 items-start">
+                <span>Senaste 10:</span>
+                {renderHits(oppLast10Hits, oppLast10.map(m => m.oppVal))}
+              </div>
+            </div>
+          </div>
+
+          {/* 3. H2H */}
+          <div>
+            <h5 className="font-bold text-slate-200 mb-1 text-xs uppercase tracking-wider">
+              Inbördes möten ({translatePeriod(period)})
+            </h5>
+            <p className="text-xs text-slate-400 pl-2">
+              {h2hText}
+            </p>
+          </div>
+
+        </div>
+
+        {/* Arrow at bottom */}
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-4 w-4 rotate-45 border-b border-r border-white/10 bg-[#1a1b26]"></div>
+      </div>,
+      document.body
+    );
+  }
 }

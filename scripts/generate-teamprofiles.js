@@ -276,9 +276,17 @@ function computeMatchHistory(matches, matchType, teamId, statKeys, periods) {
             }
 
             if (typeof teamValue === 'number' && typeof oppValue === 'number') {
+                const ts =
+                  typeof match.timestamp === "number"
+                    ? match.timestamp
+                    : date
+                      ? Math.floor(Date.parse(date) / 1000)
+                      : null;
+
                 const historyItem = {
                     matchId: matchId,
                     date: date, // ANVÄNDER DET KORRIGERADE DATUMET
+                    timestamp: ts,
                     opp: oppName,
                     val: teamValue, // Lagets värde
                     oppVal: oppValue // Motståndarens värde
@@ -296,6 +304,15 @@ function computeMatchHistory(matches, matchType, teamId, statKeys, periods) {
         }
     }
   }
+  // Sortera varje history-lista nyast först (timestamp desc)
+  Object.keys(history).forEach((key) => {
+    history[key].sort((a, b) => {
+      const ta = typeof a.timestamp === "number" ? a.timestamp : a.date ? Date.parse(a.date) / 1000 : 0;
+      const tb = typeof b.timestamp === "number" ? b.timestamp : b.date ? Date.parse(b.date) / 1000 : 0;
+      return tb - ta;
+    });
+  });
+
   return history;
 }
 // --- SLUT PÅ FUNKTION ---
