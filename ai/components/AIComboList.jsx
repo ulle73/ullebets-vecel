@@ -142,18 +142,6 @@ export default function AIComboList({ combos, priorityMap = {} }) {
     );
   }
 
-  const overCombos = [];
-  const underCombos = [];
-
-  combos.forEach((combo) => {
-    const isAllUnder = combo.lines.every((l) => l.direction === "under");
-    if (isAllUnder) {
-      underCombos.push(combo);
-    } else {
-      overCombos.push(combo);
-    }
-  });
-
   const renderComboCard = (combo, index) => {
     const matchUrlEntries = buildMatchUrlEntries(combo.lines);
     const evPercent = combo.totalEv || 0;
@@ -430,29 +418,12 @@ export default function AIComboList({ combos, priorityMap = {} }) {
     );
   };
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
-      {/* Left Column: Over Combos */}
-      <div className="flex flex-col gap-8">
-        {overCombos.length > 0 && (
-          <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
-            <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-            <h3 className="text-lg font-bold text-slate-200">Överspel</h3>
-          </div>
-        )}
-        {overCombos.map((combo, i) => renderComboCard(combo, i))}
-      </div>
+  // Sort all combos by total EV descending
+  const sortedCombos = [...combos].sort((a, b) => (b.totalEv || 0) - (a.totalEv || 0));
 
-      {/* Right Column: Under Combos */}
-      <div className="flex flex-col gap-8">
-        {underCombos.length > 0 && (
-          <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
-            <div className="h-2 w-2 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
-            <h3 className="text-lg font-bold text-slate-200">Underspel</h3>
-          </div>
-        )}
-        {underCombos.map((combo, i) => renderComboCard(combo, overCombos.length + i))}
-      </div>
+  return (
+    <div className="flex flex-col gap-8 w-full max-w-4xl mx-auto">
+      {sortedCombos.map((combo, i) => renderComboCard(combo, i))}
     </div>
   );
 }

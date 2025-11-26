@@ -51,6 +51,36 @@ const XIcon = ({ className }) => (
   </svg>
 );
 
+// Swedish translations for stat keys
+const STAT_TRANSLATIONS = {
+  cornerKicks: "hörnor",
+  totalShotsOnGoal: "skott på mål",
+  shotsOnGoal: "skott på mål",
+  yellowCards: "gula kort",
+  throwIns: "inkast",
+  freeKicks: "frisparkar",
+  fouls: "frisparkar",
+  totalTackle: "tacklingar",
+  offsides: "offsides",
+};
+
+// Period translations
+const PERIOD_TRANSLATIONS = {
+  ALL: "Hela matchen",
+  "1ST": "1:a halvlek",
+  "2ND": "2:a halvlek",
+};
+
+// Helper to translate stat key
+function translateStatKey(statKey) {
+  return STAT_TRANSLATIONS[statKey] || statKey;
+}
+
+// Helper to translate period
+function translatePeriod(period) {
+  return PERIOD_TRANSLATIONS[period] || period;
+}
+
 // Helper to calculate median
 function calculateMedian(values) {
   if (!values || values.length === 0) return "N/A";
@@ -150,8 +180,6 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
   const oppMedian = calculateMedian(oppValues);
 
   const oppTotalMatches = sortedOppHistory.length;
-  // For opponent conceded: if we bet OVER, we want opponent to concede MORE than line.
-  // If we bet UNDER, we want opponent to concede LESS than line.
   const oppHits = sortedOppHistory.filter(m => isOver ? m.oppVal > lineValue : m.oppVal < lineValue).length;
   const oppHitRatePercent = oppTotalMatches > 0 ? Math.round((oppHits / oppTotalMatches) * 100) : 0;
 
@@ -161,9 +189,7 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
   const oppLast10 = sortedOppHistory.slice(0, 10);
   const oppLast10Hits = oppLast10.map(m => isOver ? m.oppVal > lineValue : m.oppVal < lineValue);
 
-
   // --- H2H ---
-  // Find latest match against this opponent in teamHistory
   const currentOpponentName = opponentName;
   const h2hMatch = sortedTeamHistory.find(m => {
     if (!m.opp || !currentOpponentName) return false;
@@ -173,14 +199,19 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
   });
 
   const h2hText = h2hMatch
-    ? `I senaste mötet (${h2hMatch.date}) fick ${teamName} ${h2hMatch.val} ${statKey}.`
+    ? `I senaste mötet (${h2hMatch.date}) fick ${teamName} ${h2hMatch.val} ${translateStatKey(statKey)}.`
     : "Ingen senaste H2H hittades.";
 
 
-  const renderHits = (hits) => (
-    <div className="flex gap-1">
+  const renderHits = (hits, values) => (
+    <div className="flex gap-1.5">
       {hits.map((hit, i) => (
-        hit ? <CheckIcon key={i} className="w-3 h-3 text-emerald-500" /> : <XIcon key={i} className="w-3 h-3 text-red-500" />
+        <div key={i} className="flex flex-col items-center gap-0.5">
+          {hit ? <CheckIcon className="w-3 h-3 text-emerald-500" /> : <XIcon className="w-3 h-3 text-red-500" />}
+          <span className="text-[9px] text-slate-600 font-mono leading-none">
+            {values[i] ?? ""}
+          </span>
+        </div>
       ))}
     </div>
   );
@@ -195,10 +226,10 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
       <div className="mb-4 flex items-start justify-between border-b border-white/5 pb-3">
         <div>
           <h4 className="text-base font-bold text-white leading-tight">
-            {teamName} – {isOver ? 'Över' : 'Under'} {lineValue} {statKey}
+            {teamName} – {isOver ? 'Över' : 'Under'} {lineValue} {translateStatKey(statKey)}
           </h4>
           <p className="text-xs text-slate-400 mt-0.5 uppercase tracking-wide">
-            {period === 'ALL' ? 'Hela matchen' : period === '1ST' ? '1:a halvlek' : '2:a halvlek'}
+            {translatePeriod(period)}
           </p>
         </div>
         <button
@@ -214,7 +245,7 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
         {/* 1. Team Stats */}
         <div>
           <h5 className="font-bold text-emerald-400 mb-2 flex items-center gap-2">
-            1. {teamName} {statKey} ({teamRole})
+            1. {teamName} {translateStatKey(statKey)} ({teamRole})
           </h5>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-emerald-500/20">
             <div className="flex justify-between">
@@ -229,13 +260,13 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
               <span>Andel {isOver ? '≥' : '<'} {lineValue}:</span>
               <span className="font-mono text-white">{teamHits}/{teamTotalMatches} ({teamHitRatePercent}%)</span>
             </div>
-            <div className="flex justify-between col-span-2 items-center mt-1">
+            <div className="flex justify-between col-span-2 items-start mt-1">
               <span>Senaste 5:</span>
-              {renderHits(teamLast5Hits)}
+              {renderHits(teamLast5Hits, teamLast5.map(m => m.val))}
             </div>
-            <div className="flex justify-between col-span-2 items-center">
+            <div className="flex justify-between col-span-2 items-start">
               <span>Senaste 10:</span>
-              {renderHits(teamLast10Hits)}
+              {renderHits(teamLast10Hits, teamLast10.map(m => m.val))}
             </div>
           </div>
         </div>
@@ -243,7 +274,7 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
         {/* 2. Opponent Stats */}
         <div>
           <h5 className="font-bold text-indigo-400 mb-2 flex items-center gap-2">
-            2. {opponentName} {statKey} emot ({opponentRole})
+            2. {opponentName} {translateStatKey(statKey)} emot ({opponentRole})
           </h5>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-indigo-500/20">
             <div className="flex justify-between">
@@ -258,13 +289,13 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
               <span>Andel {isOver ? '≥' : '<'} {lineValue} emot:</span>
               <span className="font-mono text-white">{oppHits}/{oppTotalMatches} ({oppHitRatePercent}%)</span>
             </div>
-            <div className="flex justify-between col-span-2 items-center mt-1">
+            <div className="flex justify-between col-span-2 items-start mt-1">
               <span>Senaste 5:</span>
-              {renderHits(oppLast5Hits)}
+              {renderHits(oppLast5Hits, oppLast5.map(m => m.oppVal))}
             </div>
-            <div className="flex justify-between col-span-2 items-center">
+            <div className="flex justify-between col-span-2 items-start">
               <span>Senaste 10:</span>
-              {renderHits(oppLast10Hits)}
+              {renderHits(oppLast10Hits, oppLast10.map(m => m.oppVal))}
             </div>
           </div>
         </div>
@@ -272,7 +303,7 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
         {/* 3. H2H */}
         <div>
           <h5 className="font-bold text-slate-200 mb-1 text-xs uppercase tracking-wider">
-            Inbördes möten ({period === 'ALL' ? 'Match' : period})
+            Inbördes möten ({translatePeriod(period)})
           </h5>
           <p className="text-xs text-slate-400 pl-2">
             {h2hText}

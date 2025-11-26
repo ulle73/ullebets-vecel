@@ -592,7 +592,7 @@ export function AIUserWorkspace({ defaultDate }) {
 
             {/* Combos Section */}
             {hasCombos && (
-              <div className="space-y-6 max-w-[1500px] mx-auto w-full">
+              <div className="space-y-6 max-w-4xl mx-auto w-full">
                 <div className="flex items-center justify-between">
                   <h3 className="text-2xl font-bold text-slate-200">Bästa Kombinationerna</h3>
                 </div>
