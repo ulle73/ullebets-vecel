@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import useSWR from "swr";
+import clsx from "clsx";
 import LeagueTables from "@/components/LeagueTables";
 import BacktestPage from "@/components/BacktestPage";
 import DayInsightsLegacy from "@/components/DayInsights-copy";
@@ -14,6 +15,7 @@ import AIComboList from "@/ai/components/AIComboList";
 import AIInsightsList from "@/ai/components/AIInsightsList";
 import AIPositiveLinesPanel from "@/ai/components/AIPositiveLinesPanel";
 import AIUserDatePicker from "@/ai/components/AIUserDatePicker";
+import AIHeroInput from "@/ai/components/AIHeroInput";
 import AISpinner from "@/ai/components/AISpinner";
 import { buildCombos } from "@/ai/utils/comboBuilder";
 import {
@@ -30,6 +32,7 @@ const SWR_OPTIONS = {
   revalidateIfStale: false,
   revalidateOnReconnect: false,
   dedupingInterval: 60000,
+  keepPreviousData: true,
 };
 
 function makeFormatter() {
@@ -520,194 +523,101 @@ export function AIUserWorkspace({ defaultDate }) {
     oddsRange,
     handleOddsRangeChange,
     priorityMap,
+    topOverRows,
+    topUnderRows,
+    matchupsData,
+    matchupsLoading,
+    matchupsError,
+    lineCounts,
   } = workspace;
 
-  const [showEmptyState, setShowEmptyState] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const scrollContainerRef = useRef(null);
+
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const scrollTop = scrollContainerRef.current.scrollTop;
+      setIsScrolled(scrollTop > 50);
+    }
+  };
 
   const isBusy = processing;
   const canEvaluateCombos =
     insightsActive && !isBusy && totalBacktests > 0 && completedMatchesCount >= totalBacktests;
-  const showResults = canEvaluateCombos && hasCombos;
-  const readyForCombos = canEvaluateCombos;
+  const showResults = canEvaluateCombos;
 
   const handleUserGenerate = useCallback(() => {
-    setShowEmptyState(false);
     handleGenerate();
   }, [handleGenerate]);
 
   return (
-    <>
+    <div
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+      className="flex min-h-screen flex-col bg-black text-white overflow-y-auto relative"
+      style={{ maxHeight: "calc(100vh - 4rem)" }}
+    >
+      {/* Hero Section */}
       <div
-        className="flex min-h-screen flex-col bg-black text-white overflow-y-auto"
-        style={{ maxHeight: "calc(100vh - 4rem)" }}
+        className={clsx(
+          "flex flex-col items-center transition-all duration-500 ease-in-out",
+          isScrolled ? "pt-32 pb-8" : "min-h-[60vh] justify-center pt-20 pb-12"
+        )}
       >
-        <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
-          <div className="w-full max-w-xl space-y-6">
-            <AIUserDatePicker value={date} onChange={setDate} />
-            <button
-              type="button"
-              onClick={handleUserGenerate}
-              disabled={isBusy}
-              className="ai-user-button group relative isolate flex w-full items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-emerald-400 via-emerald-200 to-indigo-500 p-[3px] text-lg font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <span
-                className="ai-border-spinner border-radius: inherit pointer-events-none absolute inset-0 bg-[conic-gradient(at_top,_#0ea5e9,_#34d399,_#a78bfa,_#0ea5e9)] opacity-80 blur-sm"
-                aria-hidden="true"
-              />
-              <span
-                className="pointer-events-none absolute inset-0 rounded-full border border-white/10 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.35),transparent_55%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.35),transparent_35%)] opacity-70 mix-blend-screen"
-                aria-hidden="true"
-              />
-              <span
-                className="ai-flow pointer-events-none absolute inset-y-0 -left-1/4 w-1/2 rounded-full bg-gradient-to-r from-white/40 via-emerald-200/40 to-transparent opacity-50 blur-2xl"
-                aria-hidden="true"
-              />
-              <span className="relative flex w-full items-center justify-center rounded-full bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 px-6 py-4 text-slate-100 shadow-[0_25px_70px_-30px_rgba(34,197,94,0.9)] transition-all duration-300 group-active:scale-[0.99]">
-                <span className="ai-flicker flex items-center justify-center gap-3 text-emerald-100">
-                  <span className="ai-sparkles relative inline-flex h-10 w-10 items-center justify-center" aria-hidden="true">
-                    <span className="ai-sparkle-star absolute right-1 top-1/2 -translate-y-1/2 text-2xl">✦</span>
-                    <span className="ai-sparkle-star absolute left-1 top-0 text-base opacity-80 -rotate-12">✦</span>
-                    <span className="ai-sparkle-star ai-sparkle-star--small absolute left-1.5 bottom-0 text-sm opacity-60 rotate-6">✦</span>
-                  </span>
-                  <span className="tracking-[0.16em]">Ai generate bets</span>
-                </span>
-              </span>
-            </button>
-            <p className="text-sm text-slate-400">{statusLabel}</p>
-            {isBusy ? <AISpinner label="Analyserar matcher" /> : null}
-          </div>
-        </div>
+        <h1
+          className={clsx(
+            "font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-500 transition-all duration-500",
+            isScrolled
+              ? "opacity-0 h-0 overflow-hidden scale-90"
+              : "text-[10rem] leading-none mb-16 opacity-100 scale-100"
+          )}
+        >
+          Ullebets
+        </h1>
 
-        {showResults ? (
-          <section className="w-full bg-black px-4 pb-12">
-            <div className="mx-auto flex max-w-4xl flex-col gap-6">
-              <AIComboControls
-                legs={comboLegs}
-                onLegChange={setComboLegs}
-                oddsRange={oddsRange}
-                onOddsRangeChange={handleOddsRangeChange}
-                disabled={!showResults}
-              />
-              <AIComboList combos={combos} priorityMap={priorityMap} />
-            </div>
-          </section>
-        ) : null}
-
-
-
-        {/* {isBusy && insightsActive ? (
-          <section className="w-full px-4 pb-12">
-            <div className="mx-auto max-w-md text-center text-sm text-slate-400">
-              <p>Vi jobbar på saken… Dina matcher analyseras i bakgrunden.</p>
-            </div>
-          </section>
-        ) : null} */}
-
-        <WorkspaceEngines {...workspace} />
+        <AIHeroInput
+          date={date}
+          setDate={setDate}
+          onGenerate={handleUserGenerate}
+          isBusy={isBusy}
+          statusLabel={statusLabel}
+          isScrolled={isScrolled}
+        />
       </div>
-      <style jsx>{`
-        .ai-border-spinner {
-          animation: aiBorderSpin 12s linear infinite;
-        }
 
-        .ai-flow {
-          animation: aiFlow 6s ease-in-out infinite;
-        }
+      {/* Results Section */}
+      {showResults && (
+        <section className="w-full px-4 pb-24 animate-in fade-in slide-in-from-bottom-8 duration-700 fill-mode-forwards">
+          <div className="mx-auto max-w-[1760px] flex flex-col gap-16">
 
-        .ai-flicker {
-          animation: aiFlicker 3.5s linear infinite;
-        }
+            {/* Combos Section */}
+            {hasCombos && (
+              <div className="space-y-6 max-w-4xl mx-auto w-full">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-2xl font-bold text-slate-200">Bästa Kombinationerna</h3>
+                </div>
+                <AIComboControls
+                  legs={comboLegs}
+                  onLegChange={setComboLegs}
+                  oddsRange={oddsRange}
+                  onOddsRangeChange={handleOddsRangeChange}
+                  disabled={!showResults}
+                />
+                <AIComboList combos={combos} priorityMap={priorityMap} />
+              </div>
+            )}
 
-        .ai-sparkle-star {
-          display: inline-block;
-          animation-name: aiSparkle;
-          animation-duration: 4.2s;
-          animation-timing-function: ease-in-out;
-          animation-iteration-count: infinite;
-          text-shadow: 0 0 10px rgba(14, 165, 233, 0.35);
-        }
+            {/* All Matches List (2 Columns) - Header Hidden */}
+            <div className="space-y-6 w-full">
+              {/* Header removed as requested */}
 
-        .ai-sparkle-star--small {
-          animation-name: aiSparkleSmall;
-        }
+              {/* AIInsightsList removed as requested */}
+            </div>
+          </div>
+        </section>
+      )}
 
-        .ai-sparkle-star:nth-child(2) {
-          animation-delay: 0.6s;
-        }
-
-        .ai-sparkle-star:nth-child(3) {
-          animation-delay: 1.1s;
-        }
-
-        @keyframes aiBorderSpin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-
-        @keyframes aiFlow {
-          0% {
-            transform: translateX(-150%);
-            opacity: 0;
-          }
-          45% {
-            opacity: 0.6;
-          }
-          100% {
-            transform: translateX(180%);
-            opacity: 0;
-          }
-        }
-
-        @keyframes aiFlicker {
-          0%,
-          16%,
-          18%,
-          42%,
-          100% {
-            opacity: 1;
-            text-shadow: 0 0 12px rgba(16, 185, 129, 0.6), 0 0 24px rgba(14, 165, 233, 0.45);
-          }
-          17%,
-          40%,
-          60% {
-            opacity: 0.7;
-            text-shadow: 0 0 6px rgba(79, 70, 229, 0.5), 0 0 14px rgba(14, 165, 233, 0.35);
-          }
-          20%,
-          55%,
-          72% {
-            opacity: 0.9;
-          }
-        }
-
-        @keyframes aiSparkle {
-          0%,
-          100% {
-            opacity: 0.4;
-            transform: scale(0.8) rotate(0deg);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.1) rotate(8deg);
-          }
-        }
-
-        @keyframes aiSparkleSmall {
-          0%,
-          100% {
-            opacity: 0.45;
-            transform: scale(0.6) rotate(0deg);
-          }
-          50% {
-            opacity: 0.95;
-            transform: scale(0.85) rotate(8deg);
-          }
-        }
-      `}</style>
-    </>
+      <WorkspaceEngines {...workspace} />
+    </div>
   );
 }

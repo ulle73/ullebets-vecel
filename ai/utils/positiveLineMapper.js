@@ -39,5 +39,26 @@ export function mapBacktestResultToLine(match, result, unibetUrl = null) {
       awayId: awayTeamId,
     },
     unibetUrl: unibetUrl ?? match.unibetUrl ?? match.raw?.unibetUrl ?? null,
+    backtest: (() => {
+      const isAway = (bet.scope ?? "total") === "away";
+      const teamHistory = isAway ? result.awayHistory : result.homeHistory;
+      const opponentHistory = isAway ? result.homeHistory : result.awayHistory;
+      
+      return {
+        ...result,
+        teamStats: {
+          avg: result.meanFor,
+          history: teamHistory || [],
+          min: undefined, // Calculated in popup
+          max: undefined  // Calculated in popup
+        },
+        opponentStats: {
+          avgConceded: result.meanAgainst,
+          history: opponentHistory || [],
+          min: undefined,
+          max: undefined
+        }
+      };
+    })(),
   };
 }
