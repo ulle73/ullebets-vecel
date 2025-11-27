@@ -105,20 +105,32 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
 
   // Calculate position relative to trigger
   useEffect(() => {
-    if (isOpen && triggerRef?.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const scrollY = window.scrollY;
+    const updatePosition = () => {
+      if (isOpen && triggerRef?.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
 
-      // Default to showing above the trigger, centered
-      let top = rect.top + scrollY - 10; // 10px gap
-      let left = rect.left + rect.width / 2;
+        // Use fixed positioning relative to viewport (no scrollY)
+        let top = rect.top - 10; // 10px gap above button
+        let left = rect.left + rect.width / 2;
 
-      // Adjust if it goes off screen (simplified logic)
-      if (left < 150) left = 150;
-      if (window.innerWidth - left < 150) left = window.innerWidth - 150;
+        // Adjust if it goes off screen
+        if (left < 200) left = 200;
+        if (window.innerWidth - left < 200) left = window.innerWidth - 200;
 
-      setPosition({ top, left });
-    }
+        setPosition({ top, left });
+      }
+    };
+
+    updatePosition();
+
+    // Update position on scroll to keep popup attached to button
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
   }, [isOpen, triggerRef]);
 
   // Close on click outside
@@ -205,8 +217,8 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
     <div className="flex gap-1.5">
       {hits.map((hit, i) => (
         <div key={i} className="flex flex-col items-center gap-0.5">
-          {hit ? <CheckIcon className="w-3 h-3 text-emerald-500" /> : <XIcon className="w-3 h-3 text-red-500" />}
-          <span className="text-[9px] text-slate-600 font-mono leading-none">
+          {hit ? <CheckIcon className="w-4 h-4 text-emerald-500" /> : <XIcon className="w-4 h-4 text-red-500" />}
+          <span className="text-[10px] text-slate-600 font-mono leading-none">
             {values[i] ?? ""}
           </span>
         </div>
@@ -285,16 +297,16 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
     return createPortal(
       <div
         ref={popupRef}
-        className="absolute z-50 w-96 -translate-x-1/2 -translate-y-full transform rounded-2xl border border-white/10 bg-[#1a1b26]/95 p-5 shadow-2xl backdrop-blur-md transition-all duration-200 animate-in fade-in zoom-in-95"
+        className="fixed z-50 w-[350px] -translate-x-1/2 -translate-y-full transform rounded-3xl border border-white/20 bg-slate-900/50 backdrop-blur-2xl p-6 shadow-2xl transition-all duration-200 animate-in fade-in zoom-in-95"
         style={{ top: position.top, left: position.left }}
       >
         {/* Header / Title */}
-        <div className="mb-4 flex items-start justify-between border-b border-white/5 pb-3">
+        <div className="mb-5 flex items-start justify-between border-b border-white/10 pb-4">
           <div>
-            <h4 className="text-base font-bold text-white leading-tight">
+            <h4 className="text-xl font-bold text-white leading-tight">
               [Match] – {isOver ? 'Över' : 'Under'} {lineValue} {translateStatKey(statKey)}
             </h4>
-            <p className="text-xs text-slate-400 mt-0.5 uppercase tracking-wide">
+            <p className="text-sm text-slate-400 mt-1 uppercase tracking-wide">
               {translatePeriod(period)}
             </p>
           </div>
@@ -310,12 +322,12 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
 
           {/* 1. Team A Match Totals */}
           <div>
-            <h5 className="font-bold text-emerald-400 mb-1 flex items-center gap-2">
+            <h5 className="font-bold text-emerald-400 mb-2 flex items-center gap-2 text-base">
               1. Totala {translateStatKey(statKey)} – {teamName} (historiskt per match)
             </h5>
-            <p className="text-xs text-slate-400 mb-2 pl-2">Summan av båda lagens {translateStatKey(statKey)} i {teamName}:s matcher</p>
+            <p className="text-sm text-slate-400 mb-3 pl-2">Summan av båda lagens {translateStatKey(statKey)} i {teamName}:s matcher</p>
 
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-emerald-500/20">
+            <div className="grid grid-cols-2 gap-x-5 gap-y-2 text-slate-300 pl-2 border-l-2 border-emerald-500/20">
               <div className="flex justify-between">
                 <span>Snitt:</span>
                 <span className="font-mono text-white">{teamAAvg}</span>
@@ -341,12 +353,12 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
 
           {/* 2. Team B Match Totals */}
           <div>
-            <h5 className="font-bold text-indigo-400 mb-1 flex items-center gap-2">
+            <h5 className="font-bold text-indigo-400 mb-2 flex items-center gap-2 text-base">
               2. Totala {translateStatKey(statKey)} – {opponentName} (historiskt per match)
             </h5>
-            <p className="text-xs text-slate-400 mb-2 pl-2">Summan av båda lagens {translateStatKey(statKey)} i {opponentName}:s matcher</p>
+            <p className="text-sm text-slate-400 mb-3 pl-2">Summan av båda lagens {translateStatKey(statKey)} i {opponentName}:s matcher</p>
 
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-indigo-500/20">
+            <div className="grid grid-cols-2 gap-x-5 gap-y-2 text-slate-300 pl-2 border-l-2 border-indigo-500/20">
               <div className="flex justify-between">
                 <span>Snitt:</span>
                 <span className="font-mono text-white">{teamBAvg}</span>
@@ -372,10 +384,10 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
 
           {/* 3. H2H */}
           <div>
-            <h5 className="font-bold text-slate-200 mb-1 text-xs uppercase tracking-wider">
-              INBÖRDES MÖTEN (HELA MATCHEN)
+            <h5 className="font-bold text-slate-200 mb-2 text-sm uppercase tracking-wider">
+              INBÖRDES MÖTEN ({translatePeriod(period)})
             </h5>
-            <p className="text-xs text-slate-400 pl-2">
+            <p className="text-sm text-slate-400 pl-2">
               {h2hText}
             </p>
           </div>
@@ -437,16 +449,16 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
     return createPortal(
       <div
         ref={popupRef}
-        className="absolute z-50 w-96 -translate-x-1/2 -translate-y-full transform rounded-2xl border border-white/10 bg-[#1a1b26]/95 p-5 shadow-2xl backdrop-blur-md transition-all duration-200 animate-in fade-in zoom-in-95"
+        className="fixed z-50 w-[350px] -translate-x-1/2 -translate-y-full transform rounded-3xl border border-white/20 bg-slate-900/50 backdrop-blur-2xl p-6 shadow-2xl transition-all duration-200 animate-in fade-in zoom-in-95"
         style={{ top: position.top, left: position.left }}
       >
         {/* Header / Title */}
-        <div className="mb-4 flex items-start justify-between border-b border-white/5 pb-3">
+        <div className="mb-5 flex items-start justify-between border-b border-white/10 pb-4">
           <div>
-            <h4 className="text-base font-bold text-white leading-tight">
+            <h4 className="text-xl font-bold text-white leading-tight">
               {teamName} – {isOver ? 'Över' : 'Under'} {lineValue} {translateStatKey(statKey)}
             </h4>
-            <p className="text-xs text-slate-400 mt-0.5 uppercase tracking-wide">
+            <p className="text-sm text-slate-400 mt-1 uppercase tracking-wide">
               {translatePeriod(period)}
             </p>
           </div>
@@ -458,14 +470,14 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
           </button>
         </div>
 
-        <div className="space-y-6 text-sm">
+        <div className="space-y-7 text-base">
 
           {/* 1. Team Stats */}
           <div>
-            <h5 className="font-bold text-emerald-400 mb-2 flex items-center gap-2">
+            <h5 className="font-bold text-emerald-400 mb-2 flex items-center gap-2 text-base">
               1. {teamName} {translateStatKey(statKey)} ({teamRole})
             </h5>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-emerald-500/20">
+            <div className="grid grid-cols-2 gap-x-5 gap-y-2 text-slate-300 pl-2 border-l-2 border-emerald-500/20">
               <div className="flex justify-between">
                 <span>Snitt:</span>
                 <span className="font-mono text-white">{teamAvg}</span>
@@ -491,10 +503,10 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
 
           {/* 2. Opponent Stats */}
           <div>
-            <h5 className="font-bold text-indigo-400 mb-2 flex items-center gap-2">
+            <h5 className="font-bold text-indigo-400 mb-2 flex items-center gap-2 text-base">
               2. {opponentName} {translateStatKey(statKey)} emot ({opponentRole})
             </h5>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-indigo-500/20">
+            <div className="grid grid-cols-2 gap-x-5 gap-y-2 text-slate-300 pl-2 border-l-2 border-indigo-500/20">
               <div className="flex justify-between">
                 <span>Snitt:</span>
                 <span className="font-mono text-white">{oppAvg}</span>
@@ -520,10 +532,10 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
 
           {/* 3. H2H */}
           <div>
-            <h5 className="font-bold text-slate-200 mb-1 text-xs uppercase tracking-wider">
+            <h5 className="font-bold text-slate-200 mb-2 text-sm uppercase tracking-wider">
               Inbördes möten ({translatePeriod(period)})
             </h5>
-            <p className="text-xs text-slate-400 pl-2">
+            <p className="text-sm text-slate-400 pl-2">
               {h2hText}
             </p>
           </div>

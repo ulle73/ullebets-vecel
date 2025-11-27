@@ -360,7 +360,12 @@ export default function AIComboList({ combos, priorityMap = {} }) {
                               e.stopPropagation();
                               handleInfoClick(combo.id, lineIndex);
                             }}
-                            className="flex items-center gap-1.5 rounded-full bg-slate-800/50 px-2 py-0.5 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+                            className={clsx(
+                              "flex items-center gap-1.5 rounded-full px-2 py-0.5 transition-all",
+                              activePopup?.key === uniqueKey
+                                ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50"
+                                : "bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-white"
+                            )}
                           >
                             <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] font-bold">i</span>
                             <span>Info</span>
