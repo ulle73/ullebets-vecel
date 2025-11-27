@@ -218,58 +218,56 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
 
   if (isTotalScope) {
     // --- TOTAL SCOPE CALCULATIONS ---
+    // For total scope, show match totals for each team separately
+    // Team A match total = val (which already contains the total for that match)
 
-    // 1. Combined FOR (Team A For + Team B For)
-    // We pair up the histories by index. This assumes roughly similar number of matches.
-    const combinedForValues = [];
-    const minLenFor = Math.min(sortedTeamHistory.length, sortedOppHistory.length);
-    for (let i = 0; i < minLenFor; i++) {
-      // Note: sortedOppHistory contains the OTHER team's stats. 
-      // m.val is what THEY created.
-      const valA = sortedTeamHistory[i].val;
-      const valB = sortedOppHistory[i].val;
-      if (typeof valA === 'number' && typeof valB === 'number') {
-        combinedForValues.push(valA + valB);
+    // 1. Team A match totals (val + oppVal = total för hela matchen)
+    const teamAMatchTotals = [];
+    for (let i = 0; i < sortedTeamHistory.length; i++) {
+      const match = sortedTeamHistory[i];
+      const teamVal = match.val;
+      const oppVal = match.oppVal;
+      if (typeof teamVal === 'number' && typeof oppVal === 'number') {
+        teamAMatchTotals.push(teamVal + oppVal); // Total för matchen
       }
     }
 
-    const combinedForAvg = calculateAverage(combinedForValues);
-    const combinedForMedian = calculateMedian(combinedForValues);
+    const teamAAvg = calculateAverage(teamAMatchTotals);
+    const teamAMedian = calculateMedian(teamAMatchTotals);
 
-    const combinedForTotalMatches = combinedForValues.length;
-    const combinedForHits = combinedForValues.filter(total => isOver ? total > lineValue : total < lineValue).length;
-    const combinedForHitRatePercent = combinedForTotalMatches > 0 ? Math.round((combinedForHits / combinedForTotalMatches) * 100) : 0;
+    const teamATotalMatches = teamAMatchTotals.length;
+    const teamAHits = teamAMatchTotals.filter(total => isOver ? total > lineValue : total < lineValue).length;
+    const teamAHitRatePercent = teamATotalMatches > 0 ? Math.round((teamAHits / teamATotalMatches) * 100) : 0;
 
-    const combinedForLast5Values = combinedForValues.slice(0, 5);
-    const combinedForLast5Hits = combinedForLast5Values.map(total => isOver ? total > lineValue : total < lineValue);
+    const teamALast5Values = teamAMatchTotals.slice(0, 5);
+    const teamALast5Hits = teamALast5Values.map(total => isOver ? total > lineValue : total < lineValue);
 
-    const combinedForLast10Values = combinedForValues.slice(0, 10);
-    const combinedForLast10Hits = combinedForLast10Values.map(total => isOver ? total > lineValue : total < lineValue);
+    const teamALast10Values = teamAMatchTotals.slice(0, 10);
+    const teamALast10Hits = teamALast10Values.map(total => isOver ? total > lineValue : total < lineValue);
 
-    // 2. Combined AGAINST (Team A Against + Team B Against)
-    const combinedAgainstValues = [];
-    const minLenAgainst = Math.min(sortedTeamHistory.length, sortedOppHistory.length);
-    for (let i = 0; i < minLenAgainst; i++) {
-      // m.oppVal is what THEY allowed.
-      const valA = sortedTeamHistory[i].oppVal;
-      const valB = sortedOppHistory[i].oppVal;
-      if (typeof valA === 'number' && typeof valB === 'number') {
-        combinedAgainstValues.push(valA + valB);
+    // 2. Team B match totals (val + oppVal = total för hela matchen)
+    const teamBMatchTotals = [];
+    for (let i = 0; i < sortedOppHistory.length; i++) {
+      const match = sortedOppHistory[i];
+      const teamVal = match.val;
+      const oppVal = match.oppVal;
+      if (typeof teamVal === 'number' && typeof oppVal === 'number') {
+        teamBMatchTotals.push(teamVal + oppVal); // Total för matchen
       }
     }
 
-    const combinedAgainstAvg = calculateAverage(combinedAgainstValues);
-    const combinedAgainstMedian = calculateMedian(combinedAgainstValues);
+    const teamBAvg = calculateAverage(teamBMatchTotals);
+    const teamBMedian = calculateMedian(teamBMatchTotals);
 
-    const combinedAgainstTotalMatches = combinedAgainstValues.length;
-    const combinedAgainstHits = combinedAgainstValues.filter(total => isOver ? total > lineValue : total < lineValue).length;
-    const combinedAgainstHitRatePercent = combinedAgainstTotalMatches > 0 ? Math.round((combinedAgainstHits / combinedAgainstTotalMatches) * 100) : 0;
+    const teamBTotalMatches = teamBMatchTotals.length;
+    const teamBHits = teamBMatchTotals.filter(total => isOver ? total > lineValue : total < lineValue).length;
+    const teamBHitRatePercent = teamBTotalMatches > 0 ? Math.round((teamBHits / teamBTotalMatches) * 100) : 0;
 
-    const combinedAgainstLast5Values = combinedAgainstValues.slice(0, 5);
-    const combinedAgainstLast5Hits = combinedAgainstLast5Values.map(total => isOver ? total > lineValue : total < lineValue);
+    const teamBLast5Values = teamBMatchTotals.slice(0, 5);
+    const teamBLast5Hits = teamBLast5Values.map(total => isOver ? total > lineValue : total < lineValue);
 
-    const combinedAgainstLast10Values = combinedAgainstValues.slice(0, 10);
-    const combinedAgainstLast10Hits = combinedAgainstLast10Values.map(total => isOver ? total > lineValue : total < lineValue);
+    const teamBLast10Values = teamBMatchTotals.slice(0, 10);
+    const teamBLast10Hits = teamBLast10Values.map(total => isOver ? total > lineValue : total < lineValue);
 
     // 3. H2H Total
     const h2hMatch = sortedTeamHistory.find(m => {
@@ -297,7 +295,7 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
               [Match] – {isOver ? 'Över' : 'Under'} {lineValue} {translateStatKey(statKey)}
             </h4>
             <p className="text-xs text-slate-400 mt-0.5 uppercase tracking-wide">
-              HELA MATCHEN
+              {translatePeriod(period)}
             </p>
           </div>
           <button
@@ -310,64 +308,64 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
 
         <div className="space-y-6 text-sm">
 
-          {/* 1. Combined FOR */}
+          {/* 1. Team A Match Totals */}
           <div>
             <h5 className="font-bold text-emerald-400 mb-1 flex items-center gap-2">
-              1. Totala {translateStatKey(statKey)} – Combined FOR (Båda lagen)
+              1. Totala {translateStatKey(statKey)} – {teamName} (historiskt per match)
             </h5>
-            <p className="text-xs text-slate-400 mb-2 pl-2">Summan av vad lagen själva skapar</p>
+            <p className="text-xs text-slate-400 mb-2 pl-2">Summan av båda lagens {translateStatKey(statKey)} i {teamName}:s matcher</p>
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-emerald-500/20">
               <div className="flex justify-between">
                 <span>Snitt:</span>
-                <span className="font-mono text-white">{combinedForAvg}</span>
+                <span className="font-mono text-white">{teamAAvg}</span>
               </div>
               <div className="flex justify-between">
                 <span>Median:</span>
-                <span className="font-mono text-white">{combinedForMedian}</span>
+                <span className="font-mono text-white">{teamAMedian}</span>
               </div>
               <div className="flex justify-between col-span-2">
-                <span>Andel {isOver ? '≥' : '<'} {lineValue}:</span>
-                <span className="font-mono text-white">{combinedForHits}/{combinedForTotalMatches} ({combinedForHitRatePercent}%)</span>
+                <span>Andel {isOver ? '>' : '≤'} {lineValue}:</span>
+                <span className="font-mono text-white">{teamAHits}/{teamATotalMatches} ({teamAHitRatePercent}%)</span>
               </div>
               <div className="flex justify-between col-span-2 items-start mt-1">
                 <span>Senaste 5:</span>
-                {renderHits(combinedForLast5Hits, combinedForLast5Values)}
+                {renderHits(teamALast5Hits, teamALast5Values)}
               </div>
               <div className="flex justify-between col-span-2 items-start">
                 <span>Senaste 10:</span>
-                {renderHits(combinedForLast10Hits, combinedForLast10Values)}
+                {renderHits(teamALast10Hits, teamALast10Values)}
               </div>
             </div>
           </div>
 
-          {/* 2. Combined AGAINST */}
+          {/* 2. Team B Match Totals */}
           <div>
             <h5 className="font-bold text-indigo-400 mb-1 flex items-center gap-2">
-              2. Totala {translateStatKey(statKey)} – Combined AGAINST (Båda lagen)
+              2. Totala {translateStatKey(statKey)} – {opponentName} (historiskt per match)
             </h5>
-            <p className="text-xs text-slate-400 mb-2 pl-2">Summan av vad lagen tillåter motståndaren att skapa</p>
+            <p className="text-xs text-slate-400 mb-2 pl-2">Summan av båda lagens {translateStatKey(statKey)} i {opponentName}:s matcher</p>
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300 pl-2 border-l-2 border-indigo-500/20">
               <div className="flex justify-between">
                 <span>Snitt:</span>
-                <span className="font-mono text-white">{combinedAgainstAvg}</span>
+                <span className="font-mono text-white">{teamBAvg}</span>
               </div>
               <div className="flex justify-between">
                 <span>Median:</span>
-                <span className="font-mono text-white">{combinedAgainstMedian}</span>
+                <span className="font-mono text-white">{teamBMedian}</span>
               </div>
               <div className="flex justify-between col-span-2">
-                <span>Andel {isOver ? '≥' : '<'} {lineValue} emot:</span>
-                <span className="font-mono text-white">{combinedAgainstHits}/{combinedAgainstTotalMatches} ({combinedAgainstHitRatePercent}%)</span>
+                <span>Andel {isOver ? '>' : '≤'} {lineValue}:</span>
+                <span className="font-mono text-white">{teamBHits}/{teamBTotalMatches} ({teamBHitRatePercent}%)</span>
               </div>
               <div className="flex justify-between col-span-2 items-start mt-1">
                 <span>Senaste 5:</span>
-                {renderHits(combinedAgainstLast5Hits, combinedAgainstLast5Values)}
+                {renderHits(teamBLast5Hits, teamBLast5Values)}
               </div>
               <div className="flex justify-between col-span-2 items-start">
                 <span>Senaste 10:</span>
-                {renderHits(combinedAgainstLast10Hits, combinedAgainstLast10Values)}
+                {renderHits(teamBLast10Hits, teamBLast10Values)}
               </div>
             </div>
           </div>
