@@ -244,6 +244,7 @@ function buildTeamLogoCandidates(teamId) {
   const base = String(numeric);
   return [
     `/images/teams/${base}.png`,
+    `/images/teams/${base}.webp`,
     `/images/teams/${base}.svg`,
     `/images/teams/${base}@2x.png`,
     "/images/teams/placeholder.png",

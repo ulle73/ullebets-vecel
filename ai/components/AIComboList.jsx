@@ -2,7 +2,7 @@
 
 import { buildLineKey } from "@/ai/utils/matchupUtils";
 import clsx from "clsx";
-import { useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AIStatsPopup from "./AIStatsPopup";
 
 function buildMatchUrlEntries(lines = []) {
@@ -22,9 +22,36 @@ function buildMatchUrlEntries(lines = []) {
   }));
 }
 
-function getTeamIconUrl(teamId) {
-  if (!teamId) return null;
-  return `/images/teams/${teamId}.png`;
+function getTeamIconCandidates(teamId) {
+  if (!teamId) return ["/images/teams/placeholder.png"];
+  const base = String(teamId);
+  return [
+    `/images/teams/${base}.png`,
+    `/images/teams/${base}.webp`,
+    `/images/teams/${base}.svg`,
+    `/images/teams/${base}@2x.png`,
+    "/images/teams/placeholder.png",
+  ];
+}
+
+function TeamIcon({ teamId, alt, className }) {
+  const candidates = useMemo(() => getTeamIconCandidates(teamId), [teamId]);
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    setIndex(0);
+  }, [candidates]);
+  const src = candidates[Math.min(index, candidates.length - 1)];
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      onError={() => {
+        setIndex((prev) => (prev < candidates.length - 1 ? prev + 1 : prev));
+      }}
+    />
+  );
 }
 
 function formatPeriodText(period) {
@@ -268,8 +295,6 @@ export default function AIComboList({ combos, priorityMap = {} }) {
               const awayTeam = line.teams?.away || "";
               const homeTeamId = line.teams?.homeId;
               const awayTeamId = line.teams?.awayId;
-              const homeIcon = getTeamIconUrl(homeTeamId);
-              const awayIcon = getTeamIconUrl(awayTeamId);
               const uniqueKey = `${combo.id}-${lineIndex}`;
 
               const description = getBetDescription(line);
@@ -293,29 +318,19 @@ export default function AIComboList({ combos, priorityMap = {} }) {
                     <div className="flex flex-col gap-3">
                       {/* Team Icons */}
                       <div className="flex items-center gap-4">
-                        {homeIcon && (
-                          <img
-                            src={homeIcon}
-                            alt={homeTeam}
-                            className="h-16 w-16 object-contain drop-shadow-lg"
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                            }}
-                          />
-                        )}
+                        <TeamIcon
+                          teamId={homeTeamId}
+                          alt={homeTeam}
+                          className="h-16 w-16 object-contain drop-shadow-lg"
+                        />
                         <span className="text-sm font-bold text-slate-500">
                           vs
                         </span>
-                        {awayIcon && (
-                          <img
-                            src={awayIcon}
-                            alt={awayTeam}
-                            className="h-16 w-16 object-contain drop-shadow-lg"
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                            }}
-                          />
-                        )}
+                        <TeamIcon
+                          teamId={awayTeamId}
+                          alt={awayTeam}
+                          className="h-16 w-16 object-contain drop-shadow-lg"
+                        />
                       </div>
 
                       {/* Description Sentence */}

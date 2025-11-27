@@ -560,8 +560,8 @@ export function AIUserWorkspace({ defaultDate }) {
       {/* Hero Section */}
       <div
         className={clsx(
-          "flex flex-col items-center transition-all duration-500 ease-in-out",
-          isScrolled ? "pt-32 pb-8" : "min-h-[60vh] justify-center pt-20 pb-12"
+          "flex flex-col items-center transition-[padding] duration-500 ease-in-out min-h-[50vh]",
+          isScrolled ? "pt-20 pb-10" : "pt-28 pb-16"
         )}
       >
         <h1

@@ -27,14 +27,18 @@ export default function AIHeroInput({
   return (
     <div
       className={clsx(
-        "transition-all duration-500 ease-in-out z-50",
-        isScrolled
-          ? "fixed top-4 left-1/2 -translate-x-1/2 w-[800px] max-w-[95vw]"
-          : "relative w-full max-w-5xl"
+        "sticky top-6 z-40 w-full max-w-5xl transition-transform duration-500 ease-out will-change-transform",
+        isScrolled ? "scale-95 translate-y-1" : "scale-100 translate-y-0"
       )}
+      style={{ transformOrigin: "top center" }}
     >
       {/* Animated Border Container */}
-      <div className={clsx("relative group rounded-full transition-all duration-500", isScrolled ? "p-[2px]" : "p-[3px]")}>
+      <div
+        className={clsx(
+          "relative group rounded-full transition-all duration-500",
+          isScrolled ? "p-[2px]" : "p-[3px]"
+        )}
+      >
         {/* The Moving Gradient Glow/Border */}
         <div
           className={clsx(

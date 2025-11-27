@@ -1,3 +1,103 @@
+# name: Daily ML Model Training
+
+# on:
+#   schedule:
+#     # Run daily at 6 AM CET (5 AM UTC)
+#     - cron: '0 5 * * *'
+  
+#   workflow_dispatch:
+#     inputs:
+#       skip_correction:
+#         description: 'Skip backtest correction (if already done)'
+#         required: false
+#         default: 'false'
+
+# jobs:
+#   train-ml-models:
+#     runs-on: ubuntu-latest
+    
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+#         with:
+#           token: ${{ secrets.GITHUB_TOKEN }}
+      
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
+#           cache: 'npm'
+      
+#       - name: Setup Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11'
+#           cache: 'pip'
+      
+#       - name: Install Node dependencies
+#         run: npm ci
+      
+#       - name: Install Python dependencies
+#         run: |
+#           cd machinelearning
+#           pip install -r requirements.txt
+      
+#       - name: Correct backtest results
+#         if: github.event.inputs.skip_correction != 'true'
+#         env:
+#           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+#           MONGODB_DB: ${{ secrets.MONGODB_DB }}
+#         run: |
+#           echo "🔧 Correcting backtest predictions with actual results..."
+#           node scripts/correct-unibet-backtest.js
+      
+#       - name: Extract training data
+#         env:
+#           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+#           MONGODB_DB: ${{ secrets.MONGODB_DB }}
+#         run: |
+#           echo "📊 Extracting training data from MongoDB..."
+#           node machinelearning/data/extract/extractTrainingData.js
+      
+#       - name: Train Tier 1 models
+#         run: |
+#           echo "🤖 Training Tier 1 models (raw features)..."
+#           cd machinelearning
+#           python models/train/tier1_trainRawFeatures.py
+      
+#       - name: Train Tier 2 models
+#         run: |
+#           echo "🤖 Training Tier 2 models (meta-learning)..."
+#           cd machinelearning
+#           python models/train/tier2_trainMetaLearner.py
+      
+#       - name: Commit and push updated models
+#         run: |
+#           git config --local user.email "github-actions[bot]@users.noreply.github.com"
+#           git config --local user.name "github-actions[bot]"
+          
+#           # Add trained models and metadata (force add to override gitignore)
+#           git add -f machinelearning/models/trained/tier1/*.json
+#           git add -f machinelearning/models/trained/tier2/*.json
+          
+#           # Check if there are changes
+#           if git diff --staged --quiet; then
+#             echo "No model changes to commit"
+#           else
+#             git commit -m "chore: update ML models - $(date +'%Y-%m-%d')"
+#             git push
+#             echo "✅ Models updated and pushed"
+#           fi
+      
+#       - name: Summary
+#         if: always()
+#         run: |
+#           echo "📊 Training Summary"
+#           echo "===================="
+#           echo "Tier 1 models: $(ls machinelearning/models/trained/tier1/*.json 2>/dev/null | wc -l)"
+#           echo "Tier 2 models: $(ls machinelearning/models/trained/tier2/*.json 2>/dev/null | wc -l)"
+#           echo "Dataset files: $(ls machinelearning/data/datasets/*.jsonl 2>/dev/null | wc -l)"
+
 name: Daily ML Model Training
 
 on:
@@ -12,6 +112,10 @@ on:
         required: false
         default: 'false'
 
+# Viktigt: ge GITHUB_TOKEN skriv-rättigheter till repo:t
+permissions:
+  contents: write
+
 jobs:
   train-ml-models:
     runs-on: ubuntu-latest
@@ -21,6 +125,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -72,9 +177,15 @@ jobs:
           python models/train/tier2_trainMetaLearner.py
       
       - name: Commit and push updated models
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          
+          # säkerställ att remote använder token (brukar funka ändå, men tydligt så här)
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git
           
           # Add trained models and metadata (force add to override gitignore)
           git add -f machinelearning/models/trained/tier1/*.json
@@ -85,7 +196,7 @@ jobs:
             echo "No model changes to commit"
           else
             git commit -m "chore: update ML models - $(date +'%Y-%m-%d')"
-            git push
+            git push origin HEAD:main
             echo "✅ Models updated and pushed"
           fi
       
