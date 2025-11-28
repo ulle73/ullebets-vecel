@@ -11,15 +11,16 @@ import {
   fetchTeamMatches,
 } from "../lib/backtest/data.js";
 import { calculateEVFromData } from "../lib/backtest/engine.js";
+import { findUnibetEventForMatch, UNIBET_EVENT_BASE_URL } from "../lib/backtest/unibetAuto.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 const LIST_VIEW_BASE_URL =
   "https://eu1.offering-api.kambicdn.com/offering/v2018/ubse/listView/football.json";
 const EVENT_ODDS_BASE_URL =
   "https://eu1.offering-api.kambicdn.com/offering/v2018/ubse/betoffer/event";
-const UNIBET_EVENT_BASE_URL = "https://www.unibet.se/betting/sports/event";
 const TIME_ZONE = "Europe/Stockholm";
 const COLLECTION_NAME = "unibet-backtest";
 const DEFAULT_FORM = "all";
@@ -45,6 +46,7 @@ const groupIdToLeagues = buildGroupIdToLeagues(leagues);
 const hasGroupIdConfig = groupIdToLeagues.size > 0;
 
 const teamDataCache = new Map();
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function normalizeTeamName(name) {
   if (!name) return "";
@@ -332,6 +334,17 @@ function buildEventOddsUrl(eventId) {
   return url.toString();
 }
 
+async function fetchFixturesByDate(dateStr) {
+  const url = `${BASE_URL}/api/matches/by-date?date=${encodeURIComponent(dateStr)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Failed to fetch fixtures: ${res.status} ${text}`);
+  }
+  const payload = await res.json();
+  return payload?.items || [];
+}
+
 async function fetchJson(url) {
   const response = await fetch(url, { headers: REQUEST_HEADERS });
   if (!response.ok) {
@@ -358,6 +371,54 @@ async function fetchEventOdds(eventId) {
   return {
     betOffers: data?.betOffers || [],
     event: data?.event || null,
+  };
+}
+
+async function mapFixtureToUnibetMatch(fx) {
+  const matchInfo = {
+    homeTeam:
+      fx.homeTeamName ||
+      fx.homeTeam?.name ||
+      fx.raw?.homeTeamName ||
+      fx.raw?.homeTeam?.name,
+    awayTeam:
+      fx.awayTeamName ||
+      fx.awayTeam?.name ||
+      fx.raw?.awayTeamName ||
+      fx.raw?.awayTeam?.name,
+    leagueName:
+      fx.leagueName ||
+      fx.league?.name ||
+      fx.tournament?.name ||
+      fx.raw?.league?.name ||
+      fx.raw?.tournament?.name,
+    timestamp:
+      fx.matchDate ||
+      fx.timestamp ||
+      fx.startTimestamp ||
+      fx.raw?.event?.start ||
+      fx.raw?.start ||
+      fx.time?.currentPeriodStart,
+  };
+
+  if (!matchInfo.homeTeam || !matchInfo.awayTeam) {
+    return null;
+  }
+
+  let found = await findUnibetEventForMatch(matchInfo);
+  if (!found) {
+    await sleep(1200);
+    found = await findUnibetEventForMatch(matchInfo, { forceRefresh: true });
+  }
+  if (!found) return null;
+
+  return {
+    eventId: String(found.eventId),
+    start: found.start || matchInfo.timestamp,
+    canonicalHome: found.homeTeam || matchInfo.homeTeam,
+    canonicalAway: found.awayTeam || matchInfo.awayTeam,
+    league: found.league || matchInfo.leagueName,
+    url: found.eventUrl || `${UNIBET_EVENT_BASE_URL}/${found.eventId}`,
   };
 }
 
@@ -672,11 +733,28 @@ async function main() {
     `✅ Kör Unibet-backtests för datum ${targetDateLabel} (${TIME_ZONE})`
   );
 
-  const events = await fetchListView();
-  console.log(`⚽️ Hämtade ${events.length} events från Unibet listView`);
+  const fixtures = await fetchFixturesByDate(targetDateLabel);
+  console.log(`📅 Hämtade ${fixtures.length} fixtures från /api/matches/by-date`);
 
-  const matches = getMatchesForDate(events, targetDate);
-  console.log(`✅ ${matches.length} matcher matchade datumet och konfigurationen`);
+  const matches = [];
+  for (const fx of fixtures) {
+    try {
+      const mapped = await mapFixtureToUnibetMatch(fx);
+      if (mapped) {
+        matches.push(mapped);
+      } else {
+        console.warn(
+          `⚠️ Hittade ingen Unibet-match för ${fx.homeTeamName || fx.homeTeam?.name} vs ${fx.awayTeamName || fx.awayTeam?.name}`
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `⚠️ Misslyckades att mappa fixture: ${err.message}`
+      );
+    }
+  }
+
+  console.log(`✅ ${matches.length} matcher hittades via auto-unibet-flödet`);
 
   if (!matches.length) {
     console.log("Inga matcher att bearbeta för valt datum.");

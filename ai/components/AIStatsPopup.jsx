@@ -281,6 +281,18 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
     const teamBLast10Values = teamBMatchTotals.slice(0, 10);
     const teamBLast10Hits = teamBLast10Values.map(total => isOver ? total > lineValue : total < lineValue);
 
+    // Blended odds for total scope: snitta träffprocent från båda lagen (totals)
+    const blendedProbTotal =
+      teamATotalMatches > 0 && teamBTotalMatches > 0
+        ? (teamAHitRatePercent / 100 + teamBHitRatePercent / 100) / 2
+        : teamATotalMatches > 0
+        ? teamAHitRatePercent / 100
+        : teamBTotalMatches > 0
+        ? teamBHitRatePercent / 100
+        : null;
+    const blendedFairOddsTotal =
+      blendedProbTotal && blendedProbTotal > 0 ? (1 / blendedProbTotal).toFixed(2) : null;
+
     // 3. H2H Total
     const h2hMatch = sortedTeamHistory.find(m => {
       if (!m.opp || !opponentName) return false;
@@ -390,6 +402,20 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
             <p className="text-sm text-slate-400 pl-2">
               {h2hText}
             </p>
+            <div className="my-3 h-px bg-white/10"></div>
+            <div className="pl-2 text-sm text-slate-300 space-y-1.5">
+              <div className="flex justify-between">
+                <span>Uppskattat korrekt odds:</span>
+                <span className="font-mono text-white">
+                  {blendedFairOddsTotal ?? "N/A"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Baserat på {teamAHits}/{teamATotalMatches} ({teamAHitRatePercent}%)
+                {" + "}
+                {teamBHits}/{teamBTotalMatches} ({teamBHitRatePercent}%) / 2
+              </p>
+            </div>
           </div>
 
         </div>
@@ -432,6 +458,16 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
 
     const oppLast10 = sortedOppHistory.slice(0, 10);
     const oppLast10Hits = oppLast10.map(m => isOver ? m.oppVal > lineValue : m.oppVal < lineValue);
+
+    // Quick blended probability from the two hit rates (falls back if only one side has data)
+    const teamHitProb = teamTotalMatches > 0 ? teamHits / teamTotalMatches : null;
+    const oppHitProb = oppTotalMatches > 0 ? oppHits / oppTotalMatches : null;
+    const combinedProb =
+      teamHitProb != null && oppHitProb != null
+        ? (teamHitProb + oppHitProb) / 2
+        : teamHitProb ?? oppHitProb;
+    const estimatedFairOdds =
+      combinedProb && combinedProb > 0 ? (1 / combinedProb).toFixed(2) : null;
 
     // H2H
     const currentOpponentName = opponentName;
@@ -538,6 +574,20 @@ export default function AIStatsPopup({ line, isOpen, onClose, triggerRef }) {
             <p className="text-sm text-slate-400 pl-2">
               {h2hText}
             </p>
+            <div className="my-3 h-px bg-white/10"></div>
+            <div className="pl-2 text-sm text-slate-300 space-y-1.5">
+              <div className="flex justify-between">
+                <span>Uppskattat korrekt odds:</span>
+                <span className="font-mono text-white">
+                  {estimatedFairOdds ?? "N/A"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Baserat på {teamHits}/{teamTotalMatches} ({teamHitRatePercent}%)
+                {" + "}
+                {oppHits}/{oppTotalMatches} ({oppHitRatePercent}%) / 2
+              </p>
+            </div>
           </div>
 
         </div>
