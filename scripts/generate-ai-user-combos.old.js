@@ -20,7 +20,7 @@ import { buildBetKey, buildComboId } from "../lib/core/keys.js";
 
 // Engines
 import { getMatchesForDateFiltered } from "../lib/engines/fixtures-engine.js";
-import { getUnibetOddsForMatch } from "../lib/engines/unibet-engine.js";
+import { getUnibetOdds ForMatch } from "../lib/engines/unibet-engine.js";
 import { calculateEvForBets, clearTeamDataCache } from "../lib/engines/ev-engine.js";
 import { filterLines, buildCombinations, assignComboNumbers } from "../lib/engines/combo-engine.js";
 
@@ -118,7 +118,7 @@ async function run() {
 
   // Step 1: Fetch matches
   const matches = await step1FetchMatches(dateStr);
-  const matchLookup = new Map(matches.map(m => [String(m.matchId), m]));
+const matchLookup= new Map(matches.map(m => [String(m.matchId), m]));
 
   // Step 2: Fetch matchups-score (AI insights)
   const matchups = await step2FetchMatchups(dateStr);
@@ -164,7 +164,7 @@ async function step1FetchMatches(dateStr) {
       homeTeamName: home,
       awayTeamName: away,
       leagueName: league,
-      matchDate: ts,
+     matchDate: ts,
     };
   }).filter(m => m.matchId); // Only keep matches with valid ID
 
@@ -481,3 +481,14 @@ async function step4CalculateEvAndBuildCombos(dateStr, { matchLookup, matchups, 
 
   console.log(`\n💾 Saving ${docs.length} combos to MongoDB...`);
   
+  const client = new MongoClient(MONGODB_URI);
+  await client.connect();
+  
+  try {
+    const db = client.db(DB_NAME);
+    await db.collection(RESULTS_COLLECTION).insertMany(docs);
+    console.log(`✓ Saved to collection: ${RESULTS_COLLECTION}`);
+  } finally {
+    await client.close();
+  }
+}
