@@ -2,7 +2,7 @@ name: Run Unibet Backtests
 
 on:
   schedule:
-    - cron: "0 5 * * *" # 06:00 Stockholm
+    - cron: "30 5 * * *" # 06:00 Stockholm
   workflow_dispatch:
     inputs:
       date:
