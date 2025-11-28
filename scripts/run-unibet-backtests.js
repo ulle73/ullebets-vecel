@@ -26,6 +26,7 @@ const COLLECTION_NAME = "unibet-backtest";
 const DEFAULT_FORM = "all";
 const DEFAULT_IMPORTANCE = 5;
 const DEFAULT_NEUTRAL = false;
+const SNAPSHOT_LIMIT = 20;
 
 const REQUEST_HEADERS = {
   "User-Agent":
@@ -335,14 +336,68 @@ function buildEventOddsUrl(eventId) {
 }
 
 async function fetchFixturesByDate(dateStr) {
-  const url = `${BASE_URL}/api/matches/by-date?date=${encodeURIComponent(dateStr)}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Failed to fetch fixtures: ${res.status} ${text}`);
+  // 1) DB: match-for-date collection
+  try {
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || "app");
+    const col = db.collection("match-for-date");
+    const doc =
+      (await col.findOne({ _id: dateStr })) ||
+      (await col.findOne({ date: dateStr }));
+
+    const candidates = [];
+    if (Array.isArray(doc?.matches)) candidates.push(...doc.matches);
+    if (Array.isArray(doc?.full)) {
+      for (const entry of doc.full) {
+        if (Array.isArray(entry?.matches)) candidates.push(...entry.matches);
+        else if (entry?.match) candidates.push(entry.match);
+      }
+    }
+    if (Array.isArray(doc?.sources)) {
+      for (const src of doc.sources) {
+        if (Array.isArray(src?.matches)) candidates.push(...src.matches);
+      }
+    }
+
+    if (candidates.length) {
+      console.log(`📄 Fixtures från DB match-for-date (${candidates.length})`);
+      return candidates;
+    }
+  } catch (err) {
+    console.warn(`⚠️ Kunde inte hämta fixtures från match-for-date: ${err.message}`);
   }
-  const payload = await res.json();
-  return payload?.items || [];
+
+  // 2) API via BASE_URL (om satt)
+  if (BASE_URL) {
+    try {
+      const url = `${BASE_URL}/api/matches/by-date?date=${encodeURIComponent(dateStr)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const payload = await res.json();
+        const items = payload?.items || [];
+        if (items.length) {
+          console.log(`📡 Fixtures från API /matches/by-date (${items.length})`);
+          return items;
+        }
+      } else {
+        const text = await res.text().catch(() => "");
+        console.warn(`⚠️ API /matches/by-date misslyckades: ${res.status} ${text}`);
+      }
+    } catch (err) {
+      console.warn(`⚠️ API /matches-by-date fel: ${err.message}`);
+    }
+  }
+
+  // 3) Fallback: Unibet listView events
+  const events = await fetchListView();
+  console.log(`⚽️ Hämtade ${events.length} events från Unibet listView (fallback)`);
+  return events.map((ev) => ({
+    homeTeamName: ev.homeName,
+    awayTeamName: ev.awayName,
+    leagueName: extractLeagueName(ev),
+    matchDate: ev.start,
+    raw: { event: ev },
+  }));
 }
 
 async function fetchJson(url) {
@@ -704,9 +759,19 @@ async function processMatch(match, collection) {
     lines,
   };
 
+  const snapshot = {
+    type: "backtest",
+    runDate: matchDate,
+    fetchedAt: new Date(),
+    lines,
+  };
+
   await collection.updateOne(
     { _id: slug },
-    { $set: payload },
+    {
+      $set: payload,
+      $push: { snapshots: { $each: [snapshot], $slice: -SNAPSHOT_LIMIT } },
+    },
     { upsert: true }
   );
 
@@ -733,8 +798,26 @@ async function main() {
     `✅ Kör Unibet-backtests för datum ${targetDateLabel} (${TIME_ZONE})`
   );
 
-  const fixtures = await fetchFixturesByDate(targetDateLabel);
-  console.log(`📅 Hämtade ${fixtures.length} fixtures från /api/matches/by-date`);
+  let fixtures = [];
+  try {
+    fixtures = await fetchFixturesByDate(targetDateLabel);
+    console.log(`📅 Hämtade ${fixtures.length} fixtures från /api/matches/by-date`);
+  } catch (err) {
+    console.warn(
+      `⚠️ Kunde inte hämta fixtures från BASE_URL (${BASE_URL || "saknas"}): ${err.message}`
+    );
+    console.warn("⚠️ Fallback: hämtar events från Unibet listView");
+    const events = await fetchListView();
+    console.log(`⚽️ Hämtade ${events.length} events från Unibet listView`);
+    // Konvertera events -> fixtures-lik struktur för auto-matchning
+    fixtures = events.map((ev) => ({
+      homeTeamName: ev.homeName,
+      awayTeamName: ev.awayName,
+      leagueName: extractLeagueName(ev),
+      matchDate: ev.start,
+      raw: { event: ev },
+    }));
+  }
 
   const matches = [];
   for (const fx of fixtures) {

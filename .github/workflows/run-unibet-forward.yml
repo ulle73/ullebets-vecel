@@ -1,0 +1,29 @@
+name: Run Unibet Forward Backtests
+
+on:
+  schedule:
+    - cron: "20 5 * * *" # 06:20 Stockholm (forward sweep 7/5/3 dagar)
+  workflow_dispatch: {}
+
+jobs:
+  unibet-forward-backtests:
+    runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+      BASE_URL: ${{ secrets.BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run forward backtests (7/5/3 dagar framåt)
+        run: node scripts/run-unibet-forward-backtests.js

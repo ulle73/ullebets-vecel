@@ -1,0 +1,46 @@
+name: Run Unibet Closing Odds
+
+on:
+  schedule:
+    # Vardagar (mån-fre): var 15:e minut från 18:15–23:45 UTC (≈ 19:15–00:45 SE)
+    - cron: "15 18-23/1 * * 1-5"
+    - cron: "30 18-23/1 * * 1-5"
+    - cron: "45 18-23/1 * * 1-5"
+    - cron: "00 19-23/1 * * 1-5"
+    - cron: "15 19-23/1 * * 1-5"
+    - cron: "30 19-23/1 * * 1-5"
+    - cron: "45 19-23/1 * * 1-5"
+    - cron: "00 0 * * 2-6"  # täcker upp 00:00 UTC tis-lör (≈01:00 SE)
+
+    # Helger (lör-sön): var 15:e minut från 12:30–23:45 UTC (≈ 13:30–00:45 SE)
+    - cron: "30 12-23/1 * * 6,0"
+    - cron: "45 12-23/1 * * 6,0"
+    - cron: "00 13-23/1 * * 6,0"
+    - cron: "15 13-23/1 * * 6,0"
+    - cron: "30 13-23/1 * * 6,0"
+    - cron: "45 13-23/1 * * 6,0"
+    - cron: "00 0 * * 7,1"  # täcker upp 00:00 UTC sön-mån (≈01:00 SE)
+  workflow_dispatch: {}
+
+jobs:
+  unibet-closing:
+    runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+      BASE_URL: ${{ secrets.BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run closing odds
+        run: node scripts/run-unibet-closing.js
