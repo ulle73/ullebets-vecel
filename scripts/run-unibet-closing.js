@@ -130,6 +130,33 @@ function slugify(value) {
     .replace(/^-+|-+$/g, "");
 }
 
+function buildBetKey({
+  matchId,
+  homeTeam,
+  awayTeam,
+  stat,
+  scope,
+  period,
+  line,
+  over,
+  form,
+  neutralGround,
+}) {
+  const parts = [
+    matchId != null ? String(matchId) : "",
+    String(homeTeam || "").toLowerCase().trim(),
+    String(awayTeam || "").toLowerCase().trim(),
+    stat ?? "",
+    scope ?? "total",
+    period ?? "ALL",
+    over ? "over" : "under",
+    Number(line),
+    form ?? "",
+    neutralGround ? "N" : "H",
+  ];
+  return parts.join("|");
+}
+
 function formatDateInZone(dateLike, timeZone = TIME_ZONE) {
   const date = new Date(dateLike);
   const parts = new Intl.DateTimeFormat("sv-SE", {
@@ -226,6 +253,16 @@ async function fetchEventOdds(eventId) {
 }
 
 async function mapFixtureToUnibetMatch(fx) {
+  const matchId =
+    fx.matchId ||
+    fx.id ||
+    fx.match_id ||
+    fx.raw?.matchId ||
+    fx.raw?.match_id ||
+    fx.raw?.event?.id ||
+    fx.raw?.eventId ||
+    null;
+
   const matchInfo = {
     homeTeam:
       fx.homeTeamName ||
@@ -265,6 +302,7 @@ async function mapFixtureToUnibetMatch(fx) {
 
   return {
     eventId: String(found.eventId),
+    matchId,
     start: found.start || matchInfo.timestamp,
     canonicalHome: found.homeTeam || matchInfo.homeTeam,
     canonicalAway: found.awayTeam || matchInfo.awayTeam,
@@ -402,6 +440,18 @@ async function processMatch(match, collection, meta) {
         const evDetails = collectEvDetails(result);
         const value = resolvePrimaryEvValue(evDetails);
         lines.push({
+          betKey: buildBetKey({
+            matchId: match.matchId,
+            homeTeam: match.canonicalHome,
+            awayTeam: match.canonicalAway,
+            stat: statKey,
+            scope,
+            period,
+            line,
+            over: direction === "over",
+            form: DEFAULT_FORM,
+            neutralGround: DEFAULT_NEUTRAL,
+          }),
           statKey,
           line,
           condition,
@@ -443,6 +493,7 @@ async function processMatch(match, collection, meta) {
   const baseFields = {
     slug,
     eventId: match.eventId,
+    matchId: match.matchId || null,
     matchDate,
     url: match.url,
     league: match.league,
