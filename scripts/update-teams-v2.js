@@ -17,6 +17,10 @@ if (!process.env.VERCEL) {
   dotenv.config({ path: ".env.local" });
 }
 
+// Shared utilities
+import { normalizeKey } from "../lib/core/normalization.js";
+import { ymdUTC, addDaysUTC, parseYmdStrict } from "../lib/utils/date.js";
+
 async function getDbClientOrNull() {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -230,15 +234,6 @@ const MATCH_UPDATE_FIELDS = [
   ...SCORE_FIELD_NAMES,
 ];
 
-const normalizeKey = (value) => {
-  if (typeof value !== "string") return null;
-
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "");
-};
 
 const toNumber = (value) => {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -699,29 +694,6 @@ const resolveStartTimestamp = (event, normalizedEvent) => {
   return Math.floor(Date.now() / 1000);
 };
 
-const ymdUTC = (date) => {
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const addDaysUTC = (date, days) => {
-  const copy = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
-  );
-  copy.setUTCDate(copy.getUTCDate() + days);
-  return copy;
-};
-
-const parseYmdStrict = (value) => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return null;
-  const [year, month, day] = value
-    .split("-")
-    .map((segment) => parseInt(segment, 10));
-  const dt = new Date(Date.UTC(year, month - 1, day));
-  return ymdUTC(dt) === value ? dt : null;
-};
 
 const readLastRunInfo = async () => {
   try {
