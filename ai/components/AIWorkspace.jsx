@@ -7,7 +7,7 @@ import LeagueTables from "@/components/LeagueTables";
 import BacktestPage from "@/components/BacktestPage";
 import DayInsightsLegacy from "@/components/DayInsights-copy";
 import DayInsights from "@/components/DayInsights-copy-v2";
-import { normalizeMatch } from "@/components/LeagueTable";
+import { normalizeMatch } from "@/lib/core/matchups";
 import { buildMatchesByDateKey } from "@/lib/utils/apiKeys";
 import { fetchJson } from "@/lib/utils/fetchers";
 import AIComboControls from "@/ai/components/AIComboControls";

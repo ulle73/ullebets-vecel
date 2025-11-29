@@ -6,6 +6,7 @@ import crypto from "node:crypto";
 
 import { clientPromise } from "../lib/db.js";
 import { getMatchesForDate } from "../lib/repos/fixtures.js";
+import { normalizeMatch } from "../lib/core/matchups.js";
 
 const PERIODS = [
   { value: "ALL", label: "Hela matchen" },
@@ -172,111 +173,6 @@ function toScoreValue(value) {
   return null;
 }
 
-function normalizeMatch(item) {
-  if (!item) return null;
-  const id = String(
-    pick(
-      item,
-      ["id", "matchId", "event.id", "event.matchId"],
-      crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)
-    )
-  );
-
-  const leagueId = toPositiveInt(
-    pick(item, [
-      "tournament.uniqueTournament.id",
-      "uniqueTournament.id",
-      "tournament.id",
-      "event.tournament.uniqueTournament.id",
-      "event.tournament.id",
-    ])
-  );
-
-  const leagueName =
-    pick(item, ["tournament.name", "event.tournament.name", "league.name"]) ??
-    "Unknown";
-
-  const homeTeamId = toPositiveInt(
-    pick(item, ["homeTeam.id", "event.homeTeam.id", "home.id", "teams.home.id"])
-  );
-  const awayTeamId = toPositiveInt(
-    pick(item, ["awayTeam.id", "event.awayTeam.id", "away.id", "teams.away.id"])
-  );
-
-  const homeTeamName =
-    pick(item, [
-      "homeTeam.name",
-      "event.homeTeam.name",
-      "home.name",
-      "teams.home.name",
-    ]) ?? "—";
-  const awayTeamName =
-    pick(item, [
-      "awayTeam.name",
-      "event.awayTeam.name",
-      "away.name",
-      "teams.away.name",
-    ]) ?? "—";
-
-  const timestamp = Number(
-    pick(item, [
-      "startTimestamp",
-      "event.startTimestamp",
-      "timestamp",
-      "kickoffTime",
-    ])
-  );
-  const safeTimestamp = Number.isFinite(timestamp) ? timestamp : null;
-
-  return {
-    id,
-    matchId: id,
-    leagueId,
-    leagueName,
-    homeTeamId,
-    awayTeamId,
-    homeTeamName,
-    awayTeamName,
-    timestamp: safeTimestamp,
-    raw: item,
-    homeScore: toScoreValue(
-      pick(item, [
-        "homeScore",
-        "homeScore.current",
-        "homeScore.display",
-        "homeScore.total",
-        "event.homeScore",
-        "event.homeScore.current",
-        "event.homeScore.display",
-        "event.homeScore.total",
-        "score.home",
-        "scores.home",
-        "event.score.home",
-        "event.scores.home",
-        "result.home",
-        "event.result.home",
-      ])
-    ),
-    awayScore: toScoreValue(
-      pick(item, [
-        "awayScore",
-        "awayScore.current",
-        "awayScore.display",
-        "awayScore.total",
-        "event.awayScore",
-        "event.awayScore.current",
-        "event.awayScore.display",
-        "event.awayScore.total",
-        "score.away",
-        "scores.away",
-        "event.score.away",
-        "event.scores.away",
-        "result.away",
-        "event.result.away",
-      ])
-    ),
-  };
-}
 
 // ---- Range additions (minimala) ----
 function resolveDateArg() {

@@ -6,7 +6,7 @@
     buildMatchesByDateKey,
     buildTeamProfileKeyForMatch,
   } from "@/lib/utils/apiKeys";
-  import { normalizeMatch } from "@/components/LeagueTable";
+  import { normalizeMatch } from "@/lib/core/matchups";
   import { PROFILE_STATS, formatValue } from "@/components/TeamCompare";
 
   // Ny konfig: map { key: "Svensk etikett" }
