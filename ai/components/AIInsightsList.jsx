@@ -1,6 +1,7 @@
 "use client";
 
-import { buildLineKey, buildMatchLabelSignature } from "@/ai/utils/matchupUtils";
+import { buildLineKey } from "@/lib/core/keys";
+import { buildMatchLabelSignature } from "@/ai/utils/matchupUtils";
 
 const toDirection = (row) => {
   const value = (row.condition ?? row.direction ?? "").toString().toLowerCase();

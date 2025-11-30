@@ -16,16 +16,16 @@ import { DateTime } from "luxon";
 import { MongoClient } from "mongodb";
 
 // Core utilities
-import { buildBetKey, buildComboId } from "../lib/core/keys.js";
+import { buildBetKey, buildComboId, buildLineKey } from "../lib/core/keys.js";
 
 // Engines
 import { getMatchesForDateFiltered } from "../lib/engines/fixtures-engine.js";
 import { getUnibetOddsForMatch } from "../lib/engines/unibet-engine.js";
 import { calculateEvForBets, clearTeamDataCache } from "../lib/engines/ev-engine.js";
-import { filterLines, buildCombinations, assignComboNumbers } from "../lib/engines/combo-engine.js";
 
 // Shared utilities
 import { getFormulaConfig } from "../lib/backtest/formulaConfig.js";
+import { clientPromise } from "../lib/db.js";
 
 // ===== CONFIGURATION =====
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
@@ -54,16 +54,16 @@ function normalizeStringId(value) {
   return String(value);
 }
 
-function buildLineKey(line = {}) {
-  const parts = [
-    normalizeStringId(line.matchId),
-    line.statKey ?? "",
-    line.period ?? "ALL",
-    line.scope ?? "total",
-    line.direction ?? "over",
-  ];
-  return parts.join("|");
-}
+// function buildLineKey(line = {}) {
+//   const parts = [
+//     normalizeStringId(line.matchId),
+//     line.statKey ?? "",
+//     line.period ?? "ALL",
+//     line.scope ?? "total",
+//     line.direction ?? "over",
+//   ];
+//   return parts.join("|");
+// }
 
 function buildLineKeyFromRow(row = {}) {
   const direction = (row.condition ?? row.direction ?? "")
@@ -129,9 +129,9 @@ async function run() {
   // Step 4: Calculate EV and build combos
   await step4CalculateEvAndBuildCombos(dateStr, { matchLookup, matchups, bets });
 
-  // Cleanup
+  // Final cleanup
   clearTeamDataCache();
-  
+
   console.log("\n✅ AI combo generation complete!\n");
 }
 
@@ -226,8 +226,9 @@ async function step3GetUnibetOdds(dateStr, { matches, matchLookup, matchups }) {
   let successCount = 0;
   let failureCount = 0;
 
-  for (const match of targetMatches) {
-    console.log(`  → ${match.homeTeamName} vs ${match.awayTeamName}`);
+  for (let i = 0; i < targetMatches.length; i++) {
+    const match = targetMatches[i];
+    console.log(`  → [${i + 1}/${targetMatches.length}] ${match.homeTeamName} vs ${match.awayTeamName}`);
 
     try {
       // Use engine to get odds (follows exact mainpage flow)
@@ -246,7 +247,7 @@ async function step3GetUnibetOdds(dateStr, { matches, matchLookup, matchups }) {
       // Build bets from tuples (over/under)
       tuples.forEach((tuple) => {
         const { statKey, scope, period, line, odds } = tuple;
-        
+
         if (odds.over && odds.over > 1) {
           allBets.push({
             matchId: match.matchId,
@@ -265,7 +266,7 @@ async function step3GetUnibetOdds(dateStr, { matches, matchLookup, matchups }) {
             leagueName: match.leagueName,
           });
         }
-        
+
         if (odds.under && odds.under > 1) {
           allBets.push({
             matchId: match.matchId,
@@ -285,6 +286,10 @@ async function step3GetUnibetOdds(dateStr, { matches, matchLookup, matchups }) {
           });
         }
       });
+
+      // Clear cache after each match to prevent memory issues
+      clearTeamDataCache();
+
     } catch (error) {
       console.error(`    ❌ Failed: ${error.message}`);
       failureCount++;
@@ -403,81 +408,68 @@ async function step4CalculateEvAndBuildCombos(dateStr, { matchLookup, matchups, 
 
   console.log(`  ✓ Insight-matched lines: ${insightLines.length}`);
 
-  // Build combos using engine
-  console.log("\n  → Building combos...");
-  
-  const singles = buildCombinations(insightLines, {
-    minCombos: 1,
-    maxCombos: 1,
-    maxTotal: 100,
+  console.log(`  ✓ Found ${insightLines.length} insight-matched +EV lines`);
+
+  // Prepare individual bet documents for MongoDB
+  const betDocuments = insightLines.map((line, index) => {
+    const betKey = line.betKey;
+    const match = matchLookup.get(String(line.matchId));
+
+    return {
+      id: betKey,
+      matchId: line.matchId,
+      lines: [{
+        betKey,
+        matchId: line.matchId,
+        homeTeamName: line.homeTeamName,
+        awayTeamName: line.awayTeamName,
+        leagueName: line.leagueName,
+        statKey: line.statKey,
+        scope: line.scope,
+        direction: line.direction,
+        period: line.period,
+        line: line.line,
+        odds: line.odds,
+        primaryEv: line.primaryEv,
+        evPct: line.evPct,
+        evPctMultifactor: line.evPctMultifactor,
+        evPctLeagueAvg: line.evPctLeagueAvg,
+        evPctWithMultiplier: line.evPctWithMultiplier,
+        legacyEvPct: line.legacyEvPct,
+        evPctUniversalOptimized: line.evPctUniversalOptimized,
+        matchupScore: line.matchupScore,
+        actual: line.actual ?? null,
+        win: line.win ?? null,
+        closingOdds: null,
+        beatClosing: null,
+      }],
+      totalEv: line.primaryEv,
+      legs: 1,
+      comboNumber: index + 1,
+      date: dateStr,
+      generatedAt: new Date(),
+      source: SOURCE,
+    };
   });
-  
-  const doubles = buildCombinations(insightLines, {
-    minCombos: 2,
-    maxCombos: 2,
-    maxTotal: 50,
-  });
-  
-  const triples = buildCombinations(insightLines, {
-    minCombos: 3,
-    maxCombos: 3,
-    maxTotal: 50,
-  });
 
-  // Assign combo numbers
-  const numberedSingles = assignComboNumbers(singles, 'avgEv').map((c, idx) => ({ ...c, legs: 1, comboNumber: idx + 1 }));
-  const numberedDoubles = assignComboNumbers(doubles, 'avgEv').map((c, idx) => ({ ...c, legs: 2, comboNumber: idx + 1 }));
-  const numberedTriples = assignComboNumbers(triples, 'avgEv').map((c, idx) => ({ ...c, legs: 3, comboNumber: idx + 1 }));
+  // Save to ai-generated-bets collection
+  console.log(`\n💾 Saving ${betDocuments.length} individual bets to ai-generated-bets collection...`);
 
-  const allCombos = [...numberedSingles, ...numberedDoubles, ...numberedTriples];
+  if (betDocuments.length > 0) {
+    try {
+      const client = await clientPromise;
+      const db = client.db(process.env.MONGODB_DB || 'app');
+      const collection = db.collection('ai-generated-bets');
 
-  console.log(`  ✓ Singles: ${numberedSingles.length}`);
-  console.log(`  ✓ Doubles: ${numberedDoubles.length}`);
-  console.log(`  ✓ Triples: ${numberedTriples.length}`);
-  console.log(`  ✓ Total combos: ${allCombos.length}`);
-
-  if (allCombos.length === 0) {
-    console.log("\nℹ️ No combos to save.");
-    return;
+      const result = await collection.insertMany(betDocuments);
+      console.log(`  ✓ Successfully saved ${result.insertedCount} bets`);
+    } catch (error) {
+      console.error(`  ❌ Failed to save bets: ${error.message}`);
+    }
+  } else {
+    console.log(`  ℹ️ No bets to save`);
   }
 
-  // Prepare documents for MongoDB
-  const docs = allCombos.map(combo => ({
-    ...combo,
-    date: dateStr,
-    generatedAt: new Date(),
-    source: SOURCE,
-    lines: combo.lines.map(l => ({
-      betKey: l.betKey ?? makeLineId(l),
-      matchId: l.matchId,
-      homeTeamName: l.homeTeamName,
-      awayTeamName: l.awayTeamName,
-      leagueName: l.leagueName,
-      statKey: l.statKey,
-      scope: l.scope,
-      direction: l.direction,
-      period: l.period,
-      line: l.line,
-      odds: l.odds,
-      primaryEv: l.primaryEv,
-      evPct: l.evPct,
-      evPctMultifactor: l.evPctMultifactor,
-      evPctLeagueAvg: l.evPctLeagueAvg,
-      evPctWithMultiplier: l.evPctWithMultiplier,
-      legacyEvPct: l.legacyEvPct,
-      evPctUniversalOptimized: l.evPctUniversalOptimized,
-      matchupScore: l.matchupScore,
-      actual: l.actual ?? null,
-      win: l.win ?? null,
-    })),
-  }));
-
-  // Save to MongoDB
-  if (!MONGODB_URI) {
-    console.log("\n⚠️ No MONGODB_URI, skipping DB save.");
-    console.log("Preview first combo:", docs[0]);
-    return;
-  }
-
-  console.log(`\n💾 Saving ${docs.length} combos to MongoDB...`);
+  console.log(`\n✅ AI generation complete - saved ${betDocuments.length} individual bets`);
+}
   

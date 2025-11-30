@@ -1,7 +1,7 @@
 "use strict";
 
 import { canAddLineToCombo } from "@/ai/rules/comboRuleGuard";
-import { buildLineKey } from "@/ai/utils/matchupUtils";
+import { buildLineKey } from "@/lib/core/keys";
 
 const DEFAULTS = {
   legs: 2,

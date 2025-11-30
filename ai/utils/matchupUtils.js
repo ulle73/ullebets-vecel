@@ -42,16 +42,6 @@ export function buildMatchupKey(entry = {}) {
   return parts.join("|");
 }
 
-export function buildLineKey(line = {}) {
-  const parts = [
-    normalizeStringId(line.matchId),
-    line.statKey ?? "",
-    line.period ?? "ALL",
-    line.scope ?? "total",
-    line.direction ?? "over",
-  ];
-  return parts.join("|");
-}
 
 export function buildMatchLabelSignature(line = {}) {
   const parts = [

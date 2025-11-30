@@ -18,14 +18,9 @@ import AIUserDatePicker from "@/ai/components/AIUserDatePicker";
 import AIHeroInput from "@/ai/components/AIHeroInput";
 import AISpinner from "@/ai/components/AISpinner";
 import { buildCombos } from "@/ai/utils/comboBuilder";
-import {
-  buildLineKey,
-  buildMatchLookup,
-  buildMatchupKey,
-  buildMatchLabelSignature,
-} from "@/ai/utils/matchupUtils";
+import { buildLineKey, buildBetKey } from "@/lib/core/keys";
+import { buildMatchLookup, buildMatchupKey, buildMatchLabelSignature } from "@/ai/utils/matchupUtils";
 import { mapBacktestResultToLine } from "@/ai/utils/positiveLineMapper";
-import { saveGeneratedResults, loadGeneratedResults } from "@/ai/utils/aiStorageUtils";
 
 const SWR_OPTIONS = {
   revalidateOnFocus: false,
@@ -78,6 +73,8 @@ function useWorkspaceController(defaultDate) {
   const matches = useMemo(() => items.map(normalizeMatch), [items]);
   const matchLookup = useMemo(() => buildMatchLookup(matches), [matches]);
 
+  // DISABLED: We now use backend API, no need to load from localStorage
+  /*
   // Load saved results from localStorage when date changes
   useEffect(() => {
     if (!date) return;
@@ -99,6 +96,7 @@ function useWorkspaceController(defaultDate) {
 
     setIsLoadingFromStorage(false);
   }, [date]);
+  */
 
   useEffect(() => {
     if (!selectedMatchId) {
@@ -191,6 +189,8 @@ function useWorkspaceController(defaultDate) {
 
   const positiveLines = useMemo(() => Object.values(positiveLineMap).flat(), [positiveLineMap]);
 
+  // DISABLED: API now handles persistence to MongoDB
+  /*
   // Save results to localStorage when generation is complete
   useEffect(() => {
     if (!date || !insightsActive || matchupsLoading || !matchupsData) {
@@ -211,6 +211,7 @@ function useWorkspaceController(defaultDate) {
       });
     }
   }, [date, insightsActive, matchupsLoading, matchupsData, targetMatches, completedMatches, positiveLineMap, topOverRows, topUnderRows]);
+  */
 
   const lineCounts = useMemo(() => {
     const map = new Map();
@@ -288,12 +289,60 @@ function useWorkspaceController(defaultDate) {
     });
   }, []);
 
-  const handleGenerate = useCallback(() => {
-    // Clear current state and start fresh generation
+  const handleGenerate = useCallback(async () => {
+    // Clear current state
     setPositiveLineMap({});
     setCompletedMatches({});
     setRunToken((token) => token + 1);
-  }, []);
+
+    try {
+      console.log('[AI Generate] Calling backend API...');
+
+      // Call backend API to generate bets
+      const response = await fetch('/api/ai/generate-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate bets');
+      }
+
+      const result = await response.json();
+      console.log('[AI Generate] API response:', result);
+
+      // Transform API response to frontend format
+      if (result.bets && Array.isArray(result.bets)) {
+        const newLineMap = {};
+        result.bets.forEach(bet => {
+          const matchKey = bet.matchId;
+          if (!newLineMap[matchKey]) {
+            newLineMap[matchKey] = [];
+          }
+          // Extract lines from bet document
+          if (bet.lines && Array.isArray(bet.lines)) {
+            newLineMap[matchKey].push(...bet.lines);
+          }
+        });
+
+        setPositiveLineMap(newLineMap);
+
+        // Mark all matches as completed
+        const completed = {};
+        Object.keys(newLineMap).forEach(key => {
+          completed[key] = true;
+        });
+        setCompletedMatches(completed);
+
+        console.log('[AI Generate] Success! Loaded', Object.keys(newLineMap).length, 'matches');
+      }
+    } catch (error) {
+      console.error('[AI Generate] Error:', error);
+      alert(`Failed to generate bets: ${error.message}`);
+    }
+  }, [date]);
 
   const totalBacktests = targetMatches.length;
   const completedMatchesCount = useMemo(
@@ -500,7 +549,8 @@ export default function AIWorkspace({ defaultDate }) {
         </div>
       </div>
 
-      <WorkspaceEngines {...workspace} />
+      {/* DISABLED: We now use backend /api/ai/generate-user instead of client-side backtesting */}
+      {/* <WorkspaceEngines {...workspace} /> */}
     </div>
   );
 }
@@ -617,7 +667,8 @@ export function AIUserWorkspace({ defaultDate }) {
         </section>
       )}
 
-      <WorkspaceEngines {...workspace} />
+      {/* DISABLED: We now use backend API, no need for client-side backtesting */}
+      {/* <WorkspaceEngines {...workspace} /> */}
     </div>
   );
 }

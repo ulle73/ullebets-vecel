@@ -1,6 +1,6 @@
 "use client";
 
-import { buildLineKey } from "@/ai/utils/matchupUtils";
+import { buildLineKey } from "@/lib/core/keys";
 import clsx from "clsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import AIStatsPopup from "./AIStatsPopup";
