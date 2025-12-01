@@ -640,6 +640,8 @@ export function AIUserWorkspace({ defaultDate }) {
     handleGenerate();
   }, [handleGenerate]);
 
+  const hasLines = (positiveLines?.length ?? 0) > 0;
+
   return (
     <div
       ref={scrollContainerRef}
@@ -681,7 +683,7 @@ export function AIUserWorkspace({ defaultDate }) {
           <div className="mx-auto max-w-[1760px] flex flex-col gap-16">
 
             {/* Combos Section */}
-            {hasCombos && (
+            {(hasCombos || hasLines) && (
               <div className="space-y-6 max-w-4xl mx-auto w-full">
                 <div className="flex items-center justify-between">
                   <h3 className="text-2xl font-bold text-slate-200">Bästa Kombinationerna</h3>
@@ -693,19 +695,27 @@ export function AIUserWorkspace({ defaultDate }) {
                   onOddsRangeChange={handleOddsRangeChange}
                   disabled={!showResults}
                 />
-                <AIComboList combos={combos} priorityMap={priorityMap} />
+                {hasCombos ? (
+                  <AIComboList combos={combos} priorityMap={priorityMap} />
+                ) : (
+                  <div className="rounded border border-slate-800/60 bg-slate-950/60 px-4 py-3 text-sm text-slate-400">
+                    Inga kombinationer inom oddsintervallet — justera filter eller använd enskilda spel nedan.
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Always show selected linor even om inga combos uppfyller odds/ben-kraven */}
-            <div className="space-y-3 max-w-4xl mx-auto w-full">
-              {!hasCombos && (
-                <p className="text-sm text-slate-400">
-                  Inga kombinationer inom oddsintervallet — visar valda linor i stället.
-                </p>
-              )}
-              <AIPositiveLinesPanel lines={positiveLines} />
-            </div>
+            {/* Always show selected linor */}
+            {hasLines && (
+              <div className="space-y-3 max-w-4xl mx-auto w-full">
+                {!hasCombos && (
+                  <p className="text-sm text-slate-400">
+                    Inga kombinationer inom oddsintervallet — visar valda linor i stället.
+                  </p>
+                )}
+                <AIPositiveLinesPanel lines={positiveLines} />
+              </div>
+            )}
 
             {/* All Matches List (2 Columns) - Header Hidden */}
             <div className="space-y-6 w-full">
