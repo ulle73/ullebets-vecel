@@ -22,6 +22,7 @@ import { calculateWMA } from './utils.js';
 import { calculateHistoricalWinRates } from './calculateWinRates.js';
 import fs from 'fs/promises';
 import path from 'path';
+import { toDateStr, toDate } from '../../../lib/core/date.js';
 
 // Load environment variables
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
@@ -100,7 +101,12 @@ export async function extractTrainingData() {
   const datasets = {};
   
   for (const match of matches) {
-    const matchDate = new Date(match.matchDate);
+    const matchDateStr = toDateStr(match.matchDate || match.timestamp);
+    const matchDate = toDate(matchDateStr);
+    if (!matchDate) {
+      console.log(`Processing: ${match.homeTeam} vs ${match.awayTeam} (invalid matchDate: ${match.matchDate ?? match.timestamp ?? ''}) - skipped`);
+      continue;
+    }
     const homeTeam = match.homeTeam;
     const awayTeam = match.awayTeam;
     
@@ -109,7 +115,7 @@ export async function extractTrainingData() {
     if (matchDate < TRAIN_END_DATE) split = 'train';
     else if (matchDate < VAL_END_DATE) split = 'val';
     
-    console.log(`Processing: ${homeTeam} vs ${awayTeam} (${matchDate.toISOString().split('T')[0]}) - ${split}`);
+    console.log(`Processing: ${homeTeam} vs ${awayTeam} (${matchDateStr}) - ${split}`);
     
     // Get Opta data for both teams
     const homeOptaData = findTeamInLeagues(leaguesData, homeTeam);
