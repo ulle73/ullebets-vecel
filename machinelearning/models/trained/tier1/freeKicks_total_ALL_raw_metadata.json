@@ -1,0 +1,22 @@
+{
+  "stat_key": "freeKicks",
+  "scope": "total",
+  "period": "ALL",
+  "model_type": "xgboost_tier1",
+  "n_train_samples": 292,
+  "n_val_samples": 0,
+  "feature_dim": 70,
+  "metrics": {
+    "train_mae": 0.04292856156826019,
+    "val_mae": 5.383491516113281,
+    "val_rmse": 5.849799141329255,
+    "val_r2": -0.43197572231292725
+  },
+  "feature_importance": {
+    "feature_31": 0.13806185126304626,
+    "feature_25": 0.11531857401132584,
+    "feature_32": 0.11506450921297073,
+    "feature_26": 0.10092896223068237,
+    "feature_24": 0.09315114468336105
+  }
+}

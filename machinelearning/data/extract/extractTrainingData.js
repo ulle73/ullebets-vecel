@@ -23,6 +23,7 @@ import { calculateHistoricalWinRates } from './calculateWinRates.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { toDateStr, toDate } from '../../../lib/core/date.js';
+import { loadExternalUnibetTests } from '../loadExternalUnibetTests.js';
 
 // Load environment variables
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
@@ -43,8 +44,8 @@ const SCOPES = ['home', 'away', 'total'];
 const PERIODS = ['ALL', '1ST', '2ND'];
 
 // Date split for train/val/test
-const TRAIN_END_DATE = new Date('2025-11-22');
-const VAL_END_DATE = new Date('2025-11-23');
+const TRAIN_END_DATE = new Date('2025-11-10');
+const VAL_END_DATE = new Date('2025-11-25');
 // Allt efter = test
 
 /**
@@ -96,6 +97,16 @@ export async function extractTrainingData() {
   }).toArray();
   
   console.log(`Found ${matches.length} matches with backtest data\n`);
+
+  // Optionally load external Unibet backtests from disk (can comment out if not needed)
+  const EXTERNAL_BASE = "C:\\Users\\ryd\\OneDrive\\Skrivbord\\FRONTEND\\bet365\\UNIBET\\unibet-backtests";
+  const externalMatches = await loadExternalUnibetTests(EXTERNAL_BASE);
+  if (externalMatches.length) {
+    console.log(`Loaded ${externalMatches.length} external backtest matches from disk\n`);
+    matches.push(...externalMatches);
+  } else {
+    console.log(`No external backtest matches loaded (path: ${EXTERNAL_BASE})\n`);
+  }
   
   // Group samples by statKey/scope/period
   const datasets = {};
@@ -187,6 +198,9 @@ export async function extractTrainingData() {
   
   let savedCount = 0;
   let skippedCount = 0;
+  let totalTrainSamples = 0;
+  let totalValSamples = 0;
+  let totalTestSamples = 0;
   
   for (const [key, splits] of Object.entries(datasets)) {
     const totalSamples = splits.train.length + splits.val.length + splits.test.length;
@@ -194,6 +208,9 @@ export async function extractTrainingData() {
     console.log(`${key}:`);
     console.log(`  Train: ${splits.train.length}, Val: ${splits.val.length}, Test: ${splits.test.length}`);
     console.log(`  Total: ${totalSamples}`);
+    totalTrainSamples += splits.train.length;
+    totalValSamples += splits.val.length;
+    totalTestSamples += splits.test.length;
     
     // Lower threshold for testing - require at least 10 samples total
     if (totalSamples < 10) {
@@ -219,6 +236,7 @@ export async function extractTrainingData() {
   console.log(`  Total dataset keys processed: ${Object.keys(datasets).length}`);
   console.log(`  Files saved: ${savedCount}`);
   console.log(`  Skipped (too few samples): ${skippedCount}`);
+  console.log(`  Totals -> Train: ${totalTrainSamples}, Val: ${totalValSamples}, Test: ${totalTestSamples}`);
   
   console.log('\n✅ Data extraction complete!');
   await client.close();
@@ -245,6 +263,18 @@ async function buildSample({
   
   // === RAW FEATURES ===
   const raw_features = [];
+  
+  // Market features: line, odds, implied probabilities, margin
+  const lineValue = Number.isFinite(line.line) ? Number(line.line) : 0;
+  const overOdds = Number.isFinite(line.odds) ? Number(line.odds) : 0;
+  const underOdds = Number.isFinite(line.underOdds) ? Number(line.underOdds) : 0;
+
+  const impliedOver = overOdds > 0 ? 1 / overOdds : 0;
+  const impliedUnder = underOdds > 0 ? 1 / underOdds : 0;
+  const margin =
+    impliedOver > 0 && impliedUnder > 0 ? impliedOver + impliedUnder - 1 : 0;
+
+  raw_features.push(lineValue, overOdds, impliedOver, underOdds, impliedUnder, margin);
   
   // Team Quality Features
   raw_features.push(homeOptaData.optaRank || 100);

@@ -1,0 +1,16 @@
+{
+  "stat_key": "offsides",
+  "scope": "away",
+  "period": "ALL",
+  "model_type": "xgboost_tier2_stacking",
+  "has_tier1": true,
+  "n_train_samples": 125,
+  "n_val_samples": 64,
+  "feature_dim": 86,
+  "metrics": {
+    "train_mae": 0.03847317397594452,
+    "val_mae": 1.1268513202667236,
+    "val_rmse": 1.4611050922735587,
+    "val_r2": -0.15925443172454834
+  }
+}

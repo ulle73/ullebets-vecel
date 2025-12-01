@@ -34,7 +34,17 @@ def load_tier1_model(stat_key, scope, period):
         return model
     return None
 
-def build_tier2_features(sample, tier1_model=None):
+def gather_formula_keys(train_samples, val_samples):
+    """Collect all formula prediction keys across train/val so we get a fixed feature length."""
+    keys = set()
+    for s in (train_samples + val_samples):
+        fp = s.get('formula_predictions', {}) or {}
+        for k, v in fp.items():
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                keys.add(k)
+    return sorted(keys)
+
+def build_tier2_features(sample, tier1_model=None, formula_keys=None):
     """Build Tier 2 feature vector from existing formula predictions"""
     features = []
     
@@ -42,20 +52,24 @@ def build_tier2_features(sample, tier1_model=None):
     features.extend(sample['raw_features'])
     
     # 2. All formula predictions from evDetails
-    formula_preds = sample.get('formula_predictions', {})
-    pred_values = list(formula_preds.values())
-    
+    formula_preds = sample.get('formula_predictions', {}) or {}
+
+    # Fixed-length vector over all known keys
+    fp_vec = []
+    for key in formula_keys or []:
+        val = formula_preds.get(key, 0)
+        fp_vec.append(val if isinstance(val, (int, float)) and not isinstance(val, bool) else 0)
+    features.extend(fp_vec)
+
+    # 3. Consensus features on present predictions only (not the zero-fill)
+    pred_values = [v for v in formula_preds.values() if isinstance(v, (int, float)) and not isinstance(v, bool)]
     if pred_values:
-        features.extend(pred_values)
-        
-        # 3. Consensus features
         features.append(np.std(pred_values))  # Formula agreement
         features.append(np.max(pred_values) - np.min(pred_values))  # Range
         features.append(np.max(pred_values))  # Optimistic
         features.append(np.min(pred_values))  # Pessimistic
         features.append(np.median(pred_values))  # Median
     else:
-        # No formula predictions, add zeros
         features.extend([0] * 5)
     
     # 4. Tier 1 prediction (if available)
@@ -106,14 +120,18 @@ def train_tier2_model(stat_key, scope, period):
         print(f"✅ Loaded Tier 1 model")
     else:
         print(f"⚠️  No Tier 1 model (will train without it)")
+
+    # Build a fixed formula key list
+    formula_keys = gather_formula_keys(train_samples, val_samples)
+    print(f"Formula keys: {len(formula_keys)}")
     
     # Build features
     print("Building Tier 2 features...")
-    X_train = np.array([build_tier2_features(s, tier1_model) for s in train_samples])
+    X_train = np.array([build_tier2_features(s, tier1_model, formula_keys) for s in train_samples])
     y_train = np.array([s['target'] for s in train_samples])
     
     if len(val_samples) > 0:
-        X_val = np.array([build_tier2_features(s, tier1_model) for s in val_samples])
+        X_val = np.array([build_tier2_features(s, tier1_model, formula_keys) for s in val_samples])
         y_val = np.array([s['target'] for s in val_samples])
     else:
         # Split train data
