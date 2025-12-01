@@ -172,6 +172,9 @@ export default function AIComboList({ combos, priorityMap = {} }) {
   const renderComboCard = (combo, index) => {
     const matchUrlEntries = buildMatchUrlEntries(combo.lines);
     const evPercent = combo.totalEv || 0;
+    const primaryLine = combo.lines?.[0];
+    const displayRank = combo.comboRank ?? primaryLine?.comboRank ?? index + 1;
+    const displayScore = combo.comboScore ?? primaryLine?.comboScore ?? null;
 
     // Calculate average matchup score for combo
     const matchupScores = combo.lines.map((line) => {
@@ -238,7 +241,12 @@ export default function AIComboList({ combos, priorityMap = {} }) {
         <div className={`${headerGradient} border-b border-white/5 p-6`}>
           {/* Top Row: Label & Count */}
           <div className="mb-2 flex justify-between text-[11px] font-bold tracking-widest text-slate-400">
-            <span>COMBO {index + 1}</span>
+            <span>
+              COMBO {displayRank}
+              {displayScore != null
+                ? ` (${Number(displayScore).toFixed ? Number(displayScore).toFixed(1) : displayScore})`
+                : ""}
+            </span>
             <span>{combo.lines.length} SPEL</span>
           </div>
 

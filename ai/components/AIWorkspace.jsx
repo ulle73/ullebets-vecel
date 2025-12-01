@@ -45,8 +45,10 @@ function useWorkspaceController(defaultDate) {
   const [runToken, setRunToken] = useState(0);
   const [positiveLineMap, setPositiveLineMap] = useState({});
   const [completedMatches, setCompletedMatches] = useState({});
+  const [backendTotalMatches, setBackendTotalMatches] = useState(null);
   const [comboLegs, setComboLegs] = useState(2);
-  const [oddsRange, setOddsRange] = useState({ min: 1.8, max: 2.2 });
+  // Bredare default så kombos inte filtreras bort direkt
+  const [oddsRange, setOddsRange] = useState({ min: 1.1, max: 25 });
   const [isLoadingFromStorage, setIsLoadingFromStorage] = useState(false);
 
   const formatter = useMemo(makeFormatter, []);
@@ -230,6 +232,8 @@ function useWorkspaceController(defaultDate) {
 
   const insightTargetedLines = useMemo(() => {
     if (!insightsActive) return [];
+    // Fallback: if we have no matchup keys (e.g. matchups fetch failed), use all positiveLines
+    if (!insightKeySet || insightKeySet.size === 0) return positiveLines;
     return positiveLines.filter((line) => insightKeySet.has(buildLineKey(line)));
   }, [insightKeySet, positiveLines, insightsActive]);
 
@@ -294,6 +298,7 @@ function useWorkspaceController(defaultDate) {
     setPositiveLineMap({});
     setCompletedMatches({});
     setRunToken((token) => token + 1);
+    setBackendTotalMatches(null);
 
     try {
       console.log('[AI Generate] Calling backend API...');
@@ -317,7 +322,7 @@ function useWorkspaceController(defaultDate) {
       if (result.bets && Array.isArray(result.bets)) {
         const newLineMap = {};
         result.bets.forEach(bet => {
-          const matchKey = bet.matchId;
+          const matchKey = String(bet.matchId);
           if (!newLineMap[matchKey]) {
             newLineMap[matchKey] = [];
           }
@@ -331,10 +336,28 @@ function useWorkspaceController(defaultDate) {
 
         // Mark all matches as completed
         const completed = {};
-        Object.keys(newLineMap).forEach(key => {
+        // Prefer explicit ids from backend; fallback to SWR targetMatches; then lines we got
+        const backendIds = Array.isArray(result.matchIdsProcessed)
+          ? result.matchIdsProcessed.map((id) => String(id))
+          : [];
+        const targetKeys = targetMatches.map(m => String(m.id ?? m.matchId ?? `${m.homeTeamName}-${m.awayTeamName}`));
+        const keysToMark =
+          (backendIds.length && backendIds) ||
+          (targetKeys.length && targetKeys) ||
+          Object.keys(newLineMap);
+        keysToMark.forEach(key => {
           completed[key] = true;
         });
         setCompletedMatches(completed);
+
+        // Track total matches from backend so UI progress can complete even if matchups lookup misses
+        const backendCount = Math.max(
+          backendIds.length || 0,
+          Object.keys(newLineMap).length || 0
+        );
+        if (backendCount > 0) {
+          setBackendTotalMatches(backendCount);
+        }
 
         console.log('[AI Generate] Success! Loaded', Object.keys(newLineMap).length, 'matches');
       }
@@ -342,22 +365,30 @@ function useWorkspaceController(defaultDate) {
       console.error('[AI Generate] Error:', error);
       alert(`Failed to generate bets: ${error.message}`);
     }
-  }, [date]);
+  }, [date, targetMatches]);
 
   const totalBacktests = targetMatches.length;
+  const totalBacktestsResolved =
+    backendTotalMatches != null && backendTotalMatches > 0
+      ? backendTotalMatches
+      : totalBacktests;
   const completedMatchesCount = useMemo(
     () => Object.keys(completedMatches).length,
     [completedMatches]
   );
   const hasCombos = combos.length > 0;
   const positiveLineCount = positiveLines.length;
+  const hasBackendTotals = backendTotalMatches != null && backendTotalMatches > 0;
+  const matchupsReady = !!matchupsData || hasBackendTotals;
   const processing =
     insightsActive &&
-    (matchupsLoading || completedMatchesCount < totalBacktests || !matchupsData);
+    ((matchupsLoading && !hasBackendTotals) ||
+      completedMatchesCount < totalBacktestsResolved ||
+      !matchupsReady);
 
   const generatingLabel =
-    totalBacktests > 0
-      ? `Genererar (${completedMatchesCount}/${totalBacktests} matcher klar)`
+    totalBacktestsResolved > 0
+      ? `Genererar (${completedMatchesCount}/${totalBacktestsResolved} matcher klar)`
       : "Genererar matchups…";
   const statusLabel = processing
     ? generatingLabel
@@ -394,7 +425,8 @@ function useWorkspaceController(defaultDate) {
     handlePositiveResults,
     handleGenerate,
     statusLabel,
-    totalBacktests,
+    totalBacktests: totalBacktestsResolved,
+    totalBacktestsResolved,
     completedMatchesCount,
     positiveLineCount,
     processing,
@@ -451,6 +483,7 @@ export default function AIWorkspace({ defaultDate }) {
     handleGenerate,
     statusLabel,
     totalBacktests,
+    totalBacktestsResolved,
     completedMatchesCount,
     positiveLineCount,
     combos,
@@ -567,6 +600,7 @@ export function AIUserWorkspace({ defaultDate }) {
     combos,
     hasCombos,
     totalBacktests,
+    totalBacktestsResolved,
     completedMatchesCount,
     comboLegs,
     setComboLegs,
@@ -579,6 +613,8 @@ export function AIUserWorkspace({ defaultDate }) {
     matchupsLoading,
     matchupsError,
     lineCounts,
+    positiveLines,
+    positiveLineCount,
   } = workspace;
 
   const [isScrolled, setIsScrolled] = useState(false);
@@ -592,8 +628,12 @@ export function AIUserWorkspace({ defaultDate }) {
   };
 
   const isBusy = processing;
+  const totalResolved = totalBacktestsResolved ?? totalBacktests ?? 0;
   const canEvaluateCombos =
-    insightsActive && !isBusy && totalBacktests > 0 && completedMatchesCount >= totalBacktests;
+    insightsActive &&
+    !isBusy &&
+    totalResolved > 0 &&
+    completedMatchesCount >= totalResolved;
   const showResults = canEvaluateCombos;
 
   const handleUserGenerate = useCallback(() => {
@@ -656,6 +696,16 @@ export function AIUserWorkspace({ defaultDate }) {
                 <AIComboList combos={combos} priorityMap={priorityMap} />
               </div>
             )}
+
+            {/* Always show selected linor even om inga combos uppfyller odds/ben-kraven */}
+            <div className="space-y-3 max-w-4xl mx-auto w-full">
+              {!hasCombos && (
+                <p className="text-sm text-slate-400">
+                  Inga kombinationer inom oddsintervallet — visar valda linor i stället.
+                </p>
+              )}
+              <AIPositiveLinesPanel lines={positiveLines} />
+            </div>
 
             {/* All Matches List (2 Columns) - Header Hidden */}
             <div className="space-y-6 w-full">

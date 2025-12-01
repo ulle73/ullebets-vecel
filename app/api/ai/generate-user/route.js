@@ -6,6 +6,10 @@ import { getUnibetOddsForMatch } from "@/lib/engines/unibet-engine";
 import { calculateEvForBet, clearTeamDataCache } from "@/lib/engines/ev-engine";
 import { buildBetKey } from "@/lib/core/keys";
 
+// Database
+import clientPromise from "@/lib/mongo";
+import { writeSnapshot } from "@/lib/repos/snapshots";
+
 // Constants from backtest-runner
 const TIME_ZONE = "Europe/Stockholm";
 const DEFAULT_FORM = "all";
@@ -169,6 +173,9 @@ async function processMatchForAI(match, tuples, eventId) {
 // Step 2: Fetch and filter AI matchups
 export async function POST(request) {
   try {
+    // Ensure MongoDB connection is ready
+    await clientPromise;
+
     console.log("[AI Generate User] API called - step 2: fetch matchups");
 
     const { date } = await request.json().catch(() => ({}));
@@ -355,32 +362,36 @@ export async function POST(request) {
         try {
           const evResult = await calculateEvForBet(betParam);
 
-          if (evResult && evResult.value > 0) {
-            // Find the corresponding insight for matchupScore
-            const insight = filteredInsights.find(i =>
-              String(i.matchId) === String(oddsResult.matchId) &&
-              i.statKey === tuple.statKey &&
-              i.scope === tuple.scope &&
-              i.period === tuple.period &&
-              (i.condition || i.direction || (i.over ? 'over' : 'under')) === direction
-            );
+          // Find the corresponding insight for matchupScore
+          const insight = filteredInsights.find(i =>
+            String(i.matchId) === String(oddsResult.matchId) &&
+            i.statKey === tuple.statKey &&
+            i.scope === tuple.scope &&
+            i.period === tuple.period &&
+            (i.condition || i.direction || (i.over ? 'over' : 'under')) === direction
+          );
 
-            evResults.push({
-              bet: betParam,
-              result: evResult,
-              match: {
-                matchId: oddsResult.matchId,
-                eventId: oddsResult.eventId,
-                homeTeam: oddsResult.homeTeam,
-                awayTeam: oddsResult.awayTeam,
-                leagueName: oddsResult.leagueName,
-              },
-              insight,
-            });
+          const matchupScore = insight ? Number(insight.score ?? insight.normalizedScore ?? 0) : 0;
 
-            const matchupScore = insight ? Number(insight.score ?? insight.normalizedScore ?? 0) : 0;
-            console.log(`[AI Generate User] ✓ +EV ${evResult.value.toFixed(3)} for ${tuple.statKey} ${tuple.scope}/${tuple.period} ${direction} ${tuple.line} @ ${oddsValue} (score: ${matchupScore})`);
-          }
+          // Save ALL results (both +EV and -EV) for database storage
+          evResults.push({
+            bet: betParam,
+            result: evResult,
+            match: {
+              matchId: oddsResult.matchId,
+              eventId: oddsResult.eventId,
+              homeTeam: oddsResult.homeTeam,
+              awayTeam: oddsResult.awayTeam,
+              leagueName: oddsResult.leagueName,
+            },
+            insight,
+            matchupScore,
+          });
+
+          const evValue = evResult?.value ?? 0;
+          const evSign = evValue >= 0 ? '+' : '';
+          console.log(`[AI Generate User] ${evValue >= 0 ? '✓' : '✗'} EV ${evSign}${evValue.toFixed(3)} for ${tuple.statKey} ${tuple.scope}/${tuple.period} ${direction} ${tuple.line} @ ${oddsValue} (score: ${matchupScore})`);
+
         } catch (error) {
           console.error(`[AI Generate User] EV calculation failed for ${tuple.statKey}:`, error.message);
         }
@@ -396,45 +407,215 @@ export async function POST(request) {
     // Cleanup
     clearTeamDataCache();
 
-    console.log(`[AI Generate User] EV calculation complete: ${evResults.length} +EV results`);
+    console.log(`[AI Generate User] EV calculation complete: ${evResults.length} results (${evResults.filter(r => r.result?.value > 0).length} +EV, ${evResults.filter(r => r.result?.value <= 0).length} -EV)`);
 
-    // Detailed logging of +EV results
-    if (evResults.length > 0) {
-      console.log(`\n📊 +EV Results Details:`);
-      // Group by match
-      const resultsByMatch = new Map();
-      evResults.forEach(result => {
-        const matchId = result.match.matchId;
-        if (!resultsByMatch.has(matchId)) {
-          resultsByMatch.set(matchId, {
-            match: result.match,
-            results: []
-          });
-        }
-        resultsByMatch.get(matchId).results.push(result);
+    // Step 8: Calculate combo scores and rankings
+    console.log(`[AI Generate User] Calculating combo scores and rankings...`);
+
+    // Calculate comboScore for each result: (matchupScore × 0.7) + (EV × 0.3)
+    const resultsWithRanking = evResults.map(result => {
+      const evValue = result.result?.value ?? 0;
+      const comboScore = (result.matchupScore * 0.7) + (evValue * 0.3);
+      return {
+        ...result,
+        comboScore,
+      };
+    });
+
+    // Sort by comboScore (highest first)
+    resultsWithRanking.sort((a, b) => b.comboScore - a.comboScore);
+
+    // Assign comboRank (1 = best, 2 = next best, etc.)
+    resultsWithRanking.forEach((result, index) => {
+      result.comboRank = index + 1;
+    });
+
+    console.log(`[AI Generate User] Assigned rankings: #1 score ${resultsWithRanking[0]?.comboScore?.toFixed(3)}, #${resultsWithRanking.length} score ${resultsWithRanking[resultsWithRanking.length - 1]?.comboScore?.toFixed(3)}`);
+
+    // Keep all ranked lines (not just best per match) so UI can show alla bra spel
+    const selectedResults = resultsWithRanking;
+
+    // Step 9: Save EACH line as its own snapshot document (one line per doc)
+    let snapshotsSaved = 0;
+    const betDocuments = []; // for response payload
+
+    for (const result of selectedResults) {
+      const { bet, result: evResult, match, comboRank, comboScore, matchupScore } = result;
+      const betKey = buildBetKey({
+        matchId: match.matchId,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        stat: bet.stat,
+        scope: bet.scope,
+        period: bet.period,
+        line: bet.line,
+        over: bet.over,
+        form: "all",
+        neutralGround: false,
       });
 
-      for (const [matchId, matchData] of resultsByMatch) {
-        const { match, results } = matchData;
-        console.log(`\n🏟️ ${match.homeTeam} vs ${match.awayTeam} (matchId: ${match.matchId}, eventId: ${match.eventId})`);
-        results.forEach((result, index) => {
-          const { bet, result: evResult, insight } = result;
-          const matchupScore = insight ? Number(insight.score ?? insight.normalizedScore ?? 0) : 0;
-          console.log(`  ${index + 1}. ${bet.stat} ${bet.scope}/${bet.period} ${bet.over ? 'over' : 'under'} ${bet.line} @ ${bet.odds} → EV: ${evResult.value.toFixed(3)}, Score: ${matchupScore}`);
-        });
+      const line = {
+        betKey,
+        matchId: match.matchId,
+        statKey: bet.stat,
+        scope: bet.scope,
+        period: bet.period,
+        direction: bet.over ? "over" : "under",
+        line: bet.line,
+        odds: bet.odds,
+        primaryEv: evResult?.value ?? 0,
+        evPct: evResult?.evPct ?? null,
+        evPctMultifactor: evResult?.evPctMultifactor ?? null,
+        evPctLeagueAvg: evResult?.evPctLeagueAvg ?? null,
+        evPctWithMultiplier: evResult?.evPctWithMultiplier ?? null,
+        evPctUniversalOptimized: evResult?.evPctUniversalOptimized ?? null,
+        legacyEvPct: evResult?.legacyEvPct ?? null,
+        matchupScore,
+        comboScore,
+        comboRank,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        actual: null,
+        win: null,
+      };
+
+      betDocuments.push({
+        matchId: match.matchId,
+        eventId: match.eventId,
+        league: match.leagueName,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        betKey,
+        lines: [line],
+        totalEv: evResult?.value ?? 0,
+        matchupScore,
+        comboRank,
+        comboScore,
+        date: dateStr,
+        generatedAt: new Date(),
+        source: "ai-user",
+        type: "ai-user",
+      });
+
+      // Snapshot per line, stable id for tracking odds changes
+      const snapshotId = betKey.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+      // Calculate horizonDays (days until match)
+      let horizonDays = 0;
+      try {
+        const matchDate = new Date(dateStr);
+        const now = new Date();
+        const diffTime = matchDate.getTime() - now.getTime();
+        horizonDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      } catch (error) {
+        console.warn(`[AI Generate User] Could not calculate horizonDays for ${match.matchId}`);
       }
+
+      try {
+        await writeSnapshot({
+          collection: "ai-generated-bets",
+          id: snapshotId,
+          type: "ai-user",
+          date: dateStr,
+          lines: [line],
+          metadata: {
+            eventId: match.eventId,
+            matchId: match.matchId,
+            matchDate: dateStr, // run date as match date placeholder
+            league: match.leagueName,
+            homeTeam: match.homeTeam,
+            awayTeam: match.awayTeam,
+            totalBets: 1,
+            aiInsightsUsed: 1,
+            horizonDays,
+            source: "ai-user",
+            type: "ai-user",
+          },
+          snapshotLimit: 20,
+        });
+        snapshotsSaved += 1;
+      } catch (error) {
+        console.error(`[AI Generate User] ❌ Failed to save snapshot for ${betKey}:`, error.message);
+      }
+    }
+
+    // Detailed logging of top results
+    if (resultsWithRanking.length > 0) {
+      console.log(`\n🏆 Top 10 AI Generated Bets:`);
+      resultsWithRanking.slice(0, 10).forEach((result, index) => {
+        const { bet, result: evResult, match, matchupScore, comboScore, comboRank } = result;
+        console.log(`  #${comboRank}. ${match.homeTeam} vs ${match.awayTeam} - ${bet.stat} ${bet.scope}/${bet.period} ${bet.over ? 'over' : 'under'} ${bet.line} @ ${bet.odds} → EV: ${(evResult?.value ?? 0).toFixed(3)}, Score: ${matchupScore}, Combo: ${comboScore.toFixed(3)}`);
+      });
       console.log(``);
     }
 
-    // Step 7: Return results
+    // Prepare lightweight payload for frontend consumption (alla linor)
+    const betsPayload = selectedResults.map(result => {
+      const { bet, match, result: evResult, comboRank, comboScore, matchupScore } = result;
+      const line = {
+        matchId: match.matchId,
+        statKey: bet.stat,
+        scope: bet.scope,
+        period: bet.period,
+        direction: bet.over ? "over" : "under",
+        line: bet.line,
+        odds: bet.odds,
+        primaryEv: evResult?.value ?? 0,
+        evPct: evResult?.evPct ?? null,
+        evPctMultifactor: evResult?.evPctMultifactor ?? null,
+        evPctLeagueAvg: evResult?.evPctLeagueAvg ?? null,
+        evPctWithMultiplier: evResult?.evPctWithMultiplier ?? null,
+        evPctUniversalOptimized: evResult?.evPctUniversalOptimized ?? null,
+        legacyEvPct: evResult?.legacyEvPct ?? null,
+        matchupScore,
+        comboScore,
+        comboRank,
+        matchLabel: `${match.homeTeam} vs ${match.awayTeam}`,
+        teams: { home: match.homeTeam, away: match.awayTeam },
+        betKey: buildBetKey({
+          matchId: match.matchId,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          stat: bet.stat,
+          scope: bet.scope,
+          period: bet.period,
+          line: bet.line,
+          over: bet.over,
+          form: "all",
+          neutralGround: false,
+        }),
+        leagueName: match.leagueName,
+      };
+
+      return {
+        matchId: match.matchId,
+        lines: [line],
+        eventId: match.eventId,
+        league: match.leagueName,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+      };
+    });
+
+    // Step 11: Return results
     return NextResponse.json({
       success: true,
-      message: `Processed ${filteredInsights.length} insights from ${oddsResults.length} matches, found ${evResults.length} +EV bets`,
+      message: `Processed ${filteredInsights.length} insights from ${oddsResults.length} matches, saved ${selectedResults.length} bet lines to database`,
       date: dateStr,
       insightsCount: filteredInsights.length,
       matchesCount: oddsResults.length,
-      evResultsCount: evResults.length,
-      evResults: evResults.slice(0, 5) // Return first 5 results for debugging
+      totalBetsSaved: selectedResults.length,
+      topComboScore: resultsWithRanking[0]?.comboScore ?? 0,
+      snapshotsSaved,
+      matchIdsProcessed: uniqueMatchIds,
+      bets: betsPayload,
+      topBets: resultsWithRanking.slice(0, 5).map(result => ({
+        rank: result.comboRank,
+        comboScore: result.comboScore,
+        matchupScore: result.matchupScore,
+        ev: result.result?.value ?? 0,
+        bet: `${result.match.homeTeam} vs ${result.match.awayTeam} - ${result.bet.stat} ${result.bet.scope}/${result.bet.period} ${result.bet.over ? 'over' : 'under'} ${result.bet.line} @ ${result.bet.odds}`
+      }))
     });
 
   } catch (error) {
