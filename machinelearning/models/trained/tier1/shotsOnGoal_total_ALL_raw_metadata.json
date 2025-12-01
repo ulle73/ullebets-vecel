@@ -3,20 +3,20 @@
   "scope": "total",
   "period": "ALL",
   "model_type": "xgboost_tier1",
-  "n_train_samples": 10,
-  "n_val_samples": 114,
-  "feature_dim": 64,
+  "n_train_samples": 876,
+  "n_val_samples": 208,
+  "feature_dim": 70,
   "metrics": {
-    "train_mae": 0.0012240409851074219,
-    "val_mae": 6.1652607917785645,
-    "val_rmse": 6.9991002185730204,
-    "val_r2": -5.5258965492248535
+    "train_mae": 0.3657371401786804,
+    "val_mae": 2.986556053161621,
+    "val_rmse": 3.8789315736679657,
+    "val_r2": -0.4283846616744995
   },
   "feature_importance": {
-    "feature_0": 0.5953055024147034,
-    "feature_1": 0.39520013332366943,
-    "feature_2": 0.009494275785982609,
-    "feature_23": 0.0,
-    "feature_18": 0.0
+    "feature_69": 0.18309944868087769,
+    "feature_26": 0.07513324171304703,
+    "feature_29": 0.0727008730173111,
+    "feature_25": 0.06065620854496956,
+    "feature_28": 0.05746468901634216
   }
 }

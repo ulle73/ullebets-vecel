@@ -1,0 +1,16 @@
+{
+  "stat_key": "fouls",
+  "scope": "home",
+  "period": "ALL",
+  "model_type": "xgboost_tier2_stacking",
+  "has_tier1": true,
+  "n_train_samples": 227,
+  "n_val_samples": 119,
+  "feature_dim": 86,
+  "metrics": {
+    "train_mae": 0.12652891874313354,
+    "val_mae": 3.7955076694488525,
+    "val_rmse": 4.709428687950857,
+    "val_r2": -0.0817861557006836
+  }
+}

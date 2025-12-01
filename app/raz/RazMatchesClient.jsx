@@ -9,7 +9,7 @@ import DayInsights from "@/components/DayInsights-copy-v2";
 import Lineups from "@/components/Lineups";
 import BacktestPage from "@/components/BacktestPage";
 import ClosingOddsCard from "@/components/ClosingOddsCard";
-import { normalizeMatch } from "@/components/LeagueTable";
+import { normalizeMatch } from "@/lib/core/matchups";
 import {
   buildMatchesByDateKey,
   buildMatchDetailsKey,

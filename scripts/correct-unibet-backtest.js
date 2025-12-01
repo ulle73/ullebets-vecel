@@ -6,6 +6,7 @@
  */
 
 import clientPromise from '../lib/mongo.js';
+import { toDateStr } from '../lib/core/date.js';
 
 // Stat key mapping (same as in inspo file)
 const STAT_KEY_MAP = {
@@ -133,7 +134,8 @@ function extractStat(match, key, period, side) {
 
 // ---------------------- Find match in teamstats -------------------------
 async function findMatchInTeamStats(homeTeam, awayTeam, matchDate, teamstatsCol) {
-  const dateStr = new Date(matchDate).toISOString().split('T')[0];
+  const dateStr = toDateStr(matchDate);
+  if (!dateStr) return null;
 
   // Try home team's stats first
   const homeStats = await teamstatsCol.findOne({
@@ -143,7 +145,8 @@ async function findMatchInTeamStats(homeTeam, awayTeam, matchDate, teamstatsCol)
 
   if (homeStats?.full) {
     const homeMatch = homeStats.full.find(m => {
-      const mDate = new Date(m.date || m.matchDate).toISOString().split('T')[0];
+      const mDate = toDateStr(m.date || m.matchDate || m.timestamp);
+      if (!mDate) return false;
       const isCorrectDate = mDate === dateStr;
       const isCorrectOpponent = 
         m.awayTeamName?.toLowerCase() === awayTeam.toLowerCase();
@@ -180,7 +183,8 @@ async function findMatchInTeamStats(homeTeam, awayTeam, matchDate, teamstatsCol)
 
   if (awayStats?.full) {
     const awayMatch = awayStats.full.find(m => {
-      const mDate = new Date(m.date || m.matchDate).toISOString().split('T')[0];
+      const mDate = toDateStr(m.date || m.matchDate || m.timestamp);
+      if (!mDate) return false;
       const isCorrectDate = mDate === dateStr;
       const isCorrectOpponent = 
         m.homeTeamName?.toLowerCase() === homeTeam.toLowerCase();

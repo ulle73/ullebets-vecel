@@ -1,0 +1,22 @@
+{
+  "stat_key": "fouls",
+  "scope": "away",
+  "period": "ALL",
+  "model_type": "xgboost_tier1",
+  "n_train_samples": 238,
+  "n_val_samples": 129,
+  "feature_dim": 70,
+  "metrics": {
+    "train_mae": 0.04831502586603165,
+    "val_mae": 4.085003852844238,
+    "val_rmse": 4.878898040300339,
+    "val_r2": -0.8267009258270264
+  },
+  "feature_importance": {
+    "feature_25": 0.1496664136648178,
+    "feature_32": 0.10796842724084854,
+    "feature_22": 0.08911561220884323,
+    "feature_8": 0.06997787207365036,
+    "feature_21": 0.06501393765211105
+  }
+}
