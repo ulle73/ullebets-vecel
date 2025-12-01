@@ -240,6 +240,8 @@ export async function POST(request) {
       const homeTeam = match.homeTeamName || match.homeTeam?.name || match.event?.homeName || match.event?.homeTeam?.name;
       const awayTeam = match.awayTeamName || match.awayTeam?.name || match.event?.awayName || match.event?.awayTeam?.name;
       const leagueName = match.leagueName || match.league?.name || match.tournament?.name;
+      const homeTeamId = match.homeTeamId || match.homeTeam?.id || match.event?.homeTeamId || match.event?.homeTeam?.id;
+      const awayTeamId = match.awayTeamId || match.awayTeam?.id || match.event?.awayTeamId || match.event?.awayTeam?.id;
 
       console.log(`[AI Generate User] Processing match [${i + 1}/${uniqueMatchIds.length}]: ${homeTeam} vs ${awayTeam} (${leagueName})`);
 
@@ -260,6 +262,8 @@ export async function POST(request) {
           matchId,
           homeTeam,
           awayTeam,
+          homeTeamId,
+          awayTeamId,
           leagueName,
           eventId,
           tuplesCount: tuples.length,
@@ -377,13 +381,15 @@ export async function POST(request) {
           evResults.push({
             bet: betParam,
             result: evResult,
-            match: {
-              matchId: oddsResult.matchId,
-              eventId: oddsResult.eventId,
-              homeTeam: oddsResult.homeTeam,
-              awayTeam: oddsResult.awayTeam,
-              leagueName: oddsResult.leagueName,
-            },
+          match: {
+            matchId: oddsResult.matchId,
+            eventId: oddsResult.eventId,
+            homeTeam: oddsResult.homeTeam,
+            awayTeam: oddsResult.awayTeam,
+            homeTeamId: oddsResult.homeTeamId,
+            awayTeamId: oddsResult.awayTeamId,
+            leagueName: oddsResult.leagueName,
+          },
             insight,
             matchupScore,
           });
@@ -584,7 +590,7 @@ export async function POST(request) {
         comboScore,
         comboRank,
         matchLabel: `${match.homeTeam} vs ${match.awayTeam}`,
-        teams: { home: match.homeTeam, away: match.awayTeam },
+        teams: { home: match.homeTeam, away: match.awayTeam, homeId: match.homeTeamId, awayId: match.awayTeamId },
         backtest: backtestPayload,
         betKey: buildBetKey({
           matchId: match.matchId,
