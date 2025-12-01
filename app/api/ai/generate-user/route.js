@@ -184,8 +184,11 @@ export async function POST(request) {
 
     // Step 1: Fetch AI matchups
     console.log("[AI Generate User] Fetching AI matchups...");
+    const baseUrl =
+      process.env.NEXTAUTH_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
     const matchupsRes = await fetch(
-      `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/matchups-score?date=${dateStr}`,
+      `${baseUrl}/api/matchups-score?date=${dateStr}`,
       { cache: 'no-store' }
     );
 
