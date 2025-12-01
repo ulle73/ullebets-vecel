@@ -552,6 +552,19 @@ export async function POST(request) {
     // Prepare lightweight payload for frontend consumption (alla linor)
     const betsPayload = selectedResults.map(result => {
       const { bet, match, result: evResult, comboRank, comboScore, matchupScore } = result;
+      const teamHistory = bet.scope === "away" ? evResult?.awayHistory : evResult?.homeHistory;
+      const opponentHistory = bet.scope === "away" ? evResult?.homeHistory : evResult?.awayHistory;
+      const backtestPayload = {
+        ...evResult,
+        teamStats: {
+          avg: evResult?.meanFor,
+          history: Array.isArray(teamHistory) ? teamHistory : [],
+        },
+        opponentStats: {
+          avgConceded: evResult?.meanAgainst,
+          history: Array.isArray(opponentHistory) ? opponentHistory : [],
+        },
+      };
       const line = {
         matchId: match.matchId,
         statKey: bet.stat,
@@ -572,6 +585,7 @@ export async function POST(request) {
         comboRank,
         matchLabel: `${match.homeTeam} vs ${match.awayTeam}`,
         teams: { home: match.homeTeam, away: match.awayTeam },
+        backtest: backtestPayload,
         betKey: buildBetKey({
           matchId: match.matchId,
           homeTeam: match.homeTeam,
