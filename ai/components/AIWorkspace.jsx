@@ -57,6 +57,7 @@ function useWorkspaceController(defaultDate) {
   // History State
   const [historyBets, setHistoryBets] = useState([]);
   const [isHistoryMode, setIsHistoryMode] = useState(false);
+  const [validationError, setValidationError] = useState(null);
 
   const formatter = useMemo(makeFormatter, []);
   const formatTime = useCallback(
@@ -340,12 +341,39 @@ function useWorkspaceController(defaultDate) {
 
       const datesToRun = selectedDates.length ? selectedDates : [date];
 
-      // Check if ANY date is in the past (before today)
+      // Validate that at least one date is selected
+      if (!datesToRun.length || !datesToRun[0]) {
+        setValidationError('Välj minst ett datum innan du genererar spel.');
+        setIsGenerating(false);
+        return;
+      }
+
+      // Validate maximum 5 dates
+      if (datesToRun.length > 5) {
+        setValidationError('Du kan max välja 5 datum samtidigt för att undvika överbelastning.');
+        setIsGenerating(false);
+        return;
+      }
+
+      // Validate date selection: all dates must be either all past OR all today/future
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const isPast = datesToRun.some(d => new Date(d) < today);
 
-      if (isPast) {
+      const pastDates = datesToRun.filter(d => new Date(d) < today);
+      const futureDates = datesToRun.filter(d => new Date(d) >= today);
+
+      if (pastDates.length > 0 && futureDates.length > 0) {
+        setValidationError('Du kan inte blanda historiska datum med dagens/framtidens datum. Välj antingen endast förgångna datum för historik, eller endast idag och framåt för live-generering.');
+        setIsGenerating(false);
+        return;
+      }
+
+      // Clear any previous validation error
+      setValidationError(null);
+
+      const isHistoryMode = pastDates.length > 0;
+
+      if (isHistoryMode) {
         setIsHistoryMode(true);
         setHistoryBets([]);
 
@@ -512,6 +540,8 @@ function useWorkspaceController(defaultDate) {
     priorityMap,
     historyBets,
     isHistoryMode,
+    validationError,
+    setValidationError,
   };
 }
 
@@ -703,6 +733,8 @@ export function AIUserWorkspace({ defaultDate }) {
     positiveLineCount,
     historyBets,
     isHistoryMode,
+    validationError,
+    setValidationError,
   } = workspace;
 
   const [isScrolled, setIsScrolled] = useState(false);
@@ -764,7 +796,8 @@ export function AIUserWorkspace({ defaultDate }) {
           isBusy={isBusy}
           statusLabel={statusLabel}
           isScrolled={isScrolled}
-          isHistoryMode={isHistoryMode}
+          validationError={validationError}
+          onValidationErrorChange={setValidationError}
         />
       </div>
 
@@ -831,4 +864,5 @@ export function AIUserWorkspace({ defaultDate }) {
     </div>
   );
 }
+
 

@@ -14,7 +14,8 @@ export default function AIHeroInput({
   isBusy,
   statusLabel,
   isScrolled,
-  isHistoryMode = false,
+  validationError,
+  onValidationErrorChange,
 }) {
   const [localDate, setLocalDate] = useState(date ?? "");
   const [showCalendar, setShowCalendar] = useState(false);
@@ -44,6 +45,8 @@ export default function AIHeroInput({
       setLocalDate("");
       setDate?.("");
     }
+    // Clear validation error when dates change
+    onValidationErrorChange?.(null);
   };
 
   const displayDate =
@@ -157,10 +160,15 @@ export default function AIHeroInput({
 
       {/* Status Label */}
       {!isScrolled && (
-        <div className="mt-8 text-center animate-in fade-in slide-in-from-top-2 duration-700 delay-200">
+        <div className="mt-8 text-center animate-in fade-in slide-in-from-top-2 duration-700 delay-200 space-y-2">
           <p className="text-lg font-medium text-slate-500 transition-colors duration-300 hover:text-slate-400">
             {statusLabel}
           </p>
+          {validationError && (
+            <p className="text-sm font-medium text-red-400 animate-in fade-in slide-in-from-top-1 duration-500">
+              {validationError}
+            </p>
+          )}
         </div>
       )}
 
@@ -171,7 +179,6 @@ export default function AIHeroInput({
             selectedDates={selectedDates || []}
             onChange={handleDatesChange}
             currentDate={localDate}
-            isHistoryMode={isHistoryMode}
           />
         </div>
       )}

@@ -22,7 +22,7 @@ function getFirstDayOfMonth(year, month) {
   return day === 0 ? 6 : day - 1;
 }
 
-export default function AIUserMultiDatePicker({ selectedDates = [], onChange, currentDate, isHistoryMode = false }) {
+export default function AIUserMultiDatePicker({ selectedDates = [], onChange, currentDate }) {
   // Parse initial date or use today
   const initialDate = currentDate ? new Date(currentDate) : new Date();
   const [viewDate, setViewDate] = useState(initialDate);
@@ -79,33 +79,25 @@ export default function AIUserMultiDatePicker({ selectedDates = [], onChange, cu
     const isSelected = selectedDates.includes(dateStr);
     const count = counts?.[dateStr] ?? 0;
 
-    // Determine if date is selectable
+    // Determine if date is in the past (for visual feedback only)
     const checkDate = new Date(year, month, day);
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normalize today to start of day
-
     const isPast = checkDate < today;
-    const isTodayOrFuture = checkDate >= today;
-
-    // In history mode: only allow past dates (before today)
-    // In live mode: only allow today and future dates
-    const isSelectable = isHistoryMode ? isPast : isTodayOrFuture;
 
     // Determine count color
-    let countColor = "text-emerald-400"; // Default green for selectable
-    if (!isSelectable) {
-      countColor = "text-slate-500"; // Gray for disabled
+    let countColor = "text-emerald-400"; // Default green for future/today
+    if (isPast) {
+      countColor = "text-slate-500"; // Gray for past
     }
 
     cells.push(
       <button
         key={day}
-        onClick={() => isSelectable && toggleDate(day)}
-        disabled={!isSelectable}
+        onClick={() => toggleDate(day)}
         className={clsx(
-          "flex flex-col items-center justify-center rounded-lg py-2 transition-all",
-          isSelected ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/50" :
-          isSelectable ? "hover:bg-white/5 text-slate-300" : "text-slate-500 cursor-not-allowed opacity-50"
+          "flex flex-col items-center justify-center rounded-lg py-2 transition-all hover:bg-white/5",
+          isSelected ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/50" : "text-slate-300"
         )}
       >
         <span className={clsx("text-lg font-bold", isSelected && "text-white")}>{day}</span>
