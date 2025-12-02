@@ -92,6 +92,10 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
   const outcomeVal = actualValue != null
     ? `${actualValue} ${formatStatText(primaryLine.statKey)}`
     : "Pending";
+  const avgMatchupScore =
+    lines.length > 0
+      ? lines.reduce((sum, l) => sum + Number(l.matchupScore ?? 0), 0) / lines.length
+      : 0;
 
   // Check if all lines have win: true
   const allLinesWin = lines.length > 0 && lines.every(l => l.win === true || l.win === "true");
@@ -187,12 +191,12 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
                       ? "bg-gradient-to-r from-rose-400 via-rose-300 to-rose-200 shadow-[0_0_20px_rgba(244,63,94,0.8)]"
                       : "bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-200 shadow-[0_0_20px_rgba(52,211,153,0.8)]"
                   )}
-                  style={{ width: `${Math.min(100, Math.abs(evPercent))}%` }}
+                  style={{ width: `${Math.min(100, Math.max(0, avgMatchupScore))}%` }}
                 />
               </div>
             </div>
             <div className={clsx("inline-flex rounded-full px-3 py-1 text-xs font-semibold", accentClasses.bg, accentClasses.text, accentClasses.ring)}>
-             {primaryLine.matchupScore ?? 0}
+             {avgMatchupScore.toFixed(1)}
             </div>
           </div>
 

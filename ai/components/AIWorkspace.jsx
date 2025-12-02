@@ -764,6 +764,7 @@ export function AIUserWorkspace({ defaultDate }) {
           isBusy={isBusy}
           statusLabel={statusLabel}
           isScrolled={isScrolled}
+          isHistoryMode={isHistoryMode}
         />
       </div>
 
@@ -830,3 +831,4 @@ export function AIUserWorkspace({ defaultDate }) {
     </div>
   );
 }
+

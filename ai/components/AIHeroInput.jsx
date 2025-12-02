@@ -14,6 +14,7 @@ export default function AIHeroInput({
   isBusy,
   statusLabel,
   isScrolled,
+  isHistoryMode = false,
 }) {
   const [localDate, setLocalDate] = useState(date ?? "");
   const [showCalendar, setShowCalendar] = useState(false);
@@ -170,6 +171,7 @@ export default function AIHeroInput({
             selectedDates={selectedDates || []}
             onChange={handleDatesChange}
             currentDate={localDate}
+            isHistoryMode={isHistoryMode}
           />
         </div>
       )}
