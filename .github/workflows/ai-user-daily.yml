@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       dates:
-        description: "Datum (YYYY-MM-DD), kommaseparerade eller mellanslag. Tomt = idag (Stockholm). Max 5."
+        description: "Datum (YYYY-MM-DD), kommaseparerade eller mellanslag. Tomt = idag + imorgon + +2 (Stockholm). Max 5."
         required: false
         default: ""
 
@@ -39,20 +39,28 @@ jobs:
               .map((d) => d.trim())
               .filter(Boolean);
 
-          const todayStr = (() => {
+          const formatDate = (offsetDays = 0) => {
+            const now = new Date();
+            const target = new Date(now);
+            target.setUTCDate(target.getUTCDate() + offsetDays);
             const parts = new Intl.DateTimeFormat("sv-SE", {
               timeZone: "Europe/Stockholm",
               year: "numeric",
               month: "2-digit",
               day: "2-digit",
             })
-              .formatToParts(new Date())
+              .formatToParts(target)
               .reduce((acc, part) => ({ ...acc, [part.type]: part.value }), {});
             return `${parts.year}-${parts.month}-${parts.day}`;
-          })();
+          };
+
+          const todayStr = formatDate(0);
+          const tomorrowStr = formatDate(1);
+          const dayAfterTomorrowStr = formatDate(2);
+          const defaultDates = [todayStr, tomorrowStr, dayAfterTomorrowStr];
 
           const dates = parseDates(rawDates);
-          const selectedDates = dates.length ? dates : [todayStr];
+          const selectedDates = dates.length ? dates : defaultDates;
 
           if (!selectedDates.length || !selectedDates[0]) {
             throw new Error("Välj minst ett datum innan du genererar spel.");
