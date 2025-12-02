@@ -89,13 +89,6 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
   const displayScore = betDoc.comboScore ?? primaryLine.comboScore ?? null;
   // Format outcome value with stat context
   const actualValue = primaryLine.actual ?? betDoc.actual;
-  console.log("AIHistoryCompactCard: outcome debug", {
-    primaryLineActual: primaryLine.actual,
-    betDocActual: betDoc.actual,
-    actualValue,
-    primaryLineStatKey: primaryLine.statKey
-  });
-
   const outcomeVal = actualValue != null
     ? `${actualValue} ${formatStatText(primaryLine.statKey)}`
     : "Pending";
@@ -104,8 +97,6 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
   const allLinesWin = lines.length > 0 && lines.every(l => l.win === true || l.win === "true");
   const anyLineWin = lines.some(l => l.win === true || l.win === "true");
   const anyLineLoss = lines.some(l => l.win === false || l.win === "false");
-
-  console.log("AIHistoryCompactCard: win check", { allLinesWin, anyLineWin, anyLineLoss, linesCount: lines.length });
 
   let outcomeLabel = "PENDING";
   let accent = "emerald";
@@ -151,7 +142,17 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
             <div className={clsx("text-4xl sm:text-5xl font-extrabold tracking-tight", accentClasses.text)}>
               {outcomeLabel}
             </div>
-            <div className="text-sm text-slate-400 uppercase">Outcome {outcomeVal}</div>
+            <div className="text-sm text-slate-400">
+              {outcomeVal !== "Pending" ? (
+                <>
+                  {primaryLine.scope === "home" ? homeTeam :
+                   primaryLine.scope === "away" ? awayTeam :
+                   `${homeTeam} vs ${awayTeam}`} {outcomeVal} {formatPeriodText(primaryLine.period)}
+                </>
+              ) : (
+                "Pending"
+              )}
+            </div>
             {/* <div className={clsx("inline-flex rounded-full px-3 py-1 text-xs font-semibold", accentClasses.bg, accentClasses.text, accentClasses.ring)}>
               Combo {displayRank}
               {displayScore != null ? ` (${Number(displayScore).toFixed ? Number(displayScore).toFixed(1) : displayScore})` : ""}
@@ -180,7 +181,12 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
             <div className="relative flex-1">
               <div className="h-3 w-full overflow-hidden rounded-full bg-slate-800/50">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-200 shadow-[0_0_20px_rgba(52,211,153,0.8)]"
+                  className={clsx(
+                    "h-full rounded-full",
+                    outcomeLabel === "LOSS"
+                      ? "bg-gradient-to-r from-rose-400 via-rose-300 to-rose-200 shadow-[0_0_20px_rgba(244,63,94,0.8)]"
+                      : "bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-200 shadow-[0_0_20px_rgba(52,211,153,0.8)]"
+                  )}
                   style={{ width: `${Math.min(100, Math.abs(evPercent))}%` }}
                 />
               </div>
@@ -192,9 +198,9 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
 
           <div className="flex items-center justify-between px-6 pb-6">
             <div className="flex items-center gap-3">
-              <TeamIcon teamId={homeTeamId} alt={homeTeam} className="h-10 w-10 object-contain" />
+              <TeamIcon teamId={homeTeamId} alt={homeTeam} className="h-14 w-14 object-contain" />
               <span className="text-xs font-bold text-slate-500">vs</span>
-              <TeamIcon teamId={awayTeamId} alt={awayTeam} className="h-10 w-10 object-contain" />
+              <TeamIcon teamId={awayTeamId} alt={awayTeam} className="h-14 w-14 object-contain" />
             </div>
             <div className="text-right">
               <div className="text-sm uppercase tracking-widest text-slate-400">ODDS</div>
