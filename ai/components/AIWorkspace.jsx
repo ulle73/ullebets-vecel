@@ -12,6 +12,7 @@ import { buildMatchesByDateKey } from "@/lib/utils/apiKeys";
 import { fetchJson } from "@/lib/utils/fetchers";
 import AIComboControls from "@/ai/components/AIComboControls";
 import AIComboList from "@/ai/components/AIComboList";
+import AIHistoryList from "@/ai/components/AIHistoryList";
 import AIInsightsList from "@/ai/components/AIInsightsList";
 import AIPositiveLinesPanel from "@/ai/components/AIPositiveLinesPanel";
 import AIUserDatePicker from "@/ai/components/AIUserDatePicker";
@@ -52,6 +53,10 @@ function useWorkspaceController(defaultDate) {
   const [oddsRange, setOddsRange] = useState({ min: 1.1, max: 25 });
   const [isLoadingFromStorage, setIsLoadingFromStorage] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // History State
+  const [historyBets, setHistoryBets] = useState([]);
+  const [isHistoryMode, setIsHistoryMode] = useState(false);
 
   const formatter = useMemo(makeFormatter, []);
   const formatTime = useCallback(
@@ -327,7 +332,6 @@ function useWorkspaceController(defaultDate) {
     // Clear current state
     setPositiveLineMap({});
     setCompletedMatches({});
-    setRunToken((token) => token + 1);
     setBackendTotalMatches(null);
     setIsGenerating(true);
 
@@ -335,6 +339,39 @@ function useWorkspaceController(defaultDate) {
       console.log('[AI Generate] Calling backend API...');
 
       const datesToRun = selectedDates.length ? selectedDates : [date];
+
+      // Check if ANY date is in the past (before today)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const isPast = datesToRun.some(d => new Date(d) < today);
+
+      if (isPast) {
+        setIsHistoryMode(true);
+        setHistoryBets([]);
+
+        const allHistory = [];
+        for (const runDate of datesToRun) {
+          const res = await fetch('/api/ai/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: runDate })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.bets) {
+              allHistory.push(...data.bets);
+            }
+          }
+        }
+        setHistoryBets(allHistory);
+        console.log('[AI Generate] Loaded', allHistory.length, 'historical bets');
+        return;
+      } else {
+        setIsHistoryMode(false);
+        // Only increment runToken for live generation
+        setRunToken((token) => token + 1);
+      }
+
       const aggregateLineMap = {};
       const allProcessedIds = new Set();
       let totalBackendMatches = 0;
@@ -469,6 +506,8 @@ function useWorkspaceController(defaultDate) {
     processing,
     hasCombos,
     priorityMap,
+    historyBets,
+    isHistoryMode,
   };
 }
 
@@ -658,6 +697,8 @@ export function AIUserWorkspace({ defaultDate }) {
     lineCounts,
     positiveLines,
     positiveLineCount,
+    historyBets,
+    isHistoryMode,
   } = workspace;
 
   const [isScrolled, setIsScrolled] = useState(false);
@@ -673,10 +714,10 @@ export function AIUserWorkspace({ defaultDate }) {
   const isBusy = processing;
   const totalResolved = totalBacktestsResolved ?? totalBacktests ?? 0;
   const canEvaluateCombos =
-    insightsActive &&
-    !isBusy &&
-    totalResolved > 0 &&
-    completedMatchesCount >= totalResolved;
+    (insightsActive &&
+      !isBusy &&
+      totalResolved > 0 &&
+      completedMatchesCount >= totalResolved) || isHistoryMode;
   const showResults = canEvaluateCombos;
 
   const handleUserGenerate = useCallback(() => {
@@ -728,19 +769,27 @@ export function AIUserWorkspace({ defaultDate }) {
           <div className="mx-auto max-w-[1760px] flex flex-col gap-16">
 
             {/* Combos Section */}
-            {(hasCombos || hasLines) && (
+            {(hasCombos || hasLines || isHistoryMode) && (
               <div className="space-y-6 max-w-4xl mx-auto w-full">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bold text-slate-200">Bästa Kombinationerna</h3>
+                  <h3 className="text-2xl font-bold text-slate-200">
+                    {isHistoryMode ? "Historiska Spel" : "Bästa Kombinationerna"}
+                  </h3>
                 </div>
-                <AIComboControls
-                  legs={comboLegs}
-                  onLegChange={setComboLegs}
-                  oddsRange={oddsRange}
-                  onOddsRangeChange={handleOddsRangeChange}
-                  disabled={!showResults}
-                />
-                {hasCombos ? (
+
+                {!isHistoryMode && (
+                  <AIComboControls
+                    legs={comboLegs}
+                    onLegChange={setComboLegs}
+                    oddsRange={oddsRange}
+                    onOddsRangeChange={handleOddsRangeChange}
+                    disabled={!showResults}
+                  />
+                )}
+
+                {isHistoryMode ? (
+                  <AIHistoryList bets={historyBets} />
+                ) : hasCombos ? (
                   <AIComboList combos={combos} priorityMap={priorityMap} />
                 ) : (
                   <div className="rounded border border-slate-800/60 bg-slate-950/60 px-4 py-3 text-sm text-slate-400">
@@ -751,7 +800,7 @@ export function AIUserWorkspace({ defaultDate }) {
             )}
 
             {/* Always show selected linor */}
-            {hasLines && SHOW_POSITIVE_PANEL && (
+            {hasLines && SHOW_POSITIVE_PANEL && !isHistoryMode && (
               <div className="space-y-3 max-w-4xl mx-auto w-full">
                 {!hasCombos && (
                   <p className="text-sm text-slate-400">

@@ -17,7 +17,7 @@ export async function POST(request) {
     // 1. Fetch saved bets for the date
     const bets = await db
       .collection("ai-generated-bets")
-      .find({ date: date })
+      .find({ matchDate: date })
       .toArray();
 
     if (!bets.length) {
