@@ -64,3 +64,23 @@ try {
 
 url =
   "https://www.sofascore.com/api/v1/sport/football/scheduled-events/2025-09-27";
+
+  
+  
+  // sofascore found 2025-12-02
+  
+  const options4 = {
+    method: "GET",
+    url: "https://sofascore-sport-api.p.rapidapi.com/api/sport/football/scheduled-events/2025-12-03",
+    headers: {
+      "x-rapidapi-key": "adb090d6e6msh09b5af9b62cab53p18ec97jsnf66f393501ab",
+      "x-rapidapi-host": "sofascore-sport-api.p.rapidapi.com",
+    },
+  };
+
+  try {
+    const response = await axios.request(options);
+    console.log(response.data);
+  } catch (error) {
+    console.error(error);
+  }

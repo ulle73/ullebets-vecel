@@ -59,6 +59,14 @@ const buildMarketEndpoints = (market) => [
     isEmpty: isEmptyOddsPayload,
   },
   {
+    name: `sofascore-sport-odds-${market}`,
+    host: "sofascore-sport-api.p.rapidapi.com",
+    url: ({ matchId }) =>
+      `https://sofascore-sport-api.p.rapidapi.com/api/event/${matchId}/odds/${market}/all`,
+    transform: (data) => normalizeOddsPayload(data),
+    isEmpty: isEmptyOddsPayload,
+  },
+  {
     name: `sofasport-odds-${market}`,
     host: "sofasport.p.rapidapi.com",
     url: () => `https://sofasport.p.rapidapi.com/v1/events/odds/all`,

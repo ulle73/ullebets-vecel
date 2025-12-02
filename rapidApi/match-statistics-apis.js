@@ -83,3 +83,24 @@ try {
 } catch (error) {
   console.error(error);
 }
+
+
+
+
+// sofascore found 2025-12-02
+
+const options5 = {
+  method: "GET",
+  url: "https://sofascore-sport-api.p.rapidapi.com/api/event/14566745/statistics",
+  headers: {
+    "x-rapidapi-key": "adb090d6e6msh09b5af9b62cab53p18ec97jsnf66f393501ab",
+    "x-rapidapi-host": "sofascore-sport-api.p.rapidapi.com",
+  },
+};
+
+try {
+  const response = await axios.request(options);
+  console.log(response.data);
+} catch (error) {
+  console.error(error);
+}

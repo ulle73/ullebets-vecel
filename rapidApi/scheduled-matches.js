@@ -74,6 +74,14 @@ const buildRapidEndpoints = ({ includeGlobalEndpoint }) => {
         `https://sport-api-real-time.p.rapidapi.com/tournaments/scheduled-events?categoryId=${categoryId}&date=${date}`,
       transform: (data) => (Array.isArray(data?.events) ? data.events : []),
       allowEmpty: true,
+    },
+    {
+      name: "sofascore-sport-scheduled-events",
+      host: "sofascore-sport-api.p.rapidapi.com",
+      url: ({ date }) =>
+        `https://sofascore-sport-api.p.rapidapi.com/api/sport/football/scheduled-events/${date}`,
+      transform: (data) => (Array.isArray(data?.events) ? data.events : []),
+      allowEmpty: true,
     }
   );
 

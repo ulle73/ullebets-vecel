@@ -174,6 +174,13 @@ const STAT_ENDPOINTS = [
     transform: (data) => data?.data ?? data?.statistics ?? data ?? null,
   },
   {
+    name: "sofascore-sport-event-statistics",
+    host: "sofascore-sport-api.p.rapidapi.com",
+    url: ({ matchId }) =>
+      `https://sofascore-sport-api.p.rapidapi.com/api/event/${matchId}/statistics`,
+    transform: (data) => data?.data ?? data?.statistics ?? data ?? null,
+  },
+  {
     name: "sofasport-event-statistics",
     host: "sofasport.p.rapidapi.com",
     url: () => `https://sofasport.p.rapidapi.com/v1/events/statistics`,

@@ -465,11 +465,11 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
                 error={matchError}
               />
             ) : (
-              <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-1">
                 {/* Kommentera ut denna rad om du vill gömma originalversionen */}
                 <DayInsightsLegacy date={date} items={items} />
                 {/* Kommentera ut denna rad om du vill gömma nya prognosversionen */}
-                <DayInsights date={date} items={items} />
+                {/* <DayInsights date={date} items={items} /> */}
               </div>
             )}
 
