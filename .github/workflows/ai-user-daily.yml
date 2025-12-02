@@ -1,71 +1,139 @@
-name: AI User Daily Generation
+name: AI User Daily
 
 on:
   schedule:
-    - cron: '0 10 * * *' # 09:00 Stockholm time
+    - cron: "0 11 * * *" # 09:00 Stockholm
   workflow_dispatch:
     inputs:
-      days_ahead:
-        description: "Antal dagar framåt att generera (0-3)"
+      dates:
+        description: "Datum (YYYY-MM-DD), kommaseparerade eller mellanslag. Tomt = idag (Stockholm). Max 5."
         required: false
-        default: "2"
-        type: choice
-        options:
-          - "0"
-          - "1"
-          - "2"
-          - "3"
+        default: ""
 
 jobs:
-  generate-ai-user:
+  ai-user-daily:
     runs-on: ubuntu-latest
-
+    env:
+      BASE_URL: ${{ secrets.VERCEL_APP_URL }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Generate dates
-        id: dates
+      - name: Kör samma flöde som /ai/user (Generate Bets)
+        env:
+          INPUT_DATES: ${{ github.event.inputs.dates }}
+          BASE_URL: ${{ secrets.VERCEL_APP_URL }}
         run: |
-          # Calculate dates in Stockholm timezone (UTC+1)
-          today=$(date -u -d 'today 09:00' +%Y-%m-%d)  # Today at 09:00 UTC = 10:00 Stockholm
-          tomorrow=$(date -u -d 'tomorrow 09:00' +%Y-%m-%d)
-          day_after=$(date -u -d '+2 days 09:00' +%Y-%m-%d)
+          node - <<'NODE'
+          import fs from "fs";
 
-          days_ahead="${{ github.event.inputs.days_ahead }}"
-          if [ -z "$days_ahead" ]; then
-            days_ahead="2"
-          fi
+          const baseUrl = process.env.BASE_URL;
+          if (!baseUrl) {
+            throw new Error("BASE_URL saknas (secrets.VERCEL_APP_URL).");
+          }
 
-          echo "today=$today" >> $GITHUB_OUTPUT
-          echo "tomorrow=$tomorrow" >> $GITHUB_OUTPUT
-          echo "day_after=$day_after" >> $GITHUB_OUTPUT
-          echo "days_ahead=$days_ahead" >> $GITHUB_OUTPUT
+          const rawDates = process.env.INPUT_DATES || "";
+          const parseDates = (raw) =>
+            raw
+              .split(/[,\\s]+/)
+              .map((d) => d.trim())
+              .filter(Boolean);
 
-      - name: Generate AI bets for selected dates
-        run: |
-          echo "Generating AI bets for dates: ${{ steps.dates.outputs.today }}, ${{ steps.dates.outputs.tomorrow }}, ${{ steps.dates.outputs.day_after }}"
+          const todayStr = (() => {
+            const parts = new Intl.DateTimeFormat("sv-SE", {
+              timeZone: "Europe/Stockholm",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            })
+              .formatToParts(new Date())
+              .reduce((acc, part) => ({ ...acc, [part.type]: part.value }), {});
+            return `${parts.year}-${parts.month}-${parts.day}`;
+          })();
 
-          # Build dates array based on days_ahead
-          DATES_ARRAY="[\"${{ steps.dates.outputs.today }}\""
-          if [ "${{ fromJSON(steps.dates.outputs.days_ahead) }}" -ge 1 ]; then
-            DATES_ARRAY="${DATES_ARRAY}, \"${{ steps.dates.outputs.tomorrow }}\""
-          fi
-          if [ "${{ fromJSON(steps.dates.outputs.days_ahead) }}" -ge 2 ]; then
-            DATES_ARRAY="${DATES_ARRAY}, \"${{ steps.dates.outputs.day_after }}\""
-          fi
-          DATES_ARRAY="${DATES_ARRAY}]"
+          const dates = parseDates(rawDates);
+          const selectedDates = dates.length ? dates : [todayStr];
 
-          echo "Dates array: $DATES_ARRAY"
+          if (!selectedDates.length || !selectedDates[0]) {
+            throw new Error("Välj minst ett datum innan du genererar spel.");
+          }
 
-          curl -X POST "${{ secrets.VERCEL_APP_URL }}/ai/user" \
-            -H "Content-Type: application/json" \
-            -d "{\"dates\": $DATES_ARRAY}" \
-            --max-time 600 \
-            --retry 3 \
-            --retry-delay 30
+          if (selectedDates.length > 5) {
+            throw new Error("Du kan max välja 5 datum samtidigt för att undvika överbelastning.");
+          }
+
+          const pastDates = selectedDates.filter((d) => d < todayStr);
+          const futureDates = selectedDates.filter((d) => d >= todayStr);
+
+          if (pastDates.length && futureDates.length) {
+            throw new Error("Du kan inte blanda historiska datum med dagens/framtidens datum.");
+          }
+
+          const historyMode = pastDates.length > 0;
+          const targetDates = historyMode ? pastDates : selectedDates;
+          const endpoint = historyMode ? "/api/ai/history" : "/api/ai/generate-user";
+
+          console.log(`Kör ${historyMode ? "historik" : "AI-generering"} för datum: ${targetDates.join(", ")}`);
+
+          const results = [];
+
+          const postJson = async (date) => {
+            const res = await fetch(`${baseUrl}${endpoint}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ date }),
+            });
+
+            const text = await res.text();
+            let payload = null;
+            try {
+              payload = JSON.parse(text);
+            } catch {
+              payload = { raw: text };
+            }
+
+            results.push({ date, ok: res.ok, status: res.status, payload });
+
+            if (!res.ok) {
+              console.error(`❌ ${date} (${res.status})`, payload?.error || text);
+            } else if (historyMode) {
+              const count = Array.isArray(payload?.bets) ? payload.bets.length : 0;
+              console.log(`ℹ️ ${date}: hämtade ${count} sparade spel`);
+            } else {
+              console.log(
+                `✅ ${date}: sparade ${payload?.totalBetsSaved ?? "?"} spel över ${payload?.matchesCount ?? "?"} matcher`
+              );
+            }
+          };
+
+          for (const date of targetDates) {
+            await postJson(date);
+          }
+
+          const summaryLines = [];
+          summaryLines.push(`## AI User Daily (${historyMode ? "historik" : "generering"})`);
+          summaryLines.push(`- Base URL: ${baseUrl}`);
+          summaryLines.push(`- Datum: ${targetDates.join(", ")}`);
+          summaryLines.push(`- Läser endpoint: ${historyMode ? "/api/ai/history" : "/api/ai/generate-user"}`);
+          summaryLines.push("");
+          results.forEach((r) => {
+            if (historyMode) {
+              const count = Array.isArray(r.payload?.bets) ? r.payload.bets.length : 0;
+              summaryLines.push(
+                `- ${r.date}: ${r.ok ? "OK" : "FAILED"} (${r.status}) – ${count} bets returnerade`
+              );
+            } else {
+              summaryLines.push(
+                `- ${r.date}: ${r.ok ? "OK" : "FAILED"} (${r.status}) – ${r.payload?.totalBetsSaved ?? 0} bets sparade, ${r.payload?.matchesCount ?? 0} matcher`
+              );
+            }
+          });
+
+          if (process.env.GITHUB_STEP_SUMMARY) {
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryLines.join("\n") + "\n");
+          }
+
+          if (results.some((r) => !r.ok)) {
+            process.exit(1);
+          }
+          NODE
