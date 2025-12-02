@@ -63,48 +63,58 @@ export async function POST(request) {
       let fetchedFull = false;
 
       for (const line of lines) {
-        const { statKey, scope, period, line: targetLine, direction } = line;
-        
-        // Try to calculate actual
-        let actual = null;
+        // Use saved values from database instead of recalculating
+        let actual = line.actual ?? null;
         let outcome = "pending";
 
-        // We need the match object to have statistics
-        // If fullMatch doesn't have statistics, try fetching from teamstats
-        if (!fullMatch?.matchDetails?.statistics && !fullMatch?.statistics && !fetchedFull) {
-             try {
-                const tm = await getTeamstatsMatch(matchId);
-                if (tm) {
-                    fullMatch = { ...fullMatch, ...tm }; // Merge
-                }
-                fetchedFull = true;
-             } catch (e) {
-                 console.error(`Failed to fetch teamstats for ${matchId}`, e);
-             }
-        }
+        // If we have saved win/loss info, use it
+        if (line.win === true) {
+          outcome = "win";
+        } else if (line.win === false) {
+          outcome = "loss";
+        } else if (line.outcome) {
+          outcome = line.outcome;
+        } else {
+          // Fallback: try to calculate if no saved data
+          const { statKey, scope, period, line: targetLine, direction } = line;
 
-        const tuple = calcTuple(fullMatch, statKey, period);
-        
-        if (tuple && tuple[statKey]) {
-            // Extract value based on scope
-            // scope is usually 'total', 'home', 'away'
-            // tuple[statKey] is { home: X, away: Y, total: Z }
-            const val = tuple[statKey][scope];
-            
-            if (typeof val === 'number') {
-                actual = val;
-                
-                // Determine outcome
-                if (direction === 'over') {
-                    if (actual > targetLine) outcome = "win";
-                    else if (actual < targetLine) outcome = "loss";
-                    else outcome = "push";
-                } else { // under
-                    if (actual < targetLine) outcome = "win";
-                    else if (actual > targetLine) outcome = "loss";
-                    else outcome = "push";
-                }
-            }
+          // We need the match object to have statistics
+          // If fullMatch doesn't have statistics, try fetching from teamstats
+          if (!fullMatch?.matchDetails?.statistics && !fullMatch?.statistics && !fetchedFull) {
+               try {
+                  const tm = await getTeamstatsMatch(matchId);
+                  if (tm) {
+                      fullMatch = { ...fullMatch, ...tm }; // Merge
+                  }
+                  fetchedFull = true;
+               } catch (e) {
+                   console.error(`Failed to fetch teamstats for ${matchId}`, e);
+               }
+          }
+
+          const tuple = calcTuple(fullMatch, statKey, period);
+
+          if (tuple && tuple[statKey]) {
+              // Extract value based on scope
+              // scope is usually 'total', 'home', 'away'
+              // tuple[statKey] is { home: X, away: Y, total: Z }
+              const val = tuple[statKey][scope];
+
+              if (typeof val === 'number') {
+                  actual = val;
+
+                  // Determine outcome
+                  if (direction === 'over') {
+                      if (actual > targetLine) outcome = "win";
+                      else if (actual < targetLine) outcome = "loss";
+                      else outcome = "push";
+                  } else { // under
+                      if (actual < targetLine) outcome = "win";
+                      else if (actual > targetLine) outcome = "loss";
+                      else outcome = "push";
+                  }
+              }
+          }
         }
 
         // Normalize teams object to match frontend expectations

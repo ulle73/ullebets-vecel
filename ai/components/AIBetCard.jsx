@@ -175,23 +175,33 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
   let buttonHoverGlow = "hover:shadow-[0_0_15px_rgba(52,211,153,0.4)]";
   let statusText = "";
   let showStatus = false;
+  let outcomeValue = null;
 
   // Override theme for history mode
   if (showOutcome) {
-    const isLoss = lines.some(l => l.outcome === 'loss');
-    const isWin = !isLoss && lines.every(l => l.outcome === 'win');
-    const isPush = !isLoss && !isWin && lines.every(l => l.outcome === 'push');
+    const normalizedOutcome = lines.map((l) => {
+      if (l.outcome) return l.outcome;
+      if (l.win === true || l.win === "true") return "win";
+      if (l.win === false || l.win === "false") return "loss";
+      return "pending";
+    });
+    const isLoss = normalizedOutcome.some((o) => o === "loss");
+    const isWin = !isLoss && normalizedOutcome.every((o) => o === "win");
+    const isPush = !isLoss && !isWin && normalizedOutcome.every((o) => o === "push");
+
+    // outcome value from first line
+    outcomeValue = lines[0]?.actual ?? null;
 
     showStatus = true;
     if (isWin) {
-      statusText = "VINST";
+      statusText = "WIN";
       themeColor = "emerald";
       glowShadow = "shadow-[0_0_15px_rgba(16,185,129,0.35)]";
       borderColor = "border-emerald-500/50";
       headerGradient = "bg-gradient-to-r from-emerald-900/20 to-emerald-950/40";
       evTextColor = "text-emerald-300";
     } else if (isLoss) {
-      statusText = "FÖRLUST";
+      statusText = "LOSS";
       themeColor = "rose";
       glowShadow = "shadow-[0_0_15px_rgba(244,63,94,0.35)]";
       borderColor = "border-rose-500/50";
@@ -207,7 +217,7 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
       evTextColor = "text-amber-300";
     } else {
       statusText = "PENDING";
-      showStatus = true;
+      // keep status strip visible for pending
     }
   } else {
     // Live mode themes
@@ -244,64 +254,84 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
       )}
     >
       {/* HEADER SECTION */}
-      <div className={`${headerGradient} border-b border-white/5 p-6`}>
-        <div className="mb-2 flex justify-between text-[11px] font-bold tracking-widest text-slate-400">
-          <span>
-            {showStatus ? statusText : `COMBO ${displayRank}`}
-            {displayScore != null && !showStatus
-              ? ` (${Number(displayScore).toFixed ? Number(displayScore).toFixed(1) : displayScore})`
-              : ""}
-          </span>
-          <span>{lines.length} SPEL</span>
-        </div>
+        <div className={`${headerGradient} border-b border-white/5 p-6 flex flex-col sm:flex-row`}>
+          {/* Status strip */}
+          {showStatus && (
+            <div className="mr-4 flex-shrink-0 border-r border-white/10 pr-4">
+              <div className="text-4xl font-extrabold tracking-tight text-emerald-300">
+                {statusText}
+              </div>
+              <div className="text-xs uppercase text-slate-400">
+                Outcome {outcomeValue != null ? outcomeValue : "—"}
+              </div>
+              <div className="mt-2 inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-slate-200">
+                Combo {displayRank}
+                {displayScore != null
+                  ? ` (${Number(displayScore).toFixed ? Number(displayScore).toFixed(1) : displayScore})`
+                  : ""}
+              </div>
+            </div>
+          )}
 
-        <div className="flex items-center gap-6">
-          {/* EV Percentage */}
-          <div className="flex flex-col">
-            <span
-              className={`text-6xl font-bold tracking-tighter ${evTextColor} drop-shadow-[0_0_15px_rgba(110,231,183,0.4)]`}
-            >
-              {evPercent.toFixed(1)}%
-            </span>
-            <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
-              {betDoc.totalEv ? "Total EV för kombon" : "Expected Value"}
-            </span>
-          </div>
+          <div className="flex-1">
+            <div className="mb-2 flex justify-between text-[11px] font-bold tracking-widest text-slate-400">
+              <span>
+                {showStatus ? "" : `COMBO ${displayRank}`}
+                {!showStatus && displayScore != null
+                  ? ` (${Number(displayScore).toFixed ? Number(displayScore).toFixed(1) : displayScore})`
+                  : ""}
+              </span>
+              <span>{lines.length} SPEL</span>
+            </div>
 
-          {/* Progress Bar */}
-          <div className="relative flex-1">
-            <div className="h-4 w-full overflow-hidden rounded-full bg-slate-800/50 shadow-inner drop-shadow-[0_0_15px_rgba(110,231,183,0.2)]">
+            <div className="flex items-center gap-6">
+              {/* EV Percentage */}
+              <div className="flex flex-col">
+                <span
+                  className={`text-6xl font-bold tracking-tighter ${evTextColor} drop-shadow-[0_0_15px_rgba(110,231,183,0.4)]`}
+                >
+                  {evPercent.toFixed(1)}%
+                </span>
+                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
+                  {betDoc.totalEv ? "Total EV för kombon" : "Expected Value"}
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="relative flex-1">
+                <div className="h-4 w-full overflow-hidden rounded-full bg-slate-800/50 shadow-inner drop-shadow-[0_0_15px_rgba(110,231,183,0.2)]">
+                  <div
+                    className={`h-full rounded-full ${progressBarGradient} shadow-[0_0_20px_rgba(52,211,153,0.8)]`}
+                    style={{
+                      width: `${Math.min(100, avgMatchupScore)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Score Badge */}
               <div
-                className={`h-full rounded-full ${progressBarGradient} shadow-[0_0_20px_rgba(52,211,153,0.8)]`}
-                style={{
-                  width: `${Math.min(100, avgMatchupScore)}%`,
-                }}
-              />
+                className={clsx(
+                  "flex h-8 w-14 items-center justify-center rounded-full text-sm font-bold ring-1",
+                  {
+                    "bg-emerald-500/20 text-emerald-400 ring-emerald-500/30":
+                      themeColor === "emerald",
+                    "bg-blue-500/20 text-blue-400 ring-blue-500/30":
+                      themeColor === "blue",
+                    "bg-purple-500/20 text-purple-400 ring-purple-500/30":
+                      themeColor === "purple",
+                    "bg-rose-500/20 text-rose-400 ring-rose-500/30":
+                      themeColor === "rose",
+                    "bg-amber-500/20 text-amber-400 ring-amber-500/30":
+                      themeColor === "amber",
+                  }
+                )}
+              >
+                {avgMatchupScore.toFixed(0)}
+              </div>
             </div>
           </div>
-
-          {/* Score Badge */}
-          <div
-            className={clsx(
-              "flex h-8 w-14 items-center justify-center rounded-full text-sm font-bold ring-1",
-              {
-                "bg-emerald-500/20 text-emerald-400 ring-emerald-500/30":
-                  themeColor === "emerald",
-                "bg-blue-500/20 text-blue-400 ring-blue-500/30":
-                  themeColor === "blue",
-                "bg-purple-500/20 text-purple-400 ring-purple-500/30":
-                  themeColor === "purple",
-                "bg-rose-500/20 text-rose-400 ring-rose-500/30":
-                  themeColor === "rose",
-                "bg-amber-500/20 text-amber-400 ring-amber-500/30":
-                  themeColor === "amber",
-              }
-            )}
-          >
-            {avgMatchupScore.toFixed(0)}
-          </div>
         </div>
-      </div>
 
       {/* BODY SECTION */}
       <div className="p-6">
