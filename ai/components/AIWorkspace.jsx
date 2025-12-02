@@ -453,20 +453,24 @@ function useWorkspaceController(defaultDate) {
   const matchupsReady = !!matchupsData || hasBackendTotals;
   const processing =
     isGenerating ||
-    (insightsActive &&
+    (!isHistoryMode &&
+      insightsActive &&
       ((matchupsLoading && !hasBackendTotals) ||
         completedMatchesCount < totalBacktestsResolved ||
         !matchupsReady));
 
-  const generatingLabel =
-    totalBacktestsResolved > 0
+  const generatingLabel = isHistoryMode
+    ? "Hämtar historiska spel..."
+    : totalBacktestsResolved > 0
       ? `Genererar (${completedMatchesCount}/${totalBacktestsResolved} matcher klar)`
       : "Genererar matchups…";
   const statusLabel = processing
     ? generatingLabel
-    : insightsActive
-      ? "Klart, justera inställningarna eller kör igen"
-      : "Klicka för att starta AI-generering";
+    : isHistoryMode
+      ? `Hämtade ${historyBets.length} historiska spel`
+      : insightsActive
+        ? "Klart, justera inställningarna eller kör igen"
+        : "Klicka för att starta AI-generering";
 
   return {
     date,

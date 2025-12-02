@@ -107,11 +107,50 @@ export async function POST(request) {
             }
         }
 
-        gradedLines.push({
-            ...line,
-            actual,
-            outcome
-        });
+        // Normalize teams object to match frontend expectations
+        // Frontend expects: teams: { home, away, homeId, awayId }
+        const home =
+          line?.teams?.home ||
+          betDoc.homeTeam ||
+          match?.homeTeamName ||
+          match?.homeTeam?.name ||
+          line.homeTeam;
+        const away =
+          line?.teams?.away ||
+          betDoc.awayTeam ||
+          match?.awayTeamName ||
+          match?.awayTeam?.name ||
+          line.awayTeam;
+        const homeId =
+          line?.teams?.homeId ||
+          line.homeTeamId ||
+          betDoc.homeTeamId ||
+          match?.homeTeamId ||
+          match?.homeTeam?.id ||
+          null;
+        const awayId =
+          line?.teams?.awayId ||
+          line.awayTeamId ||
+          betDoc.awayTeamId ||
+          match?.awayTeamId ||
+          match?.awayTeam?.id ||
+          null;
+
+        const normalizedLine = {
+          ...line,
+          actual,
+          outcome,
+          homeTeamId: homeId,
+          awayTeamId: awayId,
+          teams: {
+            home,
+            away,
+            homeId,
+            awayId,
+          },
+        };
+
+        gradedLines.push(normalizedLine);
       }
 
       gradedBets.push({

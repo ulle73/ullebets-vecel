@@ -66,20 +66,17 @@ function getBetDescription(line) {
   const period = formatPeriodText(line.period);
   const lineValue = line.line;
 
-  // Determine subject based on scope
   let subject = "";
   if (line.scope === "home") subject = homeTeam;
   else if (line.scope === "away") subject = awayTeam;
   else subject = `${homeTeam} vs ${awayTeam}`;
 
-  // Construct sentence: "Barcelona över 4.5 hörnor (1:a halvlek)"
   let sentence = `${subject} ${direction} ${lineValue} ${stat}`;
   if (period) sentence += ` (${period})`;
 
   return sentence;
 }
 
-// Icons
 const GlobeIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -113,12 +110,30 @@ const PinIcon = () => (
   </svg>
 );
 
+function buildMatchUrlEntries(lines = []) {
+  const map = new Map();
+  lines.forEach((line) => {
+    const url = line?.unibetUrl;
+    if (!url) return;
+    const label = line.matchLabel || line.match || "Match";
+    if (!map.has(label)) {
+      map.set(label, new Set());
+    }
+    map.get(label).add(url);
+  });
+  return Array.from(map.entries()).map(([label, urls]) => ({
+    label,
+    urls: Array.from(urls),
+  }));
+}
+
 /**
- * AIBetCard - Shared bet card component
+ * AIBetCard - Shared bet card component with full styling
  * @param {Object} betDoc - The bet document with lines array
  * @param {number} index - Index in the list
  * @param {boolean} showOutcome - Whether to show win/loss/push outcome (for history)
  * @param {boolean} showUnibetButton - Whether to show "Bet on Unibet" button
+ * @param {Object} priorityMap - Map of line priorities/scores
  */
 export default function AIBetCard({ betDoc, index, showOutcome = false, showUnibetButton = true, priorityMap = {} }) {
   const [activePopup, setActivePopup] = useState(null);
@@ -134,105 +149,156 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
   };
 
   const lines = betDoc.lines || [];
+  if (!lines.length) return null;
+
+  const matchUrlEntries = showUnibetButton ? buildMatchUrlEntries(lines) : [];
+  const evPercent = betDoc.totalEv || lines[0]?.primaryEv || 0;
   const primaryLine = lines[0];
-  if (!primaryLine) return null;
+  const displayRank = betDoc.comboRank ?? primaryLine?.comboRank ?? index + 1;
+  const displayScore = betDoc.comboScore ?? primaryLine?.comboScore ?? null;
 
-  const evPercent = primaryLine.primaryEv || 0;
-  const matchupScore = primaryLine.matchupScore || 0;
-  const rank = primaryLine.comboRank || index + 1;
+  // Calculate average matchup score
+  const matchupScores = lines.map((line) => {
+    return Number(line.matchupScore ?? priorityMap[buildLineKey(line)] ?? 0);
+  });
+  const avgMatchupScore =
+    matchupScores.reduce((a, b) => a + b, 0) / matchupScores.length || 0;
 
-  // Determine outcome styling (for history mode)
-  let themeColor = "slate";
-  let glowShadow = "";
-  let borderColor = "border-slate-800";
-  let headerGradient = "bg-slate-900";
-  let statusText = "PENDING";
-  let statusColor = "text-slate-400";
+  // Determine theme
+  let themeColor = "emerald";
+  let glowShadow = "shadow-[0_0_12px_rgba(16,185,129,0.35)]";
+  let borderColor = "border-emerald-400/40";
+  let headerGradient = "bg-gradient-to-r from-emerald-900/20 to-emerald-950/40";
+  let progressBarGradient = "bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-200";
+  let evTextColor = "text-emerald-300";
+  let buttonBorderColor = "border-emerald-400/30";
+  let buttonHoverGlow = "hover:shadow-[0_0_15px_rgba(52,211,153,0.4)]";
+  let statusText = "";
+  let showStatus = false;
 
+  // Override theme for history mode
   if (showOutcome) {
     const isLoss = lines.some(l => l.outcome === 'loss');
     const isWin = !isLoss && lines.every(l => l.outcome === 'win');
     const isPush = !isLoss && !isWin && lines.every(l => l.outcome === 'push');
 
+    showStatus = true;
     if (isWin) {
-      themeColor = "emerald";
-      glowShadow = "shadow-[0_0_15px_rgba(16,185,129,0.25)]";
-      borderColor = "border-emerald-500/50";
-      headerGradient = "bg-gradient-to-r from-emerald-900/40 to-emerald-950/60";
       statusText = "VINST";
-      statusColor = "text-emerald-400";
+      themeColor = "emerald";
+      glowShadow = "shadow-[0_0_15px_rgba(16,185,129,0.35)]";
+      borderColor = "border-emerald-500/50";
+      headerGradient = "bg-gradient-to-r from-emerald-900/20 to-emerald-950/40";
+      evTextColor = "text-emerald-300";
     } else if (isLoss) {
-      themeColor = "rose";
-      glowShadow = "shadow-[0_0_15px_rgba(244,63,94,0.25)]";
-      borderColor = "border-rose-500/50";
-      headerGradient = "bg-gradient-to-r from-rose-900/40 to-rose-950/60";
       statusText = "FÖRLUST";
-      statusColor = "text-rose-400";
+      themeColor = "rose";
+      glowShadow = "shadow-[0_0_15px_rgba(244,63,94,0.35)]";
+      borderColor = "border-rose-500/50";
+      headerGradient = "bg-gradient-to-r from-rose-900/20 to-rose-950/40";
+      progressBarGradient = "bg-gradient-to-r from-rose-400 via-rose-300 to-rose-200";
+      evTextColor = "text-rose-300";
     } else if (isPush) {
+      statusText = "PUSH";
       themeColor = "amber";
       borderColor = "border-amber-500/50";
-      headerGradient = "bg-gradient-to-r from-amber-900/40 to-amber-950/60";
-      statusText = "PUSH";
-      statusColor = "text-amber-400";
+      headerGradient = "bg-gradient-to-r from-amber-900/20 to-amber-950/40";
+      progressBarGradient = "bg-gradient-to-r from-amber-400 via-amber-300 to-amber-200";
+      evTextColor = "text-amber-300";
+    } else {
+      statusText = "PENDING";
+      showStatus = true;
+    }
+  } else {
+    // Live mode themes
+    const isCombo = lines.length > 1;
+    const isAllUnder = lines.every((l) => l.direction === "under");
+
+    if (isCombo) {
+      themeColor = "blue";
+      glowShadow = "shadow-[0_0_12px_rgba(59,130,246,0.35)]";
+      borderColor = "border-blue-400/40";
+      headerGradient = "bg-gradient-to-r from-blue-900/20 to-blue-950/40";
+      progressBarGradient = "bg-gradient-to-r from-blue-400 via-blue-300 to-blue-200";
+      evTextColor = "text-blue-300";
+      buttonBorderColor = "border-blue-400/30";
+      buttonHoverGlow = "hover:shadow-[0_0_15px_rgba(96,165,250,0.4)]";
+    } else if (isAllUnder) {
+      themeColor = "purple";
+      glowShadow = "shadow-[0_0_12px_rgba(168,85,247,0.35)]";
+      borderColor = "border-purple-400/40";
+      headerGradient = "bg-gradient-to-r from-purple-900/20 to-purple-950/40";
+      progressBarGradient = "bg-gradient-to-r from-purple-400 via-purple-300 to-purple-200";
+      evTextColor = "text-purple-300";
+      buttonBorderColor = "border-purple-400/30";
+      buttonHoverGlow = "hover:shadow-[0_0_15px_rgba(192,132,252,0.4)]";
     }
   }
-
-  // Build Unibet URLs
-  const buildMatchUrlEntries = (lines = []) => {
-    const map = new Map();
-    lines.forEach((line) => {
-      const url = line?.unibetUrl;
-      if (!url) return;
-      const label = line.matchLabel || line.match || "Match";
-      if (!map.has(label)) {
-        map.set(label, new Set());
-      }
-      map.get(label).add(url);
-    });
-    return Array.from(map.entries()).map(([label, urls]) => ({
-      label,
-      urls: Array.from(urls),
-    }));
-  };
-
-  const matchUrlEntries = showUnibetButton ? buildMatchUrlEntries(lines) : [];
 
   return (
     <article
       className={clsx(
-        "overflow-hidden rounded-2xl bg-[#020617] transition-all duration-300 w-full border",
+        "overflow-hidden rounded-2xl bg-[#020617] transition-all duration-300 w-full",
         borderColor,
         glowShadow
       )}
     >
       {/* HEADER SECTION */}
       <div className={`${headerGradient} border-b border-white/5 p-6`}>
-        <div className="flex items-center justify-between">
+        <div className="mb-2 flex justify-between text-[11px] font-bold tracking-widest text-slate-400">
+          <span>
+            {showStatus ? statusText : `COMBO ${displayRank}`}
+            {displayScore != null && !showStatus
+              ? ` (${Number(displayScore).toFixed ? Number(displayScore).toFixed(1) : displayScore})`
+              : ""}
+          </span>
+          <span>{lines.length} SPEL</span>
+        </div>
+
+        <div className="flex items-center gap-6">
+          {/* EV Percentage */}
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-              AI Rank #{rank}
+            <span
+              className={`text-6xl font-bold tracking-tighter ${evTextColor} drop-shadow-[0_0_15px_rgba(110,231,183,0.4)]`}
+            >
+              {evPercent.toFixed(1)}%
             </span>
-            {showOutcome ? (
-              <span className={clsx("text-2xl font-black tracking-tight", statusColor)}>
-                {statusText}
-              </span>
-            ) : (
-              <span className="text-2xl font-black tracking-tight text-slate-300">
-                COMBO
-              </span>
-            )}
+            <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
+              {betDoc.totalEv ? "Total EV för kombon" : "Expected Value"}
+            </span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col items-end">
-              <span className="text-3xl font-bold text-slate-200">{evPercent.toFixed(1)}%</span>
-              <span className="text-[10px] font-medium text-slate-500 uppercase">EV</span>
+          {/* Progress Bar */}
+          <div className="relative flex-1">
+            <div className="h-4 w-full overflow-hidden rounded-full bg-slate-800/50 shadow-inner drop-shadow-[0_0_15px_rgba(110,231,183,0.2)]">
+              <div
+                className={`h-full rounded-full ${progressBarGradient} shadow-[0_0_20px_rgba(52,211,153,0.8)]`}
+                style={{
+                  width: `${Math.min(100, avgMatchupScore)}%`,
+                }}
+              />
             </div>
-            <div className="h-8 w-px bg-white/10"></div>
-            <div className="flex flex-col items-end">
-              <span className="text-3xl font-bold text-slate-200">{matchupScore.toFixed(0)}</span>
-              <span className="text-[10px] font-medium text-slate-500 uppercase">Score</span>
-            </div>
+          </div>
+
+          {/* Score Badge */}
+          <div
+            className={clsx(
+              "flex h-8 w-14 items-center justify-center rounded-full text-sm font-bold ring-1",
+              {
+                "bg-emerald-500/20 text-emerald-400 ring-emerald-500/30":
+                  themeColor === "emerald",
+                "bg-blue-500/20 text-blue-400 ring-blue-500/30":
+                  themeColor === "blue",
+                "bg-purple-500/20 text-purple-400 ring-purple-500/30":
+                  themeColor === "purple",
+                "bg-rose-500/20 text-rose-400 ring-rose-500/30":
+                  themeColor === "rose",
+                "bg-amber-500/20 text-amber-400 ring-amber-500/30":
+                  themeColor === "amber",
+              }
+            )}
+          >
+            {avgMatchupScore.toFixed(0)}
           </div>
         </div>
       </div>
@@ -246,54 +312,70 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
             const homeTeamId = line.teams?.homeId || line.homeTeamId;
             const awayTeamId = line.teams?.awayId || line.awayTeamId;
             const uniqueKey = `${betDoc._id}-${lineIndex}`;
-
             const description = getBetDescription(line);
 
-            // Outcome specific styling for line (history mode)
-            let outcomeColor = "text-slate-400";
+            let oddsColor = "text-emerald-400";
             if (showOutcome) {
-              if (line.outcome === 'win') outcomeColor = "text-emerald-400";
-              else if (line.outcome === 'loss') outcomeColor = "text-rose-400";
-              else if (line.outcome === 'push') outcomeColor = "text-amber-400";
+              if (line.outcome === 'win') oddsColor = "text-emerald-400";
+              else if (line.outcome === 'loss') oddsColor = "text-rose-400";
+              else if (line.outcome === 'push') oddsColor = "text-amber-400";
+            } else {
+              const isCombo = lines.length > 1;
+              if (isCombo) {
+                oddsColor = "text-blue-400";
+              } else if (line.direction === "under") {
+                oddsColor = "text-purple-400";
+              }
             }
 
             return (
-              <li key={uniqueKey} className="relative overflow-hidden rounded-xl p-2">
+              <li key={uniqueKey} className="relative overflow-hidden rounded-xl p-5">
                 <div className="flex items-start justify-between gap-4">
-                  {/* LEFT: Icons & Info */}
+                  {/* LEFT */}
                   <div className="flex flex-col gap-3">
                     {/* Team Icons */}
                     <div className="flex items-center gap-4">
                       <TeamIcon
                         teamId={homeTeamId}
                         alt={homeTeam}
-                        className="h-12 w-12 object-contain drop-shadow-lg opacity-80"
+                        className="h-16 w-16 object-contain drop-shadow-lg"
                       />
-                      <span className="text-xs font-bold text-slate-600">vs</span>
+                      <span className="text-sm font-bold text-slate-500">vs</span>
                       <TeamIcon
                         teamId={awayTeamId}
                         alt={awayTeam}
-                        className="h-12 w-12 object-contain drop-shadow-lg opacity-80"
+                        className="h-16 w-16 object-contain drop-shadow-lg"
                       />
                     </div>
 
-                    {/* Description Sentence */}
+                    {/* Description */}
                     <div>
-                      <p className="text-lg font-bold text-slate-100 leading-tight">
+                      <p className="text-xl font-bold text-slate-100 leading-tight">
                         {description}
                       </p>
                     </div>
 
                     {/* Stats Row */}
                     <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-slate-400">
+                      <span className="text-slate-300">
+                        EV: <span className={oddsColor}>{line.primaryEv?.toFixed(1)}%</span>
+                      </span>
+
                       <div className="flex items-center gap-1.5">
                         <GlobeIcon />
                         <span className="text-slate-300">{formatStatText(line.statKey)}</span>
                       </div>
+
                       <div className="flex items-center gap-1.5">
                         <PinIcon />
                         <span className="text-slate-300">{line.scope || "total"}</span>
                       </div>
+
+                      {showOutcome && line.actual !== null && line.actual !== undefined && (
+                        <span className="text-slate-300">
+                          Utfall: <span className={oddsColor}>{line.actual}</span>
+                        </span>
+                      )}
 
                       {/* Info Button */}
                       <div className="relative">
@@ -303,7 +385,12 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
                             e.stopPropagation();
                             handleInfoClick(lineIndex);
                           }}
-                          className="flex items-center gap-1.5 rounded-full bg-slate-800/50 px-2 py-0.5 text-slate-400 transition-all hover:bg-slate-700 hover:text-white"
+                          className={clsx(
+                            "flex items-center gap-1.5 rounded-full px-2 py-0.5 transition-all",
+                            activePopup === uniqueKey
+                              ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50"
+                              : "bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-white"
+                          )}
                         >
                           <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] font-bold">i</span>
                           <span>Info</span>
@@ -319,54 +406,44 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
                     </div>
                   </div>
 
-                  {/* RIGHT: Result & Odds */}
-                  <div className="flex flex-col items-end gap-2">
-                    {showOutcome && line.actual !== null && line.actual !== undefined && (
-                      <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Utfall</span>
-                        <span className={clsx("text-xl font-bold", outcomeColor)}>
-                          {line.actual}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex flex-col items-end">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Odds</span>
-                      <span className="text-2xl font-bold text-slate-300">{line.odds?.toFixed(2)}</span>
-                    </div>
+                  {/* RIGHT: Odds */}
+                  <div className="flex min-w-[80px] flex-col items-end justify-center">
+                    <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Odds
+                    </span>
+                    <span
+                      className={`text-6xl font-bold ${oddsColor} tracking-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]`}
+                    >
+                      {line.odds?.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </li>
             );
           })}
         </ul>
-      </div>
 
-      {/* FOOTER SECTION - Unibet buttons (live mode only) */}
-      {showUnibetButton && matchUrlEntries.length > 0 && (
-        <div className="border-t border-white/5 p-6">
-          <div className="flex flex-col gap-3">
-            {matchUrlEntries.map((entry, idx) => (
-              <div key={idx} className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-slate-500">{entry.label}</span>
-                <div className="flex flex-wrap gap-2">
-                  {entry.urls.map((url, urlIdx) => (
-                    <a
-                      key={urlIdx}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg hover:scale-105"
-                    >
-                      Spela på Unibet
-                    </a>
-                  ))}
-                </div>
+        {/* Unibet Buttons */}
+        {showUnibetButton && matchUrlEntries.length > 0 && (
+          <div className="mt-2 space-y-3 pt-2">
+            {matchUrlEntries.map(({ label, urls }) => (
+              <div key={`${betDoc._id}-${label}`} className="space-y-2">
+                {urls.map((url, idx) => (
+                  <a
+                    key={idx}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className={`group relative block w-full overflow-hidden rounded-full border ${buttonBorderColor} bg-transparent py-3 text-center text-sm font-bold text-${themeColor}-300 transition-all hover:bg-${themeColor}-950/30 hover:text-${themeColor}-200 ${buttonHoverGlow}`}
+                  >
+                    <span className="relative z-10">Bet on Unibet</span>
+                  </a>
+                ))}
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </article>
   );
 }
