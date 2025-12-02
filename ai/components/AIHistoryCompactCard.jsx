@@ -152,10 +152,10 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
               {outcomeLabel}
             </div>
             <div className="text-sm text-slate-400 uppercase">Outcome {outcomeVal}</div>
-            <div className={clsx("inline-flex rounded-full px-3 py-1 text-xs font-semibold", accentClasses.bg, accentClasses.text, accentClasses.ring)}>
+            {/* <div className={clsx("inline-flex rounded-full px-3 py-1 text-xs font-semibold", accentClasses.bg, accentClasses.text, accentClasses.ring)}>
               Combo {displayRank}
               {displayScore != null ? ` (${Number(displayScore).toFixed ? Number(displayScore).toFixed(1) : displayScore})` : ""}
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -163,7 +163,8 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
         <div className="flex-1">
           <div className="flex items-center justify-between px-6 pt-5">
             <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-              Total EV för kombon
+              Combo {displayRank}
+              {displayScore != null ? ` (${Number(displayScore).toFixed(1)})` : ""}
             </div>
             <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
               {lines.length} spel
@@ -184,7 +185,9 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
                 />
               </div>
             </div>
-            <div className={clsx("text-3xl font-bold", accentClasses.text)}>71</div>
+            <div className={clsx("inline-flex rounded-full px-3 py-1 text-xs font-semibold", accentClasses.bg, accentClasses.text, accentClasses.ring)}>
+             {primaryLine.matchupScore ?? 0}
+            </div>
           </div>
 
           <div className="flex items-center justify-between px-6 pb-6">
