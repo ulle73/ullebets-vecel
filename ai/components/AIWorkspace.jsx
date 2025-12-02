@@ -51,6 +51,7 @@ function useWorkspaceController(defaultDate) {
   // Bredare default så kombos inte filtreras bort direkt
   const [oddsRange, setOddsRange] = useState({ min: 1.1, max: 25 });
   const [isLoadingFromStorage, setIsLoadingFromStorage] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const formatter = useMemo(makeFormatter, []);
   const formatTime = useCallback(
@@ -328,6 +329,7 @@ function useWorkspaceController(defaultDate) {
     setCompletedMatches({});
     setRunToken((token) => token + 1);
     setBackendTotalMatches(null);
+    setIsGenerating(true);
 
     try {
       console.log('[AI Generate] Calling backend API...');
@@ -394,6 +396,8 @@ function useWorkspaceController(defaultDate) {
     } catch (error) {
       console.error('[AI Generate] Error:', error);
       alert(`Failed to generate bets: ${error.message}`);
+    } finally {
+      setIsGenerating(false);
     }
   }, [date, selectedDates, targetMatches]);
 
@@ -411,10 +415,11 @@ function useWorkspaceController(defaultDate) {
   const hasBackendTotals = backendTotalMatches != null && backendTotalMatches > 0;
   const matchupsReady = !!matchupsData || hasBackendTotals;
   const processing =
-    insightsActive &&
-    ((matchupsLoading && !hasBackendTotals) ||
-      completedMatchesCount < totalBacktestsResolved ||
-      !matchupsReady);
+    isGenerating ||
+    (insightsActive &&
+      ((matchupsLoading && !hasBackendTotals) ||
+        completedMatchesCount < totalBacktestsResolved ||
+        !matchupsReady));
 
   const generatingLabel =
     totalBacktestsResolved > 0
