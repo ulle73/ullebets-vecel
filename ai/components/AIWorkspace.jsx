@@ -41,6 +41,7 @@ function makeFormatter() {
 
 function useWorkspaceController(defaultDate) {
   const [date, setDate] = useState(defaultDate);
+  const [selectedDates, setSelectedDates] = useState([defaultDate].filter(Boolean));
   const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [runToken, setRunToken] = useState(0);
   const [positiveLineMap, setPositiveLineMap] = useState({});
@@ -189,7 +190,16 @@ function useWorkspaceController(defaultDate) {
     return buffer;
   }, [insightsActive, topOverRows, topUnderRows, matchLookup]);
 
-  const positiveLines = useMemo(() => Object.values(positiveLineMap).flat(), [positiveLineMap]);
+  const positiveLinesRaw = useMemo(() => Object.values(positiveLineMap).flat(), [positiveLineMap]);
+  // Show only +EV lines
+  const positiveLines = useMemo(
+    () =>
+      positiveLinesRaw.filter((line) => {
+        const ev = Number(line.primaryEv ?? line.value ?? 0);
+        return Number.isFinite(ev) && ev > 0;
+      }),
+    [positiveLinesRaw]
+  );
 
   // DISABLED: API now handles persistence to MongoDB
   /*
@@ -232,10 +242,10 @@ function useWorkspaceController(defaultDate) {
 
   const insightTargetedLines = useMemo(() => {
     if (!insightsActive) return [];
-    // Fallback: if we have no matchup keys (e.g. matchups fetch failed), use all positiveLines
-    if (!insightKeySet || insightKeySet.size === 0) return positiveLines;
-    return positiveLines.filter((line) => insightKeySet.has(buildLineKey(line)));
-  }, [insightKeySet, positiveLines, insightsActive]);
+    // Backend already filters by insights for all selected dates.
+    // We should use all positiveLines returned by the backend.
+    return positiveLines;
+  }, [positiveLines, insightsActive]);
 
   const priorityMap = useMemo(() => {
     const map = {};
@@ -250,13 +260,32 @@ function useWorkspaceController(defaultDate) {
   }, [allRankedRows, buildLineKeyFromRow]);
 
   const combos = useMemo(
-    () =>
-      buildCombos(insightTargetedLines, {
+    () => {
+      const generated = buildCombos(insightTargetedLines, {
         legs: comboLegs,
         minOdds: oddsRange.min,
         maxOdds: oddsRange.max,
         priorityMap,
-      }),
+        maxCombos: 200,
+        maxLines: 200,
+      });
+
+      // If no combos found with requested legs (and legs > 1), try generating singles
+      if (generated.length === 0 && comboLegs > 1) {
+        // Generate singles but keep the same odds filter
+        const singles = buildCombos(insightTargetedLines, {
+          legs: 1,
+          minOdds: 1.01, // Allow all odds for singles fallback, or use oddsRange.min if strict
+          maxOdds: 100,
+          priorityMap,
+          maxCombos: 200,
+          maxLines: 200,
+        });
+        return singles;
+      }
+
+      return generated;
+    },
     [comboLegs, insightTargetedLines, oddsRange, priorityMap]
   );
 
@@ -303,69 +332,70 @@ function useWorkspaceController(defaultDate) {
     try {
       console.log('[AI Generate] Calling backend API...');
 
-      // Call backend API to generate bets
-      const response = await fetch('/api/ai/generate-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date }),
-      });
+      const datesToRun = selectedDates.length ? selectedDates : [date];
+      const aggregateLineMap = {};
+      const allProcessedIds = new Set();
+      let totalBackendMatches = 0;
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate bets');
-      }
-
-      const result = await response.json();
-      console.log('[AI Generate] API response:', result);
-
-      // Transform API response to frontend format
-      if (result.bets && Array.isArray(result.bets)) {
-        const newLineMap = {};
-        result.bets.forEach(bet => {
-          const matchKey = String(bet.matchId);
-          if (!newLineMap[matchKey]) {
-            newLineMap[matchKey] = [];
-          }
-          // Extract lines from bet document
-          if (bet.lines && Array.isArray(bet.lines)) {
-            newLineMap[matchKey].push(...bet.lines);
-          }
+      for (const runDate of datesToRun) {
+        console.log('[AI Generate] Calling backend API for date', runDate);
+        const response = await fetch('/api/ai/generate-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: runDate }),
         });
 
-        setPositiveLineMap(newLineMap);
-
-        // Mark all matches as completed
-        const completed = {};
-        // Prefer explicit ids from backend; fallback to SWR targetMatches; then lines we got
-        const backendIds = Array.isArray(result.matchIdsProcessed)
-          ? result.matchIdsProcessed.map((id) => String(id))
-          : [];
-        const targetKeys = targetMatches.map(m => String(m.id ?? m.matchId ?? `${m.homeTeamName}-${m.awayTeamName}`));
-        const keysToMark =
-          (backendIds.length && backendIds) ||
-          (targetKeys.length && targetKeys) ||
-          Object.keys(newLineMap);
-        keysToMark.forEach(key => {
-          completed[key] = true;
-        });
-        setCompletedMatches(completed);
-
-        // Track total matches from backend so UI progress can complete even if matchups lookup misses
-        const backendCount = Math.max(
-          backendIds.length || 0,
-          Object.keys(newLineMap).length || 0
-        );
-        if (backendCount > 0) {
-          setBackendTotalMatches(backendCount);
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to generate bets');
         }
 
-        console.log('[AI Generate] Success! Loaded', Object.keys(newLineMap).length, 'matches');
+        const result = await response.json();
+        console.log('[AI Generate] API response:', result);
+
+        if (result.bets && Array.isArray(result.bets)) {
+          result.bets.forEach(bet => {
+            const matchKey = String(bet.matchId);
+            if (!aggregateLineMap[matchKey]) {
+              aggregateLineMap[matchKey] = [];
+            }
+            if (bet.lines && Array.isArray(bet.lines)) {
+              aggregateLineMap[matchKey].push(...bet.lines);
+            }
+          });
+
+          const backendIds = Array.isArray(result.matchIdsProcessed)
+            ? result.matchIdsProcessed.map((id) => String(id))
+            : [];
+
+          backendIds.forEach(id => allProcessedIds.add(id));
+          totalBackendMatches += backendIds.length || Object.keys(aggregateLineMap).length || 0;
+        }
       }
+
+      setPositiveLineMap(aggregateLineMap);
+
+      const completed = {};
+      // Mark all processed matches as completed, even if they have no bets
+      allProcessedIds.forEach(id => {
+        completed[id] = true;
+      });
+      // Fallback: ensure matches with bets are also marked
+      Object.keys(aggregateLineMap).forEach(key => {
+        completed[key] = true;
+      });
+
+      setCompletedMatches(completed);
+      if (totalBackendMatches > 0) {
+        setBackendTotalMatches(totalBackendMatches);
+      }
+
+      console.log('[AI Generate] Success! Loaded', Object.keys(aggregateLineMap).length, 'matches across dates');
     } catch (error) {
       console.error('[AI Generate] Error:', error);
       alert(`Failed to generate bets: ${error.message}`);
     }
-  }, [date, targetMatches]);
+  }, [date, selectedDates, targetMatches]);
 
   const totalBacktests = targetMatches.length;
   const totalBacktestsResolved =
@@ -399,6 +429,8 @@ function useWorkspaceController(defaultDate) {
   return {
     date,
     setDate,
+    selectedDates,
+    setSelectedDates,
     items,
     matches,
     matchesCount: matches.length,
@@ -469,10 +501,13 @@ function WorkspaceEngines({
 }
 
 export default function AIWorkspace({ defaultDate }) {
+  const SHOW_POSITIVE_PANEL = false; // Toggle to true to show all +EV lines panel
   const workspace = useWorkspaceController(defaultDate);
   const {
     date,
     setDate,
+    selectedDates,
+    setSelectedDates,
     items,
     matches,
     formatTime,
@@ -589,10 +624,13 @@ export default function AIWorkspace({ defaultDate }) {
 }
 
 export function AIUserWorkspace({ defaultDate }) {
+  const SHOW_POSITIVE_PANEL = false; // Toggle to true to show +EV lines panel
   const workspace = useWorkspaceController(defaultDate);
   const {
     date,
     setDate,
+    selectedDates,
+    setSelectedDates,
     handleGenerate,
     statusLabel,
     processing,
@@ -670,6 +708,8 @@ export function AIUserWorkspace({ defaultDate }) {
         <AIHeroInput
           date={date}
           setDate={setDate}
+          selectedDates={selectedDates}
+          setSelectedDates={setSelectedDates}
           onGenerate={handleUserGenerate}
           isBusy={isBusy}
           statusLabel={statusLabel}
@@ -706,7 +746,7 @@ export function AIUserWorkspace({ defaultDate }) {
             )}
 
             {/* Always show selected linor */}
-            {hasLines && (
+            {hasLines && SHOW_POSITIVE_PANEL && (
               <div className="space-y-3 max-w-4xl mx-auto w-full">
                 {!hasCombos && (
                   <p className="text-sm text-slate-400">

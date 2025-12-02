@@ -178,8 +178,9 @@ export default function AIComboList({ combos, priorityMap = {} }) {
 
     // Calculate average matchup score for combo
     const matchupScores = combo.lines.map((line) => {
-      const lineKey = buildLineKey(line);
-      return priorityMap[lineKey] || 0;
+      // Use matchupScore directly from the line (populated by backend)
+      // Fallback to priorityMap only if needed (though backend should provide it)
+      return Number(line.matchupScore ?? priorityMap[buildLineKey(line)] ?? 0);
     });
     const avgMatchupScore =
       matchupScores.reduce((a, b) => a + b, 0) / matchupScores.length || 0;
@@ -276,7 +277,7 @@ export default function AIComboList({ combos, priorityMap = {} }) {
               </div>
             </div>
 
-            {/* Count Badge */}
+            {/* Count Badge - NOW SHOWING SCORE */}
             <div
               className={clsx(
                 "flex h-8 w-14 items-center justify-center rounded-full text-sm font-bold ring-1",
@@ -290,7 +291,7 @@ export default function AIComboList({ combos, priorityMap = {} }) {
                 }
               )}
             >
-              {combo.lines.length}/{combo.lines.length}
+              {avgMatchupScore.toFixed(0)}
             </div>
           </div>
         </div>
