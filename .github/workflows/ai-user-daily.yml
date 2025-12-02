@@ -1,0 +1,71 @@
+name: AI User Daily Generation
+
+on:
+  schedule:
+    - cron: '0 10 * * *' # 09:00 Stockholm time
+  workflow_dispatch:
+    inputs:
+      days_ahead:
+        description: "Antal dagar framåt att generera (0-3)"
+        required: false
+        default: "2"
+        type: choice
+        options:
+          - "0"
+          - "1"
+          - "2"
+          - "3"
+
+jobs:
+  generate-ai-user:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate dates
+        id: dates
+        run: |
+          # Calculate dates in Stockholm timezone (UTC+1)
+          today=$(date -u -d 'today 09:00' +%Y-%m-%d)  # Today at 09:00 UTC = 10:00 Stockholm
+          tomorrow=$(date -u -d 'tomorrow 09:00' +%Y-%m-%d)
+          day_after=$(date -u -d '+2 days 09:00' +%Y-%m-%d)
+
+          days_ahead="${{ github.event.inputs.days_ahead }}"
+          if [ -z "$days_ahead" ]; then
+            days_ahead="2"
+          fi
+
+          echo "today=$today" >> $GITHUB_OUTPUT
+          echo "tomorrow=$tomorrow" >> $GITHUB_OUTPUT
+          echo "day_after=$day_after" >> $GITHUB_OUTPUT
+          echo "days_ahead=$days_ahead" >> $GITHUB_OUTPUT
+
+      - name: Generate AI bets for selected dates
+        run: |
+          echo "Generating AI bets for dates: ${{ steps.dates.outputs.today }}, ${{ steps.dates.outputs.tomorrow }}, ${{ steps.dates.outputs.day_after }}"
+
+          # Build dates array based on days_ahead
+          DATES_ARRAY="[\"${{ steps.dates.outputs.today }}\""
+          if [ "${{ fromJSON(steps.dates.outputs.days_ahead) }}" -ge 1 ]; then
+            DATES_ARRAY="${DATES_ARRAY}, \"${{ steps.dates.outputs.tomorrow }}\""
+          fi
+          if [ "${{ fromJSON(steps.dates.outputs.days_ahead) }}" -ge 2 ]; then
+            DATES_ARRAY="${DATES_ARRAY}, \"${{ steps.dates.outputs.day_after }}\""
+          fi
+          DATES_ARRAY="${DATES_ARRAY}]"
+
+          echo "Dates array: $DATES_ARRAY"
+
+          curl -X POST "${{ secrets.VERCEL_APP_URL }}/ai/user" \
+            -H "Content-Type: application/json" \
+            -d "{\"dates\": $DATES_ARRAY}" \
+            --max-time 600 \
+            --retry 3 \
+            --retry-delay 30
