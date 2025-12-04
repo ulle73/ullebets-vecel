@@ -67,6 +67,11 @@ function resolvePrimaryEvValue(evDetails) {
   return null;
 }
 
+function normalizeDirection(value) {
+  const raw = String(value ?? "").toLowerCase();
+  return raw.startsWith("u") ? "under" : "over";
+}
+
 // Process match function (adapted from backtest-runner)
 async function processMatchForAI(match, tuples, eventId) {
   console.log(`⚽️ Processing ${match.homeTeam} vs ${match.awayTeam}`);
@@ -208,7 +213,7 @@ export async function POST(request) {
 
     // Log each filtered insight
     filteredInsights.forEach((insight, index) => {
-      const direction = insight.condition || insight.direction || (insight.over ? 'over' : 'under');
+      const direction = normalizeDirection(insight.condition || insight.direction || (insight.over ? 'over' : 'under'));
       console.log(`  ${index + 1}. ${insight.matchId} - ${insight.statKey} ${insight.scope}/${insight.period} ${direction} ${insight.line} (score: ${insight.score})`);
     });
 
@@ -290,7 +295,7 @@ export async function POST(request) {
     const insightRequirements = new Map();
     filteredInsights.forEach(insight => {
       const matchId = String(insight.matchId);
-      const direction = insight.condition || insight.direction || (insight.over ? 'over' : 'under');
+      const direction = normalizeDirection(insight.condition || insight.direction || (insight.over ? 'over' : 'under'));
       const key = `${insight.statKey}-${insight.scope}-${insight.period}-${direction}`;
 
       if (!insightRequirements.has(matchId)) {
@@ -320,17 +325,23 @@ export async function POST(request) {
       console.log(`[AI Generate User] Processing match [${i + 1}/${oddsResults.length}]: ${oddsResult.homeTeam} vs ${oddsResult.awayTeam} (${matchRequirements.size} required insights)`);
 
       // Filter tuples to only those matching AI insights
-      const relevantTuples = oddsResult.tuples.filter(tuple => {
-        const direction = tuple.odds?.over ? 'over' : 'under';
-        const key = `${tuple.statKey}-${tuple.scope}-${tuple.period}-${direction}`;
-        const hasMatch = matchRequirements.has(key);
+      const relevantTuples = [];
+      for (const tuple of oddsResult.tuples) {
+        for (const dir of ["over", "under"]) {
+          const oddsValue = tuple?.odds?.[dir];
+          if (!Number.isFinite(oddsValue)) continue;
+          const key = `${tuple.statKey}-${tuple.scope}-${tuple.period}-${dir}`;
+          const hasMatch = matchRequirements.has(key);
 
-        if (tuple.statKey === 'throwIns' && tuple.scope === 'total' && tuple.period === '1ST') {
-          console.log(`[AI Generate User] Debug throwIns: key=${key}, hasMatch=${hasMatch}, requirements=${Array.from(matchRequirements).join(', ')}`);
+          if (tuple.statKey === 'throwIns' && tuple.scope === 'total' && tuple.period === '1ST') {
+            console.log(`[AI Generate User] Debug throwIns: key=${key}, hasMatch=${hasMatch}, requirements=${Array.from(matchRequirements).join(', ')}`);
+          }
+
+          if (hasMatch) {
+            relevantTuples.push({ ...tuple, direction: dir, oddsValue });
+          }
         }
-
-        return hasMatch;
-      });
+      }
 
       console.log(`[AI Generate User] Found ${relevantTuples.length} relevant tuples out of ${oddsResult.tuples.length}`);
 
@@ -341,8 +352,8 @@ export async function POST(request) {
 
       // Process each relevant tuple individually
       for (const tuple of relevantTuples) {
-        const direction = tuple.odds?.over ? 'over' : 'under';
-        const oddsValue = direction === 'over' ? tuple.odds.over : tuple.odds.under;
+        const direction = tuple.direction;
+        const oddsValue = tuple.oddsValue;
 
         if (!oddsValue || oddsValue <= 1) continue;
 
@@ -367,13 +378,16 @@ export async function POST(request) {
           const evResult = await calculateEvForBet(betParam);
 
           // Find the corresponding insight for matchupScore
-          const insight = filteredInsights.find(i =>
-            String(i.matchId) === String(oddsResult.matchId) &&
-            i.statKey === tuple.statKey &&
-            i.scope === tuple.scope &&
-            i.period === tuple.period &&
-            (i.condition || i.direction || (i.over ? 'over' : 'under')) === direction
-          );
+          const insight = filteredInsights.find(i => {
+            const insightDirection = normalizeDirection(i.condition || i.direction || (i.over ? 'over' : 'under'));
+            return (
+              String(i.matchId) === String(oddsResult.matchId) &&
+              i.statKey === tuple.statKey &&
+              i.scope === tuple.scope &&
+              i.period === tuple.period &&
+              insightDirection === direction
+            );
+          });
 
           const matchupScore = insight ? Number(insight.score ?? insight.normalizedScore ?? 0) : 0;
 
