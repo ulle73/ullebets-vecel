@@ -1,3 +1,4 @@
+// ```javascript
 // app/page.jsx
 export const dynamic = "force-dynamic";
 
@@ -7,6 +8,8 @@ import { todaySE, tomorrowSE } from "@/lib/utils/date";
 import { getMatchesForDate } from "@/lib/repos/fixtures";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { buildMatchesByDateKey } from "@/lib/utils/apiKeys";
+import Sidebar from "@/components/Sidebar";
+import TopBar from "@/components/TopBar";
 
 export default async function Page() {
   const today = todaySE();
@@ -26,22 +29,21 @@ export default async function Page() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col overflow-x-hidden bg-gray-50 lg:h-screen lg:overflow-hidden">
-      <header className="flex-shrink-0 px-4 pt-6 pb-2 sm:px-6">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Matcher</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Prefetch: <code className="bg-gray-100 px-1 py-0.5 rounded">{today}</code> &nbsp;och&nbsp;
-          <code className="bg-gray-100 px-1 py-0.5 rounded">{tomorrow}</code>
-        </p>
-      </header>
+    <div className="flex h-screen w-full overflow-hidden bg-black">
+      <Sidebar />
 
-      <SWRConfig value={{ fallback }}>
-        <section className="flex-1 overflow-visible lg:overflow-hidden">
-          <ErrorBoundary resetKeys={[today, tomorrow]}>
-            <MatchesClient defaultDate={today} initialFallback={fallback} />
-          </ErrorBoundary>
-        </section>
-      </SWRConfig>
-    </main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <TopBar />
+
+        <main className="flex-1 overflow-y-auto bg-black p-6">
+          <SWRConfig value={{ fallback }}>
+            <ErrorBoundary resetKeys={[today, tomorrow]}>
+              <MatchesClient defaultDate={today} initialFallback={fallback} />
+            </ErrorBoundary>
+          </SWRConfig>
+        </main>
+      </div>
+    </div>
   );
 }
+// ```
