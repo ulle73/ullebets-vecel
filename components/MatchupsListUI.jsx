@@ -53,7 +53,7 @@ export function FilterChips({ options, value, onChange }) {
   );
 }
 
-export function RowAvg({ r, showHistoricalOutcome = false }) {
+export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
   const scopeLabel = r.scopeLabel ?? deriveScopeLabel(r.scope, r.matchLabel);
   const highlightThreshold = r.scoreThresholds?.high ?? 95;
   const borderHighlight =
@@ -66,6 +66,22 @@ export function RowAvg({ r, showHistoricalOutcome = false }) {
   const showOutcome = showHistoricalOutcome && formattedOutcomeValue != null;
   const leagueBaselineValue = Number.isFinite(r.leagueBaseline) ? r.leagueBaseline : null;
   const formattedLeagueBaseline = formatOutcomeNumber(leagueBaselineValue);
+  const hasComparison = showOutcome && leagueBaselineValue != null && leagueBaselineValue !== 0;
+  const pctDelta = hasComparison
+    ? ((r.outcomeValue - leagueBaselineValue) / leagueBaselineValue) * 100
+    : null;
+  const formattedPct = pctDelta != null ? `${pctDelta >= 0 ? "+" : ""}${pctDelta.toFixed(1)}%` : null;
+
+  const condition = (r.condition ?? "").toLowerCase();
+  const isOver = condition === "over";
+  const isUnder = condition === "under";
+  const isGreen = (isOver && pctDelta > 0) || (isUnder && pctDelta < 0);
+  const isRed = (isOver && pctDelta < 0) || (isUnder && pctDelta > 0);
+  const pctTone = isGreen ? "text-emerald-700" : isRed ? "text-red-700" : "text-gray-700";
+  const pctBg =
+    pctDelta != null && Math.abs(pctDelta) >= (Number.isFinite(highlightPct) ? highlightPct : 0)
+      ? "animate-pulse"
+      : "";
   const outcomeDetails = [];
   const homeDetail = formatOutcomeNumber(r.outcomeHomeValue);
   const awayDetail = formatOutcomeNumber(r.outcomeAwayValue);
@@ -115,6 +131,11 @@ export function RowAvg({ r, showHistoricalOutcome = false }) {
                 <div className="text-[11px]">
                   <span className="font-semibold text-gray-700">Liga-snitt:</span>
                   <span className="ml-1 text-gray-900">{formattedLeagueBaseline}</span>
+                  {formattedPct ? (
+                    <span className={`ml-2 font-semibold ${pctTone} ${pctBg}`}>
+                      {formattedPct}
+                    </span>
+                  ) : null}
                 </div>
               ) : null}
             </div>

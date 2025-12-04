@@ -111,6 +111,7 @@ function mapScoreEntry(entry) {
     period: entry.period ?? "ALL",
     scope,
     scopeLabel: entry.scopeLabel ?? null,
+    condition: entry.condition ?? entry.direction ?? null,
     matchLabel,
     score,
     sortKey: toNum(entry.sortKey ?? entry.score) ?? score,
@@ -152,6 +153,7 @@ export default function BestMatchups({ date, items }) {
   const [leagueFilter, setLeagueFilter] = useState("all");
   const [statFilter, setStatFilter] = useState("all");
   const [onlyTopBadges, setOnlyTopBadges] = useState(false);
+  const [highlightPct, setHighlightPct] = useState(20);
   const showHistoricalOutcome = useMemo(() => isDateBeforeToday(date), [date]);
 
   const queryKey = date ? `/api/matchups-score?date=${encodeURIComponent(date)}` : null;
@@ -280,6 +282,21 @@ export default function BestMatchups({ date, items }) {
             />
             Visa endast Perfekt/Nästan
           </label>
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Highlight % (±)
+            </span>
+            <input
+              type="number"
+              min="0"
+              className="w-20 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              value={highlightPct}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setHighlightPct(Number.isFinite(v) && v >= 0 ? v : 0);
+              }}
+            />
+          </label>
         </div>
       </div>
 
@@ -304,6 +321,7 @@ export default function BestMatchups({ date, items }) {
                     key={`o:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`}
                     r={r}
                     showHistoricalOutcome={showHistoricalOutcome}
+                    highlightPct={highlightPct}
                   />
                 ))}
               </ol>
@@ -335,6 +353,7 @@ export default function BestMatchups({ date, items }) {
                     key={`u:${r.matchId}:${r.statKey}:${r.period}:${r.scope}`}
                     r={r}
                     showHistoricalOutcome={showHistoricalOutcome}
+                    highlightPct={highlightPct}
                   />
                 ))}
               </ol>
