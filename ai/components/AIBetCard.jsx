@@ -58,6 +58,17 @@ function formatStatText(statKey) {
   return statNames[statKey] || statKey;
 }
 
+function formatMatchDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  try {
+    return date.toLocaleDateString("sv-SE");
+  } catch {
+    return date.toISOString().slice(0, 10);
+  }
+}
+
 function getBetDescription(line) {
   const homeTeam = line.teams?.home || line.homeTeam || "";
   const awayTeam = line.teams?.away || line.awayTeam || "";
@@ -107,6 +118,24 @@ const PinIcon = () => (
   >
     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
     <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+
+const CalendarIcon = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
   </svg>
 );
 
@@ -336,6 +365,14 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
           const awayTeamId = line.teams?.awayId || line.awayTeamId;
           const uniqueKey = `${betDoc._id}-${lineIndex}`;
           const description = getBetDescription(line);
+          const matchDateLabel =
+            formatMatchDate(
+              line.matchDate ||
+                betDoc.date ||
+                betDoc.matchDate ||
+                betDoc.metadata?.matchDate ||
+                betDoc.generatedAt
+            ) || null;
 
           let oddsColor = "text-emerald-400";
           const isComboLine = lines.length > 1;
@@ -387,6 +424,13 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
                       <PinIcon />
                       <span className="text-slate-300">{line.scope || "total"}</span>
                     </div>
+
+                    {matchDateLabel && (
+                      <span className="inline-flex items-center gap-1 text-slate-300">
+                        <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="text-slate-100 font-semibold">{matchDateLabel}</span>
+                      </span>
+                    )}
 
                     {showOutcome && line.actual !== null && line.actual !== undefined && (
                       <span className="text-slate-300">
