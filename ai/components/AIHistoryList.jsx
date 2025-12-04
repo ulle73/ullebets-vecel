@@ -1,7 +1,6 @@
 "use client";
 
 import AIBetCard from "./AIBetCard";
-import AIHistoryCompactCard from "./AIHistoryCompactCard";
 
 export default function AIHistoryList({ bets }) {
   if (!bets || !bets.length) {
@@ -15,7 +14,13 @@ export default function AIHistoryList({ bets }) {
   return (
     <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
       {bets.map((bet, i) => (
-        <AIHistoryCompactCard key={bet._id || i} betDoc={bet} index={i} />
+        <AIBetCard
+          key={bet._id || i}
+          betDoc={bet}
+          index={i}
+          showOutcome
+          showUnibetButton={false}
+        />
       ))}
     </div>
   );

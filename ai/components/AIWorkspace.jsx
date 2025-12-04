@@ -391,8 +391,18 @@ function useWorkspaceController(defaultDate) {
             }
           }
         }
-        setHistoryBets(allHistory);
-        console.log('[AI Generate] Loaded', allHistory.length, 'historical bets');
+        const filteredHistory = allHistory
+          .map((betDoc) => {
+            const lines = Array.isArray(betDoc.lines) ? betDoc.lines.filter((line) => {
+              const ev = Number(line.primaryEv ?? line.value ?? line.evPct ?? 0);
+              return Number.isFinite(ev) && ev > 0;
+            }) : [];
+            if (!lines.length) return null;
+            return { ...betDoc, lines };
+          })
+          .filter(Boolean);
+        setHistoryBets(filteredHistory);
+        console.log('[AI Generate] Loaded', filteredHistory.length, 'historical bets (+EV only)');
         return;
       } else {
         setIsHistoryMode(false);
