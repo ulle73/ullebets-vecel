@@ -468,37 +468,36 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
   return (
     <article
       className={clsx(
-        "overflow-hidden rounded-2xl bg-[#020617] transition-all duration-300 w-full",
+        "relative overflow-hidden rounded-5xl bg-[#020617] transition-all duration-300 w-full",
         borderColor,
         glowShadow
       )}
     >
-      {showOutcome ? (
-        <div className="flex flex-col sm:flex-row">
-          <div
-            className={`${headerGradient} sm:w-1/4 flex items-center justify-center sm:justify-center sm:items-center border-b sm:border-b-0 sm:border-r border-white/5 p-6`}
-          >
-            <div className="text-center space-y-2">
-              <div className={clsx("text-6xl font-extrabold tracking-tight", statusColor)}>
-                {statusText}
-              </div>
-              <div className="text-md font-bold uppercase text-white">
-                Outcome {outcomeValue != null ? outcomeValue : "—"}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col">
-            <div className={`${headerGradient} border-b border-white/5 p-6`}>{headerContent}</div>
-            <div className="p-6">{bodyContent}</div>
-          </div>
+      {showOutcome && (
+        <div
+          className={clsx(
+            "pointer-events-none absolute inset-0 z-0 flex items-center justify-center select-none",
+            statusColor
+          )}
+          style={{
+            transform: "rotate(-22deg)",
+            opacity: 0.12,
+          }}
+        >
+          <span className="text-[7rem] sm:text-[9rem] md:text-[20rem] font-black uppercase leading-none tracking-tight drop-shadow-[0_0_22px_rgba(0,0,0,0.35)]">
+            {statusText}
+          </span>
         </div>
-      ) : (
-        <>
-          <div className={`${headerGradient} border-b border-white/5 p-6`}>{headerContent}</div>
-          <div className="p-6">{bodyContent}</div>
-        </>
       )}
+
+      <div className="relative z-10">
+        <div className={`${headerGradient} border-b border-white/5 p-6`}>
+          {headerContent}
+        </div>
+        <div className="p-6">
+          {bodyContent}
+        </div>
+      </div>
     </article>
   );
 }
