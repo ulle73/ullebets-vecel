@@ -102,6 +102,7 @@ function mapScoreEntry(entry) {
   const score = toNum(entry.score) ?? toNum(entry.sortKey) ?? 0;
   const scope = entry.scope ?? "total";
   const outcomeInfo = deriveOutcomeForScope(entry.outcome, scope);
+  const leagueBaseline = toNum(entry?.forecast?.leagueBaseline);
   return {
     matchId: entry.matchId ?? matchLabel,
     leagueName: entry.league ?? null,
@@ -116,6 +117,7 @@ function mapScoreEntry(entry) {
     badge: badgeForNormalizedScore(score),
     scoreFormat: (value) => `${value.toFixed(1)}/100`,
     scoreThresholds: DEFAULT_SCORE_THRESHOLDS,
+    leagueBaseline,
     ...outcomeInfo,
   };
 }

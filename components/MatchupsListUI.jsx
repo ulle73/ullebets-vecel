@@ -64,6 +64,8 @@ export function RowAvg({ r, showHistoricalOutcome = false }) {
   };
   const formattedOutcomeValue = formatOutcomeNumber(r.outcomeValue);
   const showOutcome = showHistoricalOutcome && formattedOutcomeValue != null;
+  const leagueBaselineValue = Number.isFinite(r.leagueBaseline) ? r.leagueBaseline : null;
+  const formattedLeagueBaseline = formatOutcomeNumber(leagueBaselineValue);
   const outcomeDetails = [];
   const homeDetail = formatOutcomeNumber(r.outcomeHomeValue);
   const awayDetail = formatOutcomeNumber(r.outcomeAwayValue);
@@ -91,19 +93,29 @@ export function RowAvg({ r, showHistoricalOutcome = false }) {
           </div>
           {r.leagueName ? (
             <div className="mt-2">
-              <span className="rounded bg-gray-100 px-2 py-1 text-[8.25px] font-semibold text-gray-700">
-                {r.leagueName}
-              </span>
-            </div>
-          ) : null}
-          {showOutcome ? (
-            <div className="mt-2 text-xs text-gray-600">
-              <span className="font-semibold text-gray-700">Utfall:</span>
-              <span className="ml-1 text-gray-900">{formattedOutcomeValue}</span>
-              {outcomeDetails.length ? (
-                <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                  {outcomeDetails.join(" · ")}
-                </span>
+            <span className="rounded bg-gray-100 px-2 py-1 text-[8.25px] font-semibold text-gray-700">
+              {r.leagueName}
+            </span>
+          </div>
+        ) : null}
+          {(showOutcome || formattedLeagueBaseline != null) ? (
+            <div className="mt-2 text-xs text-gray-600 space-y-1">
+              {showOutcome ? (
+                <div>
+                  <span className="font-semibold text-gray-700">Utfall:</span>
+                  <span className="ml-1 text-gray-900">{formattedOutcomeValue}</span>
+                  {outcomeDetails.length ? (
+                    <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                      {outcomeDetails.join(" · ")}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+              {formattedLeagueBaseline != null ? (
+                <div className="text-[11px]">
+                  <span className="font-semibold text-gray-700">Liga-snitt:</span>
+                  <span className="ml-1 text-gray-900">{formattedLeagueBaseline}</span>
+                </div>
               ) : null}
             </div>
           ) : null}

@@ -7,6 +7,13 @@ import crypto from "node:crypto";
 import { clientPromise } from "../lib/db.js";
 import { getMatchesForDate } from "../lib/repos/fixtures.js";
 import { normalizeMatch } from "../lib/core/matchups.js";
+import {
+  computeForecastBundle,
+  SCOPE_AWAY,
+  SCOPE_HOME,
+  SCOPE_TOTAL,
+} from "../lib/statForecast/formulas.js";
+import { STAT_CONFIG } from "../lib/statForecast/statConfig.js";
 
 const PERIODS = [
   { value: "ALL", label: "Hela matchen" },
@@ -30,6 +37,7 @@ const RESULTS_DIR = path.join(process.cwd(), "data", "matchups");
 const SCORE_DIR = path.join(RESULTS_DIR, "matchup-score");
 const DB_NAME = process.env.MONGODB_DB || "app";
 const TEAMPROFILE_COLLECTION = "teamprofiles";
+const FORECAST_SCOPE_MAP = { total: SCOPE_TOTAL, home: SCOPE_HOME, away: SCOPE_AWAY };
 
 function ensureDir(target) {
   return fs.mkdir(target, { recursive: true });
@@ -454,6 +462,27 @@ function buildScoreSnapshot(pairs, leagueSizeMap, limit = 200) {
         const sumHome = hf + aa;
         const sumAway = af + ha;
         const avgPair = (sumHome + sumAway) / 2;
+        const forecastBundle = computeForecastBundle({
+          statKey,
+          period: periodKey,
+          homeProfile: p.home.profile,
+          awayProfile: p.away.profile,
+          config: STAT_CONFIG,
+        });
+
+        const attachLeagueAvg = (entry, scope) => {
+          const bundleScope = FORECAST_SCOPE_MAP[scope];
+          const leagueBaseline =
+            forecastBundle?.baseline?.league?.perScope?.[bundleScope] ?? null;
+          if (leagueBaseline == null) return entry;
+          return {
+            ...entry,
+            forecast: {
+              ...entry.forecast,
+              leagueBaseline,
+            },
+          };
+        };
 
         const matchLabel = `${p.home.name} vs ${p.away.name}`;
         const baseEntry = {
@@ -469,12 +498,15 @@ function buildScoreSnapshot(pairs, leagueSizeMap, limit = 200) {
         const pushEntry = (direction, scope, scoreValue) => {
           const rounded = roundScore(scoreValue);
           if (rounded == null) return;
-          const entry = {
-            ...baseEntry,
-            scope,
-            condition: direction,
-            score: rounded,
-          };
+          const entry = attachLeagueAvg(
+            {
+              ...baseEntry,
+              scope,
+              condition: direction,
+              score: rounded,
+            },
+            scope
+          );
           if (direction === "over") {
             overEntries.push(entry);
           } else {
