@@ -158,9 +158,15 @@ function sanitizeStatEntry(entry) {
 function resolveMatchStat(match, statPatterns, statKey, periodKey) {
   const containers = [match?.stat, match?.stats, match?.statistics, match?.extraStats, match?.additionalStats];
   for (const container of containers) {
+    if (!container) continue;
+
     const direct = container?.[statKey];
     const sanitized = sanitizeStatEntry(direct);
     if (sanitized) return sanitized;
+
+    // Fallback for cases where the container itself already is the stat object
+    const directContainer = sanitizeStatEntry(container);
+    if (directContainer) return directContainer;
   }
 
   const detailCandidates = [];
