@@ -771,6 +771,21 @@ export function AIUserWorkspace({ defaultDate }) {
   }, [handleGenerate]);
 
   const hasLines = (positiveLines?.length ?? 0) > 0;
+  const filteredHistoryBets = useMemo(() => {
+    if (!Array.isArray(historyBets) || !historyBets.length) return [];
+    return historyBets
+      .map((bet) => {
+        const lines = Array.isArray(bet.lines)
+          ? bet.lines.filter((line) => {
+              const odds = Number(line.odds);
+              return Number.isFinite(odds) && odds >= oddsRange.min && odds <= oddsRange.max;
+            })
+          : [];
+        if (!lines.length) return null;
+        return { ...bet, lines };
+      })
+      .filter(Boolean);
+  }, [historyBets, oddsRange]);
 
   return (
     <div
@@ -825,7 +840,7 @@ export function AIUserWorkspace({ defaultDate }) {
                   </h3>
                 </div>
 
-                {!isHistoryMode && (
+                {!isHistoryMode ? (
                   <AIComboControls
                     legs={comboLegs}
                     onLegChange={setComboLegs}
@@ -833,10 +848,41 @@ export function AIUserWorkspace({ defaultDate }) {
                     onOddsRangeChange={handleOddsRangeChange}
                     disabled={!showResults}
                   />
+                ) : (
+                  <div className="w-full max-w-4xl mx-auto grid gap-3 sm:grid-cols-2">
+                    <label className="flex flex-col gap-1 text-sm text-slate-200">
+                      Min odds
+                      <input
+                        type="number"
+                        min={1.01}
+                        step="0.01"
+                        value={oddsRange.min}
+                        onChange={(e) =>
+                          handleOddsRangeChange({ min: Number(e.target.value), max: oddsRange.max })
+                        }
+                        disabled={!showResults}
+                        className="rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm text-slate-200">
+                      Max odds
+                      <input
+                        type="number"
+                        min={1.01}
+                        step="0.01"
+                        value={oddsRange.max}
+                        onChange={(e) =>
+                          handleOddsRangeChange({ min: oddsRange.min, max: Number(e.target.value) })
+                        }
+                        disabled={!showResults}
+                        className="rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                      />
+                    </label>
+                  </div>
                 )}
 
                 {isHistoryMode ? (
-                  <AIHistoryList bets={historyBets} />
+                  <AIHistoryList bets={filteredHistoryBets} />
                 ) : hasCombos ? (
                   <AIComboList combos={combos} priorityMap={priorityMap} />
                 ) : (
