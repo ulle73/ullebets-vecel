@@ -305,7 +305,9 @@ function buildHistoryTooltipEntries({ history, scope, type, line, direction }) {
         : false;
       const home = (match?.homeTeam || "").trim();
       const away = (match?.awayTeam || "").trim();
-      const label = [home, away].filter(Boolean).join(" vs ");
+      const date = (match?.date || "").trim();
+      const teams = [home, away].filter(Boolean).join(" vs ");
+      const label = [date, teams].filter(Boolean).join(" – ");
       const valueText = formatHistoryValue(match);
       return {
         label: label || "–",
@@ -704,6 +706,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
         const history = computeHistoryStats({
           homeMatches: data.homeMatches,
           awayMatches: data.awayMatches,
+          homeHistory: data.homeHistory,
+          awayHistory: data.awayHistory,
           statPatterns,
           statKey,
           scope,
@@ -918,6 +922,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
           const history = computeHistoryStats({
             homeMatches: result.homeMatches,
             awayMatches: result.awayMatches,
+            homeHistory: result.homeHistory,
+            awayHistory: result.awayHistory,
             statPatterns,
             statKey: result.params.stat,
             scope: result.params.scope,
@@ -1199,14 +1205,14 @@ export default function BacktestPage({ match, onPositiveResults }) {
                               </div>
                             </Tooltip.Trigger>
                             <Tooltip.Portal>
-                              <Tooltip.Content
+                            <Tooltip.Content
                                 sideOffset={6}
-                                className="z-50 max-h-80 w-72 overflow-y-auto rounded-md bg-slate-800/95 px-3 py-2 text-[11px] leading-relaxed text-slate-100 shadow-lg"
+                                className="z-50 max-h-80 min-w-[20rem] overflow-y-auto rounded-md bg-slate-800/95 px-4 py-3 text-[11px] leading-relaxed text-slate-100 shadow-lg"
                               >
                                 {overTooltipEntries.length ? (
                                   <div className="flex flex-col gap-1">
                                     {overTooltipEntries.map((entry, idx) => (
-                                      <div key={idx} className="flex items-center justify-between gap-4">
+                                      <div key={idx} className="flex items-start justify-between gap-3">
                                         <span className="text-left text-slate-200">{entry.label}</span>
                                         <span
                                           className={`font-semibold ${entry.highlight ? "text-emerald-300" : "text-rose-300"
@@ -1232,14 +1238,14 @@ export default function BacktestPage({ match, onPositiveResults }) {
                               </div>
                             </Tooltip.Trigger>
                             <Tooltip.Portal>
-                              <Tooltip.Content
+                            <Tooltip.Content
                                 sideOffset={6}
-                                className="z-50 max-h-80 w-72 overflow-y-auto rounded-md bg-slate-800/95 px-3 py-2 text-[11px] leading-relaxed text-slate-100 shadow-lg"
+                                className="z-50 max-h-80 min-w-[20rem] overflow-y-auto rounded-md bg-slate-800/95 px-4 py-3 text-[11px] leading-relaxed text-slate-100 shadow-lg"
                               >
                                 {underTooltipEntries.length ? (
                                   <div className="flex flex-col gap-1">
                                     {underTooltipEntries.map((entry, idx) => (
-                                      <div key={idx} className="flex items-center justify-between gap-4">
+                                      <div key={idx} className="flex items-start justify-between gap-3">
                                         <span className="text-left text-slate-200">{entry.label}</span>
                                         <span
                                           className={`font-semibold ${entry.highlight ? "text-emerald-300" : "text-rose-300"

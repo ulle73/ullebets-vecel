@@ -25,6 +25,41 @@ function toNumber(value) {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
+function normalizeHistoryEntry(entry, teamName) {
+  if (!entry) return null;
+  const value = toNumber(entry.val);
+  const opponentValue = toNumber(entry.oppVal);
+  if (!Number.isFinite(value) && !Number.isFinite(opponentValue)) return null;
+
+  const timestamp = toTimestamp(entry.timestamp) ?? toTimestamp(entry.date);
+  const stat = {
+    home: Number.isFinite(value) ? value : null,
+    away: Number.isFinite(opponentValue) ? opponentValue : null,
+    total:
+      Number.isFinite(value) && Number.isFinite(opponentValue)
+        ? value + opponentValue
+        : Number.isFinite(value)
+        ? value
+        : Number.isFinite(opponentValue)
+        ? opponentValue
+        : null,
+  };
+
+  return {
+    stat,
+    homeTeam: teamName || "",
+    awayTeam: entry.opp || "",
+    timestamp: Number.isFinite(timestamp) ? timestamp : 0,
+  };
+}
+
+function mapHistoryToMatches(historyEntries, teamName) {
+  if (!Array.isArray(historyEntries)) return [];
+  return historyEntries
+    .map((entry) => normalizeHistoryEntry(entry, teamName))
+    .filter(Boolean);
+}
+
 function toTimestamp(value) {
   if (value == null) return null;
   if (typeof value === "number") {
@@ -46,6 +81,7 @@ function toTimestamp(value) {
 function extractTeamName(match, side) {
   const candidates = [
     match?.[`${side}TeamName`],
+    match?.[`${side}Team`],
     match?.[`${side}Team`]?.name,
     match?.[`${side}Team`]?.teamName,
     match?.matchDetails?.[`${side}TeamName`],
@@ -265,9 +301,13 @@ function createSample(match, value, displayValue) {
     homeTeam: match.homeTeam || "",
     awayTeam: match.awayTeam || "",
   };
+  const ts = toTimestamp(match?.timestamp ?? match?.date);
+  const date =
+    Number.isFinite(ts) && ts > 0 ? new Date(ts).toISOString().slice(0, 10) : null;
   const sample = {
     ...label,
     value: numeric,
+    date,
   };
   if (displayValue != null) {
     sample.displayValue = displayValue;
@@ -286,6 +326,8 @@ function countLess(values, threshold) {
 export function computeHistoryStats({
   homeMatches = [],
   awayMatches = [],
+  homeHistory = [],
+  awayHistory = [],
   statPatterns = {},
   statKey,
   scope = "total",
@@ -306,8 +348,11 @@ export function computeHistoryStats({
     ? String(period).toUpperCase()
     : "ALL";
 
+  const fallbackHomeMatches = mapHistoryToMatches(homeHistory, homeTeam);
+  const fallbackAwayMatches = mapHistoryToMatches(awayHistory, awayTeam);
+
   const homeNormalized = buildNormalizedMatches(
-    homeMatches,
+    homeMatches.length ? homeMatches : fallbackHomeMatches,
     statPatterns,
     statKey,
     periodKey,
@@ -315,7 +360,7 @@ export function computeHistoryStats({
     "home"
   );
   const awayNormalized = buildNormalizedMatches(
-    awayMatches,
+    awayMatches.length ? awayMatches : fallbackAwayMatches,
     statPatterns,
     statKey,
     periodKey,
