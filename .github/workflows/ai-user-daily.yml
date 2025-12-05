@@ -3,6 +3,11 @@ name: AI User Daily
 on:
   schedule:
     - cron: "0 11 * * *" # 09:00 Stockholm
+  workflow_call:
+    inputs:
+      dates:
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       dates:
@@ -21,7 +26,7 @@ jobs:
 
       - name: Kör samma flöde som /ai/user (Generate Bets)
         env:
-          INPUT_DATES: ${{ github.event.inputs.dates }}
+          INPUT_DATES: ${{ inputs.dates || github.event.inputs.dates }}
           BASE_URL: ${{ secrets.VERCEL_APP_URL }}
         run: |
           node - <<'NODE'
