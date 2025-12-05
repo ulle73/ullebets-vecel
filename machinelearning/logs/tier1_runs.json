@@ -1,0 +1,2705 @@
+[
+  {
+    "timestamp": "2025-12-05T16:11:20.026758+00:00",
+    "script": "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier1_trainRawFeatures.py",
+    "returncode": 0,
+    "duration_sec": 12.742,
+    "stdout": "🚀 Starting Tier 1 Model Training\n============================================================\n\nFound 27 datasets to train\n\n\n============================================================\nTraining: cornerKicks_away_1ST\n============================================================\nTrain samples: 1307\nVal samples: 282\nFeature dimension: 154\nTarget range: [1.0, 8.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.06\n  Val MAE:   1.32\n  Val RMSE:  1.79\n  Val R²:    0.030\n\n🔍 Top 5 Features:\n  Feature 94: 0.081\n  Feature 119: 0.069\n  Feature 138: 0.067\n  Feature 102: 0.038\n  Feature 136: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_away_1ST_raw.json\n\n============================================================\nTraining: cornerKicks_away_2ND\n============================================================\nTrain samples: 1438\nVal samples: 354\nFeature dimension: 154\nTarget range: [1.0, 7.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.07\n  Val MAE:   1.57\n  Val RMSE:  1.99\n  Val R²:    -0.594\n\n🔍 Top 5 Features:\n  Feature 109: 0.046\n  Feature 139: 0.033\n  Feature 93: 0.032\n  Feature 121: 0.028\n  Feature 73: 0.026\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_away_2ND_raw.json\n\n============================================================\nTraining: cornerKicks_away_ALL\n============================================================\nTrain samples: 2633\nVal samples: 666\nFeature dimension: 154\nTarget range: [1.0, 13.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.16\n  Val MAE:   2.53\n  Val RMSE:  3.11\n  Val R²:    -0.223\n\n🔍 Top 5 Features:\n  Feature 119: 0.060\n  Feature 138: 0.044\n  Feature 132: 0.035\n  Feature 106: 0.034\n  Feature 121: 0.032\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_away_ALL_raw.json\n\n============================================================\nTraining: cornerKicks_home_1ST\n============================================================\nTrain samples: 1599\nVal samples: 368\nFeature dimension: 154\nTarget range: [1.0, 9.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.06\n  Val MAE:   1.60\n  Val RMSE:  2.01\n  Val R²:    -0.136\n\n🔍 Top 5 Features:\n  Feature 97: 0.057\n  Feature 135: 0.045\n  Feature 109: 0.044\n  Feature 118: 0.038\n  Feature 115: 0.037\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_home_1ST_raw.json\n\n============================================================\nTraining: cornerKicks_home_2ND\n============================================================\nTrain samples: 1649\nVal samples: 412\nFeature dimension: 154\nTarget range: [1.0, 11.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.09\n  Val MAE:   2.09\n  Val RMSE:  2.41\n  Val R²:    -0.608\n\n🔍 Top 5 Features:\n  Feature 126: 0.048\n  Feature 76: 0.046\n  Feature 73: 0.038\n  Feature 75: 0.034\n  Feature 150: 0.032\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_home_2ND_raw.json\n\n============================================================\nTraining: cornerKicks_home_ALL\n============================================================\nTrain samples: 3104\nVal samples: 747\nFeature dimension: 154\nTarget range: [1.0, 14.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.18\n  Val MAE:   2.59\n  Val RMSE:  3.19\n  Val R²:    -0.421\n\n🔍 Top 5 Features:\n  Feature 137: 0.038\n  Feature 126: 0.034\n  Feature 142: 0.033\n  Feature 77: 0.030\n  Feature 79: 0.029\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_home_ALL_raw.json\n\n============================================================\nTraining: cornerKicks_total_1ST\n============================================================\nTrain samples: 2326\nVal samples: 552\nFeature dimension: 154\nTarget range: [1.0, 13.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.15\n  Val MAE:   1.63\n  Val RMSE:  2.06\n  Val R²:    0.217\n\n🔍 Top 5 Features:\n  Feature 138: 0.059\n  Feature 120: 0.040\n  Feature 119: 0.033\n  Feature 94: 0.031\n  Feature 130: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_total_1ST_raw.json\n\n============================================================\nTraining: cornerKicks_total_2ND\n============================================================\nTrain samples: 2503\nVal samples: 578\nFeature dimension: 154\nTarget range: [1.0, 12.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.13\n  Val MAE:   2.28\n  Val RMSE:  2.97\n  Val R²:    -0.263\n\n🔍 Top 5 Features:\n  Feature 134: 0.046\n  Feature 73: 0.038\n  Feature 76: 0.037\n  Feature 121: 0.030\n  Feature 78: 0.028\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_total_2ND_raw.json\n\n============================================================\nTraining: cornerKicks_total_ALL\n============================================================\nTrain samples: 3641\nVal samples: 944\nFeature dimension: 154\nTarget range: [2.0, 19.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.18\n  Val MAE:   2.95\n  Val RMSE:  3.70\n  Val R²:    -0.067\n\n🔍 Top 5 Features:\n  Feature 142: 0.110\n  Feature 140: 0.040\n  Feature 29: 0.032\n  Feature 95: 0.029\n  Feature 138: 0.028\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_total_ALL_raw.json\n\n============================================================\nTraining: fouls_away_ALL\n============================================================\nTrain samples: 238\nVal samples: 129\nFeature dimension: 154\nTarget range: [4.0, 22.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.02\n  Val MAE:   3.93\n  Val RMSE:  4.55\n  Val R²:    -0.587\n\n🔍 Top 5 Features:\n  Feature 85: 0.075\n  Feature 123: 0.042\n  Feature 143: 0.037\n  Feature 26: 0.037\n  Feature 131: 0.034\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\fouls_away_ALL_raw.json\n\n============================================================\nTraining: fouls_home_ALL\n============================================================\nTrain samples: 227\nVal samples: 119\nFeature dimension: 154\nTarget range: [5.0, 27.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.02\n  Val MAE:   3.78\n  Val RMSE:  4.89\n  Val R²:    -0.167\n\n🔍 Top 5 Features:\n  Feature 88: 0.121\n  Feature 84: 0.098\n  Feature 32: 0.045\n  Feature 102: 0.042\n  Feature 149: 0.036\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\fouls_home_ALL_raw.json\n\n============================================================\nTraining: fouls_total_ALL\n============================================================\nTrain samples: 338\nVal samples: 177\nFeature dimension: 154\nTarget range: [12.0, 41.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.02\n  Val MAE:   4.95\n  Val RMSE:  6.24\n  Val R²:    -0.013\n\n🔍 Top 5 Features:\n  Feature 108: 0.139\n  Feature 136: 0.050\n  Feature 114: 0.037\n  Feature 119: 0.033\n  Feature 84: 0.032\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\fouls_total_ALL_raw.json\n\n============================================================\nTraining: freeKicks_away_ALL\n============================================================\nTrain samples: 213\nVal samples: 0\nFeature dimension: 154\nTarget range: [5.0, 20.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.01\n  Val MAE:   3.49\n  Val RMSE:  4.21\n  Val R²:    -0.836\n\n🔍 Top 5 Features:\n  Feature 106: 0.082\n  Feature 87: 0.071\n  Feature 73: 0.058\n  Feature 78: 0.051\n  Feature 129: 0.051\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\freeKicks_away_ALL_raw.json\n\n============================================================\nTraining: freeKicks_home_ALL\n============================================================\nTrain samples: 192\nVal samples: 0\nFeature dimension: 154\nTarget range: [5.0, 22.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.01\n  Val MAE:   4.57\n  Val RMSE:  5.24\n  Val R²:    -1.086\n\n🔍 Top 5 Features:\n  Feature 31: 0.094\n  Feature 144: 0.089\n  Feature 32: 0.080\n  Feature 97: 0.045\n  Feature 28: 0.043\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\freeKicks_home_ALL_raw.json\n\n============================================================\nTraining: freeKicks_total_ALL\n============================================================\nTrain samples: 292\nVal samples: 0\nFeature dimension: 154\nTarget range: [14.0, 38.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.01\n  Val MAE:   5.86\n  Val RMSE:  6.77\n  Val R²:    -0.918\n\n🔍 Top 5 Features:\n  Feature 32: 0.218\n  Feature 132: 0.084\n  Feature 87: 0.069\n  Feature 31: 0.062\n  Feature 107: 0.038\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\freeKicks_total_ALL_raw.json\n\n============================================================\nTraining: offsides_away_ALL\n============================================================\nTrain samples: 125\nVal samples: 64\nFeature dimension: 154\nTarget range: [1.0, 8.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.02\n  Val MAE:   0.99\n  Val RMSE:  1.37\n  Val R²:    -0.023\n\n🔍 Top 5 Features:\n  Feature 21: 0.092\n  Feature 114: 0.084\n  Feature 130: 0.042\n  Feature 88: 0.042\n  Feature 116: 0.040\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\offsides_away_ALL_raw.json\n\n============================================================\nTraining: offsides_home_ALL\n============================================================\nTrain samples: 131\nVal samples: 60\nFeature dimension: 154\nTarget range: [1.0, 10.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.02\n  Val MAE:   0.97\n  Val RMSE:  1.22\n  Val R²:    0.185\n\n🔍 Top 5 Features:\n  Feature 30: 0.132\n  Feature 11: 0.091\n  Feature 92: 0.060\n  Feature 127: 0.053\n  Feature 122: 0.042\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\offsides_home_ALL_raw.json\n\n============================================================\nTraining: offsides_total_ALL\n============================================================\nTrain samples: 221\nVal samples: 102\nFeature dimension: 154\nTarget range: [1.0, 10.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.04\n  Val MAE:   1.64\n  Val RMSE:  1.95\n  Val R²:    -0.003\n\n🔍 Top 5 Features:\n  Feature 81: 0.056\n  Feature 101: 0.048\n  Feature 130: 0.044\n  Feature 31: 0.042\n  Feature 79: 0.041\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\offsides_total_ALL_raw.json\n\n============================================================\nTraining: shotsOnGoal_away_ALL\n============================================================\nTrain samples: 556\nVal samples: 135\nFeature dimension: 154\nTarget range: [1.0, 10.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.10\n  Val MAE:   1.85\n  Val RMSE:  2.28\n  Val R²:    -0.023\n\n🔍 Top 5 Features:\n  Feature 147: 0.074\n  Feature 151: 0.064\n  Feature 108: 0.043\n  Feature 110: 0.038\n  Feature 82: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\shotsOnGoal_away_ALL_raw.json\n\n============================================================\nTraining: shotsOnGoal_home_ALL\n============================================================\nTrain samples: 638\nVal samples: 147\nFeature dimension: 154\nTarget range: [1.0, 12.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.12\n  Val MAE:   2.19\n  Val RMSE:  2.86\n  Val R²:    -0.059\n\n🔍 Top 5 Features:\n  Feature 92: 0.058\n  Feature 76: 0.056\n  Feature 71: 0.054\n  Feature 11: 0.033\n  Feature 26: 0.028\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\shotsOnGoal_home_ALL_raw.json\n\n============================================================\nTraining: shotsOnGoal_total_ALL\n============================================================\nTrain samples: 876\nVal samples: 208\nFeature dimension: 154\nTarget range: [2.0, 17.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.16\n  Val MAE:   3.00\n  Val RMSE:  3.85\n  Val R²:    -0.407\n\n🔍 Top 5 Features:\n  Feature 138: 0.034\n  Feature 145: 0.031\n  Feature 111: 0.030\n  Feature 140: 0.029\n  Feature 133: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\shotsOnGoal_total_ALL_raw.json\n\n============================================================\nTraining: totalShots_away_ALL\n============================================================\nTrain samples: 833\nVal samples: 226\nFeature dimension: 154\nTarget range: [2.0, 27.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.26\n  Val MAE:   3.71\n  Val RMSE:  4.54\n  Val R²:    -0.032\n\n🔍 Top 5 Features:\n  Feature 73: 0.125\n  Feature 11: 0.054\n  Feature 84: 0.034\n  Feature 128: 0.030\n  Feature 141: 0.029\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\totalShots_away_ALL_raw.json\n\n============================================================\nTraining: totalShots_home_ALL\n============================================================\nTrain samples: 929\nVal samples: 254\nFeature dimension: 154\nTarget range: [3.0, 27.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.34\n  Val MAE:   4.81\n  Val RMSE:  6.33\n  Val R²:    -0.042\n\n🔍 Top 5 Features:\n  Feature 142: 0.075\n  Feature 11: 0.054\n  Feature 82: 0.037\n  Feature 137: 0.034\n  Feature 129: 0.029\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\totalShots_home_ALL_raw.json\n\n============================================================\nTraining: totalShots_total_ALL\n============================================================\nTrain samples: 1213\nVal samples: 353\nFeature dimension: 154\nTarget range: [13.0, 42.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.41\n  Val MAE:   5.42\n  Val RMSE:  6.61\n  Val R²:    -0.177\n\n🔍 Top 5 Features:\n  Feature 76: 0.075\n  Feature 89: 0.053\n  Feature 122: 0.029\n  Feature 121: 0.028\n  Feature 133: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\totalShots_total_ALL_raw.json\n\n============================================================\nTraining: yellowCards_away_ALL\n============================================================\nTrain samples: 1641\nVal samples: 388\nFeature dimension: 154\nTarget range: [1.0, 7.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.06\n  Val MAE:   1.12\n  Val RMSE:  1.46\n  Val R²:    -1.337\n\n🔍 Top 5 Features:\n  Feature 136: 0.038\n  Feature 145: 0.036\n  Feature 106: 0.034\n  Feature 80: 0.033\n  Feature 142: 0.032\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\yellowCards_away_ALL_raw.json\n\n============================================================\nTraining: yellowCards_home_ALL\n============================================================\nTrain samples: 1417\nVal samples: 354\nFeature dimension: 154\nTarget range: [1.0, 7.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.05\n  Val MAE:   0.77\n  Val RMSE:  0.99\n  Val R²:    0.086\n\n🔍 Top 5 Features:\n  Feature 31: 0.061\n  Feature 83: 0.049\n  Feature 142: 0.048\n  Feature 138: 0.035\n  Feature 144: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\yellowCards_home_ALL_raw.json\n\n============================================================\nTraining: yellowCards_total_ALL\n============================================================\nTrain samples: 2376\nVal samples: 593\nFeature dimension: 154\nTarget range: [1.0, 13.0]\n\nTraining XGBoost model...\n\n📊 Results:\n  Train MAE: 0.13\n  Val MAE:   1.45\n  Val RMSE:  1.96\n  Val R²:    -0.330\n\n🔍 Top 5 Features:\n  Feature 145: 0.051\n  Feature 142: 0.036\n  Feature 99: 0.033\n  Feature 79: 0.028\n  Feature 87: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\yellowCards_total_ALL_raw.json\n\n============================================================\n📊 TRAINING SUMMARY\n============================================================\n\nTotal models trained: 27\nAverage Val MAE: 2.71\nAverage Val R²:  -0.290\n\n🏆 Best Models (by Val MAE):\n1. yellowCards_home_ALL: MAE=0.77, R²=0.086\n2. offsides_home_ALL: MAE=0.97, R²=0.185\n3. offsides_away_ALL: MAE=0.99, R²=-0.023\n4. yellowCards_away_ALL: MAE=1.12, R²=-1.337\n5. cornerKicks_away_1ST: MAE=1.32, R²=0.030\n\n✅ Tier 1 training complete!\n",
+    "stderr": "",
+    "models": [
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "1ST",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 1307,
+        "n_val_samples": 282,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.05951332673430443,
+          "val_mae": 1.3155187368392944,
+          "val_rmse": 1.7944285448483392,
+          "val_r2": 0.03043806552886963
+        },
+        "feature_importance": {
+          "feature_94": 0.08112306147813797,
+          "feature_119": 0.06915025413036346,
+          "feature_138": 0.06666631996631622,
+          "feature_102": 0.03771055117249489,
+          "feature_136": 0.026526443660259247
+        },
+        "feature_importance_named": {
+          "bigChanceCreated_home_against_all": 0.08112306147813797,
+          "accurateCross_away_against_all": 0.06915025413036346,
+          "blockedScoringAttempt_home_against_all": 0.06666631996631622,
+          "bigChanceScored_home_against_all": 0.03771055117249489,
+          "blockedScoringAttempt_home_for_all": 0.026526443660259247
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "2ND",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 1438,
+        "n_val_samples": 354,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.06919749826192856,
+          "val_mae": 1.5705759525299072,
+          "val_rmse": 1.9851912374164336,
+          "val_r2": -0.5941934585571289
+        },
+        "feature_importance": {
+          "feature_109": 0.04588502272963524,
+          "feature_139": 0.0330166220664978,
+          "feature_93": 0.03248398005962372,
+          "feature_121": 0.028120633214712143,
+          "feature_73": 0.026439692825078964
+        },
+        "feature_importance_named": {
+          "totalShotsInsideBox_away_for_all": 0.04588502272963524,
+          "blockedScoringAttempt_away_against_all": 0.0330166220664978,
+          "bigChanceCreated_away_for_all": 0.03248398005962372,
+          "accurateLongBalls_away_for_all": 0.028120633214712143,
+          "passes_away_for_all": 0.026439692825078964
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 2633,
+        "n_val_samples": 666,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.1638260781764984,
+          "val_mae": 2.5300612449645996,
+          "val_rmse": 3.1104763514998384,
+          "val_r2": -0.2228868007659912
+        },
+        "feature_importance": {
+          "feature_119": 0.05998348817229271,
+          "feature_138": 0.04368347302079201,
+          "feature_132": 0.034743040800094604,
+          "feature_106": 0.03383935987949371,
+          "feature_121": 0.031598180532455444
+        },
+        "feature_importance_named": {
+          "accurateCross_away_against_all": 0.05998348817229271,
+          "blockedScoringAttempt_home_against_all": 0.04368347302079201,
+          "dispossessed_home_for_all": 0.034743040800094604,
+          "shotsOffGoal_home_against_all": 0.03383935987949371,
+          "accurateLongBalls_away_for_all": 0.031598180532455444
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "1ST",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 1599,
+        "n_val_samples": 368,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.05660238862037659,
+          "val_mae": 1.5965293645858765,
+          "val_rmse": 2.012756435571156,
+          "val_r2": -0.13631844520568848
+        },
+        "feature_importance": {
+          "feature_97": 0.056888192892074585,
+          "feature_135": 0.04494054615497589,
+          "feature_109": 0.043605998158454895,
+          "feature_118": 0.038146164268255234,
+          "feature_115": 0.037295978516340256
+        },
+        "feature_importance_named": {
+          "bigChanceMissed_away_for_all": 0.056888192892074585,
+          "dispossessed_away_against_all": 0.04494054615497589,
+          "totalShotsInsideBox_away_for_all": 0.043605998158454895,
+          "accurateCross_home_against_all": 0.038146164268255234,
+          "totalShotsOutsideBox_away_against_all": 0.037295978516340256
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "2ND",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 1649,
+        "n_val_samples": 412,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.09211892634630203,
+          "val_mae": 2.088684320449829,
+          "val_rmse": 2.406131592846897,
+          "val_r2": -0.6079502105712891
+        },
+        "feature_importance": {
+          "feature_126": 0.04789571091532707,
+          "feature_76": 0.0459342896938324,
+          "feature_73": 0.03829285874962807,
+          "feature_75": 0.03372924029827118,
+          "feature_150": 0.03234473243355751
+        },
+        "feature_importance_named": {
+          "ballRecovery_home_against_all": 0.04789571091532707,
+          "accuratePasses_home_for_all": 0.0459342896938324,
+          "passes_away_for_all": 0.03829285874962807,
+          "passes_away_against_all": 0.03372924029827118,
+          "aerialDuelsPercentage_home_against_all": 0.03234473243355751
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 3104,
+        "n_val_samples": 747,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.17632226645946503,
+          "val_mae": 2.592175006866455,
+          "val_rmse": 3.193897334990967,
+          "val_r2": -0.42098915576934814
+        },
+        "feature_importance": {
+          "feature_137": 0.03831944987177849,
+          "feature_126": 0.03414608910679817,
+          "feature_142": 0.033060237765312195,
+          "feature_77": 0.030253298580646515,
+          "feature_79": 0.028580574318766594
+        },
+        "feature_importance_named": {
+          "blockedScoringAttempt_away_for_all": 0.03831944987177849,
+          "ballRecovery_home_against_all": 0.03414608910679817,
+          "duelWonPercent_home_against_all": 0.033060237765312195,
+          "accuratePasses_away_for_all": 0.030253298580646515,
+          "accuratePasses_away_against_all": 0.028580574318766594
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "1ST",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 2326,
+        "n_val_samples": 552,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.1478441208600998,
+          "val_mae": 1.627252459526062,
+          "val_rmse": 2.0589065458887075,
+          "val_r2": 0.2172989845275879
+        },
+        "feature_importance": {
+          "feature_138": 0.05924350023269653,
+          "feature_120": 0.03958188369870186,
+          "feature_119": 0.033404573798179626,
+          "feature_94": 0.03090679459273815,
+          "feature_130": 0.027158869430422783
+        },
+        "feature_importance_named": {
+          "blockedScoringAttempt_home_against_all": 0.05924350023269653,
+          "accurateLongBalls_home_for_all": 0.03958188369870186,
+          "accurateCross_away_against_all": 0.033404573798179626,
+          "bigChanceCreated_home_against_all": 0.03090679459273815,
+          "interceptionWon_home_against_all": 0.027158869430422783
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "2ND",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 2503,
+        "n_val_samples": 578,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.12925316393375397,
+          "val_mae": 2.2837586402893066,
+          "val_rmse": 2.967313238114301,
+          "val_r2": -0.2626420259475708
+        },
+        "feature_importance": {
+          "feature_134": 0.04616522043943405,
+          "feature_73": 0.03762910142540932,
+          "feature_76": 0.03660010173916817,
+          "feature_121": 0.029820486903190613,
+          "feature_78": 0.0276896171271801
+        },
+        "feature_importance_named": {
+          "dispossessed_home_against_all": 0.04616522043943405,
+          "passes_away_for_all": 0.03762910142540932,
+          "accuratePasses_home_for_all": 0.03660010173916817,
+          "accurateLongBalls_away_for_all": 0.029820486903190613,
+          "accuratePasses_home_against_all": 0.0276896171271801
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 3641,
+        "n_val_samples": 944,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.18255050480365753,
+          "val_mae": 2.9485881328582764,
+          "val_rmse": 3.7003932486152027,
+          "val_r2": -0.0669257640838623
+        },
+        "feature_importance": {
+          "feature_142": 0.11019793897867203,
+          "feature_140": 0.04016679525375366,
+          "feature_29": 0.03241897001862526,
+          "feature_95": 0.028552543371915817,
+          "feature_138": 0.0284838005900383
+        },
+        "feature_importance_named": {
+          "duelWonPercent_home_against_all": 0.11019793897867203,
+          "duelWonPercent_home_for_all": 0.04016679525375366,
+          "home_wma30_against": 0.03241897001862526,
+          "bigChanceCreated_away_against_all": 0.028552543371915817,
+          "blockedScoringAttempt_home_against_all": 0.0284838005900383
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 238,
+        "n_val_samples": 129,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.01647169515490532,
+          "val_mae": 3.9275333881378174,
+          "val_rmse": 4.546898910616899,
+          "val_r2": -0.5865528583526611
+        },
+        "feature_importance": {
+          "feature_85": 0.07456978410482407,
+          "feature_123": 0.04152480512857437,
+          "feature_143": 0.03699648380279541,
+          "feature_26": 0.036539532244205475,
+          "feature_131": 0.03449130430817604
+        },
+        "feature_importance_named": {
+          "touchesInOppBox_away_for_all": 0.07456978410482407,
+          "accurateLongBalls_away_against_all": 0.04152480512857437,
+          "duelWonPercent_away_against_all": 0.03699648380279541,
+          "away_wma30_for": 0.036539532244205475,
+          "interceptionWon_away_against_all": 0.03449130430817604
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 227,
+        "n_val_samples": 119,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.019080089405179024,
+          "val_mae": 3.78338885307312,
+          "val_rmse": 4.891808314874729,
+          "val_r2": -0.1671961545944214
+        },
+        "feature_importance": {
+          "feature_88": 0.12136605381965637,
+          "feature_84": 0.09807968884706497,
+          "feature_32": 0.04499548301100731,
+          "feature_102": 0.042128391563892365,
+          "feature_149": 0.03639952838420868
+        },
+        "feature_importance_named": {
+          "expectedGoals_home_for_all": 0.12136605381965637,
+          "touchesInOppBox_home_for_all": 0.09807968884706497,
+          "away_wma30_against": 0.04499548301100731,
+          "bigChanceScored_home_against_all": 0.042128391563892365,
+          "aerialDuelsPercentage_away_for_all": 0.03639952838420868
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 338,
+        "n_val_samples": 177,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.017206324264407158,
+          "val_mae": 4.9532341957092285,
+          "val_rmse": 6.2416457226363224,
+          "val_r2": -0.012823700904846191
+        },
+        "feature_importance": {
+          "feature_108": 0.13887864351272583,
+          "feature_136": 0.05018999055027962,
+          "feature_114": 0.03707020729780197,
+          "feature_119": 0.03338320180773735,
+          "feature_84": 0.03235756978392601
+        },
+        "feature_importance_named": {
+          "totalShotsInsideBox_home_for_all": 0.13887864351272583,
+          "blockedScoringAttempt_home_for_all": 0.05018999055027962,
+          "totalShotsOutsideBox_home_against_all": 0.03707020729780197,
+          "accurateCross_away_against_all": 0.03338320180773735,
+          "touchesInOppBox_home_for_all": 0.03235756978392601
+        }
+      },
+      {
+        "stat_key": "freeKicks",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 213,
+        "n_val_samples": 0,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.007229457143694162,
+          "val_mae": 3.486447334289551,
+          "val_rmse": 4.207152071805564,
+          "val_r2": -0.836150050163269
+        },
+        "feature_importance": {
+          "feature_106": 0.08245599269866943,
+          "feature_87": 0.07136277109384537,
+          "feature_73": 0.05808138847351074,
+          "feature_78": 0.05113914608955383,
+          "feature_129": 0.051050759851932526
+        },
+        "feature_importance_named": {
+          "shotsOffGoal_home_against_all": 0.08245599269866943,
+          "touchesInOppBox_away_against_all": 0.07136277109384537,
+          "passes_away_for_all": 0.05808138847351074,
+          "accuratePasses_home_against_all": 0.05113914608955383,
+          "interceptionWon_away_for_all": 0.051050759851932526
+        }
+      },
+      {
+        "stat_key": "freeKicks",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 192,
+        "n_val_samples": 0,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.008996798656880856,
+          "val_mae": 4.574399948120117,
+          "val_rmse": 5.236792344969491,
+          "val_r2": -1.085803508758545
+        },
+        "feature_importance": {
+          "feature_31": 0.09371291846036911,
+          "feature_144": 0.08874338865280151,
+          "feature_32": 0.07960651814937592,
+          "feature_97": 0.04481925815343857,
+          "feature_28": 0.04314611479640007
+        },
+        "feature_importance_named": {
+          "away_wma15_against": 0.09371291846036911,
+          "groundDuelsPercentage_home_for_all": 0.08874338865280151,
+          "away_wma30_against": 0.07960651814937592,
+          "bigChanceMissed_away_for_all": 0.04481925815343857,
+          "home_wma15_against": 0.04314611479640007
+        }
+      },
+      {
+        "stat_key": "freeKicks",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 292,
+        "n_val_samples": 0,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.008913273923099041,
+          "val_mae": 5.86478853225708,
+          "val_rmse": 6.770464639651224,
+          "val_r2": -0.9181859493255615
+        },
+        "feature_importance": {
+          "feature_32": 0.2178882360458374,
+          "feature_132": 0.08403415977954865,
+          "feature_87": 0.06894624978303909,
+          "feature_31": 0.062429141253232956,
+          "feature_107": 0.0377766489982605
+        },
+        "feature_importance_named": {
+          "away_wma30_against": 0.2178882360458374,
+          "dispossessed_home_for_all": 0.08403415977954865,
+          "touchesInOppBox_away_against_all": 0.06894624978303909,
+          "away_wma15_against": 0.062429141253232956,
+          "shotsOffGoal_away_against_all": 0.0377766489982605
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 125,
+        "n_val_samples": 64,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.020699776709079742,
+          "val_mae": 0.9922367334365845,
+          "val_rmse": 1.37222447734052,
+          "val_r2": -0.0225067138671875
+        },
+        "feature_importance": {
+          "feature_21": 0.09178294986486435,
+          "feature_114": 0.08373774588108063,
+          "feature_130": 0.04220445081591606,
+          "feature_88": 0.04154037684202194,
+          "feature_116": 0.04032369703054428
+        },
+        "feature_importance_named": {
+          "home_wma5_for": 0.09178294986486435,
+          "totalShotsOutsideBox_home_against_all": 0.08373774588108063,
+          "interceptionWon_home_against_all": 0.04220445081591606,
+          "expectedGoals_home_for_all": 0.04154037684202194,
+          "accurateCross_home_for_all": 0.04032369703054428
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 131,
+        "n_val_samples": 60,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.023235909640789032,
+          "val_mae": 0.9715574979782104,
+          "val_rmse": 1.2170497086653556,
+          "val_r2": 0.1846550703048706
+        },
+        "feature_importance": {
+          "feature_30": 0.13209663331508636,
+          "feature_11": 0.09133843332529068,
+          "feature_92": 0.06017204746603966,
+          "feature_127": 0.05328948795795441,
+          "feature_122": 0.0424005500972271
+        },
+        "feature_importance_named": {
+          "away_wma5_against": 0.13209663331508636,
+          "opta_rating_diff": 0.09133843332529068,
+          "bigChanceCreated_home_for_all": 0.06017204746603966,
+          "ballRecovery_away_against_all": 0.05328948795795441,
+          "accurateLongBalls_home_against_all": 0.0424005500972271
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 221,
+        "n_val_samples": 102,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.03726571798324585,
+          "val_mae": 1.635019302368164,
+          "val_rmse": 1.949134962463655,
+          "val_r2": -0.0029973983764648438
+        },
+        "feature_importance": {
+          "feature_81": 0.05624233931303024,
+          "feature_101": 0.04766889289021492,
+          "feature_130": 0.04392709210515022,
+          "feature_31": 0.04164408519864082,
+          "feature_79": 0.0406537726521492
+        },
+        "feature_importance_named": {
+          "finalThirdEntries_away_for_all": 0.05624233931303024,
+          "bigChanceScored_away_for_all": 0.04766889289021492,
+          "interceptionWon_home_against_all": 0.04392709210515022,
+          "away_wma15_against": 0.04164408519864082,
+          "accuratePasses_away_against_all": 0.0406537726521492
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 556,
+        "n_val_samples": 135,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.10445457696914673,
+          "val_mae": 1.8465445041656494,
+          "val_rmse": 2.2759085004478736,
+          "val_r2": -0.023495912551879883
+        },
+        "feature_importance": {
+          "feature_147": 0.07412654161453247,
+          "feature_151": 0.06369189918041229,
+          "feature_108": 0.042958520352840424,
+          "feature_110": 0.03806960955262184,
+          "feature_82": 0.026665184646844864
+        },
+        "feature_importance_named": {
+          "groundDuelsPercentage_away_against_all": 0.07412654161453247,
+          "aerialDuelsPercentage_away_against_all": 0.06369189918041229,
+          "totalShotsInsideBox_home_for_all": 0.042958520352840424,
+          "totalShotsInsideBox_home_against_all": 0.03806960955262184,
+          "finalThirdEntries_home_against_all": 0.026665184646844864
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 638,
+        "n_val_samples": 147,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.12325921654701233,
+          "val_mae": 2.1912801265716553,
+          "val_rmse": 2.85657000929744,
+          "val_r2": -0.058602333068847656
+        },
+        "feature_importance": {
+          "feature_92": 0.05782577395439148,
+          "feature_76": 0.05587546527385712,
+          "feature_71": 0.05421591177582741,
+          "feature_11": 0.03274911642074585,
+          "feature_26": 0.027594804763793945
+        },
+        "feature_importance_named": {
+          "bigChanceCreated_home_for_all": 0.05782577395439148,
+          "accuratePasses_home_for_all": 0.05587546527385712,
+          "ballPossession_away_against_all": 0.05421591177582741,
+          "opta_rating_diff": 0.03274911642074585,
+          "away_wma30_for": 0.027594804763793945
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 876,
+        "n_val_samples": 208,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.16300924122333527,
+          "val_mae": 2.9979710578918457,
+          "val_rmse": 3.8492859463084517,
+          "val_r2": -0.40663468837738037
+        },
+        "feature_importance": {
+          "feature_138": 0.034451235085725784,
+          "feature_145": 0.03064824640750885,
+          "feature_111": 0.02979220449924469,
+          "feature_140": 0.02880258485674858,
+          "feature_133": 0.026927271857857704
+        },
+        "feature_importance_named": {
+          "blockedScoringAttempt_home_against_all": 0.034451235085725784,
+          "groundDuelsPercentage_away_for_all": 0.03064824640750885,
+          "totalShotsInsideBox_away_against_all": 0.02979220449924469,
+          "duelWonPercent_home_for_all": 0.02880258485674858,
+          "dispossessed_away_for_all": 0.026927271857857704
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 833,
+        "n_val_samples": 226,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.25687462091445923,
+          "val_mae": 3.7081127166748047,
+          "val_rmse": 4.536452890853449,
+          "val_r2": -0.031607985496520996
+        },
+        "feature_importance": {
+          "feature_73": 0.12510792911052704,
+          "feature_11": 0.0537564642727375,
+          "feature_84": 0.0335109643638134,
+          "feature_128": 0.029540371149778366,
+          "feature_141": 0.028645247220993042
+        },
+        "feature_importance_named": {
+          "passes_away_for_all": 0.12510792911052704,
+          "opta_rating_diff": 0.0537564642727375,
+          "touchesInOppBox_home_for_all": 0.0335109643638134,
+          "interceptionWon_home_for_all": 0.029540371149778366,
+          "duelWonPercent_away_for_all": 0.028645247220993042
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 929,
+        "n_val_samples": 254,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.33885759115219116,
+          "val_mae": 4.807864665985107,
+          "val_rmse": 6.325460895135522,
+          "val_r2": -0.04208338260650635
+        },
+        "feature_importance": {
+          "feature_142": 0.07450038939714432,
+          "feature_11": 0.05366969853639603,
+          "feature_82": 0.03676649555563927,
+          "feature_137": 0.03390925005078316,
+          "feature_129": 0.029489820823073387
+        },
+        "feature_importance_named": {
+          "duelWonPercent_home_against_all": 0.07450038939714432,
+          "opta_rating_diff": 0.05366969853639603,
+          "finalThirdEntries_home_against_all": 0.03676649555563927,
+          "blockedScoringAttempt_away_for_all": 0.03390925005078316,
+          "interceptionWon_away_for_all": 0.029489820823073387
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 1213,
+        "n_val_samples": 353,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.40642374753952026,
+          "val_mae": 5.422426700592041,
+          "val_rmse": 6.60601100579551,
+          "val_r2": -0.17716407775878906
+        },
+        "feature_importance": {
+          "feature_76": 0.07467915862798691,
+          "feature_89": 0.05281401425600052,
+          "feature_122": 0.028840254992246628,
+          "feature_121": 0.027976246550679207,
+          "feature_133": 0.026753420010209084
+        },
+        "feature_importance_named": {
+          "accuratePasses_home_for_all": 0.07467915862798691,
+          "expectedGoals_away_for_all": 0.05281401425600052,
+          "accurateLongBalls_home_against_all": 0.028840254992246628,
+          "accurateLongBalls_away_for_all": 0.027976246550679207,
+          "dispossessed_away_for_all": 0.026753420010209084
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 1641,
+        "n_val_samples": 388,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.06334612518548965,
+          "val_mae": 1.1189125776290894,
+          "val_rmse": 1.464443304639986,
+          "val_r2": -1.3367576599121094
+        },
+        "feature_importance": {
+          "feature_136": 0.03773004561662674,
+          "feature_145": 0.03648894280195236,
+          "feature_106": 0.03379484638571739,
+          "feature_80": 0.03303683549165726,
+          "feature_142": 0.03223228454589844
+        },
+        "feature_importance_named": {
+          "blockedScoringAttempt_home_for_all": 0.03773004561662674,
+          "groundDuelsPercentage_away_for_all": 0.03648894280195236,
+          "shotsOffGoal_home_against_all": 0.03379484638571739,
+          "finalThirdEntries_home_for_all": 0.03303683549165726,
+          "duelWonPercent_home_against_all": 0.03223228454589844
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 1417,
+        "n_val_samples": 354,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.05156778171658516,
+          "val_mae": 0.7712369561195374,
+          "val_rmse": 0.9925622607768251,
+          "val_r2": 0.08646482229232788
+        },
+        "feature_importance": {
+          "feature_31": 0.06084410101175308,
+          "feature_83": 0.04907209426164627,
+          "feature_142": 0.0484282411634922,
+          "feature_138": 0.03489742800593376,
+          "feature_144": 0.02736269123852253
+        },
+        "feature_importance_named": {
+          "away_wma15_against": 0.06084410101175308,
+          "finalThirdEntries_away_against_all": 0.04907209426164627,
+          "duelWonPercent_home_against_all": 0.0484282411634922,
+          "blockedScoringAttempt_home_against_all": 0.03489742800593376,
+          "groundDuelsPercentage_home_for_all": 0.02736269123852253
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "n_train_samples": 2376,
+        "n_val_samples": 593,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.12628260254859924,
+          "val_mae": 1.446751356124878,
+          "val_rmse": 1.964118717575635,
+          "val_r2": -0.32982754707336426
+        },
+        "feature_importance": {
+          "feature_145": 0.051465291529893875,
+          "feature_142": 0.03612608090043068,
+          "feature_99": 0.0326853021979332,
+          "feature_79": 0.02809527888894081,
+          "feature_87": 0.027484823018312454
+        },
+        "feature_importance_named": {
+          "groundDuelsPercentage_away_for_all": 0.051465291529893875,
+          "duelWonPercent_home_against_all": 0.03612608090043068,
+          "bigChanceMissed_away_against_all": 0.0326853021979332,
+          "accuratePasses_away_against_all": 0.02809527888894081,
+          "touchesInOppBox_away_against_all": 0.027484823018312454
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-12-05T16:18:00.763025+00:00",
+    "script": "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier1_trainRawFeatures.py",
+    "returncode": 0,
+    "duration_sec": 36.833,
+    "stdout": "🚀 Starting Tier 1 Model Training\n============================================================\n\nFound 27 datasets to train\n\n\n============================================================\nTraining: cornerKicks_away_1ST\n============================================================\nTrain samples: 1307\nVal samples: 282\nFeature dimension: 154\nTarget range: [1.0, 8.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.31\n  Val MAE:   1.31\n  Val RMSE:  1.84\n  Val R²:    -0.018\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 94: 0.064\n  Feature 119: 0.048\n  Feature 138: 0.042\n  Feature 99: 0.041\n  Feature 129: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_away_1ST_raw.json\n\n============================================================\nTraining: cornerKicks_away_2ND\n============================================================\nTrain samples: 1438\nVal samples: 354\nFeature dimension: 154\nTarget range: [1.0, 7.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.36\n  Val MAE:   1.54\n  Val RMSE:  1.91\n  Val R²:    -0.473\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 140: 0.033\n  Feature 91: 0.032\n  Feature 110: 0.031\n  Feature 93: 0.031\n  Feature 85: 0.030\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_away_2ND_raw.json\n\n============================================================\nTraining: cornerKicks_away_ALL\n============================================================\nTrain samples: 2633\nVal samples: 666\nFeature dimension: 154\nTarget range: [1.0, 13.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.66\n  Val MAE:   2.40\n  Val RMSE:  2.98\n  Val R²:    -0.119\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 119: 0.043\n  Feature 138: 0.038\n  Feature 132: 0.036\n  Feature 25: 0.032\n  Feature 106: 0.029\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_away_ALL_raw.json\n\n============================================================\nTraining: cornerKicks_home_1ST\n============================================================\nTrain samples: 1599\nVal samples: 368\nFeature dimension: 154\nTarget range: [1.0, 9.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.36\n  Val MAE:   1.54\n  Val RMSE:  1.97\n  Val R²:    -0.089\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 120: 0.052\n  Feature 86: 0.046\n  Feature 97: 0.040\n  Feature 118: 0.040\n  Feature 115: 0.033\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_home_1ST_raw.json\n\n============================================================\nTraining: cornerKicks_home_2ND\n============================================================\nTrain samples: 1649\nVal samples: 412\nFeature dimension: 154\nTarget range: [1.0, 11.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.43\n  Val MAE:   2.02\n  Val RMSE:  2.33\n  Val R²:    -0.511\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 76: 0.053\n  Feature 142: 0.048\n  Feature 126: 0.039\n  Feature 86: 0.037\n  Feature 79: 0.025\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_home_2ND_raw.json\n\n============================================================\nTraining: cornerKicks_home_ALL\n============================================================\nTrain samples: 3104\nVal samples: 747\nFeature dimension: 154\nTarget range: [1.0, 14.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.43\n  Val MAE:   2.49\n  Val RMSE:  3.03\n  Val R²:    -0.276\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 77: 0.035\n  Feature 28: 0.026\n  Feature 139: 0.025\n  Feature 137: 0.020\n  Feature 76: 0.020\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_home_ALL_raw.json\n\n============================================================\nTraining: cornerKicks_total_1ST\n============================================================\nTrain samples: 2326\nVal samples: 552\nFeature dimension: 154\nTarget range: [1.0, 13.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.31\n  Val MAE:   1.65\n  Val RMSE:  2.04\n  Val R²:    0.230\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 138: 0.043\n  Feature 120: 0.035\n  Feature 94: 0.033\n  Feature 109: 0.033\n  Feature 142: 0.032\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_total_1ST_raw.json\n\n============================================================\nTraining: cornerKicks_total_2ND\n============================================================\nTrain samples: 2503\nVal samples: 578\nFeature dimension: 154\nTarget range: [1.0, 12.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.32\n  Val MAE:   2.34\n  Val RMSE:  3.00\n  Val R²:    -0.292\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 134: 0.039\n  Feature 76: 0.028\n  Feature 149: 0.024\n  Feature 121: 0.024\n  Feature 109: 0.022\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_total_2ND_raw.json\n\n============================================================\nTraining: cornerKicks_total_ALL\n============================================================\nTrain samples: 3641\nVal samples: 944\nFeature dimension: 154\nTarget range: [2.0, 19.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.89\n  Val MAE:   2.91\n  Val RMSE:  3.68\n  Val R²:    -0.056\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 142: 0.046\n  Feature 111: 0.039\n  Feature 140: 0.038\n  Feature 87: 0.026\n  Feature 138: 0.025\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_total_ALL_raw.json\n\n============================================================\nTraining: fouls_away_ALL\n============================================================\nTrain samples: 238\nVal samples: 129\nFeature dimension: 154\nTarget range: [4.0, 22.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.08\n  Val MAE:   3.60\n  Val RMSE:  4.30\n  Val R²:    -0.417\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 85: 0.064\n  Feature 118: 0.057\n  Feature 26: 0.056\n  Feature 80: 0.052\n  Feature 68: 0.038\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\fouls_away_ALL_raw.json\n\n============================================================\nTraining: fouls_home_ALL\n============================================================\nTrain samples: 227\nVal samples: 119\nFeature dimension: 154\nTarget range: [5.0, 27.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.26\n  Val MAE:   3.60\n  Val RMSE:  4.93\n  Val R²:    -0.186\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 88: 0.072\n  Feature 84: 0.065\n  Feature 108: 0.057\n  Feature 102: 0.041\n  Feature 85: 0.038\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\fouls_home_ALL_raw.json\n\n============================================================\nTraining: fouls_total_ALL\n============================================================\nTrain samples: 338\nVal samples: 177\nFeature dimension: 154\nTarget range: [12.0, 41.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.14\n  Val MAE:   4.78\n  Val RMSE:  6.11\n  Val R²:    0.029\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 136: 0.100\n  Feature 129: 0.047\n  Feature 84: 0.045\n  Feature 145: 0.038\n  Feature 114: 0.034\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\fouls_total_ALL_raw.json\n\n============================================================\nTraining: freeKicks_away_ALL\n============================================================\nTrain samples: 213\nVal samples: 0\nFeature dimension: 154\nTarget range: [5.0, 20.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.08\n  Val MAE:   3.20\n  Val RMSE:  3.84\n  Val R²:    -0.532\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 106: 0.059\n  Feature 87: 0.059\n  Feature 83: 0.057\n  Feature 73: 0.052\n  Feature 148: 0.044\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\freeKicks_away_ALL_raw.json\n\n============================================================\nTraining: freeKicks_home_ALL\n============================================================\nTrain samples: 192\nVal samples: 0\nFeature dimension: 154\nTarget range: [5.0, 22.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.03\n  Val MAE:   4.30\n  Val RMSE:  4.87\n  Val R²:    -0.808\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 79: 0.087\n  Feature 32: 0.083\n  Feature 144: 0.083\n  Feature 31: 0.072\n  Feature 28: 0.057\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\freeKicks_home_ALL_raw.json\n\n============================================================\nTraining: freeKicks_total_ALL\n============================================================\nTrain samples: 292\nVal samples: 0\nFeature dimension: 154\nTarget range: [14.0, 38.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.09\n  Val MAE:   5.70\n  Val RMSE:  6.66\n  Val R²:    -0.857\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 72: 0.153\n  Feature 32: 0.069\n  Feature 127: 0.059\n  Feature 87: 0.052\n  Feature 98: 0.042\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\freeKicks_total_ALL_raw.json\n\n============================================================\nTraining: offsides_away_ALL\n============================================================\nTrain samples: 125\nVal samples: 64\nFeature dimension: 154\nTarget range: [1.0, 8.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.09\n  Val MAE:   0.92\n  Val RMSE:  1.33\n  Val R²:    0.040\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 21: 0.072\n  Feature 151: 0.050\n  Feature 101: 0.036\n  Feature 71: 0.034\n  Feature 130: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\offsides_away_ALL_raw.json\n\n============================================================\nTraining: offsides_home_ALL\n============================================================\nTrain samples: 131\nVal samples: 60\nFeature dimension: 154\nTarget range: [1.0, 10.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.06\n  Val MAE:   0.91\n  Val RMSE:  1.16\n  Val R²:    0.257\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 30: 0.139\n  Feature 11: 0.094\n  Feature 122: 0.052\n  Feature 92: 0.039\n  Feature 137: 0.031\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\offsides_home_ALL_raw.json\n\n============================================================\nTraining: offsides_total_ALL\n============================================================\nTrain samples: 221\nVal samples: 102\nFeature dimension: 154\nTarget range: [1.0, 10.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.10\n  Val MAE:   1.55\n  Val RMSE:  1.92\n  Val R²:    0.024\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 79: 0.062\n  Feature 30: 0.050\n  Feature 101: 0.043\n  Feature 81: 0.040\n  Feature 130: 0.038\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\offsides_total_ALL_raw.json\n\n============================================================\nTraining: shotsOnGoal_away_ALL\n============================================================\nTrain samples: 556\nVal samples: 135\nFeature dimension: 154\nTarget range: [1.0, 10.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.51\n  Val MAE:   1.75\n  Val RMSE:  2.17\n  Val R²:    0.070\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 151: 0.054\n  Feature 147: 0.038\n  Feature 102: 0.035\n  Feature 108: 0.031\n  Feature 119: 0.030\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\shotsOnGoal_away_ALL_raw.json\n\n============================================================\nTraining: shotsOnGoal_home_ALL\n============================================================\nTrain samples: 638\nVal samples: 147\nFeature dimension: 154\nTarget range: [1.0, 12.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.33\n  Val MAE:   2.11\n  Val RMSE:  2.77\n  Val R²:    0.003\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 92: 0.058\n  Feature 76: 0.040\n  Feature 11: 0.028\n  Feature 82: 0.027\n  Feature 26: 0.026\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\shotsOnGoal_home_ALL_raw.json\n\n============================================================\nTraining: shotsOnGoal_total_ALL\n============================================================\nTrain samples: 876\nVal samples: 208\nFeature dimension: 154\nTarget range: [2.0, 17.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.79\n  Val MAE:   2.93\n  Val RMSE:  3.81\n  Val R²:    -0.382\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 137: 0.030\n  Feature 136: 0.030\n  Feature 75: 0.029\n  Feature 131: 0.029\n  Feature 97: 0.028\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\shotsOnGoal_total_ALL_raw.json\n\n============================================================\nTraining: totalShots_away_ALL\n============================================================\nTrain samples: 833\nVal samples: 226\nFeature dimension: 154\nTarget range: [2.0, 27.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 1.09\n  Val MAE:   3.70\n  Val RMSE:  4.45\n  Val R²:    0.006\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 73: 0.088\n  Feature 11: 0.053\n  Feature 119: 0.035\n  Feature 128: 0.034\n  Feature 129: 0.029\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\totalShots_away_ALL_raw.json\n\n============================================================\nTraining: totalShots_home_ALL\n============================================================\nTrain samples: 929\nVal samples: 254\nFeature dimension: 154\nTarget range: [3.0, 27.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.73\n  Val MAE:   4.56\n  Val RMSE:  6.01\n  Val R²:    0.058\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 11: 0.055\n  Feature 142: 0.049\n  Feature 82: 0.038\n  Feature 68: 0.022\n  Feature 128: 0.022\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\totalShots_home_ALL_raw.json\n\n============================================================\nTraining: totalShots_total_ALL\n============================================================\nTrain samples: 1213\nVal samples: 353\nFeature dimension: 154\nTarget range: [13.0, 42.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.97\n  Val MAE:   5.34\n  Val RMSE:  6.69\n  Val R²:    -0.206\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 89: 0.036\n  Feature 82: 0.034\n  Feature 72: 0.030\n  Feature 85: 0.030\n  Feature 100: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\totalShots_total_ALL_raw.json\n\n============================================================\nTraining: yellowCards_away_ALL\n============================================================\nTrain samples: 1641\nVal samples: 388\nFeature dimension: 154\nTarget range: [1.0, 7.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.34\n  Val MAE:   1.07\n  Val RMSE:  1.42\n  Val R²:    -1.206\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 92: 0.062\n  Feature 70: 0.058\n  Feature 76: 0.049\n  Feature 131: 0.037\n  Feature 80: 0.032\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\yellowCards_away_ALL_raw.json\n\n============================================================\nTraining: yellowCards_home_ALL\n============================================================\nTrain samples: 1417\nVal samples: 354\nFeature dimension: 154\nTarget range: [1.0, 7.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.16\n  Val MAE:   0.77\n  Val RMSE:  1.00\n  Val R²:    0.070\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 70: 0.078\n  Feature 142: 0.076\n  Feature 31: 0.037\n  Feature 22: 0.031\n  Feature 83: 0.026\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\yellowCards_home_ALL_raw.json\n\n============================================================\nTraining: yellowCards_total_ALL\n============================================================\nTrain samples: 2376\nVal samples: 593\nFeature dimension: 154\nTarget range: [1.0, 13.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.30\n  Val MAE:   1.41\n  Val RMSE:  1.89\n  Val R²:    -0.234\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 145: 0.038\n  Feature 142: 0.026\n  Feature 136: 0.025\n  Feature 141: 0.024\n  Feature 86: 0.024\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\yellowCards_total_ALL_raw.json\n\n============================================================\n📊 TRAINING SUMMARY\n============================================================\n\nTotal models trained: 27\nAverage Val MAE: 2.61\nAverage Val R²:  -0.218\n\n🏆 Best Models (by Val MAE):\n1. yellowCards_home_ALL: MAE=0.77, R²=0.070\n2. offsides_home_ALL: MAE=0.91, R²=0.257\n3. offsides_away_ALL: MAE=0.92, R²=0.040\n4. yellowCards_away_ALL: MAE=1.07, R²=-1.206\n5. cornerKicks_away_1ST: MAE=1.31, R²=-0.018\n\n✅ Tier 1 training complete!\n",
+    "stderr": "",
+    "models": [
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "1ST",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1307,
+        "n_val_samples": 282,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.31206896901130676,
+          "val_mae": 1.3108233213424683,
+          "val_rmse": 1.8387684524616439,
+          "val_r2": -0.01806926727294922
+        },
+        "feature_importance": {
+          "feature_94": 0.06413755565881729,
+          "feature_119": 0.047687873244285583,
+          "feature_138": 0.041744958609342575,
+          "feature_99": 0.041023049503564835,
+          "feature_129": 0.027318844571709633
+        },
+        "feature_importance_named": {
+          "bigChanceCreated_home_against_all": 0.06413755565881729,
+          "accurateCross_away_against_all": 0.047687873244285583,
+          "blockedScoringAttempt_home_against_all": 0.041744958609342575,
+          "bigChanceMissed_away_against_all": 0.041023049503564835,
+          "interceptionWon_away_for_all": 0.027318844571709633
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "2ND",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1438,
+        "n_val_samples": 354,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.36481231451034546,
+          "val_mae": 1.5387976169586182,
+          "val_rmse": 1.9083367479563096,
+          "val_r2": -0.4731478691101074
+        },
+        "feature_importance": {
+          "feature_140": 0.0332479365170002,
+          "feature_91": 0.032084524631500244,
+          "feature_110": 0.03079739771783352,
+          "feature_93": 0.030753418803215027,
+          "feature_85": 0.02952086552977562
+        },
+        "feature_importance_named": {
+          "duelWonPercent_home_for_all": 0.0332479365170002,
+          "expectedGoals_away_against_all": 0.032084524631500244,
+          "totalShotsInsideBox_home_against_all": 0.03079739771783352,
+          "bigChanceCreated_away_for_all": 0.030753418803215027,
+          "touchesInOppBox_away_for_all": 0.02952086552977562
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 2633,
+        "n_val_samples": 666,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.6572144031524658,
+          "val_mae": 2.401628255844116,
+          "val_rmse": 2.9757090068289194,
+          "val_r2": -0.11921453475952148
+        },
+        "feature_importance": {
+          "feature_119": 0.043126028031110764,
+          "feature_138": 0.03804844990372658,
+          "feature_132": 0.03559262305498123,
+          "feature_25": 0.032187264412641525,
+          "feature_106": 0.028846167027950287
+        },
+        "feature_importance_named": {
+          "accurateCross_away_against_all": 0.043126028031110764,
+          "blockedScoringAttempt_home_against_all": 0.03804844990372658,
+          "dispossessed_home_for_all": 0.03559262305498123,
+          "away_wma15_for": 0.032187264412641525,
+          "shotsOffGoal_home_against_all": 0.028846167027950287
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "1ST",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1599,
+        "n_val_samples": 368,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.36291053891181946,
+          "val_mae": 1.5426795482635498,
+          "val_rmse": 1.9702702057161385,
+          "val_r2": -0.0888528823852539
+        },
+        "feature_importance": {
+          "feature_120": 0.052020322531461716,
+          "feature_86": 0.046272169798612595,
+          "feature_97": 0.03964287415146828,
+          "feature_118": 0.03964217007160187,
+          "feature_115": 0.033403556793928146
+        },
+        "feature_importance_named": {
+          "accurateLongBalls_home_for_all": 0.052020322531461716,
+          "touchesInOppBox_home_against_all": 0.046272169798612595,
+          "bigChanceMissed_away_for_all": 0.03964287415146828,
+          "accurateCross_home_against_all": 0.03964217007160187,
+          "totalShotsOutsideBox_away_against_all": 0.033403556793928146
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "2ND",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1649,
+        "n_val_samples": 412,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.4335775375366211,
+          "val_mae": 2.0207738876342773,
+          "val_rmse": 2.3322142460523962,
+          "val_r2": -0.510673999786377
+        },
+        "feature_importance": {
+          "feature_76": 0.053239382803440094,
+          "feature_142": 0.04799952358007431,
+          "feature_126": 0.03863688185811043,
+          "feature_86": 0.03703674301505089,
+          "feature_79": 0.024912409484386444
+        },
+        "feature_importance_named": {
+          "accuratePasses_home_for_all": 0.053239382803440094,
+          "duelWonPercent_home_against_all": 0.04799952358007431,
+          "ballRecovery_home_against_all": 0.03863688185811043,
+          "touchesInOppBox_home_against_all": 0.03703674301505089,
+          "accuratePasses_away_against_all": 0.024912409484386444
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 3104,
+        "n_val_samples": 747,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.42658334970474243,
+          "val_mae": 2.4860453605651855,
+          "val_rmse": 3.0269628666647024,
+          "val_r2": -0.27633023262023926
+        },
+        "feature_importance": {
+          "feature_77": 0.03462386503815651,
+          "feature_28": 0.026412563398480415,
+          "feature_139": 0.025017617270350456,
+          "feature_137": 0.019868191331624985,
+          "feature_76": 0.01965569704771042
+        },
+        "feature_importance_named": {
+          "accuratePasses_away_for_all": 0.03462386503815651,
+          "home_wma15_against": 0.026412563398480415,
+          "blockedScoringAttempt_away_against_all": 0.025017617270350456,
+          "blockedScoringAttempt_away_for_all": 0.019868191331624985,
+          "accuratePasses_home_for_all": 0.01965569704771042
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "1ST",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 2326,
+        "n_val_samples": 552,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.3130812644958496,
+          "val_mae": 1.6458258628845215,
+          "val_rmse": 2.0426097430439154,
+          "val_r2": 0.22964060306549072
+        },
+        "feature_importance": {
+          "feature_138": 0.043321870267391205,
+          "feature_120": 0.03512806072831154,
+          "feature_94": 0.03339584171772003,
+          "feature_109": 0.033355142921209335,
+          "feature_142": 0.03239969164133072
+        },
+        "feature_importance_named": {
+          "blockedScoringAttempt_home_against_all": 0.043321870267391205,
+          "accurateLongBalls_home_for_all": 0.03512806072831154,
+          "bigChanceCreated_home_against_all": 0.03339584171772003,
+          "totalShotsInsideBox_away_for_all": 0.033355142921209335,
+          "duelWonPercent_home_against_all": 0.03239969164133072
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "2ND",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 2503,
+        "n_val_samples": 578,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.315915584564209,
+          "val_mae": 2.338487148284912,
+          "val_rmse": 3.001963767415667,
+          "val_r2": -0.2923029661178589
+        },
+        "feature_importance": {
+          "feature_134": 0.03949218988418579,
+          "feature_76": 0.027762727811932564,
+          "feature_149": 0.023934368044137955,
+          "feature_121": 0.02366606891155243,
+          "feature_109": 0.02238934114575386
+        },
+        "feature_importance_named": {
+          "dispossessed_home_against_all": 0.03949218988418579,
+          "accuratePasses_home_for_all": 0.027762727811932564,
+          "aerialDuelsPercentage_away_for_all": 0.023934368044137955,
+          "accurateLongBalls_away_for_all": 0.02366606891155243,
+          "totalShotsInsideBox_away_for_all": 0.02238934114575386
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 3641,
+        "n_val_samples": 944,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.8863053917884827,
+          "val_mae": 2.913494348526001,
+          "val_rmse": 3.6807490475894395,
+          "val_r2": -0.05562782287597656
+        },
+        "feature_importance": {
+          "feature_142": 0.04603564366698265,
+          "feature_111": 0.03927290812134743,
+          "feature_140": 0.03777428716421127,
+          "feature_87": 0.026018138974905014,
+          "feature_138": 0.024599680677056313
+        },
+        "feature_importance_named": {
+          "duelWonPercent_home_against_all": 0.04603564366698265,
+          "totalShotsInsideBox_away_against_all": 0.03927290812134743,
+          "duelWonPercent_home_for_all": 0.03777428716421127,
+          "touchesInOppBox_away_against_all": 0.026018138974905014,
+          "blockedScoringAttempt_home_against_all": 0.024599680677056313
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 238,
+        "n_val_samples": 129,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.08268244564533234,
+          "val_mae": 3.5956015586853027,
+          "val_rmse": 4.29686945134585,
+          "val_r2": -0.41686439514160156
+        },
+        "feature_importance": {
+          "feature_85": 0.06402740627527237,
+          "feature_118": 0.05702623724937439,
+          "feature_26": 0.055732980370521545,
+          "feature_80": 0.05195912346243858,
+          "feature_68": 0.03836938366293907
+        },
+        "feature_importance_named": {
+          "touchesInOppBox_away_for_all": 0.06402740627527237,
+          "accurateCross_home_against_all": 0.05702623724937439,
+          "away_wma30_for": 0.055732980370521545,
+          "finalThirdEntries_home_for_all": 0.05195912346243858,
+          "ballPossession_home_for_all": 0.03836938366293907
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 227,
+        "n_val_samples": 119,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.2591758370399475,
+          "val_mae": 3.599630117416382,
+          "val_rmse": 4.930586211537559,
+          "val_r2": -0.18577444553375244
+        },
+        "feature_importance": {
+          "feature_88": 0.07191675901412964,
+          "feature_84": 0.06450024247169495,
+          "feature_108": 0.05727031081914902,
+          "feature_102": 0.041162196546792984,
+          "feature_85": 0.03799883648753166
+        },
+        "feature_importance_named": {
+          "expectedGoals_home_for_all": 0.07191675901412964,
+          "touchesInOppBox_home_for_all": 0.06450024247169495,
+          "totalShotsInsideBox_home_for_all": 0.05727031081914902,
+          "bigChanceScored_home_against_all": 0.041162196546792984,
+          "touchesInOppBox_away_for_all": 0.03799883648753166
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 338,
+        "n_val_samples": 177,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.1411259025335312,
+          "val_mae": 4.775028228759766,
+          "val_rmse": 6.11089366564517,
+          "val_r2": 0.029165685176849365
+        },
+        "feature_importance": {
+          "feature_136": 0.0995144173502922,
+          "feature_129": 0.047097980976104736,
+          "feature_84": 0.044751957058906555,
+          "feature_145": 0.03812318667769432,
+          "feature_114": 0.034009385854005814
+        },
+        "feature_importance_named": {
+          "blockedScoringAttempt_home_for_all": 0.0995144173502922,
+          "interceptionWon_away_for_all": 0.047097980976104736,
+          "touchesInOppBox_home_for_all": 0.044751957058906555,
+          "groundDuelsPercentage_away_for_all": 0.03812318667769432,
+          "totalShotsOutsideBox_home_against_all": 0.034009385854005814
+        }
+      },
+      {
+        "stat_key": "freeKicks",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 213,
+        "n_val_samples": 0,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.08044363558292389,
+          "val_mae": 3.203415870666504,
+          "val_rmse": 3.843497415322638,
+          "val_r2": -0.5324450731277466
+        },
+        "feature_importance": {
+          "feature_106": 0.05902641639113426,
+          "feature_87": 0.058899253606796265,
+          "feature_83": 0.05692719668149948,
+          "feature_73": 0.052474938333034515,
+          "feature_148": 0.04394807294011116
+        },
+        "feature_importance_named": {
+          "shotsOffGoal_home_against_all": 0.05902641639113426,
+          "touchesInOppBox_away_against_all": 0.058899253606796265,
+          "finalThirdEntries_away_against_all": 0.05692719668149948,
+          "passes_away_for_all": 0.052474938333034515,
+          "aerialDuelsPercentage_home_for_all": 0.04394807294011116
+        }
+      },
+      {
+        "stat_key": "freeKicks",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 192,
+        "n_val_samples": 0,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.029445119202136993,
+          "val_mae": 4.2962646484375,
+          "val_rmse": 4.87492546611442,
+          "val_r2": -0.8075015544891357
+        },
+        "feature_importance": {
+          "feature_79": 0.08722230046987534,
+          "feature_32": 0.08341772854328156,
+          "feature_144": 0.08308860659599304,
+          "feature_31": 0.07234427332878113,
+          "feature_28": 0.05707143619656563
+        },
+        "feature_importance_named": {
+          "accuratePasses_away_against_all": 0.08722230046987534,
+          "away_wma30_against": 0.08341772854328156,
+          "groundDuelsPercentage_home_for_all": 0.08308860659599304,
+          "away_wma15_against": 0.07234427332878113,
+          "home_wma15_against": 0.05707143619656563
+        }
+      },
+      {
+        "stat_key": "freeKicks",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 292,
+        "n_val_samples": 0,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.08789004385471344,
+          "val_mae": 5.701113224029541,
+          "val_rmse": 6.662397098283384,
+          "val_r2": -0.8574399948120117
+        },
+        "feature_importance": {
+          "feature_72": 0.15301476418972015,
+          "feature_32": 0.06918320059776306,
+          "feature_127": 0.05925225839018822,
+          "feature_87": 0.051648739725351334,
+          "feature_98": 0.04182189702987671
+        },
+        "feature_importance_named": {
+          "passes_home_for_all": 0.15301476418972015,
+          "away_wma30_against": 0.06918320059776306,
+          "ballRecovery_away_against_all": 0.05925225839018822,
+          "touchesInOppBox_away_against_all": 0.051648739725351334,
+          "bigChanceMissed_home_against_all": 0.04182189702987671
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 125,
+        "n_val_samples": 64,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.08985825628042221,
+          "val_mae": 0.9155666828155518,
+          "val_rmse": 1.3296030683416638,
+          "val_r2": 0.040025174617767334
+        },
+        "feature_importance": {
+          "feature_21": 0.07178379595279694,
+          "feature_151": 0.04953218996524811,
+          "feature_101": 0.03641072288155556,
+          "feature_71": 0.03440319001674652,
+          "feature_130": 0.02675701305270195
+        },
+        "feature_importance_named": {
+          "home_wma5_for": 0.07178379595279694,
+          "aerialDuelsPercentage_away_against_all": 0.04953218996524811,
+          "bigChanceScored_away_for_all": 0.03641072288155556,
+          "ballPossession_away_against_all": 0.03440319001674652,
+          "interceptionWon_home_against_all": 0.02675701305270195
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 131,
+        "n_val_samples": 60,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.05653385818004608,
+          "val_mae": 0.9082547426223755,
+          "val_rmse": 1.1614884456728174,
+          "val_r2": 0.2574007511138916
+        },
+        "feature_importance": {
+          "feature_30": 0.13938722014427185,
+          "feature_11": 0.09434522688388824,
+          "feature_122": 0.05236583575606346,
+          "feature_92": 0.039209991693496704,
+          "feature_137": 0.030539410188794136
+        },
+        "feature_importance_named": {
+          "away_wma5_against": 0.13938722014427185,
+          "opta_rating_diff": 0.09434522688388824,
+          "accurateLongBalls_home_against_all": 0.05236583575606346,
+          "bigChanceCreated_home_for_all": 0.039209991693496704,
+          "blockedScoringAttempt_away_for_all": 0.030539410188794136
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 221,
+        "n_val_samples": 102,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.1016959473490715,
+          "val_mae": 1.5524643659591675,
+          "val_rmse": 1.9222705092946546,
+          "val_r2": 0.024460136890411377
+        },
+        "feature_importance": {
+          "feature_79": 0.06221022084355354,
+          "feature_30": 0.05006548762321472,
+          "feature_101": 0.04278011992573738,
+          "feature_81": 0.03961018845438957,
+          "feature_130": 0.03848759084939957
+        },
+        "feature_importance_named": {
+          "accuratePasses_away_against_all": 0.06221022084355354,
+          "away_wma5_against": 0.05006548762321472,
+          "bigChanceScored_away_for_all": 0.04278011992573738,
+          "finalThirdEntries_away_for_all": 0.03961018845438957,
+          "interceptionWon_home_against_all": 0.03848759084939957
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 556,
+        "n_val_samples": 135,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.5109624266624451,
+          "val_mae": 1.7526795864105225,
+          "val_rmse": 2.1690070887617297,
+          "val_r2": 0.07039499282836914
+        },
+        "feature_importance": {
+          "feature_151": 0.05441310256719589,
+          "feature_147": 0.038162633776664734,
+          "feature_102": 0.03530546650290489,
+          "feature_108": 0.031057849526405334,
+          "feature_119": 0.030173862352967262
+        },
+        "feature_importance_named": {
+          "aerialDuelsPercentage_away_against_all": 0.05441310256719589,
+          "groundDuelsPercentage_away_against_all": 0.038162633776664734,
+          "bigChanceScored_home_against_all": 0.03530546650290489,
+          "totalShotsInsideBox_home_for_all": 0.031057849526405334,
+          "accurateCross_away_against_all": 0.030173862352967262
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 638,
+        "n_val_samples": 147,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.32674866914749146,
+          "val_mae": 2.109379529953003,
+          "val_rmse": 2.772333403553361,
+          "val_r2": 0.0029108524322509766
+        },
+        "feature_importance": {
+          "feature_92": 0.05804584547877312,
+          "feature_76": 0.040408890694379807,
+          "feature_11": 0.027852067723870277,
+          "feature_82": 0.026576310396194458,
+          "feature_26": 0.025664540007710457
+        },
+        "feature_importance_named": {
+          "bigChanceCreated_home_for_all": 0.05804584547877312,
+          "accuratePasses_home_for_all": 0.040408890694379807,
+          "opta_rating_diff": 0.027852067723870277,
+          "finalThirdEntries_home_against_all": 0.026576310396194458,
+          "away_wma30_for": 0.025664540007710457
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 876,
+        "n_val_samples": 208,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.7879171967506409,
+          "val_mae": 2.928605556488037,
+          "val_rmse": 3.8147538823923544,
+          "val_r2": -0.3815099000930786
+        },
+        "feature_importance": {
+          "feature_137": 0.029836487025022507,
+          "feature_136": 0.02969779074192047,
+          "feature_75": 0.02877277322113514,
+          "feature_131": 0.028724297881126404,
+          "feature_97": 0.027875851839780807
+        },
+        "feature_importance_named": {
+          "blockedScoringAttempt_away_for_all": 0.029836487025022507,
+          "blockedScoringAttempt_home_for_all": 0.02969779074192047,
+          "passes_away_against_all": 0.02877277322113514,
+          "interceptionWon_away_against_all": 0.028724297881126404,
+          "bigChanceMissed_away_for_all": 0.027875851839780807
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 833,
+        "n_val_samples": 226,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 1.0882641077041626,
+          "val_mae": 3.7042593955993652,
+          "val_rmse": 4.4539145321878575,
+          "val_r2": 0.005589544773101807
+        },
+        "feature_importance": {
+          "feature_73": 0.08798063546419144,
+          "feature_11": 0.05278859660029411,
+          "feature_119": 0.03516918048262596,
+          "feature_128": 0.03410496562719345,
+          "feature_129": 0.029125072062015533
+        },
+        "feature_importance_named": {
+          "passes_away_for_all": 0.08798063546419144,
+          "opta_rating_diff": 0.05278859660029411,
+          "accurateCross_away_against_all": 0.03516918048262596,
+          "interceptionWon_home_for_all": 0.03410496562719345,
+          "interceptionWon_away_for_all": 0.029125072062015533
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 929,
+        "n_val_samples": 254,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.7261155843734741,
+          "val_mae": 4.556214809417725,
+          "val_rmse": 6.014476478225591,
+          "val_r2": 0.057863593101501465
+        },
+        "feature_importance": {
+          "feature_11": 0.05471694841980934,
+          "feature_142": 0.04856868088245392,
+          "feature_82": 0.037861086428165436,
+          "feature_68": 0.02249656803905964,
+          "feature_128": 0.02214893326163292
+        },
+        "feature_importance_named": {
+          "opta_rating_diff": 0.05471694841980934,
+          "duelWonPercent_home_against_all": 0.04856868088245392,
+          "finalThirdEntries_home_against_all": 0.037861086428165436,
+          "ballPossession_home_for_all": 0.02249656803905964,
+          "interceptionWon_home_for_all": 0.02214893326163292
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1213,
+        "n_val_samples": 353,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.9664965867996216,
+          "val_mae": 5.336134433746338,
+          "val_rmse": 6.686617498904821,
+          "val_r2": -0.20606684684753418
+        },
+        "feature_importance": {
+          "feature_89": 0.036140963435173035,
+          "feature_82": 0.03414245322346687,
+          "feature_72": 0.030497385188937187,
+          "feature_85": 0.030165068805217743,
+          "feature_100": 0.02677888050675392
+        },
+        "feature_importance_named": {
+          "expectedGoals_away_for_all": 0.036140963435173035,
+          "finalThirdEntries_home_against_all": 0.03414245322346687,
+          "passes_home_for_all": 0.030497385188937187,
+          "touchesInOppBox_away_for_all": 0.030165068805217743,
+          "bigChanceScored_home_for_all": 0.02677888050675392
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1641,
+        "n_val_samples": 388,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.3351232409477234,
+          "val_mae": 1.0742230415344238,
+          "val_rmse": 1.422963071916301,
+          "val_r2": -1.2062556743621826
+        },
+        "feature_importance": {
+          "feature_92": 0.06190674751996994,
+          "feature_70": 0.05780087411403656,
+          "feature_76": 0.04924463853240013,
+          "feature_131": 0.036617595702409744,
+          "feature_80": 0.031576983630657196
+        },
+        "feature_importance_named": {
+          "bigChanceCreated_home_for_all": 0.06190674751996994,
+          "ballPossession_home_against_all": 0.05780087411403656,
+          "accuratePasses_home_for_all": 0.04924463853240013,
+          "interceptionWon_away_against_all": 0.036617595702409744,
+          "finalThirdEntries_home_for_all": 0.031576983630657196
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1417,
+        "n_val_samples": 354,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.15675491094589233,
+          "val_mae": 0.7694879770278931,
+          "val_rmse": 1.0016296340414346,
+          "val_r2": 0.06969767808914185
+        },
+        "feature_importance": {
+          "feature_70": 0.07844754308462143,
+          "feature_142": 0.07552943378686905,
+          "feature_31": 0.03744444251060486,
+          "feature_22": 0.031380388885736465,
+          "feature_83": 0.026043852791190147
+        },
+        "feature_importance_named": {
+          "ballPossession_home_against_all": 0.07844754308462143,
+          "duelWonPercent_home_against_all": 0.07552943378686905,
+          "away_wma15_against": 0.03744444251060486,
+          "home_wma15_for": 0.031380388885736465,
+          "finalThirdEntries_away_against_all": 0.026043852791190147
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 2376,
+        "n_val_samples": 593,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.29512467980384827,
+          "val_mae": 1.4062265157699585,
+          "val_rmse": 1.8920124102098759,
+          "val_r2": -0.23397910594940186
+        },
+        "feature_importance": {
+          "feature_145": 0.03768716752529144,
+          "feature_142": 0.025890273973345757,
+          "feature_136": 0.02481584995985031,
+          "feature_141": 0.024072939530014992,
+          "feature_86": 0.02361653372645378
+        },
+        "feature_importance_named": {
+          "groundDuelsPercentage_away_for_all": 0.03768716752529144,
+          "duelWonPercent_home_against_all": 0.025890273973345757,
+          "blockedScoringAttempt_home_for_all": 0.02481584995985031,
+          "duelWonPercent_away_for_all": 0.024072939530014992,
+          "touchesInOppBox_home_against_all": 0.02361653372645378
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-12-05T16:23:51.802627+00:00",
+    "script": "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier1_trainRawFeatures.py",
+    "returncode": 0,
+    "duration_sec": 28.957,
+    "stdout": "🚀 Starting Tier 1 Model Training\n============================================================\n\nFound 27 datasets to train\n\n\n============================================================\nTraining: cornerKicks_away_1ST\n============================================================\nTrain samples: 1307\nVal samples: 282\nFeature dimension: 154\nTarget range: [1.0, 8.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.31\n  Val MAE:   1.31\n  Val RMSE:  1.84\n  Val R²:    -0.018\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 94: 0.064\n  Feature 119: 0.048\n  Feature 138: 0.042\n  Feature 99: 0.041\n  Feature 129: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_away_1ST_raw.json\n\n============================================================\nTraining: cornerKicks_away_2ND\n============================================================\nTrain samples: 1438\nVal samples: 354\nFeature dimension: 154\nTarget range: [1.0, 7.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.36\n  Val MAE:   1.54\n  Val RMSE:  1.91\n  Val R²:    -0.473\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 140: 0.033\n  Feature 91: 0.032\n  Feature 110: 0.031\n  Feature 93: 0.031\n  Feature 85: 0.030\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_away_2ND_raw.json\n\n============================================================\nTraining: cornerKicks_away_ALL\n============================================================\nTrain samples: 2633\nVal samples: 666\nFeature dimension: 154\nTarget range: [1.0, 13.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.66\n  Val MAE:   2.40\n  Val RMSE:  2.98\n  Val R²:    -0.119\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 119: 0.043\n  Feature 138: 0.038\n  Feature 132: 0.036\n  Feature 25: 0.032\n  Feature 106: 0.029\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_away_ALL_raw.json\n\n============================================================\nTraining: cornerKicks_home_1ST\n============================================================\nTrain samples: 1599\nVal samples: 368\nFeature dimension: 154\nTarget range: [1.0, 9.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.36\n  Val MAE:   1.54\n  Val RMSE:  1.97\n  Val R²:    -0.089\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 120: 0.052\n  Feature 86: 0.046\n  Feature 97: 0.040\n  Feature 118: 0.040\n  Feature 115: 0.033\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_home_1ST_raw.json\n\n============================================================\nTraining: cornerKicks_home_2ND\n============================================================\nTrain samples: 1649\nVal samples: 412\nFeature dimension: 154\nTarget range: [1.0, 11.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.43\n  Val MAE:   2.02\n  Val RMSE:  2.33\n  Val R²:    -0.511\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 76: 0.053\n  Feature 142: 0.048\n  Feature 126: 0.039\n  Feature 86: 0.037\n  Feature 79: 0.025\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_home_2ND_raw.json\n\n============================================================\nTraining: cornerKicks_home_ALL\n============================================================\nTrain samples: 3104\nVal samples: 747\nFeature dimension: 154\nTarget range: [1.0, 14.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.43\n  Val MAE:   2.49\n  Val RMSE:  3.03\n  Val R²:    -0.276\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 77: 0.035\n  Feature 28: 0.026\n  Feature 139: 0.025\n  Feature 137: 0.020\n  Feature 76: 0.020\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_home_ALL_raw.json\n\n============================================================\nTraining: cornerKicks_total_1ST\n============================================================\nTrain samples: 2326\nVal samples: 552\nFeature dimension: 154\nTarget range: [1.0, 13.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.31\n  Val MAE:   1.65\n  Val RMSE:  2.04\n  Val R²:    0.230\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 138: 0.043\n  Feature 120: 0.035\n  Feature 94: 0.033\n  Feature 109: 0.033\n  Feature 142: 0.032\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_total_1ST_raw.json\n\n============================================================\nTraining: cornerKicks_total_2ND\n============================================================\nTrain samples: 2503\nVal samples: 578\nFeature dimension: 154\nTarget range: [1.0, 12.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.32\n  Val MAE:   2.34\n  Val RMSE:  3.00\n  Val R²:    -0.292\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 134: 0.039\n  Feature 76: 0.028\n  Feature 149: 0.024\n  Feature 121: 0.024\n  Feature 109: 0.022\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_total_2ND_raw.json\n\n============================================================\nTraining: cornerKicks_total_ALL\n============================================================\nTrain samples: 3641\nVal samples: 944\nFeature dimension: 154\nTarget range: [2.0, 19.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.89\n  Val MAE:   2.91\n  Val RMSE:  3.68\n  Val R²:    -0.056\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 142: 0.046\n  Feature 111: 0.039\n  Feature 140: 0.038\n  Feature 87: 0.026\n  Feature 138: 0.025\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\cornerKicks_total_ALL_raw.json\n\n============================================================\nTraining: fouls_away_ALL\n============================================================\nTrain samples: 238\nVal samples: 129\nFeature dimension: 154\nTarget range: [4.0, 22.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.08\n  Val MAE:   3.60\n  Val RMSE:  4.30\n  Val R²:    -0.417\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 85: 0.064\n  Feature 118: 0.057\n  Feature 26: 0.056\n  Feature 80: 0.052\n  Feature 68: 0.038\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\fouls_away_ALL_raw.json\n\n============================================================\nTraining: fouls_home_ALL\n============================================================\nTrain samples: 227\nVal samples: 119\nFeature dimension: 154\nTarget range: [5.0, 27.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.26\n  Val MAE:   3.60\n  Val RMSE:  4.93\n  Val R²:    -0.186\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 88: 0.072\n  Feature 84: 0.065\n  Feature 108: 0.057\n  Feature 102: 0.041\n  Feature 85: 0.038\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\fouls_home_ALL_raw.json\n\n============================================================\nTraining: fouls_total_ALL\n============================================================\nTrain samples: 338\nVal samples: 177\nFeature dimension: 154\nTarget range: [12.0, 41.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.14\n  Val MAE:   4.78\n  Val RMSE:  6.11\n  Val R²:    0.029\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 136: 0.100\n  Feature 129: 0.047\n  Feature 84: 0.045\n  Feature 145: 0.038\n  Feature 114: 0.034\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\fouls_total_ALL_raw.json\n\n============================================================\nTraining: freeKicks_away_ALL\n============================================================\nTrain samples: 213\nVal samples: 0\nFeature dimension: 154\nTarget range: [5.0, 20.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.08\n  Val MAE:   3.20\n  Val RMSE:  3.84\n  Val R²:    -0.532\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 106: 0.059\n  Feature 87: 0.059\n  Feature 83: 0.057\n  Feature 73: 0.052\n  Feature 148: 0.044\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\freeKicks_away_ALL_raw.json\n\n============================================================\nTraining: freeKicks_home_ALL\n============================================================\nTrain samples: 192\nVal samples: 0\nFeature dimension: 154\nTarget range: [5.0, 22.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.03\n  Val MAE:   4.30\n  Val RMSE:  4.87\n  Val R²:    -0.808\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 79: 0.087\n  Feature 32: 0.083\n  Feature 144: 0.083\n  Feature 31: 0.072\n  Feature 28: 0.057\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\freeKicks_home_ALL_raw.json\n\n============================================================\nTraining: freeKicks_total_ALL\n============================================================\nTrain samples: 292\nVal samples: 0\nFeature dimension: 154\nTarget range: [14.0, 38.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.09\n  Val MAE:   5.70\n  Val RMSE:  6.66\n  Val R²:    -0.857\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 72: 0.153\n  Feature 32: 0.069\n  Feature 127: 0.059\n  Feature 87: 0.052\n  Feature 98: 0.042\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\freeKicks_total_ALL_raw.json\n\n============================================================\nTraining: offsides_away_ALL\n============================================================\nTrain samples: 125\nVal samples: 64\nFeature dimension: 154\nTarget range: [1.0, 8.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.09\n  Val MAE:   0.92\n  Val RMSE:  1.33\n  Val R²:    0.040\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 21: 0.072\n  Feature 151: 0.050\n  Feature 101: 0.036\n  Feature 71: 0.034\n  Feature 130: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\offsides_away_ALL_raw.json\n\n============================================================\nTraining: offsides_home_ALL\n============================================================\nTrain samples: 131\nVal samples: 60\nFeature dimension: 154\nTarget range: [1.0, 10.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.06\n  Val MAE:   0.91\n  Val RMSE:  1.16\n  Val R²:    0.257\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 30: 0.139\n  Feature 11: 0.094\n  Feature 122: 0.052\n  Feature 92: 0.039\n  Feature 137: 0.031\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\offsides_home_ALL_raw.json\n\n============================================================\nTraining: offsides_total_ALL\n============================================================\nTrain samples: 221\nVal samples: 102\nFeature dimension: 154\nTarget range: [1.0, 10.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.10\n  Val MAE:   1.55\n  Val RMSE:  1.92\n  Val R²:    0.024\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 79: 0.062\n  Feature 30: 0.050\n  Feature 101: 0.043\n  Feature 81: 0.040\n  Feature 130: 0.038\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\offsides_total_ALL_raw.json\n\n============================================================\nTraining: shotsOnGoal_away_ALL\n============================================================\nTrain samples: 556\nVal samples: 135\nFeature dimension: 154\nTarget range: [1.0, 10.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.51\n  Val MAE:   1.75\n  Val RMSE:  2.17\n  Val R²:    0.070\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 151: 0.054\n  Feature 147: 0.038\n  Feature 102: 0.035\n  Feature 108: 0.031\n  Feature 119: 0.030\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\shotsOnGoal_away_ALL_raw.json\n\n============================================================\nTraining: shotsOnGoal_home_ALL\n============================================================\nTrain samples: 638\nVal samples: 147\nFeature dimension: 154\nTarget range: [1.0, 12.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.33\n  Val MAE:   2.11\n  Val RMSE:  2.77\n  Val R²:    0.003\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 92: 0.058\n  Feature 76: 0.040\n  Feature 11: 0.028\n  Feature 82: 0.027\n  Feature 26: 0.026\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\shotsOnGoal_home_ALL_raw.json\n\n============================================================\nTraining: shotsOnGoal_total_ALL\n============================================================\nTrain samples: 876\nVal samples: 208\nFeature dimension: 154\nTarget range: [2.0, 17.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.79\n  Val MAE:   2.93\n  Val RMSE:  3.81\n  Val R²:    -0.382\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 137: 0.030\n  Feature 136: 0.030\n  Feature 75: 0.029\n  Feature 131: 0.029\n  Feature 97: 0.028\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\shotsOnGoal_total_ALL_raw.json\n\n============================================================\nTraining: totalShots_away_ALL\n============================================================\nTrain samples: 833\nVal samples: 226\nFeature dimension: 154\nTarget range: [2.0, 27.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 1.09\n  Val MAE:   3.70\n  Val RMSE:  4.45\n  Val R²:    0.006\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 73: 0.088\n  Feature 11: 0.053\n  Feature 119: 0.035\n  Feature 128: 0.034\n  Feature 129: 0.029\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\totalShots_away_ALL_raw.json\n\n============================================================\nTraining: totalShots_home_ALL\n============================================================\nTrain samples: 929\nVal samples: 254\nFeature dimension: 154\nTarget range: [3.0, 27.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.73\n  Val MAE:   4.56\n  Val RMSE:  6.01\n  Val R²:    0.058\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 11: 0.055\n  Feature 142: 0.049\n  Feature 82: 0.038\n  Feature 68: 0.022\n  Feature 128: 0.022\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\totalShots_home_ALL_raw.json\n\n============================================================\nTraining: totalShots_total_ALL\n============================================================\nTrain samples: 1213\nVal samples: 353\nFeature dimension: 154\nTarget range: [13.0, 42.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.97\n  Val MAE:   5.34\n  Val RMSE:  6.69\n  Val R²:    -0.206\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 89: 0.036\n  Feature 82: 0.034\n  Feature 72: 0.030\n  Feature 85: 0.030\n  Feature 100: 0.027\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\totalShots_total_ALL_raw.json\n\n============================================================\nTraining: yellowCards_away_ALL\n============================================================\nTrain samples: 1641\nVal samples: 388\nFeature dimension: 154\nTarget range: [1.0, 7.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.34\n  Val MAE:   1.07\n  Val RMSE:  1.42\n  Val R²:    -1.206\n  Params:    {'n_estimators': 80, 'max_depth': 3, 'learning_rate': 0.08, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 92: 0.062\n  Feature 70: 0.058\n  Feature 76: 0.049\n  Feature 131: 0.037\n  Feature 80: 0.032\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\yellowCards_away_ALL_raw.json\n\n============================================================\nTraining: yellowCards_home_ALL\n============================================================\nTrain samples: 1417\nVal samples: 354\nFeature dimension: 154\nTarget range: [1.0, 7.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.16\n  Val MAE:   0.77\n  Val RMSE:  1.00\n  Val R²:    0.070\n  Params:    {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1, 'reg_lambda': 1.0}\n\n🔍 Top 5 Features:\n  Feature 70: 0.078\n  Feature 142: 0.076\n  Feature 31: 0.037\n  Feature 22: 0.031\n  Feature 83: 0.026\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\yellowCards_home_ALL_raw.json\n\n============================================================\nTraining: yellowCards_total_ALL\n============================================================\nTrain samples: 2376\nVal samples: 593\nFeature dimension: 154\nTarget range: [1.0, 13.0]\n\nTraining XGBoost model (small param search)...\n\n📊 Results:\n  Train MAE: 0.30\n  Val MAE:   1.41\n  Val RMSE:  1.89\n  Val R²:    -0.234\n  Params:    {'n_estimators': 120, 'max_depth': 4, 'learning_rate': 0.05, 'reg_lambda': 2.0}\n\n🔍 Top 5 Features:\n  Feature 145: 0.038\n  Feature 142: 0.026\n  Feature 136: 0.025\n  Feature 141: 0.024\n  Feature 86: 0.024\n\n✅ Saved model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier1\\yellowCards_total_ALL_raw.json\n\n============================================================\n📊 TRAINING SUMMARY\n============================================================\n\nTotal models trained: 27\nAverage Val MAE: 2.61\nAverage Val R²:  -0.218\n\n🏆 Best Models (by Val MAE):\n1. yellowCards_home_ALL: MAE=0.77, R²=0.070\n2. offsides_home_ALL: MAE=0.91, R²=0.257\n3. offsides_away_ALL: MAE=0.92, R²=0.040\n4. yellowCards_away_ALL: MAE=1.07, R²=-1.206\n5. cornerKicks_away_1ST: MAE=1.31, R²=-0.018\n\n✅ Tier 1 training complete!\n",
+    "stderr": "",
+    "models": [
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "1ST",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1307,
+        "n_val_samples": 282,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.31206896901130676,
+          "val_mae": 1.3108233213424683,
+          "val_rmse": 1.8387684524616439,
+          "val_r2": -0.01806926727294922
+        },
+        "feature_importance": {
+          "feature_94": 0.06413755565881729,
+          "feature_119": 0.047687873244285583,
+          "feature_138": 0.041744958609342575,
+          "feature_99": 0.041023049503564835,
+          "feature_129": 0.027318844571709633
+        },
+        "feature_importance_named": {
+          "bigChanceCreated_home_against_all": 0.06413755565881729,
+          "accurateCross_away_against_all": 0.047687873244285583,
+          "blockedScoringAttempt_home_against_all": 0.041744958609342575,
+          "bigChanceMissed_away_against_all": 0.041023049503564835,
+          "interceptionWon_away_for_all": 0.027318844571709633
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "2ND",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1438,
+        "n_val_samples": 354,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.36481231451034546,
+          "val_mae": 1.5387976169586182,
+          "val_rmse": 1.9083367479563096,
+          "val_r2": -0.4731478691101074
+        },
+        "feature_importance": {
+          "feature_140": 0.0332479365170002,
+          "feature_91": 0.032084524631500244,
+          "feature_110": 0.03079739771783352,
+          "feature_93": 0.030753418803215027,
+          "feature_85": 0.02952086552977562
+        },
+        "feature_importance_named": {
+          "duelWonPercent_home_for_all": 0.0332479365170002,
+          "expectedGoals_away_against_all": 0.032084524631500244,
+          "totalShotsInsideBox_home_against_all": 0.03079739771783352,
+          "bigChanceCreated_away_for_all": 0.030753418803215027,
+          "touchesInOppBox_away_for_all": 0.02952086552977562
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 2633,
+        "n_val_samples": 666,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.6572144031524658,
+          "val_mae": 2.401628255844116,
+          "val_rmse": 2.9757090068289194,
+          "val_r2": -0.11921453475952148
+        },
+        "feature_importance": {
+          "feature_119": 0.043126028031110764,
+          "feature_138": 0.03804844990372658,
+          "feature_132": 0.03559262305498123,
+          "feature_25": 0.032187264412641525,
+          "feature_106": 0.028846167027950287
+        },
+        "feature_importance_named": {
+          "accurateCross_away_against_all": 0.043126028031110764,
+          "blockedScoringAttempt_home_against_all": 0.03804844990372658,
+          "dispossessed_home_for_all": 0.03559262305498123,
+          "away_wma15_for": 0.032187264412641525,
+          "shotsOffGoal_home_against_all": 0.028846167027950287
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "1ST",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1599,
+        "n_val_samples": 368,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.36291053891181946,
+          "val_mae": 1.5426795482635498,
+          "val_rmse": 1.9702702057161385,
+          "val_r2": -0.0888528823852539
+        },
+        "feature_importance": {
+          "feature_120": 0.052020322531461716,
+          "feature_86": 0.046272169798612595,
+          "feature_97": 0.03964287415146828,
+          "feature_118": 0.03964217007160187,
+          "feature_115": 0.033403556793928146
+        },
+        "feature_importance_named": {
+          "accurateLongBalls_home_for_all": 0.052020322531461716,
+          "touchesInOppBox_home_against_all": 0.046272169798612595,
+          "bigChanceMissed_away_for_all": 0.03964287415146828,
+          "accurateCross_home_against_all": 0.03964217007160187,
+          "totalShotsOutsideBox_away_against_all": 0.033403556793928146
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "2ND",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1649,
+        "n_val_samples": 412,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.4335775375366211,
+          "val_mae": 2.0207738876342773,
+          "val_rmse": 2.3322142460523962,
+          "val_r2": -0.510673999786377
+        },
+        "feature_importance": {
+          "feature_76": 0.053239382803440094,
+          "feature_142": 0.04799952358007431,
+          "feature_126": 0.03863688185811043,
+          "feature_86": 0.03703674301505089,
+          "feature_79": 0.024912409484386444
+        },
+        "feature_importance_named": {
+          "accuratePasses_home_for_all": 0.053239382803440094,
+          "duelWonPercent_home_against_all": 0.04799952358007431,
+          "ballRecovery_home_against_all": 0.03863688185811043,
+          "touchesInOppBox_home_against_all": 0.03703674301505089,
+          "accuratePasses_away_against_all": 0.024912409484386444
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 3104,
+        "n_val_samples": 747,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.42658334970474243,
+          "val_mae": 2.4860453605651855,
+          "val_rmse": 3.0269628666647024,
+          "val_r2": -0.27633023262023926
+        },
+        "feature_importance": {
+          "feature_77": 0.03462386503815651,
+          "feature_28": 0.026412563398480415,
+          "feature_139": 0.025017617270350456,
+          "feature_137": 0.019868191331624985,
+          "feature_76": 0.01965569704771042
+        },
+        "feature_importance_named": {
+          "accuratePasses_away_for_all": 0.03462386503815651,
+          "home_wma15_against": 0.026412563398480415,
+          "blockedScoringAttempt_away_against_all": 0.025017617270350456,
+          "blockedScoringAttempt_away_for_all": 0.019868191331624985,
+          "accuratePasses_home_for_all": 0.01965569704771042
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "1ST",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 2326,
+        "n_val_samples": 552,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.3130812644958496,
+          "val_mae": 1.6458258628845215,
+          "val_rmse": 2.0426097430439154,
+          "val_r2": 0.22964060306549072
+        },
+        "feature_importance": {
+          "feature_138": 0.043321870267391205,
+          "feature_120": 0.03512806072831154,
+          "feature_94": 0.03339584171772003,
+          "feature_109": 0.033355142921209335,
+          "feature_142": 0.03239969164133072
+        },
+        "feature_importance_named": {
+          "blockedScoringAttempt_home_against_all": 0.043321870267391205,
+          "accurateLongBalls_home_for_all": 0.03512806072831154,
+          "bigChanceCreated_home_against_all": 0.03339584171772003,
+          "totalShotsInsideBox_away_for_all": 0.033355142921209335,
+          "duelWonPercent_home_against_all": 0.03239969164133072
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "2ND",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 2503,
+        "n_val_samples": 578,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.315915584564209,
+          "val_mae": 2.338487148284912,
+          "val_rmse": 3.001963767415667,
+          "val_r2": -0.2923029661178589
+        },
+        "feature_importance": {
+          "feature_134": 0.03949218988418579,
+          "feature_76": 0.027762727811932564,
+          "feature_149": 0.023934368044137955,
+          "feature_121": 0.02366606891155243,
+          "feature_109": 0.02238934114575386
+        },
+        "feature_importance_named": {
+          "dispossessed_home_against_all": 0.03949218988418579,
+          "accuratePasses_home_for_all": 0.027762727811932564,
+          "aerialDuelsPercentage_away_for_all": 0.023934368044137955,
+          "accurateLongBalls_away_for_all": 0.02366606891155243,
+          "totalShotsInsideBox_away_for_all": 0.02238934114575386
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 3641,
+        "n_val_samples": 944,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.8863053917884827,
+          "val_mae": 2.913494348526001,
+          "val_rmse": 3.6807490475894395,
+          "val_r2": -0.05562782287597656
+        },
+        "feature_importance": {
+          "feature_142": 0.04603564366698265,
+          "feature_111": 0.03927290812134743,
+          "feature_140": 0.03777428716421127,
+          "feature_87": 0.026018138974905014,
+          "feature_138": 0.024599680677056313
+        },
+        "feature_importance_named": {
+          "duelWonPercent_home_against_all": 0.04603564366698265,
+          "totalShotsInsideBox_away_against_all": 0.03927290812134743,
+          "duelWonPercent_home_for_all": 0.03777428716421127,
+          "touchesInOppBox_away_against_all": 0.026018138974905014,
+          "blockedScoringAttempt_home_against_all": 0.024599680677056313
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 238,
+        "n_val_samples": 129,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.08268244564533234,
+          "val_mae": 3.5956015586853027,
+          "val_rmse": 4.29686945134585,
+          "val_r2": -0.41686439514160156
+        },
+        "feature_importance": {
+          "feature_85": 0.06402740627527237,
+          "feature_118": 0.05702623724937439,
+          "feature_26": 0.055732980370521545,
+          "feature_80": 0.05195912346243858,
+          "feature_68": 0.03836938366293907
+        },
+        "feature_importance_named": {
+          "touchesInOppBox_away_for_all": 0.06402740627527237,
+          "accurateCross_home_against_all": 0.05702623724937439,
+          "away_wma30_for": 0.055732980370521545,
+          "finalThirdEntries_home_for_all": 0.05195912346243858,
+          "ballPossession_home_for_all": 0.03836938366293907
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 227,
+        "n_val_samples": 119,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.2591758370399475,
+          "val_mae": 3.599630117416382,
+          "val_rmse": 4.930586211537559,
+          "val_r2": -0.18577444553375244
+        },
+        "feature_importance": {
+          "feature_88": 0.07191675901412964,
+          "feature_84": 0.06450024247169495,
+          "feature_108": 0.05727031081914902,
+          "feature_102": 0.041162196546792984,
+          "feature_85": 0.03799883648753166
+        },
+        "feature_importance_named": {
+          "expectedGoals_home_for_all": 0.07191675901412964,
+          "touchesInOppBox_home_for_all": 0.06450024247169495,
+          "totalShotsInsideBox_home_for_all": 0.05727031081914902,
+          "bigChanceScored_home_against_all": 0.041162196546792984,
+          "touchesInOppBox_away_for_all": 0.03799883648753166
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 338,
+        "n_val_samples": 177,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.1411259025335312,
+          "val_mae": 4.775028228759766,
+          "val_rmse": 6.11089366564517,
+          "val_r2": 0.029165685176849365
+        },
+        "feature_importance": {
+          "feature_136": 0.0995144173502922,
+          "feature_129": 0.047097980976104736,
+          "feature_84": 0.044751957058906555,
+          "feature_145": 0.03812318667769432,
+          "feature_114": 0.034009385854005814
+        },
+        "feature_importance_named": {
+          "blockedScoringAttempt_home_for_all": 0.0995144173502922,
+          "interceptionWon_away_for_all": 0.047097980976104736,
+          "touchesInOppBox_home_for_all": 0.044751957058906555,
+          "groundDuelsPercentage_away_for_all": 0.03812318667769432,
+          "totalShotsOutsideBox_home_against_all": 0.034009385854005814
+        }
+      },
+      {
+        "stat_key": "freeKicks",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 213,
+        "n_val_samples": 0,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.08044363558292389,
+          "val_mae": 3.203415870666504,
+          "val_rmse": 3.843497415322638,
+          "val_r2": -0.5324450731277466
+        },
+        "feature_importance": {
+          "feature_106": 0.05902641639113426,
+          "feature_87": 0.058899253606796265,
+          "feature_83": 0.05692719668149948,
+          "feature_73": 0.052474938333034515,
+          "feature_148": 0.04394807294011116
+        },
+        "feature_importance_named": {
+          "shotsOffGoal_home_against_all": 0.05902641639113426,
+          "touchesInOppBox_away_against_all": 0.058899253606796265,
+          "finalThirdEntries_away_against_all": 0.05692719668149948,
+          "passes_away_for_all": 0.052474938333034515,
+          "aerialDuelsPercentage_home_for_all": 0.04394807294011116
+        }
+      },
+      {
+        "stat_key": "freeKicks",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 192,
+        "n_val_samples": 0,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.029445119202136993,
+          "val_mae": 4.2962646484375,
+          "val_rmse": 4.87492546611442,
+          "val_r2": -0.8075015544891357
+        },
+        "feature_importance": {
+          "feature_79": 0.08722230046987534,
+          "feature_32": 0.08341772854328156,
+          "feature_144": 0.08308860659599304,
+          "feature_31": 0.07234427332878113,
+          "feature_28": 0.05707143619656563
+        },
+        "feature_importance_named": {
+          "accuratePasses_away_against_all": 0.08722230046987534,
+          "away_wma30_against": 0.08341772854328156,
+          "groundDuelsPercentage_home_for_all": 0.08308860659599304,
+          "away_wma15_against": 0.07234427332878113,
+          "home_wma15_against": 0.05707143619656563
+        }
+      },
+      {
+        "stat_key": "freeKicks",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 292,
+        "n_val_samples": 0,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.08789004385471344,
+          "val_mae": 5.701113224029541,
+          "val_rmse": 6.662397098283384,
+          "val_r2": -0.8574399948120117
+        },
+        "feature_importance": {
+          "feature_72": 0.15301476418972015,
+          "feature_32": 0.06918320059776306,
+          "feature_127": 0.05925225839018822,
+          "feature_87": 0.051648739725351334,
+          "feature_98": 0.04182189702987671
+        },
+        "feature_importance_named": {
+          "passes_home_for_all": 0.15301476418972015,
+          "away_wma30_against": 0.06918320059776306,
+          "ballRecovery_away_against_all": 0.05925225839018822,
+          "touchesInOppBox_away_against_all": 0.051648739725351334,
+          "bigChanceMissed_home_against_all": 0.04182189702987671
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 125,
+        "n_val_samples": 64,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.08985825628042221,
+          "val_mae": 0.9155666828155518,
+          "val_rmse": 1.3296030683416638,
+          "val_r2": 0.040025174617767334
+        },
+        "feature_importance": {
+          "feature_21": 0.07178379595279694,
+          "feature_151": 0.04953218996524811,
+          "feature_101": 0.03641072288155556,
+          "feature_71": 0.03440319001674652,
+          "feature_130": 0.02675701305270195
+        },
+        "feature_importance_named": {
+          "home_wma5_for": 0.07178379595279694,
+          "aerialDuelsPercentage_away_against_all": 0.04953218996524811,
+          "bigChanceScored_away_for_all": 0.03641072288155556,
+          "ballPossession_away_against_all": 0.03440319001674652,
+          "interceptionWon_home_against_all": 0.02675701305270195
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 131,
+        "n_val_samples": 60,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.05653385818004608,
+          "val_mae": 0.9082547426223755,
+          "val_rmse": 1.1614884456728174,
+          "val_r2": 0.2574007511138916
+        },
+        "feature_importance": {
+          "feature_30": 0.13938722014427185,
+          "feature_11": 0.09434522688388824,
+          "feature_122": 0.05236583575606346,
+          "feature_92": 0.039209991693496704,
+          "feature_137": 0.030539410188794136
+        },
+        "feature_importance_named": {
+          "away_wma5_against": 0.13938722014427185,
+          "opta_rating_diff": 0.09434522688388824,
+          "accurateLongBalls_home_against_all": 0.05236583575606346,
+          "bigChanceCreated_home_for_all": 0.039209991693496704,
+          "blockedScoringAttempt_away_for_all": 0.030539410188794136
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 221,
+        "n_val_samples": 102,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.1016959473490715,
+          "val_mae": 1.5524643659591675,
+          "val_rmse": 1.9222705092946546,
+          "val_r2": 0.024460136890411377
+        },
+        "feature_importance": {
+          "feature_79": 0.06221022084355354,
+          "feature_30": 0.05006548762321472,
+          "feature_101": 0.04278011992573738,
+          "feature_81": 0.03961018845438957,
+          "feature_130": 0.03848759084939957
+        },
+        "feature_importance_named": {
+          "accuratePasses_away_against_all": 0.06221022084355354,
+          "away_wma5_against": 0.05006548762321472,
+          "bigChanceScored_away_for_all": 0.04278011992573738,
+          "finalThirdEntries_away_for_all": 0.03961018845438957,
+          "interceptionWon_home_against_all": 0.03848759084939957
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 556,
+        "n_val_samples": 135,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.5109624266624451,
+          "val_mae": 1.7526795864105225,
+          "val_rmse": 2.1690070887617297,
+          "val_r2": 0.07039499282836914
+        },
+        "feature_importance": {
+          "feature_151": 0.05441310256719589,
+          "feature_147": 0.038162633776664734,
+          "feature_102": 0.03530546650290489,
+          "feature_108": 0.031057849526405334,
+          "feature_119": 0.030173862352967262
+        },
+        "feature_importance_named": {
+          "aerialDuelsPercentage_away_against_all": 0.05441310256719589,
+          "groundDuelsPercentage_away_against_all": 0.038162633776664734,
+          "bigChanceScored_home_against_all": 0.03530546650290489,
+          "totalShotsInsideBox_home_for_all": 0.031057849526405334,
+          "accurateCross_away_against_all": 0.030173862352967262
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 638,
+        "n_val_samples": 147,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.32674866914749146,
+          "val_mae": 2.109379529953003,
+          "val_rmse": 2.772333403553361,
+          "val_r2": 0.0029108524322509766
+        },
+        "feature_importance": {
+          "feature_92": 0.05804584547877312,
+          "feature_76": 0.040408890694379807,
+          "feature_11": 0.027852067723870277,
+          "feature_82": 0.026576310396194458,
+          "feature_26": 0.025664540007710457
+        },
+        "feature_importance_named": {
+          "bigChanceCreated_home_for_all": 0.05804584547877312,
+          "accuratePasses_home_for_all": 0.040408890694379807,
+          "opta_rating_diff": 0.027852067723870277,
+          "finalThirdEntries_home_against_all": 0.026576310396194458,
+          "away_wma30_for": 0.025664540007710457
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 876,
+        "n_val_samples": 208,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.7879171967506409,
+          "val_mae": 2.928605556488037,
+          "val_rmse": 3.8147538823923544,
+          "val_r2": -0.3815099000930786
+        },
+        "feature_importance": {
+          "feature_137": 0.029836487025022507,
+          "feature_136": 0.02969779074192047,
+          "feature_75": 0.02877277322113514,
+          "feature_131": 0.028724297881126404,
+          "feature_97": 0.027875851839780807
+        },
+        "feature_importance_named": {
+          "blockedScoringAttempt_away_for_all": 0.029836487025022507,
+          "blockedScoringAttempt_home_for_all": 0.02969779074192047,
+          "passes_away_against_all": 0.02877277322113514,
+          "interceptionWon_away_against_all": 0.028724297881126404,
+          "bigChanceMissed_away_for_all": 0.027875851839780807
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 833,
+        "n_val_samples": 226,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 1.0882641077041626,
+          "val_mae": 3.7042593955993652,
+          "val_rmse": 4.4539145321878575,
+          "val_r2": 0.005589544773101807
+        },
+        "feature_importance": {
+          "feature_73": 0.08798063546419144,
+          "feature_11": 0.05278859660029411,
+          "feature_119": 0.03516918048262596,
+          "feature_128": 0.03410496562719345,
+          "feature_129": 0.029125072062015533
+        },
+        "feature_importance_named": {
+          "passes_away_for_all": 0.08798063546419144,
+          "opta_rating_diff": 0.05278859660029411,
+          "accurateCross_away_against_all": 0.03516918048262596,
+          "interceptionWon_home_for_all": 0.03410496562719345,
+          "interceptionWon_away_for_all": 0.029125072062015533
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 929,
+        "n_val_samples": 254,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.7261155843734741,
+          "val_mae": 4.556214809417725,
+          "val_rmse": 6.014476478225591,
+          "val_r2": 0.057863593101501465
+        },
+        "feature_importance": {
+          "feature_11": 0.05471694841980934,
+          "feature_142": 0.04856868088245392,
+          "feature_82": 0.037861086428165436,
+          "feature_68": 0.02249656803905964,
+          "feature_128": 0.02214893326163292
+        },
+        "feature_importance_named": {
+          "opta_rating_diff": 0.05471694841980934,
+          "duelWonPercent_home_against_all": 0.04856868088245392,
+          "finalThirdEntries_home_against_all": 0.037861086428165436,
+          "ballPossession_home_for_all": 0.02249656803905964,
+          "interceptionWon_home_for_all": 0.02214893326163292
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1213,
+        "n_val_samples": 353,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.9664965867996216,
+          "val_mae": 5.336134433746338,
+          "val_rmse": 6.686617498904821,
+          "val_r2": -0.20606684684753418
+        },
+        "feature_importance": {
+          "feature_89": 0.036140963435173035,
+          "feature_82": 0.03414245322346687,
+          "feature_72": 0.030497385188937187,
+          "feature_85": 0.030165068805217743,
+          "feature_100": 0.02677888050675392
+        },
+        "feature_importance_named": {
+          "expectedGoals_away_for_all": 0.036140963435173035,
+          "finalThirdEntries_home_against_all": 0.03414245322346687,
+          "passes_home_for_all": 0.030497385188937187,
+          "touchesInOppBox_away_for_all": 0.030165068805217743,
+          "bigChanceScored_home_for_all": 0.02677888050675392
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 80,
+          "max_depth": 3,
+          "learning_rate": 0.08,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1641,
+        "n_val_samples": 388,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.3351232409477234,
+          "val_mae": 1.0742230415344238,
+          "val_rmse": 1.422963071916301,
+          "val_r2": -1.2062556743621826
+        },
+        "feature_importance": {
+          "feature_92": 0.06190674751996994,
+          "feature_70": 0.05780087411403656,
+          "feature_76": 0.04924463853240013,
+          "feature_131": 0.036617595702409744,
+          "feature_80": 0.031576983630657196
+        },
+        "feature_importance_named": {
+          "bigChanceCreated_home_for_all": 0.06190674751996994,
+          "ballPossession_home_against_all": 0.05780087411403656,
+          "accuratePasses_home_for_all": 0.04924463853240013,
+          "interceptionWon_away_against_all": 0.036617595702409744,
+          "finalThirdEntries_home_for_all": 0.031576983630657196
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 100,
+          "max_depth": 3,
+          "learning_rate": 0.1,
+          "reg_lambda": 1.0
+        },
+        "n_train_samples": 1417,
+        "n_val_samples": 354,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.15675491094589233,
+          "val_mae": 0.7694879770278931,
+          "val_rmse": 1.0016296340414346,
+          "val_r2": 0.06969767808914185
+        },
+        "feature_importance": {
+          "feature_70": 0.07844754308462143,
+          "feature_142": 0.07552943378686905,
+          "feature_31": 0.03744444251060486,
+          "feature_22": 0.031380388885736465,
+          "feature_83": 0.026043852791190147
+        },
+        "feature_importance_named": {
+          "ballPossession_home_against_all": 0.07844754308462143,
+          "duelWonPercent_home_against_all": 0.07552943378686905,
+          "away_wma15_against": 0.03744444251060486,
+          "home_wma15_for": 0.031380388885736465,
+          "finalThirdEntries_away_against_all": 0.026043852791190147
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier1",
+        "best_params": {
+          "n_estimators": 120,
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "reg_lambda": 2.0
+        },
+        "n_train_samples": 2376,
+        "n_val_samples": 593,
+        "feature_dim": 154,
+        "metrics": {
+          "train_mae": 0.29512467980384827,
+          "val_mae": 1.4062265157699585,
+          "val_rmse": 1.8920124102098759,
+          "val_r2": -0.23397910594940186
+        },
+        "feature_importance": {
+          "feature_145": 0.03768716752529144,
+          "feature_142": 0.025890273973345757,
+          "feature_136": 0.02481584995985031,
+          "feature_141": 0.024072939530014992,
+          "feature_86": 0.02361653372645378
+        },
+        "feature_importance_named": {
+          "groundDuelsPercentage_away_for_all": 0.03768716752529144,
+          "duelWonPercent_home_against_all": 0.025890273973345757,
+          "blockedScoringAttempt_home_for_all": 0.02481584995985031,
+          "duelWonPercent_away_for_all": 0.024072939530014992,
+          "touchesInOppBox_home_against_all": 0.02361653372645378
+        }
+      }
+    ]
+  }
+]

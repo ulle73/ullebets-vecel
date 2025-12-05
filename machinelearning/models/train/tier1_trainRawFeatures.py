@@ -67,41 +67,59 @@ def train_model(stat_key, scope, period):
     print(f"Feature dimension: {X_train.shape[1]}")
     print(f"Target range: [{y_train.min():.1f}, {y_train.max():.1f}]")
     
-    # Train XGBoost
-    print("\nTraining XGBoost model...")
-    
-    model = xgb.XGBRegressor(
-        objective='reg:squarederror',
-        n_estimators=100,  # Lower for small datasets
-        max_depth=4,       # Shallower to avoid overfitting
-        learning_rate=0.1,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        random_state=42,
-        verbosity=0
-    )
-    
-    model.fit(
-        X_train, y_train,
-        eval_set=[(X_val, y_val)],
-        verbose=False
-    )
-    
-    # Evaluate
-    train_pred = model.predict(X_train)
-    val_pred = model.predict(X_val)
-    
-    train_mae = mean_absolute_error(y_train, train_pred)
-    val_mae = mean_absolute_error(y_val, val_pred)
-    train_rmse = np.sqrt(mean_squared_error(y_train, train_pred))
-    val_rmse = np.sqrt(mean_squared_error(y_val, val_pred))
-    val_r2 = r2_score(y_val, val_pred)
+    # Train XGBoost (small param sweep to avoid overfitting on små dataset)
+    print("\nTraining XGBoost model (small param search)...")
+
+    param_grid = [
+        {"n_estimators": 80, "max_depth": 3, "learning_rate": 0.08, "reg_lambda": 1.0},
+        {"n_estimators": 100, "max_depth": 3, "learning_rate": 0.1, "reg_lambda": 1.0},
+        {"n_estimators": 120, "max_depth": 4, "learning_rate": 0.05, "reg_lambda": 2.0},
+    ]
+
+    best = None
+    for params in param_grid:
+        model = xgb.XGBRegressor(
+            objective='reg:squarederror',
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbosity=0,
+            **params,
+        )
+
+        model.fit(
+            X_train, y_train,
+            eval_set=[(X_val, y_val)],
+            verbose=False
+        )
+
+        train_pred = model.predict(X_train)
+        val_pred = model.predict(X_val)
+
+        metrics = {
+            "train_mae": mean_absolute_error(y_train, train_pred),
+            "val_mae": mean_absolute_error(y_val, val_pred),
+            "train_rmse": np.sqrt(mean_squared_error(y_train, train_pred)),
+            "val_rmse": np.sqrt(mean_squared_error(y_val, val_pred)),
+            "val_r2": r2_score(y_val, val_pred),
+        }
+
+        if best is None or metrics["val_mae"] < best["metrics"]["val_mae"]:
+            best = {"model": model, "metrics": metrics, "params": params}
+
+    model = best["model"]
+    train_mae = best["metrics"]["train_mae"]
+    val_mae = best["metrics"]["val_mae"]
+    train_rmse = best["metrics"]["train_rmse"]
+    val_rmse = best["metrics"]["val_rmse"]
+    val_r2 = best["metrics"]["val_r2"]
     
     print(f"\n📊 Results:")
     print(f"  Train MAE: {train_mae:.2f}")
     print(f"  Val MAE:   {val_mae:.2f}")
     print(f"  Val RMSE:  {val_rmse:.2f}")
     print(f"  Val R²:    {val_r2:.3f}")
+    print(f"  Params:    {best['params']}")
     
     # Feature importance
     importance = model.feature_importances_
@@ -122,6 +140,7 @@ def train_model(stat_key, scope, period):
         'scope': scope,
         'period': period,
         'model_type': 'xgboost_tier1',
+        'best_params': best['params'],
         'n_train_samples': len(train_samples),
         'n_val_samples': len(val_samples),
         'feature_dim': X_train.shape[1],

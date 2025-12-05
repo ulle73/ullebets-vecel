@@ -42,6 +42,29 @@ const STAT_KEYS = [
 
 const SCOPES = ['home', 'away', 'total'];
 const PERIODS = ['ALL', '1ST', '2ND'];
+const EXTRA_FEATURE_KEYS = [
+  'ballPossession',
+  'passes',
+  'accuratePasses',
+  'finalThirdEntries',
+  'touchesInOppBox',
+  'expectedGoals',
+  'bigChanceCreated',
+  'bigChanceMissed',
+  'bigChanceScored',
+  'shotsOffGoal',
+  'totalShotsInsideBox',
+  'totalShotsOutsideBox',
+  'accurateCross',
+  'accurateLongBalls',
+  'ballRecovery',
+  'interceptionWon',
+  'dispossessed',
+  'blockedScoringAttempt',
+  'duelWonPercent',
+  'groundDuelsPercentage',
+  'aerialDuelsPercentage'
+];
 
 // Date split for train/val/test
 const TRAIN_END_DATE = new Date('2025-11-10');
@@ -388,14 +411,29 @@ async function buildSample({
   const home_shotsPer10Min = homeProfile.shotsPerTenMinutes?.avg || 0;
   const away_shotsPer10Min = awayProfile.shotsPerTenMinutes?.avg || 0;
   raw_features.push(home_shotsPer10Min, away_shotsPer10Min);
-  
+
+  // === EXTRA TEAM PROFILE FEATURES (ALL period only) ===
+  const excludeShotFeatures = statKey === 'totalShots';
+  const getStatVal = (profile, polarity, key) =>
+    profile?.statistics?.[polarity]?.[key]?.ALL?.value ?? 0;
+
+  for (const key of EXTRA_FEATURE_KEYS) {
+    const isShotLeak = excludeShotFeatures && key.toLowerCase().includes('shot');
+    const home_for = isShotLeak ? 0 : getStatVal(homeProfile, 'for', key);
+    const away_for = isShotLeak ? 0 : getStatVal(awayProfile, 'for', key);
+    const home_against = isShotLeak ? 0 : getStatVal(homeProfile, 'against', key);
+    const away_against = isShotLeak ? 0 : getStatVal(awayProfile, 'against', key);
+    raw_features.push(home_for, away_for, home_against, away_against);
+  }
+
   // Situational features total: 3 + 6 + 2 = 11 features
   
   // Home advantage
   raw_features.push(1); // Always 1 (binary indicator)
   
   // League ID (encode as number)
-  const leagueId = homeOptaData.leagueId || 0;
+  // Neutralize league id to avoid league-specific overfitting
+  const leagueId = 0;
   raw_features.push(leagueId);
   
   // === FORMULA PREDICTIONS (for Tier 2) ===
