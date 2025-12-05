@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       dates:
-        description: "Datum (YYYY-MM-DD), kommaseparerade eller mellanslag. Tomt = idag + imorgon + +2 (Stockholm). Max 5."
+        description: "Datum (YYYY-MM-DD), kommaseparerade eller mellanslag. Tomt = idag + imorgon + +2 + +3 + +4 (Stockholm). Max 5."
         required: false
         default: ""
 
@@ -62,7 +62,9 @@ jobs:
           const todayStr = formatDate(0);
           const tomorrowStr = formatDate(1);
           const dayAfterTomorrowStr = formatDate(2);
-          const defaultDates = [todayStr, tomorrowStr, dayAfterTomorrowStr];
+          const plusThreeStr = formatDate(3);
+          const plusFourStr = formatDate(4);
+          const defaultDates = [todayStr, tomorrowStr, dayAfterTomorrowStr, plusThreeStr, plusFourStr];
 
           const dates = parseDates(rawDates);
           const selectedDates = dates.length ? dates : defaultDates;
