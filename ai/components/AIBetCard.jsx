@@ -69,6 +69,46 @@ function formatMatchDate(value) {
   }
 }
 
+function buildLineSignature(line = {}) {
+  const parts = [
+    line.matchId || line.match_id || line.eventId || line.event_id || "",
+    line.statKey || line.stat || "",
+    line.scope || "",
+    line.period || "",
+    line.direction || (line.over === true ? "over" : line.over === false ? "under" : ""),
+    line.line ?? "",
+  ];
+  return parts.join("|");
+}
+
+function buildSnapshotOddsMap(snapshots = []) {
+  if (!Array.isArray(snapshots) || !snapshots.length) return new Map();
+  const sorted = [...snapshots].sort((a, b) => {
+    const aTime = new Date(a.fetchedAt || 0).getTime();
+    const bTime = new Date(b.fetchedAt || 0).getTime();
+    return aTime - bTime;
+  });
+  const map = new Map();
+
+  for (const snap of sorted) {
+    const lines = Array.isArray(snap.lines) ? snap.lines : [];
+    for (const line of lines) {
+      const sig = buildLineSignature(line);
+      if (!sig) continue;
+      const oddsVal = Number(line.odds);
+      if (!Number.isFinite(oddsVal)) continue;
+      if (!map.has(sig)) {
+        map.set(sig, { firstOdds: oddsVal, closingOdds: oddsVal });
+      } else {
+        const entry = map.get(sig);
+        entry.closingOdds = oddsVal;
+        map.set(sig, entry);
+      }
+    }
+  }
+  return map;
+}
+
 function getBetDescription(line) {
   const homeTeam = line.teams?.home || line.homeTeam || "";
   const awayTeam = line.teams?.away || line.awayTeam || "";
@@ -185,6 +225,7 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
   const primaryLine = lines[0];
   const displayRank = betDoc.comboRank ?? primaryLine?.comboRank ?? index + 1;
   const displayScore = betDoc.comboScore ?? primaryLine?.comboScore ?? null;
+  const snapshotOddsMap = showOutcome ? buildSnapshotOddsMap(betDoc.snapshots) : new Map();
 
   // Calculate average matchup score
   const matchupScores = lines.map((line) => {
@@ -373,6 +414,8 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
                 betDoc.metadata?.matchDate ||
                 betDoc.generatedAt
             ) || null;
+          const sig = buildLineSignature(line);
+          const snapshotOdds = showOutcome ? snapshotOddsMap.get(sig) : null;
 
           let oddsColor = "text-emerald-400";
           const isComboLine = lines.length > 1;
@@ -381,6 +424,15 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
           } else if (line.direction === "under") {
             oddsColor = "text-purple-400";
           }
+
+          const displayOdds =
+            showOutcome && snapshotOdds?.firstOdds != null
+              ? snapshotOdds.firstOdds
+              : line.odds;
+          const closingOdds =
+            showOutcome && snapshotOdds?.closingOdds != null
+              ? snapshotOdds.closingOdds
+              : null;
 
           return (
             <li key={uniqueKey} className="relative overflow-hidden rounded-xl p-5">
@@ -477,8 +529,14 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
                   <span
                     className={`text-6xl font-bold ${oddsColor} tracking-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]`}
                   >
-                    {line.odds?.toFixed(2)}
+                    {Number(displayOdds)?.toFixed(2)}
                   </span>
+                  {closingOdds != null && (
+                    <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      Closing odds:{" "}
+                      <span className="text-slate-200">{Number(closingOdds)?.toFixed(2)}</span>
+                    </span>
+                  )}
                 </div>
               </div>
             </li>
