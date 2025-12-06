@@ -26,13 +26,28 @@ def load_jsonl(filepath):
     return samples
 
 def load_tier1_model(stat_key, scope, period):
-    """Load Tier 1 model if it exists"""
+    """Load Tier 1 model and selected features if it exists"""
     model_path = TIER1_DIR / f"{stat_key}_{scope}_{period}_raw.json"
+    metadata_path = TIER1_DIR / f"{stat_key}_{scope}_{period}_raw_metadata.json"
+
     if model_path.exists():
         model = xgb.XGBRegressor()
         model.load_model(str(model_path))
-        return model
-    return None
+
+        # Load selected features if available
+        selected_features = None
+        if metadata_path.exists():
+            try:
+                with open(metadata_path, 'r') as f:
+                    metadata = json.load(f)
+                    selected_features = metadata.get('selected_features')
+                    if selected_features:
+                        selected_features = np.array(selected_features)
+            except Exception:
+                pass
+
+        return model, selected_features
+    return None, None
 
 def gather_formula_keys(train_samples, val_samples):
     """Collect all formula prediction keys across train/val so we get a fixed feature length."""
@@ -44,13 +59,13 @@ def gather_formula_keys(train_samples, val_samples):
                 keys.add(k)
     return sorted(keys)
 
-def build_tier2_features(sample, tier1_model=None, formula_keys=None):
+def build_tier2_features(sample, tier1_model=None, selected_features=None, formula_keys=None):
     """Build Tier 2 feature vector from existing formula predictions"""
     features = []
-    
+
     # 1. Raw features (keep them for context)
     features.extend(sample['raw_features'])
-    
+
     # 2. All formula predictions from evDetails
     formula_preds = sample.get('formula_predictions', {}) or {}
 
@@ -71,15 +86,22 @@ def build_tier2_features(sample, tier1_model=None, formula_keys=None):
         features.append(np.median(pred_values))  # Median
     else:
         features.extend([0] * 5)
-    
+
     # 4. Tier 1 prediction (if available)
     if tier1_model is not None:
-        raw_feats = np.array(sample['raw_features']).reshape(1, -1)
-        tier1_pred = tier1_model.predict(raw_feats)[0]
-        features.append(tier1_pred)
+        try:
+            raw_feats = np.array(sample['raw_features'])
+            if selected_features is not None:
+                raw_feats = raw_feats[selected_features]  # Select only the chosen features
+            raw_feats = raw_feats.reshape(1, -1)
+            tier1_pred = tier1_model.predict(raw_feats)[0]
+            features.append(tier1_pred)
+        except Exception as e:
+            print(f"⚠️  Tier 1 prediction failed: {e}, using 0")
+            features.append(0)  # Fallback
     else:
         features.append(0)  # No Tier 1 model
-    
+
     return features
 
 def train_tier2_model(stat_key, scope, period):
@@ -115,9 +137,11 @@ def train_tier2_model(stat_key, scope, period):
         return None
     
     # Load Tier 1 model if available
-    tier1_model = load_tier1_model(stat_key, scope, period)
+    tier1_model, selected_features = load_tier1_model(stat_key, scope, period)
     if tier1_model:
         print(f"✅ Loaded Tier 1 model")
+        if selected_features is not None:
+            print(f"✅ Using {len(selected_features)} selected features")
     else:
         print(f"⚠️  No Tier 1 model (will train without it)")
 
@@ -127,11 +151,11 @@ def train_tier2_model(stat_key, scope, period):
     
     # Build features
     print("Building Tier 2 features...")
-    X_train = np.array([build_tier2_features(s, tier1_model, formula_keys) for s in train_samples])
+    X_train = np.array([build_tier2_features(s, tier1_model, selected_features, formula_keys) for s in train_samples])
     y_train = np.array([s['target'] for s in train_samples])
-    
+
     if len(val_samples) > 0:
-        X_val = np.array([build_tier2_features(s, tier1_model, formula_keys) for s in val_samples])
+        X_val = np.array([build_tier2_features(s, tier1_model, selected_features, formula_keys) for s in val_samples])
         y_val = np.array([s['target'] for s in val_samples])
     else:
         # Split train data
@@ -192,8 +216,12 @@ def train_tier2_model(stat_key, scope, period):
     # Save model
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     model_path = OUTPUT_DIR / f"{stat_key}_{scope}_{period}_stacked.json"
-    model.save_model(str(model_path))
-    print(f"\n✅ Saved Tier 2 model to {model_path}")
+    try:
+        model.save_model(str(model_path))
+        print(f"\n✅ Saved Tier 2 model to {model_path}")
+    except Exception as e:
+        print(f"\n❌ Failed to save model: {e}")
+        return None
     
     # Save metadata
     metadata = {
@@ -202,6 +230,7 @@ def train_tier2_model(stat_key, scope, period):
         'period': period,
         'model_type': 'xgboost_tier2_stacking',
         'has_tier1': tier1_model is not None,
+        'has_selected_features': selected_features is not None,
         'n_train_samples': len(train_samples),
         'n_val_samples': len(val_samples),
         'feature_dim': X_train.shape[1],
@@ -261,12 +290,19 @@ def main():
         print(f"Average Val MAE: {avg_val_mae:.2f}")
         print(f"Average Val R²:  {avg_val_r2:.3f}")
         
-        print(f"\n🏆 Best Tier 2 Models (by Val MAE):")
+        print(f"\n🏆 All Tier 2 Models (sorted by Val MAE):")
         sorted_results = sorted(results, key=lambda x: x['metrics']['val_mae'])
-        for i, r in enumerate(sorted_results[:5], 1):
+        for i, r in enumerate(sorted_results, 1):
             tier1_mark = "✅" if r['has_tier1'] else "⚠️"
             print(f"{i}. {r['stat_key']}_{r['scope']}_{r['period']} {tier1_mark}: "
                   f"MAE={r['metrics']['val_mae']:.2f}, R²={r['metrics']['val_r2']:.3f}")
+
+        print(f"\n🏆 All Tier 2 Models (sorted by Val R²):")
+        sorted_results_r2 = sorted(results, key=lambda x: x['metrics']['val_r2'], reverse=True)
+        for i, r in enumerate(sorted_results_r2, 1):
+            tier1_mark = "✅" if r['has_tier1'] else "⚠️"
+            print(f"{i}. {r['stat_key']}_{r['scope']}_{r['period']} {tier1_mark}: "
+                  f"R²={r['metrics']['val_r2']:.3f}, MAE={r['metrics']['val_mae']:.2f}")
     
     print("\n✅ Tier 2 training complete!")
     print("\n💡 Next: Tier 2 models are ready to use in production!")

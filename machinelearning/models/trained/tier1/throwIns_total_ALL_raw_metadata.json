@@ -1,0 +1,69 @@
+{
+  "stat_key": "throwIns",
+  "scope": "total",
+  "period": "ALL",
+  "model_type": "xgboost_tier1",
+  "best_params": {
+    "n_estimators": 50,
+    "max_depth": 3,
+    "learning_rate": 0.1,
+    "reg_lambda": 0.5
+  },
+  "n_train_samples": 4714,
+  "n_val_samples": 444,
+  "feature_dim": 32,
+  "metrics": {
+    "train_mae": 5.855596542358398,
+    "val_mae": 5.961564540863037,
+    "val_rmse": 7.681491643768872,
+    "val_r2": 0.14000606536865234
+  },
+  "feature_importance": {
+    "feature_145": 0.05815848708152771,
+    "feature_71": 0.047366369515657425,
+    "feature_70": 0.035029008984565735,
+    "feature_7": 0.029501227661967278,
+    "feature_6": 0.02840600721538067
+  },
+  "shap_importance": {
+    "feature_145": 0.7126003503799438,
+    "feature_6": 0.6081262826919556,
+    "feature_117": 0.4144822657108307,
+    "feature_71": 0.35779303312301636,
+    "feature_144": 0.2554154396057129
+  },
+  "selected_features": [
+    145,
+    6,
+    117,
+    71,
+    144,
+    134,
+    140,
+    70,
+    29,
+    12,
+    8,
+    136,
+    86,
+    143,
+    74,
+    132,
+    31,
+    135,
+    142,
+    7,
+    116,
+    114,
+    120,
+    141,
+    72,
+    129,
+    115,
+    63,
+    90,
+    69,
+    24,
+    75
+  ]
+}

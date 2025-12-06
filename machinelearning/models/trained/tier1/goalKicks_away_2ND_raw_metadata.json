@@ -1,0 +1,36 @@
+{
+  "stat_key": "goalKicks",
+  "scope": "away",
+  "period": "2ND",
+  "model_type": "xgboost_tier1",
+  "best_params": {
+    "n_estimators": 50,
+    "max_depth": 3,
+    "learning_rate": 0.1,
+    "reg_lambda": 0.5
+  },
+  "n_train_samples": 4714,
+  "n_val_samples": 444,
+  "feature_dim": 189,
+  "metrics": {
+    "train_mae": 1.7410236597061157,
+    "val_mae": 1.7993184328079224,
+    "val_rmse": 2.309323784411263,
+    "val_r2": 0.02529776096343994
+  },
+  "feature_importance": {
+    "feature_113": 0.04812679812312126,
+    "feature_101": 0.04345330223441124,
+    "feature_77": 0.03405599668622017,
+    "feature_109": 0.03213803470134735,
+    "feature_69": 0.02102765440940857
+  },
+  "shap_importance": {
+    "feature_101": 0.1935875564813614,
+    "feature_77": 0.08797457069158554,
+    "feature_98": 0.08236272633075714,
+    "feature_69": 0.06358353793621063,
+    "feature_8": 0.06321098655462265
+  },
+  "selected_features": null
+}

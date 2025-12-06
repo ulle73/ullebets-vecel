@@ -1,0 +1,46 @@
+{
+  "stat_key": "fouls",
+  "scope": "home",
+  "period": "2ND",
+  "model_type": "xgboost_tier1",
+  "best_params": {
+    "n_estimators": 130,
+    "max_depth": 5,
+    "learning_rate": 0.04,
+    "reg_lambda": 2.5
+  },
+  "n_train_samples": 14,
+  "n_val_samples": 434,
+  "feature_dim": 9,
+  "metrics": {
+    "train_mae": 0.2530055642127991,
+    "val_mae": 2.340815305709839,
+    "val_rmse": 2.996630683940318,
+    "val_r2": -0.1311582326889038
+  },
+  "feature_importance": {
+    "feature_78": 0.17876531183719635,
+    "feature_76": 0.15983900427818298,
+    "feature_127": 0.1310373842716217,
+    "feature_93": 0.10971545428037643,
+    "feature_99": 0.07323359698057175
+  },
+  "shap_importance": {
+    "feature_6": 0.7538157105445862,
+    "feature_63": 0.2744427025318146,
+    "feature_93": 0.16961432993412018,
+    "feature_76": 0.11865665763616562,
+    "feature_118": 0.10578244924545288
+  },
+  "selected_features": [
+    6,
+    63,
+    93,
+    76,
+    118,
+    134,
+    110,
+    7,
+    127
+  ]
+}

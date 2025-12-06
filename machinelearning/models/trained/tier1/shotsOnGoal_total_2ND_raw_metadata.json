@@ -1,0 +1,36 @@
+{
+  "stat_key": "shotsOnGoal",
+  "scope": "total",
+  "period": "2ND",
+  "model_type": "xgboost_tier1",
+  "best_params": {
+    "n_estimators": 50,
+    "max_depth": 3,
+    "learning_rate": 0.1,
+    "reg_lambda": 0.5
+  },
+  "n_train_samples": 4714,
+  "n_val_samples": 444,
+  "feature_dim": 189,
+  "metrics": {
+    "train_mae": 1.6672751903533936,
+    "val_mae": 1.797741413116455,
+    "val_rmse": 2.216806339462175,
+    "val_r2": 0.018528103828430176
+  },
+  "feature_importance": {
+    "feature_87": 0.029543345794081688,
+    "feature_85": 0.02525659278035164,
+    "feature_102": 0.024618934839963913,
+    "feature_103": 0.024213721975684166,
+    "feature_94": 0.02316775918006897
+  },
+  "shap_importance": {
+    "feature_103": 0.0913691371679306,
+    "feature_87": 0.08635711669921875,
+    "feature_105": 0.05206960439682007,
+    "feature_85": 0.05087411031126976,
+    "feature_145": 0.03525209054350853
+  },
+  "selected_features": null
+}

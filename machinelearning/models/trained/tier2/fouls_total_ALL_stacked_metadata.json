@@ -4,13 +4,14 @@
   "period": "ALL",
   "model_type": "xgboost_tier2_stacking",
   "has_tier1": true,
-  "n_train_samples": 338,
-  "n_val_samples": 177,
-  "feature_dim": 86,
+  "has_selected_features": true,
+  "n_train_samples": 254,
+  "n_val_samples": 84,
+  "feature_dim": 203,
   "metrics": {
-    "train_mae": 0.15773668885231018,
-    "val_mae": 5.131605625152588,
-    "val_rmse": 6.59235009252631,
-    "val_r2": -0.1298379898071289
+    "train_mae": 0.11325111985206604,
+    "val_mae": 4.909206390380859,
+    "val_rmse": 6.154958831624639,
+    "val_r2": -0.20536863803863525
   }
 }
