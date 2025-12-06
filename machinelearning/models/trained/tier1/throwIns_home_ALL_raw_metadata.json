@@ -1,0 +1,36 @@
+{
+  "stat_key": "throwIns",
+  "scope": "home",
+  "period": "ALL",
+  "model_type": "xgboost_tier1",
+  "best_params": {
+    "n_estimators": 80,
+    "max_depth": 3,
+    "learning_rate": 0.08,
+    "reg_lambda": 1.0
+  },
+  "n_train_samples": 4714,
+  "n_val_samples": 444,
+  "feature_dim": 189,
+  "metrics": {
+    "train_mae": 3.9277663230895996,
+    "val_mae": 4.134627819061279,
+    "val_rmse": 5.321139143975731,
+    "val_r2": 0.09824872016906738
+  },
+  "feature_importance": {
+    "feature_71": 0.13976234197616577,
+    "feature_63": 0.050470974296331406,
+    "feature_65": 0.03459956869482994,
+    "feature_145": 0.028478488326072693,
+    "feature_7": 0.024645445868372917
+  },
+  "shap_importance": {
+    "feature_71": 0.48668530583381653,
+    "feature_145": 0.3732426166534424,
+    "feature_8": 0.29005134105682373,
+    "feature_140": 0.2113465517759323,
+    "feature_134": 0.19565263390541077
+  },
+  "selected_features": null
+}

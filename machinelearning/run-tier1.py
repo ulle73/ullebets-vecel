@@ -43,30 +43,24 @@ FEATURE_NAMES = [
     "away_wma5_against",
     "away_wma15_against",
     "away_wma30_against",
-    "home_1st_for_value",
-    "home_1st_for_rank",
-    "home_1st_against_value",
-    "home_1st_against_rank",
-    "away_1st_for_value",
-    "away_1st_for_rank",
-    "away_1st_against_value",
-    "away_1st_against_rank",
-    "home_2nd_for_value",
-    "home_2nd_for_rank",
-    "home_2nd_against_value",
-    "home_2nd_against_rank",
-    "away_2nd_for_value",
-    "away_2nd_for_rank",
-    "away_2nd_against_value",
-    "away_2nd_against_rank",
-    "home_all_for_value",
-    "home_all_for_rank",
-    "home_all_against_value",
-    "home_all_against_rank",
-    "away_all_for_value",
-    "away_all_for_rank",
-    "away_all_against_value",
-    "away_all_against_rank",
+    # Period features: 2 periods × 8 features = 16 features (padded for fixed size)
+    "period1_home_for_value",
+    "period1_home_for_rank",
+    "period1_home_against_value",
+    "period1_home_against_rank",
+    "period1_away_for_value",
+    "period1_away_for_rank",
+    "period1_away_against_value",
+    "period1_away_against_rank",
+    "period2_home_for_value",
+    "period2_home_for_rank",
+    "period2_home_against_value",
+    "period2_home_against_rank",
+    "period2_away_for_value",
+    "period2_away_for_rank",
+    "period2_away_against_value",
+    "period2_away_against_rank",
+    # Situational features
     "home_score_first_pct",
     "away_score_first_pct",
     "score_first_diff",
@@ -78,7 +72,7 @@ FEATURE_NAMES = [
     "away_shots_per_min_tied",
     "home_shots_per_10_min",
     "away_shots_per_10_min",
-    # Extra team profile features (ALL period)
+    # Extra team profile features (ALL period) - 23 keys × 4 = 92 features
     "ballPossession_home_for_all",
     "ballPossession_away_for_all",
     "ballPossession_home_against_all",
@@ -163,9 +157,56 @@ FEATURE_NAMES = [
     "aerialDuelsPercentage_away_for_all",
     "aerialDuelsPercentage_home_against_all",
     "aerialDuelsPercentage_away_against_all",
+    "cleanSheets_home_for_all",
+    "cleanSheets_away_for_all",
+    "cleanSheets_home_against_all",
+    "cleanSheets_away_against_all",
+    "goalsConceded_home_for_all",
+    "goalsConceded_away_for_all",
+    "goalsConceded_home_against_all",
+    "goalsConceded_away_against_all",
+    "tackles_home_for_all",
+    "tackles_away_for_all",
+    "tackles_home_against_all",
+    "tackles_away_against_all",
+    "clearances_home_for_all",
+    "clearances_away_for_all",
+    "clearances_home_against_all",
+    "clearances_away_against_all",
+    "dribbles_home_for_all",
+    "dribbles_away_for_all",
+    "dribbles_home_against_all",
+    "dribbles_away_against_all",
+    "dribblesCompleted_home_for_all",
+    "dribblesCompleted_away_for_all",
+    "dribblesCompleted_home_against_all",
+    "dribblesCompleted_away_against_all",
+    "touches_home_for_all",
+    "touches_away_for_all",
+    "touches_home_against_all",
+    "touches_away_against_all",
+    "duels_home_for_all",
+    "duels_away_for_all",
+    "duels_home_against_all",
+    "duels_away_against_all",
+    "groundDuels_home_for_all",
+    "groundDuels_away_for_all",
+    "groundDuels_home_against_all",
+    "groundDuels_away_against_all",
+    "aerialDuels_home_for_all",
+    "aerialDuels_away_for_all",
+    "aerialDuels_home_against_all",
+    "aerialDuels_away_against_all",
+    "no_odds_flag",
     "home_advantage",
     "league_id",
+    "formula_evPctMultifactor",
+    "formula_evPctUniversalOptimized",
+    "formula_evPctOptaCombined",
+    "formula_evPctLeagueAvg",
+    "formula_evPctOptaRating",
 ]
+# Total: 6 market + 7 opta + 4 stat + 4 rank + 1 matchup + 12 WMA + 16 period + 11 situational + 128 extra + 3 + 5 = 197 features
 
 
 def name_feature_importance(models):
@@ -174,6 +215,7 @@ def name_feature_importance(models):
     named = []
     for model in models:
         fi = model.get("feature_importance")
+        shap_fi = model.get("shap_importance")
         dim = model.get("feature_dim")
         if not fi or not isinstance(fi, dict) or dim != len(FEATURE_NAMES):
             named.append(model)
@@ -186,7 +228,16 @@ def name_feature_importance(models):
                 continue
             if 0 <= idx < len(FEATURE_NAMES):
                 mapped[FEATURE_NAMES[idx]] = val
-        enriched = {**model, "feature_importance_named": mapped}
+        shap_mapped = {}
+        if shap_fi and isinstance(shap_fi, dict):
+            for key, val in shap_fi.items():
+                try:
+                    idx = int(key.split("_", 1)[1])
+                except Exception:
+                    continue
+                if 0 <= idx < len(FEATURE_NAMES):
+                    shap_mapped[FEATURE_NAMES[idx]] = val
+        enriched = {**model, "feature_importance_named": mapped, "shap_importance_named": shap_mapped}
         named.append(enriched)
     return named
 

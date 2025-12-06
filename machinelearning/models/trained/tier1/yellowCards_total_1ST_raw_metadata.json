@@ -1,0 +1,36 @@
+{
+  "stat_key": "yellowCards",
+  "scope": "total",
+  "period": "1ST",
+  "model_type": "xgboost_tier1",
+  "best_params": {
+    "n_estimators": 130,
+    "max_depth": 5,
+    "learning_rate": 0.04,
+    "reg_lambda": 2.5
+  },
+  "n_train_samples": 4588,
+  "n_val_samples": 438,
+  "feature_dim": 189,
+  "metrics": {
+    "train_mae": 0.842613160610199,
+    "val_mae": 0.9661822319030762,
+    "val_rmse": 1.2192081666159766,
+    "val_r2": -0.008666038513183594
+  },
+  "feature_importance": {
+    "feature_139": 0.042635638266801834,
+    "feature_141": 0.031201275065541267,
+    "feature_109": 0.020984170958399773,
+    "feature_73": 0.019230281934142113,
+    "feature_83": 0.018430465832352638
+  },
+  "shap_importance": {
+    "feature_141": 0.08660923689603806,
+    "feature_139": 0.058129534125328064,
+    "feature_31": 0.032568320631980896,
+    "feature_109": 0.03179702162742615,
+    "feature_23": 0.02616364136338234
+  },
+  "selected_features": null
+}

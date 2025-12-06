@@ -1,0 +1,36 @@
+{
+  "stat_key": "yellowCards",
+  "scope": "away",
+  "period": "1ST",
+  "model_type": "xgboost_tier1",
+  "best_params": {
+    "n_estimators": 50,
+    "max_depth": 3,
+    "learning_rate": 0.1,
+    "reg_lambda": 0.5
+  },
+  "n_train_samples": 4588,
+  "n_val_samples": 438,
+  "feature_dim": 189,
+  "metrics": {
+    "train_mae": 0.6451464891433716,
+    "val_mae": 0.6907899975776672,
+    "val_rmse": 0.8592113339023787,
+    "val_r2": 0.0411381721496582
+  },
+  "feature_importance": {
+    "feature_83": 0.029012221843004227,
+    "feature_139": 0.028465764597058296,
+    "feature_141": 0.028144311159849167,
+    "feature_87": 0.02770671248435974,
+    "feature_95": 0.024049540981650352
+  },
+  "shap_importance": {
+    "feature_141": 0.05523135885596275,
+    "feature_139": 0.02291812002658844,
+    "feature_138": 0.02011987380683422,
+    "feature_81": 0.018437614664435387,
+    "feature_129": 0.015068297274410725
+  },
+  "selected_features": null
+}

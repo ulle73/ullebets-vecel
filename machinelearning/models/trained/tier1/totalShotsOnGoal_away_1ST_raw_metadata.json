@@ -1,0 +1,62 @@
+{
+  "stat_key": "totalShotsOnGoal",
+  "scope": "away",
+  "period": "1ST",
+  "model_type": "xgboost_tier1",
+  "best_params": {
+    "n_estimators": 50,
+    "max_depth": 3,
+    "learning_rate": 0.1,
+    "reg_lambda": 0.5
+  },
+  "n_train_samples": 4714,
+  "n_val_samples": 444,
+  "feature_dim": 25,
+  "metrics": {
+    "train_mae": 2.00475811958313,
+    "val_mae": 2.2588539123535156,
+    "val_rmse": 2.8899495753340805,
+    "val_r2": -0.006461501121520996
+  },
+  "feature_importance": {
+    "feature_103": 0.06685197353363037,
+    "feature_67": 0.05866649001836777,
+    "feature_63": 0.04582991078495979,
+    "feature_99": 0.04447652027010918,
+    "feature_79": 0.039488304406404495
+  },
+  "shap_importance": {
+    "feature_99": 0.2574135959148407,
+    "feature_103": 0.1729445606470108,
+    "feature_132": 0.10914305597543716,
+    "feature_107": 0.0976545661687851,
+    "feature_63": 0.0947299525141716
+  },
+  "selected_features": [
+    99,
+    103,
+    132,
+    107,
+    63,
+    8,
+    79,
+    11,
+    131,
+    10,
+    100,
+    84,
+    104,
+    12,
+    24,
+    31,
+    71,
+    23,
+    96,
+    67,
+    25,
+    30,
+    72,
+    118,
+    29
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "stat_key": "offsides",
+  "scope": "total",
+  "period": "2ND",
+  "model_type": "xgboost_tier1",
+  "best_params": {
+    "n_estimators": 80,
+    "max_depth": 3,
+    "learning_rate": 0.08,
+    "reg_lambda": 1.0
+  },
+  "n_train_samples": 4467,
+  "n_val_samples": 416,
+  "feature_dim": 189,
+  "metrics": {
+    "train_mae": 0.9740716814994812,
+    "val_mae": 1.044499397277832,
+    "val_rmse": 1.3285389423427174,
+    "val_r2": 0.009820699691772461
+  },
+  "feature_importance": {
+    "feature_133": 0.043838661164045334,
+    "feature_68": 0.030684662982821465,
+    "feature_69": 0.027903493493795395,
+    "feature_92": 0.026520030573010445,
+    "feature_83": 0.023259958252310753
+  },
+  "shap_importance": {
+    "feature_133": 0.08579825609922409,
+    "feature_93": 0.0316905714571476,
+    "feature_121": 0.030813362449407578,
+    "feature_8": 0.02599375694990158,
+    "feature_97": 0.02536662667989731
+  },
+  "selected_features": null
+}
