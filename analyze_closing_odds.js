@@ -11,20 +11,6 @@ import fs from 'fs/promises';
 
 dotenv.config({ path: './.env.local' });
 
-const FORMULA_KEYS = [
-  'evPct',
-  'legacyEvPct',
-  'evPctWithMultiplier',
-  'evPctLeagueAvg',
-  'evPctMultifactor',
-  'evPctShotsAdvanced',
-  'evPctSoTAdvanced',
-  'evPctFoulsAdvanced',
-  'evPctGoalKicksAdvanced',
-  'evPctThrowInsAdvanced',
-  'evPctUniversalOptimized',
-];
-
 async function analyzeClosingOdds() {
   console.log('🔍 Starting closing odds analysis...\n');
 
@@ -47,6 +33,35 @@ async function analyzeClosingOdds() {
   }).toArray();
 
   console.log(`📊 Found ${docs.length} matches with snapshots\n`);
+
+  // Collect all unique formula keys from the data
+  const formulaKeys = new Set();
+  for (const match of docs) {
+    const snapshots = match.snapshots;
+    const closingLines = match.lines;
+    if (snapshots?.length) {
+      const openingBets = snapshots[0].lines || [];
+      for (const bet of openingBets) {
+        Object.keys(bet).forEach(key => {
+          if (key.startsWith('evPct') || key === 'legacyEvPct' || key.startsWith('ml_')) {
+            formulaKeys.add(key);
+          }
+        });
+      }
+    }
+    if (closingLines?.length) {
+      for (const bet of closingLines) {
+        Object.keys(bet).forEach(key => {
+          if (key.startsWith('evPct') || key === 'legacyEvPct' || key.startsWith('ml_')) {
+            formulaKeys.add(key);
+          }
+        });
+      }
+    }
+  }
+  const FORMULA_KEYS = Array.from(formulaKeys).sort();
+
+  console.log(`📈 Found ${FORMULA_KEYS.length} formula keys: ${FORMULA_KEYS.join(', ')}\n`);
 
   // Stats per formula - track ALL formulas independently
   const formulaStats = {};
@@ -144,7 +159,6 @@ async function analyzeClosingOdds() {
       sameRate: stats.positiveEvBets > 0 ? (stats.positiveEvSame / stats.positiveEvBets * 100) : 0,
       increaseRate: stats.positiveEvBets > 0 ? (stats.positiveEvIncreased / stats.positiveEvBets * 100) : 0
     }))
-    .filter(r => r.totalBets > 0)
     .sort((a, b) => b.successRate - a.successRate);
 
   // Print header table

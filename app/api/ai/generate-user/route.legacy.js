@@ -371,7 +371,7 @@ export async function POST(request) {
             homeTeam,
             awayTeam,
           },
-          snapshotLimit: 20, // Keep last 20 snapshots
+          snapshotLimit: 100, // Keep last 100 snapshots
         });
 
         console.log(`[AI Generate User] ✓ Saved snapshot for ${homeTeam} vs ${awayTeam} (${lines.length} lines)`);

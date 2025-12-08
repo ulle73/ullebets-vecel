@@ -556,7 +556,7 @@ export async function POST(request) {
             source: "ai-user",
             type: "ai-user",
           },
-          snapshotLimit: 20,
+          snapshotLimit: 100,
         });
         snapshotsSaved += 1;
       } catch (error) {
