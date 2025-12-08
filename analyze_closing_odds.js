@@ -1,12 +1,8 @@
 /**
- * Analyze which formulas predict favorable odds movement
- * Compares all opening predictions vs current odds
- *
- * Logic:
- * 1. For all matches with snapshots, compare opening vs current odds
- * 2. When current odds < opening odds, odds "dropped" (favorable movement)
- * 3. Count which formulas had +EV at opening for favorable movements
- * 4. Formula with highest % = best at predicting market agreement
+ * Analyze Closing Odds - Which formula beats closing odds?
+ * 
+ * For EACH formula, check if that formula had +EV at opening
+ * and whether the odds dropped (favorable movement = beating closing)
  */
 
 import { MongoClient } from 'mongodb';
@@ -27,140 +23,206 @@ const FORMULA_KEYS = [
   'evPctGoalKicksAdvanced',
   'evPctThrowInsAdvanced',
   'evPctUniversalOptimized',
-  // Add ML formulas dynamically
 ];
 
 async function analyzeClosingOdds() {
   console.log('🔍 Starting closing odds analysis...\n');
 
   const mongoUri = process.env.MONGODB_URI;
-  if (!mongoUri) {
-    throw new Error('MONGODB_URI not found');
-  }
+  if (!mongoUri) throw new Error('MONGODB_URI not found');
 
   const client = new MongoClient(mongoUri);
   await client.connect();
   console.log('✅ Connected to MongoDB\n');
 
   const db = client.db(process.env.MONGODB_DB || 'app');
-  // Try different collections that might have snapshots
-  const collections = ['ai-generated-bets', 'matches', 'snapshots'];
-  let matches = [];
+  const col = db.collection('ai-generated-bets');
 
-  for (const colName of collections) {
-    try {
-      const col = db.collection(colName);
-      // Find documents with snapshots array containing multiple items
-      const docs = await col.find({
-        'snapshots.1': { $exists: true } // Has at least 2 snapshots
-      }).toArray();
+  const today = new Date().toISOString().split('T')[0];
+  console.log(`📅 Analyzing bets older than: ${today}\n`);
 
-      if (docs.length > 0) {
-        console.log(`📊 Found ${docs.length} matches with multiple snapshots in '${colName}' collection`);
-        matches = docs;
-        break;
-      }
-    } catch (e) {
-      // Collection doesn't exist or error
-    }
-  }
-  console.log(`📊 Found ${matches.length} matches with multiple snapshots\n`);
+  const docs = await col.find({
+    matchDate: { $lt: today },
+    'snapshots.0': { $exists: true }
+  }).toArray();
 
-  // Stats tracking
+  console.log(`📊 Found ${docs.length} matches with snapshots\n`);
+
+  // Stats per formula - track ALL formulas independently
   const formulaStats = {};
   FORMULA_KEYS.forEach(key => {
     formulaStats[key] = {
-      totalBets: 0,
-      marketWins: 0, // Closing odds moved favorably
-      predictedWins: 0, // Formula had +EV AND market moved favorably
+      totalBets: 0,        // Bets where this formula has a value
+      oddsDropped: 0,      // Closing < Opening (favorable)
+      oddsSame: 0,         // Closing = Opening
+      oddsIncreased: 0,    // Closing > Opening (unfavorable)
+      positiveEvBets: 0,   // Bets where this formula was +EV
+      positiveEvDropped: 0, // +EV bets where odds dropped
+      positiveEvSame: 0,    // +EV bets where odds stayed same
+      positiveEvIncreased: 0 // +EV bets where odds increased
     };
   });
 
   let totalComparisons = 0;
 
-  for (const match of matches) {
+  for (const match of docs) {
     const snapshots = match.snapshots;
+    const closingLines = match.lines;
 
-    if (!Array.isArray(snapshots) || snapshots.length < 2) continue;
+    if (!snapshots?.length || !closingLines?.length) continue;
 
-    // Compare opening snapshot vs current/latest lines (root level)
-    const openingSnapshot = snapshots[0];
-    const currentLines = match.lines; // Root lines = latest
+    const openingBets = snapshots[0].lines || [];
 
-    if (!openingSnapshot.lines?.length || !currentLines?.length) continue;
-
-    // Compare each opening bet with corresponding closing bet
-    for (const openingBet of openingSnapshot.lines) {
-      // Find matching current bet (same stat/scope/period/direction/line)
-      const currentBet = currentLines.find(cb =>
-        cb.statKey === openingBet.statKey &&
-        cb.scope === openingBet.scope &&
-        cb.period === openingBet.period &&
-        cb.direction === openingBet.direction &&
-        Math.abs(cb.line - openingBet.line) < 0.1 // Allow small line differences
+    for (const openBet of openingBets) {
+      const closeBet = closingLines.find(cb =>
+        cb.statKey === openBet.statKey &&
+        cb.scope === openBet.scope &&
+        cb.period === openBet.period &&
+        cb.direction === openBet.direction &&
+        Math.abs(cb.line - openBet.line) < 0.1
       );
 
-      if (!currentBet) continue;
+      if (!closeBet || openBet.odds == null || closeBet.odds == null) continue;
 
-      const openingOdds = openingBet.odds;
-      const currentOdds = currentBet.odds;
-
-      if (!openingOdds || !currentOdds) continue;
+      const openOdds = openBet.odds;
+      const closeOdds = closeBet.odds;
 
       totalComparisons++;
 
-      // Check if odds dropped (current odds < opening odds = market moved favorably)
-      const oddsDropped = currentOdds < openingOdds;
+      // For EACH formula, check its performance
+      for (const formulaKey of FORMULA_KEYS) {
+        const evValue = openBet[formulaKey];
+        if (evValue == null || typeof evValue !== 'number') continue;
 
-      // Debug: log some examples
-      if (totalComparisons < 5) {
-        console.log(`Example: ${openingBet.statKey} ${openingBet.direction} ${openingBet.line} - Opening: ${openingOdds}, Current: ${currentOdds}, Odds dropped: ${oddsDropped}`);
-      }
+        formulaStats[formulaKey].totalBets++;
 
-      // Check which formulas had +EV at opening
-      FORMULA_KEYS.forEach(formulaKey => {
-        const evValue = openingBet[formulaKey];
-        if (evValue != null && typeof evValue === 'number') {
-          formulaStats[formulaKey].totalBets++;
-
-          if (oddsDropped) {
-            formulaStats[formulaKey].marketWins++;
-
-            if (evValue > 0) {
-              formulaStats[formulaKey].predictedWins++;
-            }
+        // Track odds movement
+        if (closeOdds < openOdds) {
+          formulaStats[formulaKey].oddsDropped++;
+          if (evValue > 0) {
+            formulaStats[formulaKey].positiveEvDropped++;
+          }
+        } else if (closeOdds > openOdds) {
+          formulaStats[formulaKey].oddsIncreased++;
+          if (evValue > 0) {
+            formulaStats[formulaKey].positiveEvIncreased++;
+          }
+        } else {
+          formulaStats[formulaKey].oddsSame++;
+          if (evValue > 0) {
+            formulaStats[formulaKey].positiveEvSame++;
           }
         }
-      });
+
+        // Track +EV bets
+        if (evValue > 0) {
+          formulaStats[formulaKey].positiveEvBets++;
+        }
+      }
     }
   }
 
   console.log(`📈 Total bet comparisons: ${totalComparisons}\n`);
 
-  // Calculate success rates
+  // Calculate success rates and sort
   const results = Object.entries(formulaStats)
     .map(([formula, stats]) => ({
       formula,
       totalBets: stats.totalBets,
-      marketWins: stats.marketWins,
-      predictedWins: stats.predictedWins,
-      successRate: stats.marketWins > 0 ? (stats.predictedWins / stats.marketWins * 100) : 0,
-      coverage: totalComparisons > 0 ? (stats.totalBets / totalComparisons * 100) : 0
+      oddsDropped: stats.oddsDropped,
+      oddsSame: stats.oddsSame,
+      oddsIncreased: stats.oddsIncreased,
+      positiveEvBets: stats.positiveEvBets,
+      positiveEvDropped: stats.positiveEvDropped,
+      positiveEvSame: stats.positiveEvSame,
+      positiveEvIncreased: stats.positiveEvIncreased,
+      coverage: totalComparisons > 0 ? (stats.totalBets / totalComparisons * 100) : 0,
+      // When odds drop, how often was formula +EV? (precision)
+      successRate: stats.oddsDropped > 0 ? (stats.positiveEvDropped / stats.oddsDropped * 100) : 0,
+      // When formula is +EV, how often do odds drop? (recall/prediction)
+      predictRate: stats.positiveEvBets > 0 ? (stats.positiveEvDropped / stats.positiveEvBets * 100) : 0,
+      sameRate: stats.positiveEvBets > 0 ? (stats.positiveEvSame / stats.positiveEvBets * 100) : 0,
+      increaseRate: stats.positiveEvBets > 0 ? (stats.positiveEvIncreased / stats.positiveEvBets * 100) : 0
     }))
     .filter(r => r.totalBets > 0)
     .sort((a, b) => b.successRate - a.successRate);
 
+  // Print header table
   console.log('🏆 FORMULA SUCCESS AT PREDICTING FAVORABLE ODDS MOVEMENT:\n');
-  console.log('Formula'.padEnd(25), 'Coverage'.padEnd(10), 'Odds Dropped'.padEnd(12), '+EV When Dropped'.padEnd(16), 'Success %');
-  console.log('─'.repeat(75));
+  console.log(
+    'Formula'.padEnd(25),
+    'Coverage'.padEnd(10),
+    'Odds Dropped'.padEnd(13),
+    '+EV When Dropped'.padEnd(17),
+    'Success %'
+  );
+  console.log('─'.repeat(80));
 
   results.forEach(r => {
     console.log(
       r.formula.padEnd(25),
       `${r.coverage.toFixed(1)}%`.padEnd(10),
-      r.marketWins.toString().padEnd(12),
-      r.predictedWins.toString().padEnd(16),
+      r.oddsDropped.toString().padEnd(13),
+      r.positiveEvDropped.toString().padEnd(17),
       `${r.successRate.toFixed(1)}%`
+    );
+  });
+
+  // NEW: Prediction rate table
+  console.log('\n' + '═'.repeat(80));
+  console.log('🎯 WHEN FORMULA SHOWS +EV, HOW OFTEN DO ODDS DROP?');
+  console.log('═'.repeat(80));
+
+  const sortedByPredictRate = [...results].sort((a, b) => b.predictRate - a.predictRate);
+
+  console.log('\n' +
+    'Formula'.padEnd(25),
+    '+EV Bets'.padEnd(10),
+    'Dropped (%)'.padEnd(16),
+    'Same (%)'.padEnd(16),
+    'Increased (%)'
+  );
+  console.log('─'.repeat(90));
+
+  sortedByPredictRate.forEach(r => {
+    const droppedStr = `${r.positiveEvDropped} (${r.predictRate.toFixed(1)}%)`;
+    const sameStr = `${r.positiveEvSame} (${r.sameRate.toFixed(1)}%)`;
+    const increasedStr = `${r.positiveEvIncreased} (${r.increaseRate.toFixed(1)}%)`;
+
+    console.log(
+      r.formula.padEnd(25),
+      r.positiveEvBets.toString().padEnd(10),
+      droppedStr.padEnd(16),
+      sameStr.padEnd(16),
+      increasedStr
+    );
+  });
+
+  // Detailed per-formula breakdown
+  console.log('\n' + '═'.repeat(80));
+  console.log('📊 DETAILED BREAKDOWN PER FORMULA');
+  console.log('═'.repeat(80));
+
+  console.log('\n' +
+    'Formula'.padEnd(25),
+    'Total'.padEnd(8),
+    'Dropped'.padEnd(10),
+    'Same'.padEnd(8),
+    'Increased'.padEnd(10),
+    '+EV Bets'.padEnd(10),
+    '+EV Drop'
+  );
+  console.log('─'.repeat(90));
+
+  results.forEach(r => {
+    console.log(
+      r.formula.padEnd(25),
+      r.totalBets.toString().padEnd(8),
+      r.oddsDropped.toString().padEnd(10),
+      r.oddsSame.toString().padEnd(8),
+      r.oddsIncreased.toString().padEnd(10),
+      r.positiveEvBets.toString().padEnd(10),
+      r.positiveEvDropped.toString()
     );
   });
 
@@ -168,7 +230,7 @@ async function analyzeClosingOdds() {
   const output = {
     analysisDate: new Date().toISOString(),
     totalComparisons,
-    totalMatches: matches.length,
+    totalMatches: docs.length,
     formulaResults: results
   };
 
@@ -179,7 +241,6 @@ async function analyzeClosingOdds() {
   console.log('✅ Analysis complete!');
 }
 
-// Run if called directly
 analyzeClosingOdds()
   .then(() => process.exit(0))
   .catch(err => {

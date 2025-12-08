@@ -1,124 +1,174 @@
 /**
- * Validate LeagueAvg consistency
- * Find cases where primaryEv == evPctLeagueAvg, then compare snapshots[0] vs snapshots[last]
+ * Validate Closing Odds Analysis
+ * Cross-validates the results from analyze_closing_odds.js
+ * Uses a different approach to confirm the same numbers
  */
 
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
+import fs from 'fs/promises';
 
 dotenv.config({ path: './.env.local' });
 
-async function validateLeagueAvgConsistency() {
-  console.log('🔍 Validating LeagueAvg consistency...\n');
+const FORMULA_KEYS = [
+  'evPct', 'legacyEvPct', 'evPctWithMultiplier', 'evPctLeagueAvg',
+  'evPctMultifactor', 'evPctShotsAdvanced', 'evPctSoTAdvanced',
+  'evPctFoulsAdvanced', 'evPctGoalKicksAdvanced', 'evPctThrowInsAdvanced',
+  'evPctUniversalOptimized'
+];
+
+function identifyFormula(bet) {
+  if (bet.primaryEv == null) return null;
+  
+  for (const key of FORMULA_KEYS) {
+    if (bet[key] != null && Math.abs(bet[key] - bet.primaryEv) < 0.0001) return key;
+  }
+  
+  for (const key of Object.keys(bet)) {
+    if (key.startsWith('ml_') && !key.endsWith('_prob') && !key.endsWith('_raw')) {
+      if (bet[key] != null && Math.abs(bet[key] - bet.primaryEv) < 0.0001) return key;
+    }
+  }
+  return 'unknown';
+}
+
+async function validateClosingOdds() {
+  console.log('═'.repeat(80));
+  console.log('🔍 VALIDATION - Cross-checking closing odds analysis');
+  console.log('═'.repeat(80));
 
   const mongoUri = process.env.MONGODB_URI;
-  if (!mongoUri) {
-    throw new Error('MONGODB_URI not found');
-  }
+  if (!mongoUri) throw new Error('MONGODB_URI not found');
 
   const client = new MongoClient(mongoUri);
   await client.connect();
-  console.log('✅ Connected to MongoDB\n');
 
   const db = client.db(process.env.MONGODB_DB || 'app');
-
-  // Find ai-generated-bets with snapshots
   const col = db.collection('ai-generated-bets');
-  const docs = await col.find({
-    'snapshots.1': { $exists: true } // Has at least 2 snapshots
-  }).limit(100).toArray(); // Limit for testing
+  const today = new Date().toISOString().split('T')[0];
 
-  console.log(`📊 Analyzing ${docs.length} matches...\n`);
+  console.log(`\n📅 Validating bets older than: ${today}\n`);
 
-  let totalComparisons = 0;
-  let leagueAvgMatches = 0;
-  let consistentPredictions = 0;
-  let oddsDroppedWhenLeagueAvg = 0;
-  let oddsDroppedWhenNotLeagueAvg = 0;
+  // Fetch with different query approach for validation
+  const docs = await col.aggregate([
+    { $match: { matchDate: { $lt: today }, 'snapshots.0.lines.0': { $exists: true } } },
+    { $project: { matchDate: 1, homeTeam: 1, awayTeam: 1, lines: 1, 'snapshots.lines': 1 } }
+  ]).toArray();
+
+  console.log(`📊 Validation dataset: ${docs.length} matches\n`);
+
+  // Independent calculation
+  let totalBets = 0;
+  let beatClosing = 0;
+  let missedClosing = 0;
+  let sameOdds = 0;
+  let posEvBets = 0;
+  let posEvBeat = 0;
+
+  const formulaCounts = {};
 
   for (const match of docs) {
-    const snapshots = match.snapshots;
-    if (!Array.isArray(snapshots) || snapshots.length < 2) continue;
+    if (!match.snapshots?.[0]?.lines?.length || !match.lines?.length) continue;
 
-    const openingSnapshot = snapshots[0];
-    const closingSnapshot = snapshots[snapshots.length - 1];
-
-    if (!openingSnapshot.lines?.length || !closingSnapshot.lines?.length) continue;
-
-    for (const openingBet of openingSnapshot.lines) {
-      const closingBet = closingSnapshot.lines.find(cb =>
-        cb.statKey === openingBet.statKey &&
-        cb.scope === openingBet.scope &&
-        cb.period === openingBet.period &&
-        cb.direction === openingBet.direction &&
-        Math.abs(cb.line - openingBet.line) < 0.1
+    for (const open of match.snapshots[0].lines) {
+      const close = match.lines.find(c =>
+        c.statKey === open.statKey && c.scope === open.scope &&
+        c.period === open.period && c.direction === open.direction &&
+        Math.abs(c.line - open.line) < 0.1
       );
 
-      if (!closingBet) continue;
+      if (!close || open.odds == null || close.odds == null) continue;
 
-      const primaryEv = openingBet.primaryEv;
-      const leagueAvgEv = openingBet.evPctLeagueAvg;
+      totalBets++;
 
-      if (primaryEv == null || leagueAvgEv == null) continue;
+      const formula = identifyFormula(open);
+      formulaCounts[formula] = (formulaCounts[formula] || 0) + 1;
 
-      totalComparisons++;
-
-      // Check what SHOULD be primary for cornerKicks (LeagueAvg)
-      const shouldBeLeagueAvg = openingBet.statKey === 'cornerKicks';
-
-      if (shouldBeLeagueAvg) {
-        leagueAvgMatches++;
-
-        // Check odds movement
-        const openingOdds = openingBet.odds;
-        const closingOdds = closingBet.odds;
-
-        if (openingOdds && closingOdds) {
-          const oddsDropped = closingOdds < openingOdds;
-
-          if (oddsDropped) {
-            oddsDroppedWhenLeagueAvg++;
-          }
-
-          // Check if LeagueAvg prediction was correct for odds movement
-          if ((leagueAvgEv > 0 && oddsDropped) || (leagueAvgEv <= 0 && !oddsDropped)) {
-            consistentPredictions++;
-          }
-        }
-
-        if (totalComparisons < 3) {
-          console.log(`CornerKicks case (should use LeagueAvg):`);
-          console.log(`  ${openingBet.statKey} ${openingBet.direction} ${openingBet.line}`);
-          console.log(`  WAS primary: ${primaryEv.toFixed(3)}, SHOULD BE LeagueAvg: ${leagueAvgEv.toFixed(3)}`);
-          console.log(`  Opening odds: ${openingBet.odds}, Closing odds: ${closingBet.odds}`);
-          console.log(`  Odds dropped: ${closingOdds < openingBet.odds}`);
-          console.log('');
-        }
+      if (close.odds < open.odds) {
+        beatClosing++;
+        if (open.primaryEv > 0) posEvBeat++;
+      } else if (close.odds > open.odds) {
+        missedClosing++;
       } else {
-        // Check odds movement for non-cornerKicks cases
-        const openingOdds = openingBet.odds;
-        const closingOdds = closingBet.odds;
-
-        if (openingOdds && closingOdds && closingOdds < openingOdds) {
-          oddsDroppedWhenNotLeagueAvg++;
-        }
+        sameOdds++;
       }
+
+      if (open.primaryEv > 0) posEvBets++;
     }
   }
 
-  console.log('📊 LEAGUEAVG CONSISTENCY RESULTS:\n');
-  console.log(`Total comparisons: ${totalComparisons}`);
-  console.log(`LeagueAvg as primary: ${leagueAvgMatches} (${(leagueAvgMatches/totalComparisons*100).toFixed(1)}%)`);
-  console.log(`Odds dropped when LeagueAvg primary: ${oddsDroppedWhenLeagueAvg} (${(oddsDroppedWhenLeagueAvg/leagueAvgMatches*100).toFixed(1)}%)`);
-  console.log(`Odds dropped when not LeagueAvg: ${oddsDroppedWhenNotLeagueAvg} (${(oddsDroppedWhenNotLeagueAvg/(totalComparisons-leagueAvgMatches)*100).toFixed(1)}%)`);
-  console.log(`Consistent predictions: ${consistentPredictions} (${(consistentPredictions/leagueAvgMatches*100).toFixed(1)}%)`);
+  // Load previous analysis results if exists
+  let previousResults = null;
+  try {
+    const data = await fs.readFile('closing_odds_analysis.json', 'utf-8');
+    previousResults = JSON.parse(data);
+  } catch (e) {
+    console.log('⚠️  No previous analysis file found\n');
+  }
+
+  // Print validation results
+  console.log('═'.repeat(80));
+  console.log('📊 VALIDATION RESULTS');
+  console.log('═'.repeat(80));
+
+  console.log('\n┌' + '─'.repeat(40) + '┬' + '─'.repeat(18) + '┬' + '─'.repeat(18) + '┐');
+  console.log('│' + ' Metric'.padEnd(40) + '│' + ' Validation'.padEnd(18) + '│' + ' Analysis'.padEnd(18) + '│');
+  console.log('├' + '─'.repeat(40) + '┼' + '─'.repeat(18) + '┼' + '─'.repeat(18) + '┤');
+
+  const prevSummary = previousResults?.summary || {};
+
+  const compare = (label, valVal, prevKey) => {
+    const prevVal = prevSummary[prevKey];
+    const match = prevVal != null && String(valVal) === String(prevVal) ? '✅' : (prevVal != null ? '❌' : '➖');
+    console.log(
+      '│ ' + label.padEnd(39) +
+      '│ ' + String(valVal).padEnd(17) +
+      '│ ' + (prevVal != null ? String(prevVal) : 'N/A').padEnd(17) + '│ ' + match
+    );
+  };
+
+  compare('Total bets', totalBets, 'totalBets');
+  compare('Beat closing', beatClosing, 'beatClosing');
+  compare('Beat closing %', (beatClosing/totalBets*100).toFixed(1) + '%', 'beatClosingPct');
+  compare('Missed closing', missedClosing, 'missedClosing');
+  compare('Same odds', sameOdds, 'sameOdds');
+  compare('Positive EV bets', posEvBets, 'positiveEvBets');
+  compare('Positive EV beat', posEvBeat, 'positiveEvBeatClosing');
+  compare('Positive EV beat %', (posEvBeat/posEvBets*100).toFixed(1) + '%', 'positiveEvBeatPct');
+
+  console.log('└' + '─'.repeat(40) + '┴' + '─'.repeat(18) + '┴' + '─'.repeat(18) + '┘');
+
+  // Formula distribution
+  console.log('\n📌 Formula distribution (validation):');
+  Object.entries(formulaCounts)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([f, c]) => {
+      console.log(`   ${f}: ${c} bets (${(c/totalBets*100).toFixed(1)}%)`);
+    });
+
+  // Summary verdict
+  console.log('\n' + '═'.repeat(80));
+  if (previousResults) {
+    const allMatch = 
+      totalBets === prevSummary.totalBets &&
+      beatClosing === prevSummary.beatClosing &&
+      missedClosing === prevSummary.missedClosing;
+
+    if (allMatch) {
+      console.log('✅ VALIDATION PASSED - All values match!');
+    } else {
+      console.log('⚠️  VALIDATION WARNING - Some values differ (may be due to timing)');
+    }
+  } else {
+    console.log('ℹ️  Run analyze_closing_odds.js first, then re-run validation');
+  }
+  console.log('═'.repeat(80));
 
   await client.close();
-  console.log('\n✅ Validation complete!');
+  console.log('\n✅ Validation complete!\n');
 }
 
-// Run if called directly
-validateLeagueAvgConsistency()
+validateClosingOdds()
   .then(() => process.exit(0))
   .catch(err => {
     console.error('❌ Error:', err);
