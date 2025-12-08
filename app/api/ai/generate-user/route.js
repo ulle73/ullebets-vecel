@@ -31,7 +31,8 @@ function collectEvDetails(result) {
 
   const evDetails = {};
   for (const [key, value] of Object.entries(result)) {
-    if (key.startsWith("evPct") || key === "legacyEvPct" || key.includes("Ev")) {
+    // Collect traditional EV formulas + ML formulas (only if they have values)
+    if (key.startsWith("evPct") || key === "legacyEvPct" || key.startsWith("ml_")) {
       const numericValue = toNumber(value);
       if (numericValue !== null) {
         evDetails[key] = numericValue;
@@ -376,6 +377,7 @@ export async function POST(request) {
 
         try {
           const evResult = await calculateEvForBet(betParam);
+          const evDetails = collectEvDetails(evResult);
 
           // Find the corresponding insight for matchupScore
           const insight = filteredInsights.find(i => {
@@ -395,6 +397,7 @@ export async function POST(request) {
           evResults.push({
             bet: betParam,
             result: evResult,
+            evDetails: evDetails,
           match: {
             matchId: oddsResult.matchId,
             eventId: oddsResult.eventId,
@@ -460,7 +463,7 @@ export async function POST(request) {
     const betDocuments = []; // for response payload
 
     for (const result of selectedResults) {
-      const { bet, result: evResult, match, comboRank, comboScore, matchupScore } = result;
+      const { bet, result: evResult, evDetails, match, comboRank, comboScore, matchupScore } = result;
       const betKey = buildBetKey({
         matchId: match.matchId,
         homeTeam: match.homeTeam,
@@ -484,12 +487,8 @@ export async function POST(request) {
         line: bet.line,
         odds: bet.odds,
         primaryEv: evResult?.value ?? 0,
-        evPct: evResult?.evPct ?? null,
-        evPctMultifactor: evResult?.evPctMultifactor ?? null,
-        evPctLeagueAvg: evResult?.evPctLeagueAvg ?? null,
-        evPctWithMultiplier: evResult?.evPctWithMultiplier ?? null,
-        evPctUniversalOptimized: evResult?.evPctUniversalOptimized ?? null,
-        legacyEvPct: evResult?.legacyEvPct ?? null,
+        // Include all EV formula results dynamically
+        ...evDetails,
         matchupScore,
         comboScore,
         comboRank,
