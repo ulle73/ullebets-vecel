@@ -393,27 +393,50 @@ export async function POST(request) {
 
           const matchupScore = insight ? Number(insight.score ?? insight.normalizedScore ?? 0) : 0;
 
+          // EDGE QUALITY: Extract from teamprofile
+          const teamprofile = tuple.scope === 'home' ? evResult?.homeProfileStats : 
+                             tuple.scope === 'away' ? evResult?.awayProfileStats :
+                             evResult?.homeProfileStats; // fallback to home for total
+          
+          const edges = teamprofile?.statistics?.for?.[tuple.statKey]?.[tuple.period]?.edges;
+          
+          // ENRICHMENT: Add edge metadata (no filtering - edges are optional)
+          const edgeData = edges ? {
+            qualityScore: edges.qualityScore,
+            confidence: edges.confidence,
+            relBias: edges.relBias,
+            direction: edges.direction,
+            sampleSize: edges.sampleSize,
+            winRate: edges.winRate,
+            badge: edges.qualityScore > 100 ? "🔥 ELITE" :
+                   edges.qualityScore > 80 ? "🔥 EXCELLENT" :
+                   edges.qualityScore > 60 ? "⚡ GOOD" : "✓ VALID"
+          } : null;
+
           // Save ALL results (both +EV and -EV) for database storage
           evResults.push({
             bet: betParam,
             result: evResult,
             evDetails: evDetails,
-          match: {
-            matchId: oddsResult.matchId,
-            eventId: oddsResult.eventId,
-            homeTeam: oddsResult.homeTeam,
-            awayTeam: oddsResult.awayTeam,
-            homeTeamId: oddsResult.homeTeamId,
-            awayTeamId: oddsResult.awayTeamId,
-            leagueName: oddsResult.leagueName,
-          },
+            edgeData,  // NEW: Include edge metadata
+            match: {
+              matchId: oddsResult.matchId,
+              eventId: oddsResult.eventId,
+              homeTeam: oddsResult.homeTeam,
+              awayTeam: oddsResult.awayTeam,
+              homeTeamId: oddsResult.homeTeamId,
+              awayTeamId: oddsResult.awayTeamId,
+              leagueName: oddsResult.leagueName,
+            },
             insight,
             matchupScore,
           });
 
           const evValue = evResult?.value ?? 0;
           const evSign = evValue >= 0 ? '+' : '';
-          console.log(`[AI Generate User] ${evValue >= 0 ? '✓' : '✗'} EV ${evSign}${evValue.toFixed(3)} for ${tuple.statKey} ${tuple.scope}/${tuple.period} ${direction} ${tuple.line} @ ${oddsValue} (score: ${matchupScore})`);
+          const edgeBadge = edgeData ? ` ${edgeData.badge}` : '';
+          const qScore = edgeData ? ` Q:${edgeData.qualityScore.toFixed(0)}` : '';
+          console.log(`[AI Generate User] ${evValue >= 0 ? '✓' : '✗'} EV ${evSign}${evValue.toFixed(3)} for ${tuple.statKey} ${tuple.scope}/${tuple.period} ${direction} ${tuple.line} @ ${oddsValue} (score: ${matchupScore}${qScore}${edgeBadge})`);
 
         } catch (error) {
           console.error(`[AI Generate User] EV calculation failed for ${tuple.statKey}:`, error.message);
@@ -435,10 +458,15 @@ export async function POST(request) {
     // Step 8: Calculate combo scores and rankings
     console.log(`[AI Generate User] Calculating combo scores and rankings...`);
 
-    // Calculate comboScore for each result: (matchupScore × 0.7) + (EV × 0.3)
+    // UPDATED RANKING: Combine matchupScore + EV + Edge Quality
+    // Formula: (matchupScore × 0.5) + (EV × 0.2) + (Q-Score × 0.003)
     const resultsWithRanking = evResults.map(result => {
       const evValue = result.result?.value ?? 0;
-      const comboScore = (result.matchupScore * 0.7) + (evValue * 0.3);
+      const qScore = result.edgeData?.qualityScore ?? 0;
+      
+      // Weighted combo score
+      const comboScore = (result.matchupScore * 0.5) + (evValue * 0.2) + (qScore * 0.003);
+      
       return {
         ...result,
         comboScore,
@@ -492,6 +520,11 @@ export async function POST(request) {
         matchupScore,
         comboScore,
         comboRank,
+        // NEW: Edge quality data
+        edgeQuality: result.edgeData?.qualityScore ?? null,
+        edgeConfidence: result.edgeData?.confidence ?? null,
+        edgeBadge: result.edgeData?.badge ?? null,
+        edgeDirection: result.edgeData?.direction ?? null,
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
         homeTeamId: match.homeTeamId,
@@ -608,6 +641,13 @@ export async function POST(request) {
         matchupScore,
         comboScore,
         comboRank,
+        // NEW: Edge data for UI
+        edgeQuality: result.edgeData?.qualityScore ?? null,
+        edgeConfidence: result.edgeData?.confidence ?? null,
+        edgeBadge: result.edgeData?.badge ?? null,
+        edgeDirection: result.edgeData?.direction ?? null,
+        edgeRelBias: result.edgeData?.relBias ?? null,
+        edgeWinRate: result.edgeData?.winRate ?? null,
         matchLabel: `${match.homeTeam} vs ${match.awayTeam}`,
         teams: { home: match.homeTeam, away: match.awayTeam, homeId: match.homeTeamId, awayId: match.awayTeamId },
         backtest: backtestPayload,

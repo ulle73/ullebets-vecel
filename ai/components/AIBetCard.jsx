@@ -409,10 +409,10 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
           const matchDateLabel =
             formatMatchDate(
               line.matchDate ||
-                betDoc.date ||
-                betDoc.matchDate ||
-                betDoc.metadata?.matchDate ||
-                betDoc.generatedAt
+              betDoc.date ||
+              betDoc.matchDate ||
+              betDoc.metadata?.matchDate ||
+              betDoc.generatedAt
             ) || null;
           const sig = buildLineSignature(line);
           const snapshotOdds = showOutcome ? snapshotOddsMap.get(sig) : null;
@@ -488,6 +488,20 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
                       <span className="text-slate-300">
                         Utfall: <span className={oddsColor}>{line.actual}</span>
                       </span>
+                    )}
+
+                    {/* Edge Quality Badge - NEW */}
+                    {!showOutcome && line.edgeBadge && (
+                      <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-2.5 py-0.5 ring-1 ring-amber-500/20">
+                        <span className="text-xs font-bold text-amber-300">
+                          {line.edgeBadge}
+                        </span>
+                        {line.edgeQuality != null && (
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            Q:{line.edgeQuality.toFixed(0)}
+                          </span>
+                        )}
+                      </div>
                     )}
 
                     {/* Info button disabled in history cards */}
