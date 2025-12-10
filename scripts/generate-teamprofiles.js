@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import clientPromise from "../lib/mongo.js";
+import { execSync } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1188,6 +1189,14 @@ async function main() {
 
     const generatedAt = new Date().toISOString();
     await saveProfilesToDatabase(teamprofilesCollection, profilesForDatabase, generatedAt);
+
+    // Kör scew-analysen och spara faktor-toppar till teamprofiles
+    try {
+      console.log("\n➡️  Running scew analysis to attach factors to teamprofiles...");
+      execSync(`node "${path.join(__dirname, "scew.js")}" --save-profiles`, { stdio: "inherit" });
+    } catch (err) {
+      console.warn("⚠️  Failed to run scew analysis:", err.message);
+    }
   } finally {
     await client.close();
   }

@@ -51,6 +51,16 @@ export default function AIInsightsList({
       <div className="flex flex-col gap-4">
         {rows.map((row) => {
           const comboCount = resolveCount(row);
+          const direction = toDirection(row);
+          const scewData = row.scew
+            ? row.scew[direction] ?? row.scew
+            : row.factor || row.scewFactor
+            ? {
+                factor: row.factor ?? row.scewFactor,
+                winPct: row.scewWinPct,
+                relBias: row.scewRelBias,
+              }
+            : null;
           return (
             <div
               key={`${row.matchId}-${row.statKey}-${row.period}-${row.scope}-${row.condition}`}
@@ -87,15 +97,28 @@ export default function AIInsightsList({
                 <span className={type === 'over' ? "text-sm font-bold text-emerald-400" : "text-sm font-bold text-purple-400"}>
                   {type === 'over' ? 'ÖVER' : 'UNDER'} {row.condition}
                 </span>
-                {comboCount > 0 && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <div className="flex items-center gap-2">
+                  {scewData?.factor != null && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-0.5 text-[11px] font-medium text-sky-300">
+                      SCEW {scewData.factor?.toFixed?.(1) ?? scewData.factor}
+                      {scewData.winPct != null && (
+                        <span className="text-sky-400">• {scewData.winPct.toFixed?.(0) ?? scewData.winPct}%</span>
+                      )}
+                      {scewData.relBias != null && (
+                        <span className="text-sky-400">• Δ{scewData.relBias.toFixed?.(1) ?? scewData.relBias}%</span>
+                      )}
                     </span>
-                    {comboCount} +EV Lines
-                  </span>
-                )}
+                  )}
+                  {comboCount > 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      {comboCount} +EV Lines
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );

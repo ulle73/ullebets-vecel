@@ -370,7 +370,20 @@ function useTeamProfiles(match) {
   });
 
   if (!homeKey && !awayKey) {
-    debug("useTeamProfiles: no valid keys", { matchId: match?.matchId ?? match?.id });
+    debug("useTeamProfiles: no valid keys", {
+      matchId: match?.matchId ?? match?.id ?? match?.eventId ?? match?.event?.id,
+      candidates: {
+        matchId: match?.matchId,
+        id: match?.id,
+        eventId: match?.eventId,
+        event_id: match?.event_id,
+        eventDotId: match?.event?.id,
+        eventDotMatchId: match?.event?.matchId,
+        rawMatchId: match?.raw?.matchId,
+        rawId: match?.raw?.id,
+        rawEventId: match?.raw?.eventId,
+      },
+    });
     return { homeProfile: null, awayProfile: null, isLoading: false, error: null };
   }
 

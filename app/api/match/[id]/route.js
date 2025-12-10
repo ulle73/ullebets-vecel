@@ -6,9 +6,26 @@ const asArray = (v) =>
 
 export async function GET(_req, contextPromise) {
   const { params } = await contextPromise;
-  const matchId = params?.id;
+  const url = new URL(_req.url);
+  let matchId =
+    params?.id ??
+    url.searchParams.get("matchId") ??
+    url.searchParams.get("id") ??
+    null;
+
+  matchId = matchId != null ? String(matchId).trim() : "";
+
   if (!matchId) {
-    return new Response("Missing id", { status: 400 });
+    console.warn("[api/match/[id]] missing matchId", {
+      params,
+      url: _req.url,
+    });
+    // Treat missing ids as not found so clients relying on 404 semantics (e.g. SWR allow404)
+    // don't break the UI with hard errors.
+    return new Response(
+      JSON.stringify({ message: "Missing id" }),
+      { status: 404, headers: { "content-type": "application/json" } }
+    );
   }
 
   const client = await clientPromise;

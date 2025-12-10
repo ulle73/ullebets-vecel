@@ -1135,13 +1135,29 @@ function buildResponseHeaders(cacheState, confirmed, { stale = false } = {}) {
 
 export async function GET(req, contextPromise) {
   const { params } = await contextPromise;
-  const matchId = params?.id;
+  const parsedUrl = new URL(req.url);
+  const pathnameSegments = parsedUrl.pathname.split("/").filter(Boolean);
+  const matchSegmentIndex = pathnameSegments.findIndex((seg) => seg === "match");
+
+  let matchId =
+    params?.id ??
+    parsedUrl.searchParams.get("matchId") ??
+    parsedUrl.searchParams.get("id") ??
+    (matchSegmentIndex >= 0 && pathnameSegments.length > matchSegmentIndex + 1
+      ? pathnameSegments[matchSegmentIndex + 1]
+      : null);
+
+  matchId = matchId != null ? String(matchId).trim() : "";
   if (!matchId) {
-    return NextResponse.json({ message: "Missing match id" }, { status: 400 });
+    console.warn("[api/match/[id]/lineups] missing matchId", {
+      params,
+      requestUrl: req.url,
+      pathnameSegments,
+    });
+    return NextResponse.json({ message: "Missing match id" }, { status: 404 });
   }
 
-  const url = new URL(req.url);
-  const kickoffMs = parseKickoffMs(url.searchParams.get("kickoff"));
+  const kickoffMs = parseKickoffMs(parsedUrl.searchParams.get("kickoff"));
   const cacheKey = String(matchId);
   const now = Date.now();
   let existingEntry = lineupsCache.get(cacheKey) ?? null;

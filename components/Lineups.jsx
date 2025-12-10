@@ -452,7 +452,17 @@ function resolveBadgeClass(side) {
 }
 
 export default function Lineups({ match, isLoading, className = "" }) {
-  const matchId = match?.matchId ?? match?.id ?? null;
+  const matchId = useMemo(() => {
+    const cand =
+      match?.matchId ??
+      match?.id ??
+      match?.eventId ??
+      match?.event?.id ??
+      match?.raw?.matchId ??
+      match?.raw?.id ??
+      null;
+    return cand != null ? String(cand).trim() : null;
+  }, [match]);
 
   const [currentTime, setCurrentTime] = useState(() => Date.now());
 

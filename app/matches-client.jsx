@@ -42,17 +42,28 @@ function getNextDateString(currentDate) {
   return parsed.toISOString().slice(0, 10);
 }
 
-  function toMatchId(value) {
-    if (!value) return null;
-    if (typeof value === "string" || typeof value === "number") {
-      const str = String(value).trim();
-      return str ? str : null;
-    }
-    if (typeof value === "object") {
-      return toMatchId(value.matchId ?? value.id ?? value._id ?? null);
-    }
-    return null;
+function toMatchId(value) {
+  if (!value) return null;
+  if (typeof value === "string" || typeof value === "number") {
+    const str = String(value).trim();
+    return str ? str : null;
   }
+  if (typeof value === "object") {
+    return toMatchId(
+      value.matchId ??
+        value.id ??
+        value._id ??
+        value.eventId ??
+        value.event_id ??
+        value.event?.id ??
+        value.raw?.matchId ??
+        value.raw?.id ??
+        value.raw?.eventId ??
+        null
+    );
+  }
+  return null;
+}
 
 export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const [date, setDate] = useState(defaultDate);
@@ -207,7 +218,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const items = useMemo(() => data?.items ?? [], [data]);
 
   const matches = useMemo(() => {
-    const normalized = items.map(normalizeMatch);
+    const normalized = items.map(normalizeMatch).filter(Boolean);
     debug("matches:normalized", {
       count: normalized.length,
       sample: normalized.slice(0, 3).map((match) => ({
@@ -487,4 +498,3 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
       </div>
     );
   }
-

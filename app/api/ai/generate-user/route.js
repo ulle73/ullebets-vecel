@@ -5,6 +5,7 @@ import { getMatchesForDateFiltered } from "@/lib/engines/fixtures-engine";
 import { getUnibetOddsForMatch } from "@/lib/engines/unibet-engine";
 import { calculateEvForBet, clearTeamDataCache } from "@/lib/engines/ev-engine";
 import { buildBetKey } from "@/lib/core/keys";
+import { normalizeTeamName } from "@/lib/core/normalization";
 
 // Database
 import clientPromise from "@/lib/mongo";
@@ -15,6 +16,9 @@ const TIME_ZONE = "Europe/Stockholm";
 const DEFAULT_FORM = "all";
 const DEFAULT_IMPORTANCE = 5;
 const DEFAULT_NEUTRAL = false;
+
+// Cache for teamprofiles lookups
+const profileCache = new Map();
 
 // Helper functions from backtest-runner
 function toNumber(value) {
@@ -73,8 +77,19 @@ function normalizeDirection(value) {
   return raw.startsWith("u") ? "under" : "over";
 }
 
+async function getTeamProfile(teamprofilesCol, teamName, matchType) {
+  const key = `${normalizeTeamName(teamName)}__${matchType}`;
+  if (profileCache.has(key)) return profileCache.get(key);
+  const doc = await teamprofilesCol.findOne({
+    "meta.lagnamn": { $regex: new RegExp(`^${teamName}$`, "i") },
+    "meta.matchType": matchType,
+  });
+  profileCache.set(key, doc);
+  return doc;
+}
+
 // Process match function (adapted from backtest-runner)
-async function processMatchForAI(match, tuples, eventId) {
+async function processMatchForAI(match, tuples, eventId, teamprofilesCol) {
   console.log(`⚽️ Processing ${match.homeTeam} vs ${match.awayTeam}`);
 
   try {
@@ -87,6 +102,8 @@ async function processMatchForAI(match, tuples, eventId) {
     const canonicalHome = match.homeTeam; // Already extracted
     const canonicalAway = match.awayTeam;
     const matchId = match.matchId || match.id || eventId;
+    const homeProfile = await getTeamProfile(teamprofilesCol, canonicalHome, "home");
+    const awayProfile = await getTeamProfile(teamprofilesCol, canonicalAway, "away");
 
     console.log(`   ✓ Processing ${tuples.length} tuples for event ${eventId}`);
 
@@ -120,6 +137,8 @@ async function processMatchForAI(match, tuples, eventId) {
 
           const evDetails = collectEvDetails(result);
           const value = resolvePrimaryEvValue(evDetails);
+          const profile = scope === "home" ? homeProfile : scope === "away" ? awayProfile : null;
+          const scewDir = profile?.scew?.[direction];
 
           lines.push({
             betKey: buildBetKey({
@@ -142,6 +161,10 @@ async function processMatchForAI(match, tuples, eventId) {
             odds: Number(oddValue),
             value,
             evDetails,
+            scew: scewDir ? { [direction]: scewDir } : undefined,
+            scewFactor: scewDir?.factor,
+            scewWinPct: scewDir?.winPct,
+            scewRelBias: scewDir?.relBias,
             homeTeam: canonicalHome,
             awayTeam: canonicalAway,
             actual: null,
@@ -180,7 +203,9 @@ async function processMatchForAI(match, tuples, eventId) {
 export async function POST(request) {
   try {
     // Ensure MongoDB connection is ready
-    await clientPromise;
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || "app");
+    const teamprofilesCol = db.collection("teamprofiles");
 
     console.log("[AI Generate User] API called - step 2: fetch matchups");
 
@@ -492,6 +517,11 @@ export async function POST(request) {
 
     for (const result of selectedResults) {
       const { bet, result: evResult, evDetails, match, comboRank, comboScore, matchupScore } = result;
+      const homeProfile = await getTeamProfile(teamprofilesCol, match.homeTeam, "home");
+      const awayProfile = await getTeamProfile(teamprofilesCol, match.awayTeam, "away");
+      const dirKey = bet.over ? "over" : "under";
+      const profile = bet.scope === "home" ? homeProfile : bet.scope === "away" ? awayProfile : null;
+      const scewDir = profile?.scew?.stats?.[bet.stat]?.[bet.period]?.[dirKey] || profile?.scew?.[dirKey];
       const betKey = buildBetKey({
         matchId: match.matchId,
         homeTeam: match.homeTeam,
@@ -525,6 +555,10 @@ export async function POST(request) {
         edgeConfidence: result.edgeData?.confidence ?? null,
         edgeBadge: result.edgeData?.badge ?? null,
         edgeDirection: result.edgeData?.direction ?? null,
+        scew: scewDir ? { [dirKey]: scewDir } : undefined,
+        scewFactor: scewDir?.factor,
+        scewWinPct: scewDir?.winPct,
+        scewRelBias: scewDir?.relBias,
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
         homeTeamId: match.homeTeamId,

@@ -128,6 +128,29 @@ function getBetDescription(line) {
   return sentence;
 }
 
+function buildScewData(line) {
+  const direction =
+    (line.direction ?? line.condition ?? "").toString().toLowerCase().startsWith("u")
+      ? "under"
+      : "over";
+  if (line.scew) {
+    const d = line.scew[direction] ?? line.scew;
+    return d ? {
+      factor: d.factor,
+      winPct: d.winPct,
+      relBias: d.relBias,
+    } : null;
+  }
+  if (line.factor || line.scewFactor) {
+    return {
+      factor: line.factor ?? line.scewFactor,
+      winPct: line.scewWinPct,
+      relBias: line.scewRelBias,
+    };
+  }
+  return null;
+}
+
 const GlobeIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -195,6 +218,7 @@ function buildMatchUrlEntries(lines = []) {
     urls: Array.from(urls),
   }));
 }
+
 
 /**
  * AIBetCard - Shared bet card component with full styling
@@ -433,6 +457,7 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
             showOutcome && snapshotOdds?.closingOdds != null
               ? snapshotOdds.closingOdds
               : null;
+          const scewData = buildScewData(line);
 
           return (
             <li key={uniqueKey} className="relative overflow-hidden rounded-xl p-5">
@@ -491,6 +516,20 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
                     )}
 
                     {/* Edge Quality Badge - NEW */}
+                    {!showOutcome && scewData?.factor != null && (
+                      <div className="flex items-center gap-2 rounded-full bg-sky-500/10 px-2.5 py-0.5 ring-1 ring-sky-500/30 text-sky-200">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide">SCEW</span>
+                        <span className="text-sm font-bold">{scewData.factor?.toFixed?.(1) ?? scewData.factor}</span>
+                        {scewData.winPct != null && (
+                          <span className="text-[11px] text-sky-300">• {scewData.winPct?.toFixed?.(0) ?? scewData.winPct}%</span>
+                        )}
+                        {scewData.relBias != null && (
+                          <span className="text-[11px] text-sky-300">• Δ{scewData.relBias?.toFixed?.(1) ?? scewData.relBias}%</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Edge Quality Badge - legacy */}
                     {!showOutcome && line.edgeBadge && (
                       <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-2.5 py-0.5 ring-1 ring-amber-500/20">
                         <span className="text-xs font-bold text-amber-300">
