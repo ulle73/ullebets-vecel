@@ -103,6 +103,43 @@ function keysEqualLoosely(a, b) {
   return false;
 }
 
+function normalizeName(s) {
+  return String(s || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function daysDiff(aStr, bStr) {
+  if (!aStr || !bStr) return Infinity;
+  const a = new Date(aStr);
+  const b = new Date(bStr);
+  if (Number.isNaN(a) || Number.isNaN(b)) return Infinity;
+  return Math.abs(a - b) / (1000 * 60 * 60 * 24);
+}
+
+async function findTeamDoc(col, name, role) {
+  const exact = await col.findOne({
+    '_importMeta.teamName': { $regex: new RegExp(`^${name}$`, 'i') },
+    '_importMeta.teamRole': role
+  });
+  if (exact) return exact;
+
+  const norm = normalizeName(name);
+  const short = norm.slice(0, 6) || norm || name;
+  const candidates = await col
+    .find({
+      '_importMeta.teamRole': role,
+      '_importMeta.teamName': { $regex: new RegExp(short, 'i') }
+    })
+    .limit(10)
+    .toArray();
+
+  const strict = candidates.find(c => normalizeName(c._importMeta?.teamName) === norm);
+  return strict || candidates[0] || null;
+}
+
 function extractStat(match, key, period, side) {
   const blocks = getStatisticsBlocks(match);
   if (!blocks.length) return 0; // Default to 0 if no data
@@ -137,38 +174,42 @@ async function findMatchInTeamStats(homeTeam, awayTeam, matchDate, teamstatsCol)
   const dateStr = toDateStr(matchDate);
   if (!dateStr) return null;
 
-  // Try home team's stats first
-  const homeStats = await teamstatsCol.findOne({
-    '_importMeta.teamName': { $regex: new RegExp(`^${homeTeam}$`, 'i') },
-    '_importMeta.teamRole': 'home'
-  });
+  // Try home team's stats first (with relaxed name match)
+  const homeStats = await findTeamDoc(teamstatsCol, homeTeam, 'home');
 
   if (homeStats?.full) {
     const homeMatch = homeStats.full.find(m => {
       const mDate = toDateStr(m.date || m.matchDate || m.timestamp);
       if (!mDate) return false;
-      const isCorrectDate = mDate === dateStr;
-      const isCorrectOpponent = 
-        m.awayTeamName?.toLowerCase() === awayTeam.toLowerCase();
-      
-      return isCorrectDate && isCorrectOpponent;
+      const dateOk = mDate === dateStr || daysDiff(mDate, dateStr) <= 1;
+      const isCorrectOpponent = normalizeName(m.awayTeamName) === normalizeName(awayTeam);
+      return dateOk && isCorrectOpponent;
     });
 
     if (homeMatch) {
       console.log(`  ✅ Found home match (matchId: ${homeMatch.matchId})`);
       
       // Now find the away side using matchId
-      const awayStats = await teamstatsCol.findOne({
-        '_importMeta.teamName': { $regex: new RegExp(`^${awayTeam}$`, 'i') },
-        '_importMeta.teamRole': 'away'
+    const awayStats = await findTeamDoc(teamstatsCol, awayTeam, 'away');
+    
+    let awayMatch = awayStats?.full?.find(m => m.matchId === homeMatch.matchId);
+    
+    // Fallback: find by matchId anywhere in away-role docs (handles alias-miss på awayTeam)
+    if (!awayMatch) {
+      const anyAwayDoc = await teamstatsCol.findOne({
+        '_importMeta.teamRole': 'away',
+        'full.matchId': homeMatch.matchId
       });
-      
-      const awayMatch = awayStats?.full?.find(m => m.matchId === homeMatch.matchId);
-      
-      if (awayMatch) {
-        console.log(`  ✅ Found away match (same matchId)`);
-      } else {
-        console.log(`  ⚠️  Away match not found for matchId ${homeMatch.matchId}`);
+      awayMatch = anyAwayDoc?.full?.find(m => m.matchId === homeMatch.matchId);
+      if (anyAwayDoc && awayMatch) {
+        console.log(`  ✅ Found away match via matchId fallback (team: ${anyAwayDoc._importMeta?.teamName || 'unknown'})`);
+      }
+    }
+    
+    if (awayMatch) {
+      console.log(`  ✅ Found away match (same matchId)`);
+    } else {
+      console.log(`  ⚠️  Away match not found for matchId ${homeMatch.matchId}`);
       }
       
       return { homeMatch, awayMatch };
@@ -176,20 +217,16 @@ async function findMatchInTeamStats(homeTeam, awayTeam, matchDate, teamstatsCol)
   }
 
   // Fallback: try finding via away team first
-  const awayStats = await teamstatsCol.findOne({
-    '_importMeta.teamName': { $regex: new RegExp(`^${awayTeam}$`, 'i') },
-    '_importMeta.teamRole': 'away'
-  });
+  const awayStats = await findTeamDoc(teamstatsCol, awayTeam, 'away');
 
   if (awayStats?.full) {
     const awayMatch = awayStats.full.find(m => {
       const mDate = toDateStr(m.date || m.matchDate || m.timestamp);
       if (!mDate) return false;
-      const isCorrectDate = mDate === dateStr;
-      const isCorrectOpponent = 
-        m.homeTeamName?.toLowerCase() === homeTeam.toLowerCase();
+      const dateOk = mDate === dateStr || daysDiff(mDate, dateStr) <= 1;
+      const isCorrectOpponent = normalizeName(m.homeTeamName) === normalizeName(homeTeam);
       
-      return isCorrectDate && isCorrectOpponent;
+      return dateOk && isCorrectOpponent;
     });
 
     if (awayMatch) {
@@ -326,12 +363,16 @@ async function main() {
   const backtestCol = db.collection('unibet-backtest');
   const teamstatsCol = db.collection('teamstats');
 
+  // Only older than today (avoid future fixtures not in teamstats)
+  const todayStr = toDateStr(new Date());
+
   // Get all matches that haven't been corrected yet
   const matches = await backtestCol.find({
-    'lines.actual': null
+    'lines.actual': null,
+    matchDate: { $lt: todayStr }
   }).toArray();
 
-  console.log(`Found ${matches.length} matches to correct\n`);
+  console.log(`Found ${matches.length} matches to correct (matchDate < ${todayStr})\n`);
 
   let successCount = 0;
   let notFoundCount = 0;
