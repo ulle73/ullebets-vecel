@@ -7,6 +7,10 @@ on:
 
 jobs:
   unibet-forward-backtests:
+    strategy:
+      fail-fast: false
+      matrix:
+        horizon: [7, 5, 3]
     runs-on: ubuntu-latest
     env:
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
@@ -25,5 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run forward backtests (7/5/3 dagar framåt)
-        run: node scripts/run-unibet-forward-backtests.js
+      - name: Run forward backtests (${{ matrix.horizon }} dagar framåt)
+        shell: bash
+        run: |
+          TARGET_DATE=$(TZ=Europe/Stockholm date -d "+${{ matrix.horizon }} days" +%F)
+          echo "Running forward backtest for $TARGET_DATE (horizon ${{ matrix.horizon }}d)"
+          node scripts/run-unibet-forward-backtests.js --date="$TARGET_DATE"
