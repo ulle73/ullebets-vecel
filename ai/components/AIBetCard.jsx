@@ -129,20 +129,43 @@ function getBetDescription(line) {
 }
 
 function buildScewData(line) {
+  const getOddsBucket = (odds) => {
+    const o = Number(odds);
+    if (!Number.isFinite(o) || o <= 0) return null;
+    if (o >= 1.01 && o <= 1.50) return "1.01-1.50";
+    if (o <= 1.80) return "1.51-1.80";
+    if (o <= 2.20) return "1.81-2.20";
+    if (o <= 3.00) return "2.21-3.00";
+    if (o <= 5.00) return "3.01-5.00";
+    if (o <= 10.00) return "5.01-10.00";
+    return "10.01+";
+  };
+
   const direction =
     (line.direction ?? line.condition ?? "").toString().toLowerCase().startsWith("u")
       ? "under"
       : "over";
+  const bucket = getOddsBucket(line.odds);
   if (line.scew) {
     const d = line.scew[direction] ?? line.scew;
-    return d ? {
-      factor: d.factor,
-      winPct: d.winPct,
-      relBias: d.relBias,
-    } : null;
+    if (!d) return null;
+    // Prefer bucket match; otherwise fall back to overall (best bucket)
+    const bucketMatches = !bucket || !d.bucket || d.bucket === bucket;
+    const entry = bucketMatches ? d : d; // fallback to overall even if mismatch
+    return {
+      score: entry.scewScore ?? entry.score ?? null,
+      direction: entry.direction ?? direction,
+      factor: entry.factor,
+      winPct: entry.winPct,
+      relBias: entry.relBias,
+      bucket: entry.bucket,
+      oddsBucket: bucket,
+    };
   }
   if (line.factor || line.scewFactor) {
     return {
+      score: line.scewScore ?? null,
+      direction,
       factor: line.factor ?? line.scewFactor,
       winPct: line.scewWinPct,
       relBias: line.scewRelBias,
@@ -516,15 +539,37 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
                     )}
 
                     {/* Edge Quality Badge - NEW */}
-                    {!showOutcome && scewData?.factor != null && (
-                      <div className="flex items-center gap-2 rounded-full bg-sky-500/10 px-2.5 py-0.5 ring-1 ring-sky-500/30 text-sky-200">
-                        <span className="text-[11px] font-semibold uppercase tracking-wide">SCEW</span>
-                        <span className="text-sm font-bold">{scewData.factor?.toFixed?.(1) ?? scewData.factor}</span>
-                        {scewData.winPct != null && (
-                          <span className="text-[11px] text-sky-300">• {scewData.winPct?.toFixed?.(0) ?? scewData.winPct}%</span>
+                    {!showOutcome && (scewData?.score != null || scewData?.factor != null) && (
+                      <div
+                        className={clsx(
+                          "flex items-center gap-2 rounded-full px-2.5 py-0.5 ring-1 text-xs font-semibold",
+                          (scewData?.score ?? 0) > 0
+                            ? "bg-emerald-500/10 ring-emerald-500/30 text-emerald-100"
+                            : (scewData?.score ?? 0) < 0
+                            ? "bg-rose-500/10 ring-rose-500/30 text-rose-100"
+                            : "bg-slate-700/50 ring-slate-500/40 text-slate-200"
                         )}
-                        {scewData.relBias != null && (
-                          <span className="text-[11px] text-sky-300">• Δ{scewData.relBias?.toFixed?.(1) ?? scewData.relBias}%</span>
+                      >
+                        <span className="text-[11px] font-semibold uppercase tracking-wide">SCEW</span>
+                        {scewData?.score != null && (
+                          <span className="text-sm font-bold">
+                            {(scewData.score > 0 ? "+" : "") + (scewData.score ?? 0).toFixed?.(1)}
+                          </span>
+                        )}
+                        {scewData?.factor != null && (
+                          <span className="text-[11px] text-slate-300">
+                            f:{scewData.factor?.toFixed?.(1) ?? scewData.factor}
+                          </span>
+                        )}
+                        {scewData?.winPct != null && (
+                          <span className="text-[11px] text-slate-300">
+                            • {scewData.winPct?.toFixed?.(0) ?? scewData.winPct}%
+                          </span>
+                        )}
+                        {scewData?.relBias != null && (
+                          <span className="text-[11px] text-slate-300">
+                            • Δ{scewData.relBias?.toFixed?.(1) ?? scewData.relBias}%
+                          </span>
                         )}
                       </div>
                     )}

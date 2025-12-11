@@ -72,6 +72,72 @@ function resolvePrimaryEvValue(evDetails) {
   return null;
 }
 
+const STAT_ALIASES = new Map([
+  ["totalshotsongoal", "totalShotsOnGoal"],
+  ["total_shots_on_goal", "totalShotsOnGoal"],
+  ["totalshots_on_goal", "totalShotsOnGoal"],
+  ["totalshots", "totalShotsOnGoal"],
+  ["total_shots", "totalShotsOnGoal"],
+  ["totalshotsontarget", "totalShotsOnGoal"],
+  ["total_shots_on_target", "totalShotsOnGoal"],
+]);
+
+function normalizeStatKeyForScew(statKey) {
+  if (!statKey) return null;
+  const raw = String(statKey).trim();
+  const alias = STAT_ALIASES.get(raw.toLowerCase());
+  return alias || raw;
+}
+
+function oddsBucket(odds) {
+  const o = Number(odds);
+  if (!Number.isFinite(o) || o <= 0) return null;
+  if (o >= 1.01 && o <= 1.50) return "1.01-1.50";
+  if (o <= 1.80) return "1.51-1.80";
+  if (o <= 2.20) return "1.81-2.20";
+  if (o <= 3.00) return "2.21-3.00";
+  if (o <= 5.00) return "3.01-5.00";
+  if (o <= 10.0) return "5.01-10.00";
+  return "10.01+";
+}
+
+function selectScew(profile, statKey, period, direction, odds) {
+  const primaryKey = normalizeStatKeyForScew(statKey);
+  const bucket = oddsBucket(odds);
+
+  const roots = [];
+  const primaryRoot = profile?.statistics?.for?.[statKey]?.[period];
+  if (primaryRoot) roots.push(primaryRoot);
+  if (primaryKey && primaryKey !== statKey) {
+    const aliasRoot = profile?.statistics?.for?.[primaryKey]?.[period];
+    if (aliasRoot) roots.push(aliasRoot);
+  }
+  if (primaryKey === "totalShots") {
+    const mirrorRoot = profile?.statistics?.for?.totalShotsOnGoal?.[period];
+    if (mirrorRoot) roots.push(mirrorRoot);
+  }
+
+  // 1) Försök bucket-match
+  if (bucket) {
+    for (const root of roots) {
+      const entry = root?.scewBuckets?.[bucket];
+      if (entry && (!direction || !entry.direction || entry.direction === direction)) {
+        return entry;
+      }
+    }
+  }
+
+  // 2) Fallback till overall scew
+  for (const root of roots) {
+    const entry = root?.scew;
+    if (entry && (!direction || !entry.direction || entry.direction === direction)) {
+      return entry;
+    }
+  }
+
+  return null;
+}
+
 function normalizeDirection(value) {
   const raw = String(value ?? "").toLowerCase();
   return raw.startsWith("u") ? "under" : "over";
@@ -138,7 +204,7 @@ async function processMatchForAI(match, tuples, eventId, teamprofilesCol) {
           const evDetails = collectEvDetails(result);
           const value = resolvePrimaryEvValue(evDetails);
           const profile = scope === "home" ? homeProfile : scope === "away" ? awayProfile : null;
-          const scewDir = profile?.scew?.[direction];
+          const scewDir = selectScew(profile, statKey, period, direction, oddValue);
 
           lines.push({
             betKey: buildBetKey({
@@ -165,6 +231,7 @@ async function processMatchForAI(match, tuples, eventId, teamprofilesCol) {
             scewFactor: scewDir?.factor,
             scewWinPct: scewDir?.winPct,
             scewRelBias: scewDir?.relBias,
+            scewScore: scewDir?.scewScore,
             homeTeam: canonicalHome,
             awayTeam: canonicalAway,
             actual: null,
@@ -521,7 +588,7 @@ export async function POST(request) {
       const awayProfile = await getTeamProfile(teamprofilesCol, match.awayTeam, "away");
       const dirKey = bet.over ? "over" : "under";
       const profile = bet.scope === "home" ? homeProfile : bet.scope === "away" ? awayProfile : null;
-      const scewDir = profile?.scew?.stats?.[bet.stat]?.[bet.period]?.[dirKey] || profile?.scew?.[dirKey];
+      const scewDir = selectScew(profile, bet.stat, bet.period, dirKey, bet.odds);
       const betKey = buildBetKey({
         matchId: match.matchId,
         homeTeam: match.homeTeam,
@@ -559,6 +626,7 @@ export async function POST(request) {
         scewFactor: scewDir?.factor,
         scewWinPct: scewDir?.winPct,
         scewRelBias: scewDir?.relBias,
+        scewScore: scewDir?.scewScore,
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
         homeTeamId: match.homeTeamId,

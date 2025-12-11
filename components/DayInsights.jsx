@@ -44,6 +44,23 @@
   const STAT_TYPES = ["for", "against"];
   const STAT_PERIODS = ["ALL", "1ST", "2ND"];
 
+  const STAT_ALIASES = new Map([
+    ["totalshotsongoal", "totalShotsOnGoal"],
+    ["total_shots_on_goal", "totalShotsOnGoal"],
+    ["totalshots_on_goal", "totalShotsOnGoal"],
+    ["totalshots", "totalShotsOnGoal"],
+    ["total_shots", "totalShotsOnGoal"],
+    ["totalshotsontarget", "totalShotsOnGoal"],
+    ["total_shots_on_target", "totalShotsOnGoal"],
+  ]);
+
+  function normalizeStatKeyForScew(statKey) {
+    if (!statKey) return null;
+    const raw = String(statKey).trim();
+    const alias = STAT_ALIASES.get(raw.toLowerCase());
+    return alias || raw;
+  }
+
   function toFiniteNumber(value) {
     if (value == null) return null;
     if (typeof value === "number") {
@@ -182,6 +199,18 @@
               if (!Number.isFinite(value) || !Number.isFinite(rank)) {
                 continue;
               }
+              const scewScore = (() => {
+                if (type !== "for") return null;
+                const primary = toFiniteNumber(periodNode?.scew?.scewScore ?? periodNode?.scew?.score);
+                if (Number.isFinite(primary)) return primary;
+                // Try canonical alias if we stored scew under totalShots
+                const canonicalKey = normalizeStatKeyForScew(key);
+                if (canonicalKey && canonicalKey !== key) {
+                  const aliasNode = entry.profile.statistics?.for?.[canonicalKey]?.[period];
+                  return toFiniteNumber(aliasNode?.scew?.scewScore ?? aliasNode?.scew?.score);
+                }
+                return null;
+              })();
               points.push({
                 key: `${entry.key}:${key}:${type}:${period}`,
                 metricKey: key,
@@ -195,6 +224,7 @@
                 rank,
                 value,
                 displayValue: formatStatValue(key, value),
+                scewScore,
               });
             }
           }
@@ -248,14 +278,27 @@
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                   #{point.rank} · {point.metricLabel} · {point.period} ({point.type})
                 </span>
-                <span className="text-sm font-medium text-gray-900">
-                  {point.teamName}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-gray-900">{point.teamName}</span>
                   {point.leagueName ? (
-                    <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                    <span className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
                       {point.leagueName}
                     </span>
                   ) : null}
-                </span>
+                  {Number.isFinite(point.scewScore) ? (
+                    <span
+                      className={`ml-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        point.scewScore > 0
+                          ? "bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/40"
+                          : point.scewScore < 0
+                          ? "bg-rose-500/10 text-rose-700 ring-1 ring-rose-500/40"
+                          : "bg-slate-100 text-slate-700 ring-1 ring-slate-300/60"
+                      }`}
+                    >
+                      SCEW {(point.scewScore > 0 ? "+" : "") + point.scewScore.toFixed(1)}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <span className="text-sm font-semibold text-gray-900">{point.displayValue}</span>
             </li>
@@ -338,4 +381,3 @@
       </div>
     );
   }
-

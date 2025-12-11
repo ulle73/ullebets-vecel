@@ -40,6 +40,45 @@ const FORECAST_SCOPE_MAP = {
 const RESULTS_DIR = path.join(process.cwd(), "data", "matchups");
 const DIR_PATH = path.join(RESULTS_DIR, "matchup-league-avg");
 
+const STAT_ALIASES = new Map([
+  ["totalshotsongoal", "totalShotsOnGoal"],
+  ["total_shots_on_goal", "totalShotsOnGoal"],
+  ["totalshots_on_goal", "totalShotsOnGoal"],
+  ["totalshots", "totalShotsOnGoal"],
+  ["total_shots", "totalShotsOnGoal"],
+  ["totalshotsontarget", "totalShotsOnGoal"],
+  ["total_shots_on_target", "totalShotsOnGoal"],
+]);
+
+function normalizeStatKeyForScew(statKey) {
+  if (!statKey) return null;
+  const raw = String(statKey).trim();
+  const alias = STAT_ALIASES.get(raw.toLowerCase());
+  return alias || raw;
+}
+
+function selectScew(profile, statKey, period) {
+  if (!profile || !statKey || !period) return null;
+  const primary = normalizeStatKeyForScew(statKey);
+  const roots = [];
+  if (profile.statistics?.for?.[statKey]?.[period]) roots.push(profile.statistics.for[statKey][period]);
+  if (primary && primary !== statKey && profile.statistics?.for?.[primary]?.[period]) {
+    roots.push(profile.statistics.for[primary][period]);
+  }
+  for (const root of roots) {
+    if (root?.scew) {
+      const hasSignal =
+        root.scew.direction != null ||
+        root.scew.factor != null ||
+        (Number.isFinite(root.scew.scewScore) && root.scew.scewScore !== 0);
+      if (hasSignal) {
+        return root.scew;
+      }
+    }
+  }
+  return null;
+}
+
 const DB_NAME = process.env.MONGODB_DB || "app";
 const COLLECTION_NAME = "matchups-league-avg";
 const TEAMPROFILE_COLLECTION = "teamprofiles";
@@ -290,6 +329,22 @@ function buildLeagueAvgSnapshot(pairs, limit = 200) {
           const normalized = forecastBundle?.normalized?.[bundleScope];
           if (!Number.isFinite(normalized)) continue;
 
+          const homeScew = selectScew(pair.home.profile, statKey, periodKey);
+          const awayScew = selectScew(pair.away.profile, statKey, periodKey);
+          const scopeProfile =
+            scopeKey === "home" ? pair.home.profile :
+            scopeKey === "away" ? pair.away.profile :
+            null;
+          const scew =
+            scopeKey === "home" ? homeScew :
+            scopeKey === "away" ? awayScew :
+            (() => {
+              const cand = [homeScew, awayScew].filter(Boolean);
+              if (!cand.length) return null;
+              cand.sort((a, b) => Math.abs((b?.scewScore ?? b?.score ?? 0)) - Math.abs((a?.scewScore ?? a?.score ?? 0)));
+              return cand[0];
+            })();
+
           const scopeLabel = getScopeLabel(scopeKey, pair);
           const baseEntry = {
             match: `${pair.home.name} vs ${pair.away.name}`,
@@ -311,6 +366,14 @@ function buildLeagueAvgSnapshot(pairs, limit = 200) {
               driverSampleSize: forecastBundle?.styleModifier?.sampleSizes?.[bundleScope] ?? 0,
             },
             sortKey: normalized,
+            ...(scew
+              ? {
+                  scewScore: scew.scewScore ?? scew.score ?? null,
+                  scewDirection: scew.direction ?? null,
+                  scewFactor: scew.factor ?? null,
+                  scewBucket: scew.bucket ?? null,
+                }
+              : {}),
           };
 
           overEntries.push(baseEntry);

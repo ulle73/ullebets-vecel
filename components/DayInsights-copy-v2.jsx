@@ -104,6 +104,11 @@ function mapLeagueAvgEntry(entry) {
   const sortKey = toNum(entry.sortKey ?? entry.score) ?? score;
   const scope = entry.scope ?? "total";
   const outcomeInfo = deriveOutcomeForScope(entry.outcome, scope);
+  const scewScore =
+    toNum(entry.scewScore) ??
+    toNum(entry.scew?.scewScore) ??
+    toNum(entry.scew?.score) ??
+    null;
   return {
     matchId: entry.matchId ?? matchLabel,
     leagueName: entry.league ?? null,
@@ -115,6 +120,7 @@ function mapLeagueAvgEntry(entry) {
     matchLabel,
     score,
     sortKey,
+    scewScore,
     badge: badgeForLeagueAvg(sortKey),
     scoreFormat: (value) => value.toFixed(2),
     scoreThresholds: LEAGUE_SCORE_THRESHOLDS,

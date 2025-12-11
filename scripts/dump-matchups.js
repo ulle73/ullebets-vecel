@@ -39,6 +39,45 @@ const DB_NAME = process.env.MONGODB_DB || "app";
 const TEAMPROFILE_COLLECTION = "teamprofiles";
 const FORECAST_SCOPE_MAP = { total: SCOPE_TOTAL, home: SCOPE_HOME, away: SCOPE_AWAY };
 
+const STAT_ALIASES = new Map([
+  ["totalshotsongoal", "totalShotsOnGoal"],
+  ["total_shots_on_goal", "totalShotsOnGoal"],
+  ["totalshots_on_goal", "totalShotsOnGoal"],
+  ["totalshots", "totalShotsOnGoal"],
+  ["total_shots", "totalShotsOnGoal"],
+  ["totalshotsontarget", "totalShotsOnGoal"],
+  ["total_shots_on_target", "totalShotsOnGoal"],
+]);
+
+function normalizeStatKeyForScew(statKey) {
+  if (!statKey) return null;
+  const raw = String(statKey).trim();
+  const alias = STAT_ALIASES.get(raw.toLowerCase());
+  return alias || raw;
+}
+
+function selectScew(profile, statKey, period) {
+  if (!profile || !statKey || !period) return null;
+  const primary = normalizeStatKeyForScew(statKey);
+  const roots = [];
+  if (profile.statistics?.for?.[statKey]?.[period]) roots.push(profile.statistics.for[statKey][period]);
+  if (primary && primary !== statKey && profile.statistics?.for?.[primary]?.[period]) {
+    roots.push(profile.statistics.for[primary][period]);
+  }
+  for (const root of roots) {
+    if (root?.scew) {
+      const hasSignal =
+        root.scew.direction != null ||
+        root.scew.factor != null ||
+        (Number.isFinite(root.scew.scewScore) && root.scew.scewScore !== 0);
+      if (hasSignal) {
+        return root.scew;
+      }
+    }
+  }
+  return null;
+}
+
 function ensureDir(target) {
   return fs.mkdir(target, { recursive: true });
 }
@@ -494,16 +533,36 @@ function buildScoreSnapshot(pairs, leagueSizeMap, limit = 200) {
           statLabel,
           period: periodKey,
         };
+        const scewHome = selectScew(p.home.profile, statKey, periodKey);
+        const scewAway = selectScew(p.away.profile, statKey, periodKey);
+        const scewTotal = (() => {
+          const cand = [scewHome, scewAway].filter(Boolean);
+          if (!cand.length) return null;
+          cand.sort((a, b) => Math.abs((b?.scewScore ?? b?.score ?? 0)) - Math.abs((a?.scewScore ?? a?.score ?? 0)));
+          return cand[0];
+        })();
 
         const pushEntry = (direction, scope, scoreValue) => {
           const rounded = roundScore(scoreValue);
           if (rounded == null) return;
+          const scew =
+            scope === "home" ? scewHome :
+            scope === "away" ? scewAway :
+            scewTotal;
           const entry = attachLeagueAvg(
             {
               ...baseEntry,
               scope,
               condition: direction,
               score: rounded,
+              ...(scew
+                ? {
+                    scewScore: scew.scewScore ?? scew.score ?? null,
+                    scewDirection: scew.direction ?? null,
+                    scewFactor: scew.factor ?? null,
+                    scewBucket: scew.bucket ?? null,
+                  }
+                : {}),
             },
             scope
           );

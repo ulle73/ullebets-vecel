@@ -24,10 +24,29 @@ const ODDS_BUCKETS = [
   { label: '10.01+', min: 10.01, max: Infinity },
 ];
 
-// Stat och scope att inkludera
-const PROPS = ['totalShots', 'shotsOnGoal', 'cornerKicks', 'offsides', 'fouls', 'yellowCards'];
+// Stat och scope att inkludera (kanoniska nycklar)
+const PROPS = ['totalShotsOnGoal', 'shotsOnGoal', 'cornerKicks', 'offsides', 'fouls', 'yellowCards'];
 const SCOPES = ['home', 'away'];
 const PERIODS = ['ALL', '1ST', '2ND'];
+const SCEW_SCORE_SCALE = 75; // higher = slower saturation of score curve
+
+const STAT_ALIASES = new Map([
+  ['totalshotsongoal','totalShotsOnGoal'],
+  ['total_shots_on_goal','totalShotsOnGoal'],
+  ['totalshots_on_goal','totalShotsOnGoal'],
+  ['totalshots','totalShotsOnGoal'],
+  ['total_shots','totalShotsOnGoal'],
+  ['totalshotsontarget','totalShotsOnGoal'],
+  ['total_shots_on_target','totalShotsOnGoal'],
+]);
+
+function normalizeStatKeyName(statKey) {
+  if (!statKey) return null;
+  const raw = String(statKey).trim();
+  const lower = raw.toLowerCase();
+  const alias = STAT_ALIASES.get(lower);
+  return alias || raw;
+}
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -52,6 +71,26 @@ function normalizeCondition(condition) {
   if (c.includes('över') || c === 'over') return 'over';
   if (c.includes('under')) return 'under';
   return null;
+}
+
+function toScewScore(row, direction) {
+  // Map factor (magnitude) to a bounded score [-10, 10] and inject sign for direction.
+  // Arctan gives a smooth saturation so monster factors don't explode the scale.
+  const factor = row?.factor ?? 0;
+  const signed = (direction === 'under' ? -1 : 1) * factor;
+  const normalized = (2 / Math.PI) * Math.atan(signed / SCEW_SCORE_SCALE); // [-1, 1]
+  const scaled = normalized * 10; // [-10, 10]
+  if (!Number.isFinite(scaled)) return 0;
+  return Math.max(-10, Math.min(10, scaled));
+}
+
+// Faktor-beräkning används både för bucket-rader och overall-rader.
+function scoreRow(r) {
+  const base = (r.hitDiff ?? 0) * 0.5 + (r.roi ?? 0) * 0.3 + (r.relBias ?? 0) * 0.2;
+  // Viktar matcher högre än lines för att minska “tur i en match”
+  const matchWeight = Math.pow(Math.log1p(r.matches ?? 0), 2);
+  const lineWeight = Math.log1p(r.total ?? 0) * 0.5; // dämpa lines
+  return base * (matchWeight + lineWeight);
 }
 
 async function collectFiles(dir) {
@@ -149,6 +188,8 @@ async function main() {
   const buckets = new Map();
   const bestOverallMap = new Map(); // key: team|scope|direction -> best row (högst factor)
   const bestStatMap = new Map(); // key: team|scope|stat|period|direction -> best row
+  const bucketStatMap = new Map(); // key: team|scope|stat|period|direction -> { [bucketLabel]: row }
+  const overallAggMap = new Map(); // key: team|scope|stat|period|direction -> agg över alla odds
   const teamScopes = new Set(); // key: team|scope
 
   for (const doc of allDocs) {
@@ -156,7 +197,8 @@ async function main() {
 
     for (const line of doc.lines) {
       if (line.actual == null) continue;
-      if (!PROPS.includes(line.statKey)) continue;
+      const statKey = normalizeStatKeyName(line.statKey);
+      if (!statKey || !PROPS.includes(statKey)) continue;
       if (!SCOPES.includes(line.scope)) continue;
 
       const odds = Number(line.odds);
@@ -185,13 +227,13 @@ async function main() {
       // Hämta/bygg agg
       if (!buckets.has(bucketLabel)) buckets.set(bucketLabel, new Map());
       const statMap = buckets.get(bucketLabel);
-      if (!statMap.has(line.statKey)) statMap.set(line.statKey, new Map());
-      const periodMap = statMap.get(line.statKey);
+      if (!statMap.has(statKey)) statMap.set(statKey, new Map());
+      const periodMap = statMap.get(statKey);
       if (!periodMap.has(period)) periodMap.set(period, new Map());
       const scopeMap = periodMap.get(period);
       if (!scopeMap.has(line.scope)) scopeMap.set(line.scope, new Map());
       const teamMap = scopeMap.get(line.scope);
-      if (!teamMap.has(teamName)) teamMap.set(teamName, initAgg(bucketLabel, line.statKey, period, line.scope, teamName));
+      if (!teamMap.has(teamName)) teamMap.set(teamName, initAgg(bucketLabel, statKey, period, line.scope, teamName));
       const agg = teamMap.get(teamName);
       const dirAgg = getDirAgg(agg, condition);
 
@@ -208,6 +250,28 @@ async function main() {
       if (Number.isFinite(odds)) {
         dirAgg.sumOdds += odds;
         dirAgg.sumImplied += 1 / odds;
+      }
+
+      // Aggregera även över alla odds (overall)
+      const overallKey = `${teamName}__${line.scope}__${statKey}__${period}__${condition}`;
+      if (!overallAggMap.has(overallKey)) {
+        overallAggMap.set(overallKey, initAgg('ALL', statKey, period, line.scope, teamName));
+      }
+      const overallAgg = overallAggMap.get(overallKey);
+      const overallDirAgg = getDirAgg(overallAgg, condition);
+      overallDirAgg.total += 1;
+      overallDirAgg.matches.add(matchKey);
+      overallDirAgg.sumDev += deviation;
+      overallDirAgg.sumLine += line.line ?? 0;
+      if (win) {
+        overallDirAgg.wins += 1;
+        overallDirAgg.pnl += (Number.isFinite(odds) ? odds - 1 : 0);
+      } else {
+        overallDirAgg.pnl -= 1;
+      }
+      if (Number.isFinite(odds)) {
+        overallDirAgg.sumOdds += odds;
+        overallDirAgg.sumImplied += 1 / odds;
       }
     }
   }
@@ -259,13 +323,6 @@ async function main() {
     }
 
     if (rows.length === 0) continue;
-    function scoreRow(r) {
-      const base = (r.hitDiff ?? 0) * 0.5 + (r.roi ?? 0) * 0.3 + (r.relBias ?? 0) * 0.2;
-      // Viktar matcher högre än lines för att minska “tur i en match”
-      const matchWeight = Math.pow(Math.log1p(r.matches), 2);
-      const lineWeight = Math.log1p(r.total) * 0.5; // dämpa lines
-      return base * (matchWeight + lineWeight);
-    }
     rows.forEach(r => { r.factor = r.matches >= MIN_MATCHES ? scoreRow(r) : null; });
 
     const overRows = rows.filter(r => r.direction === 'over').sort((a, b) => (b.factor ?? 0) - (a.factor ?? 0) || b.winPct - a.winPct || (b.hitDiff ?? 0) - (a.hitDiff ?? 0) || b.total - a.total);
@@ -352,11 +409,60 @@ async function main() {
           bestStatMap.set(statKey, r);
         }
         teamScopes.add(`${r.team}__${r.scope}`);
+
+        // Spara per-bucket entry
+        const bucketKey = `${r.team}__${r.scope}__${r.stat}__${r.period}__${r.direction}`;
+        if (!bucketStatMap.has(bucketKey)) {
+          bucketStatMap.set(bucketKey, {});
+        }
+        bucketStatMap.get(bucketKey)[r.bucket] = r;
       }
     }
 
     printTable('OVER', overRows);
     printTable('UNDER', underRows);
+  }
+
+  // Bygg overall-rader (alla odds) för varje stat/period/scope/team/direction
+  const overallRows = new Map(); // key: team|scope|stat|period|direction -> row
+  for (const [key, agg] of overallAggMap.entries()) {
+    for (const [, dirAgg] of agg.directions.entries()) {
+      if (dirAgg.total < MIN_SAMPLE) continue;
+      if (dirAgg.matches.size < MIN_MATCHES) continue;
+      const winPct = (dirAgg.wins / dirAgg.total) * 100;
+      const avgOdds = dirAgg.sumOdds / dirAgg.total;
+      const avgImplied = dirAgg.sumImplied > 0 ? (dirAgg.sumImplied / dirAgg.total) * 100 : null;
+      const hitDiff = avgImplied != null ? winPct - avgImplied : null;
+      const relBias = dirAgg.sumLine ? (dirAgg.sumDev / dirAgg.sumLine) * 100 : null;
+      const bias = dirAgg.sumDev / dirAgg.total;
+      const roi = (dirAgg.pnl / dirAgg.total) * 100;
+      const r = {
+        bucket: 'ALL',
+        stat: agg.stat,
+        period: agg.period,
+        scope: agg.scope,
+        team: agg.team,
+        direction: dirAgg.direction,
+        total: dirAgg.total,
+        wins: dirAgg.wins,
+        matches: dirAgg.matches.size,
+        winPct,
+        hitDiff,
+        roi,
+        bias,
+        relBias,
+        avgOdds,
+        avgImplied,
+        factor: null,
+      };
+      r.factor = scoreRow(r);
+      overallRows.set(`${agg.team}__${agg.scope}__${agg.stat}__${agg.period}__${dirAgg.direction}`, r);
+      const dirKey = `${agg.team}__${agg.scope}__${dirAgg.direction}`;
+      const prevDir = bestOverallMap.get(dirKey);
+      if (!prevDir || ((r.factor ?? -Infinity) > (prevDir.factor ?? -Infinity))) {
+        bestOverallMap.set(dirKey, r);
+      }
+    }
   }
 
   if (saveProfiles && (bestOverallMap.size > 0 || bestStatMap.size > 0)) {
@@ -368,16 +474,15 @@ async function main() {
 
     // Helper to build neutral payload
     const neutral = {
-      stat: null,
-      period: null,
-      bucket: null,
+      scewScore: 0,
       direction: null,
+      factor: null,
+      bucket: null,
       winPct: null,
       hitDiff: null,
       roi: null,
       bias: null,
       relBias: null,
-      factor: null,
       nLines: 0,
       nMatches: 0,
       avgOdds: null,
@@ -390,73 +495,84 @@ async function main() {
       const [teamName, scope] = teamScope.split('__');
       const docFilter = { 'meta.lagnamn': teamName, 'meta.matchType': scope };
 
-      const scewStats = {};
+      const updatePayload = {};
+      const unsetPayload = { scew: "" };
+
       for (const stat of PROPS) {
-        scewStats[stat] = {};
         for (const period of PERIODS) {
-          scewStats[stat][period] = {};
-          for (const direction of ['over', 'under']) {
-            const statKey = `${teamName}__${scope}__${stat}__${period}__${direction}`;
-            const row = bestStatMap.get(statKey);
-            if (row) {
-              scewStats[stat][period][direction] = {
-                stat: row.stat,
-                period: row.period,
-                bucket: row.bucket,
-                direction,
-                winPct: row.winPct,
-                hitDiff: row.hitDiff,
-                roi: row.roi,
-                bias: row.bias,
-                relBias: row.relBias,
-                factor: row.factor,
-                nLines: row.total,
-                nMatches: row.matches,
-                avgOdds: row.avgOdds,
-                avgImplied: row.avgImplied,
-                updatedAt: now,
-              };
-            } else {
-              scewStats[stat][period][direction] = { ...neutral, stat, period, direction };
-            }
+          const overKey = `${teamName}__${scope}__${stat}__${period}__over`;
+          const underKey = `${teamName}__${scope}__${stat}__${period}__under`;
+          const overRow = overallRows.get(overKey);
+          const underRow = overallRows.get(underKey);
+
+          const pickRow = (() => {
+            const overFactor = overRow?.factor ?? -Infinity;
+            const underFactor = underRow?.factor ?? -Infinity;
+            if (!Number.isFinite(overFactor) && !Number.isFinite(underFactor)) return null;
+            return overFactor >= underFactor ? { row: overRow, direction: 'over' } : { row: underRow, direction: 'under' };
+          })();
+
+          const scewEntry = (() => {
+            if (!pickRow?.row) return { ...neutral };
+            const { row, direction } = pickRow;
+            return {
+              scewScore: toScewScore(row, direction),
+              direction,
+              factor: row.factor ?? null,
+              bucket: row.bucket ?? null,
+              winPct: row.winPct ?? null,
+              hitDiff: row.hitDiff ?? null,
+              roi: row.roi ?? null,
+              bias: row.bias ?? null,
+              relBias: row.relBias ?? null,
+              nLines: row.total ?? 0,
+              nMatches: row.matches ?? 0,
+              avgOdds: row.avgOdds ?? null,
+              avgImplied: row.avgImplied ?? null,
+              updatedAt: now,
+            };
+          })();
+
+          const path = `statistics.for.${stat}.${period}.scew`;
+          updatePayload[path] = scewEntry;
+          // Per-bucket entries (för odds-bucket match)
+          const bucketOver = bucketStatMap.get(overKey) || {};
+          const bucketUnder = bucketStatMap.get(underKey) || {};
+          const mergedBuckets = { ...bucketOver, ...bucketUnder };
+          const cleanedBuckets = {};
+          for (const [blabel, brow] of Object.entries(mergedBuckets)) {
+            if (!brow) continue;
+            cleanedBuckets[blabel] = {
+              scewScore: toScewScore(brow, brow.direction),
+              direction: brow.direction,
+              factor: brow.factor ?? null,
+              bucket: brow.bucket ?? blabel,
+              winPct: brow.winPct ?? null,
+              hitDiff: brow.hitDiff ?? null,
+              roi: brow.roi ?? null,
+              bias: brow.bias ?? null,
+              relBias: brow.relBias ?? null,
+              nLines: brow.total ?? 0,
+              nMatches: brow.matches ?? 0,
+              avgOdds: brow.avgOdds ?? null,
+              avgImplied: brow.avgImplied ?? null,
+              updatedAt: now,
+            };
+          }
+          if (Object.keys(cleanedBuckets).length) {
+            updatePayload[`statistics.for.${stat}.${period}.scewBuckets`] = cleanedBuckets;
           }
         }
       }
-
-      const updatePayload = {
-        'scew.stats': scewStats,
-        'scew.updatedAt': now,
-      };
-
-      // Also keep best overall per direction for backward compatibility
-      for (const direction of ['over', 'under']) {
-        const dirKey = `${teamName}__${scope}__${direction}`;
-        const row = bestOverallMap.get(dirKey);
-        if (row) {
-          updatePayload[`scew.${direction}`] = {
-            stat: row.stat,
-            period: row.period,
-            bucket: row.bucket,
-            direction,
-            winPct: row.winPct,
-            hitDiff: row.hitDiff,
-            roi: row.roi,
-            bias: row.bias,
-            relBias: row.relBias,
-            factor: row.factor,
-            nLines: row.total,
-            nMatches: row.matches,
-            avgOdds: row.avgOdds,
-            avgImplied: row.avgImplied,
-            updatedAt: now,
-          };
-        }
-      }
+      updatePayload['statistics.scewUpdatedAt'] = now;
 
       ops.push({
         updateOne: {
           filter: docFilter,
-          update: { $set: updatePayload },
+          update: {
+            $set: updatePayload,
+            $unset: unsetPayload,
+          },
         }
       });
     }

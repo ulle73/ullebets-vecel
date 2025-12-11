@@ -102,10 +102,24 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
           <div className="font-medium text-gray-700 py-1">
             {r.statLabel} · {r.period}
           </div>
-          <div className="mt-1">
+          <div className="mt-1 flex flex-wrap items-center gap-2">
             <span className="rounded bg-blue-50 px-2 py-1 text-[8.25px] font-semibold text-blue-700">
               {scopeLabel}
             </span>
+            {Number.isFinite(r.scewScore) ? (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ${
+                  r.scewScore > 0
+                    ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                    : r.scewScore < 0
+                    ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
+                    : "bg-gray-100 text-gray-700 ring-1 ring-gray-200"
+                }`}
+                title="Overall SCEW-score (alla odds)"
+              >
+                SCEW {(r.scewScore > 0 ? "+" : "") + r.scewScore.toFixed(1)}
+              </span>
+            ) : null}
           </div>
           {r.leagueName ? (
             <div className="mt-2">
