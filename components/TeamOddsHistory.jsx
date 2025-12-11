@@ -342,7 +342,7 @@ export default function TeamOddsHistory({
         </div>
       ) : null}
       <div className={contentWrapperClass}>
-        <div className="flex w-full flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm lg:min-h-0 lg:flex-1">
+        <div className="flex w-full flex-col rounded-lg border border-gray-200 bg-gray-50 p-2 shadow-sm lg:min-h-0 lg:flex-1">
           <TeamOddsTable
             teamName={homeTeamName}
             data={homeOdds.data}
@@ -350,7 +350,7 @@ export default function TeamOddsHistory({
             error={homeOdds.error}
           />
         </div>
-        <div className="flex w-full flex-col rounded-lg border border-gray-200 bg-white p-2 shadow-sm lg:min-h-0 lg:flex-1">
+        <div className="flex w-full flex-col rounded-lg border border-gray-200 bg-gray-50 p-2 shadow-sm lg:min-h-0 lg:flex-1">
           <TeamOddsTable
             teamName={awayTeamName}
             data={awayOdds.data}

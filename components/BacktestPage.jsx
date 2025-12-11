@@ -999,16 +999,16 @@ export default function BacktestPage({ match, onPositiveResults }) {
       const thresholds = statPatterns[statKey].thresholds(cfg.scope, cfg.period) || [];
       const statOdds = oddsStore[teamKey]?.[statKey]?.[cfg.scope]?.[cfg.period] || {};
       return (
-        <div key={statKey} className="rounded border border-slate-700/60 p-3">
-          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <h3 className="text-sm font-semibold">
+        <div key={statKey} className="rounded-lg border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-all hover:border-white/20">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-sm font-bold text-white tracking-wide">
               {statNames[statKey] || statKey}
             </h3>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <select
                 value={cfg.scope}
                 onChange={handleFormChange(statKey, "scope")}
-                className="rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
+                className="rounded-md border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all"
               >
                 <option value="total">{t("scope_total")}</option>
                 <option value="home">{homeTeam || t("scope_home")}</option>
@@ -1017,7 +1017,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
               <select
                 value={cfg.period}
                 onChange={handleFormChange(statKey, "period")}
-                className="rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
+                className="rounded-md border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all"
               >
                 <option value="ALL">{t("period_match")}</option>
                 <option value="1ST">{t("period_first_half")}</option>
@@ -1026,32 +1026,32 @@ export default function BacktestPage({ match, onPositiveResults }) {
               <input
                 value={cfg.formMatches}
                 onChange={handleFormChange(statKey, "formMatches")}
-                className="w-28 rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs"
+                className="w-28 rounded-md border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white placeholder-white/30 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all"
                 placeholder={t("form_label")}
               />
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-xs text-slate-200">
-              <thead className="bg-slate-900/40 text-[8.25px] uppercase tracking-wide text-slate-400">
+              <thead className="bg-white/5 text-[10px] uppercase tracking-wider text-slate-400 font-bold">
                 <tr>
-                  <th className="px-3 py-2 font-medium text-slate-300">Lina</th>
-                  <th className="px-3 py-2 font-medium text-slate-300">
+                  <th className="px-4 py-3 text-slate-300">Lina</th>
+                  <th className="px-4 py-3 text-slate-300">
                     {t("over")} ({t("odds")})
                   </th>
-                  <th className="px-3 py-2 font-medium text-slate-300">
+                  <th className="px-4 py-3 text-slate-300">
                     EV % ({t("over")})
                   </th>
-                  <th className="px-3 py-2 font-medium text-slate-300">
+                  <th className="px-4 py-3 text-slate-300">
                     {t("under")} ({t("odds")})
                   </th>
-                  <th className="px-3 py-2 font-medium text-slate-300">
+                  <th className="px-4 py-3 text-slate-300">
                     EV % ({t("under")})
                   </th>
-                  <th className="px-3 py-2 font-medium text-slate-300">{t("history")}</th>
+                  <th className="px-4 py-3 text-slate-300">{t("history")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-white/5">
                 {thresholds.map((line) => {
                   const odds = statOdds[line] || { over: "", under: "" };
                   const overKey = createBetKey({
@@ -1121,12 +1121,12 @@ export default function BacktestPage({ match, onPositiveResults }) {
                     direction: "under",
                   });
                   return (
-                    <tr key={line} className="align-top">
-                      <td className="px-3 py-3 text-sm font-medium text-slate-100">{line}</td>
-                      <td className="px-3 py-3">
+                    <tr key={line} className="align-top hover:bg-white/5 transition-colors">
+                      <td className="px-4 py-3 text-sm font-semibold text-white">{line}</td>
+                      <td className="px-4 py-3">
                         <input
                           type="number"
-                          className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-2 text-xs font-medium text-slate-100 focus:border-slate-400 focus:outline-none focus:ring-0"
+                          className="w-24 rounded-md border border-white/10 bg-black/40 px-3 py-2 text-xs font-semibold text-white focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder-white/20"
                           step="0.01"
                           value={odds.over}
                           placeholder={t("over")}
@@ -1134,35 +1134,35 @@ export default function BacktestPage({ match, onPositiveResults }) {
                           onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "over")}
                         />
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-4 py-3">
                         {overEntries.length ? (
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1.5">
                             {overEntries.map((entry, idx) => (
                               <div key={idx} className="flex items-baseline gap-2">
                                 {entry.value != null ? (
                                   <span
-                                    className={`font-semibold ${entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                    className={`font-bold ${entry.value >= 0 ? "text-emerald-400" : "text-rose-400"
                                       }`}
                                   >
                                     {entry.value.toFixed(1)}%
                                   </span>
                                 ) : (
-                                  <span className="text-slate-500">–</span>
+                                  <span className="text-slate-600">–</span>
                                 )}
-                                <span className="text-[7.5px] uppercase tracking-wide text-slate-400">
+                                <span className="text-[9px] uppercase tracking-wide text-slate-500 font-medium">
                                   {entry.label}
                                 </span>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-slate-500">–</span>
+                          <span className="text-slate-600">–</span>
                         )}
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-4 py-3">
                         <input
                           type="number"
-                          className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-2 text-xs font-medium text-slate-100 focus:border-slate-400 focus:outline-none focus:ring-0"
+                          className="w-24 rounded-md border border-white/10 bg-black/40 px-3 py-2 text-xs font-semibold text-white focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder-white/20"
                           step="0.01"
                           value={odds.under}
                           placeholder={t("under")}
@@ -1170,52 +1170,52 @@ export default function BacktestPage({ match, onPositiveResults }) {
                           onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "under")}
                         />
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-4 py-3">
                         {underEntries.length ? (
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1.5">
                             {underEntries.map((entry, idx) => (
                               <div key={idx} className="flex items-baseline gap-2">
                                 {entry.value != null ? (
                                   <span
-                                    className={`font-semibold ${entry.value >= 0 ? "text-emerald-300" : "text-rose-300"
+                                    className={`font-bold ${entry.value >= 0 ? "text-emerald-400" : "text-rose-400"
                                       }`}
                                   >
                                     {entry.value.toFixed(1)}%
                                   </span>
                                 ) : (
-                                  <span className="text-slate-500">–</span>
+                                  <span className="text-slate-600">–</span>
                                 )}
-                                <span className="text-[7.5px] uppercase tracking-wide text-slate-400">
+                                <span className="text-[9px] uppercase tracking-wide text-slate-500 font-medium">
                                   {entry.label}
                                 </span>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-slate-500">–</span>
+                          <span className="text-slate-600">–</span>
                         )}
                       </td>
-                      <td className="px-3 py-3">
-                        <div className="space-y-1 text-[8.25px] text-slate-300">
+                      <td className="px-4 py-3">
+                        <div className="space-y-1.5 text-[10px] text-slate-400 font-medium">
                           <Tooltip.Root>
                             <Tooltip.Trigger asChild>
-                              <div className="cursor-help">
+                              <div className="cursor-help hover:text-white transition-colors">
                                 {t("over")}:
-                                <span className="ml-1 font-medium text-slate-100">{overHistory.label}</span>
+                                <span className="ml-1 font-bold text-white">{overHistory.label}</span>
                               </div>
                             </Tooltip.Trigger>
                             <Tooltip.Portal>
-                            <Tooltip.Content
+                              <Tooltip.Content
                                 sideOffset={6}
-                                className="z-50 max-h-80 min-w-[20rem] overflow-y-auto rounded-md bg-slate-800/95 px-4 py-3 text-[11px] leading-relaxed text-slate-100 shadow-lg"
+                                className="z-50 max-h-80 min-w-[20rem] overflow-y-auto rounded-lg bg-slate-900/95 px-4 py-3 text-[11px] leading-relaxed text-slate-100 shadow-xl border border-white/10 backdrop-blur-md"
                               >
                                 {overTooltipEntries.length ? (
-                                  <div className="flex flex-col gap-1">
+                                  <div className="flex flex-col gap-1.5">
                                     {overTooltipEntries.map((entry, idx) => (
-                                      <div key={idx} className="flex items-start justify-between gap-3">
+                                      <div key={idx} className="flex items-start justify-between gap-3 border-b border-white/5 pb-1 last:border-0 last:pb-0">
                                         <span className="text-left text-slate-200">{entry.label}</span>
                                         <span
-                                          className={`font-semibold ${entry.highlight ? "text-emerald-300" : "text-rose-300"
+                                          className={`font-bold ${entry.highlight ? "text-emerald-400" : "text-rose-400"
                                             }`}
                                         >
                                           {entry.value}
@@ -1224,31 +1224,31 @@ export default function BacktestPage({ match, onPositiveResults }) {
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-slate-300">Ingen historik</div>
+                                  <div className="text-slate-400">Ingen historik</div>
                                 )}
-                                <Tooltip.Arrow className="fill-slate-800/95" />
+                                <Tooltip.Arrow className="fill-slate-900/95" />
                               </Tooltip.Content>
                             </Tooltip.Portal>
                           </Tooltip.Root>
                           <Tooltip.Root>
                             <Tooltip.Trigger asChild>
-                              <div className="cursor-help">
+                              <div className="cursor-help hover:text-white transition-colors">
                                 {historyOpponentLabel}:
-                                <span className="ml-1 font-medium text-slate-100">{underHistory.label}</span>
+                                <span className="ml-1 font-bold text-white">{underHistory.label}</span>
                               </div>
                             </Tooltip.Trigger>
                             <Tooltip.Portal>
-                            <Tooltip.Content
+                              <Tooltip.Content
                                 sideOffset={6}
-                                className="z-50 max-h-80 min-w-[20rem] overflow-y-auto rounded-md bg-slate-800/95 px-4 py-3 text-[11px] leading-relaxed text-slate-100 shadow-lg"
+                                className="z-50 max-h-80 min-w-[20rem] overflow-y-auto rounded-lg bg-slate-900/95 px-4 py-3 text-[11px] leading-relaxed text-slate-100 shadow-xl border border-white/10 backdrop-blur-md"
                               >
                                 {underTooltipEntries.length ? (
-                                  <div className="flex flex-col gap-1">
+                                  <div className="flex flex-col gap-1.5">
                                     {underTooltipEntries.map((entry, idx) => (
-                                      <div key={idx} className="flex items-start justify-between gap-3">
+                                      <div key={idx} className="flex items-start justify-between gap-3 border-b border-white/5 pb-1 last:border-0 last:pb-0">
                                         <span className="text-left text-slate-200">{entry.label}</span>
                                         <span
-                                          className={`font-semibold ${entry.highlight ? "text-emerald-300" : "text-rose-300"
+                                          className={`font-bold ${entry.highlight ? "text-emerald-400" : "text-rose-400"
                                             }`}
                                         >
                                           {entry.value}
@@ -1257,9 +1257,9 @@ export default function BacktestPage({ match, onPositiveResults }) {
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-slate-300">Ingen historik</div>
+                                  <div className="text-slate-400">Ingen historik</div>
                                 )}
-                                <Tooltip.Arrow className="fill-slate-800/95" />
+                                <Tooltip.Arrow className="fill-slate-900/95" />
                               </Tooltip.Content>
                             </Tooltip.Portal>
                           </Tooltip.Root>

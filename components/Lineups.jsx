@@ -665,7 +665,7 @@ export default function Lineups({ match, isLoading, className = "" }) {
   }
 
   const containerClass = [
-    "flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
+    "flex flex-col rounded-lg border border-gray-200 bg-gray-50 shadow-sm",
     "lg:h-full lg:min-h-0",
     className,
   ]

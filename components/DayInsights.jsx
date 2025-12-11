@@ -85,7 +85,7 @@
           className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
             isActive
               ? "border-blue-500 bg-blue-500 text-white shadow"
-              : "border-gray-300 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-600"
+              : "border-gray-300 bg-gray-50 text-gray-600 hover:border-blue-300 hover:text-blue-600"
           }`}
         >
           {option.label}
@@ -272,7 +272,7 @@
           {points.map((point) => (
             <li
               key={point.key}
-              className="flex items-start justify-between rounded border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm"
+              className="flex items-start justify-between rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm shadow-sm"
             >
               <div className="flex flex-col text-left">
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -312,7 +312,7 @@
     const isWarmup = profilesCount === 0;
 
     return (
-      <div className="flex h-full min-h-0 flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="flex h-full min-h-0 flex-col rounded-lg border border-gray-200 bg-gray-50 shadow-sm">
         <div className="border-b border-gray-100 px-4 py-3">
           <h2 className="text-lg font-semibold text-gray-900">Div2 – Dagens spaning</h2>
           <p className="mt-1 text-xs text-gray-500">
@@ -351,7 +351,7 @@
               Liga
             </label>
             <select
-              className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 w-full rounded border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               value={leagueFilter}
               onChange={(event) => setLeagueFilter(event.target.value)}
             >

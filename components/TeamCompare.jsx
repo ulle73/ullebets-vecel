@@ -427,16 +427,16 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
   const homeTeamId =
     toNumericId(
       match?.homeTeamId ??
-        match?.raw?.homeTeamId ??
-        match?.homeTeam?.id ??
-        match?.raw?.homeTeam?.id
+      match?.raw?.homeTeamId ??
+      match?.homeTeam?.id ??
+      match?.raw?.homeTeam?.id
     ) ?? null;
   const awayTeamId =
     toNumericId(
       match?.awayTeamId ??
-        match?.raw?.awayTeamId ??
-        match?.awayTeam?.id ??
-        match?.raw?.awayTeam?.id
+      match?.raw?.awayTeamId ??
+      match?.awayTeam?.id ??
+      match?.raw?.awayTeam?.id
     ) ?? null;
   const homeTeamLabel =
     match?.homeTeamName ??
@@ -458,12 +458,25 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
   }, [combinedError]);
 
   const containerClass = [
-    "flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
+    "flex flex-col rounded-lg border border-gray-200 bg-gray-50 shadow-sm",
     "lg:h-full lg:min-h-0",
     className,
   ]
     .filter(Boolean)
     .join(" ");
+
+  /* Helper to calculate bar widths */
+  const calculateBarWidths = (homeVal, awayVal, maxVal) => {
+    const rawHome = typeof homeVal === 'number' ? homeVal : 0;
+    const rawAway = typeof awayVal === 'number' ? awayVal : 0;
+    const safeMax = typeof maxVal === 'number' && maxVal > 0 ? maxVal : Math.max(rawHome, rawAway, 1);
+
+    // Cap at 100%
+    const homePct = Math.min((rawHome / safeMax) * 100, 100);
+    const awayPct = Math.min((rawAway / safeMax) * 100, 100);
+
+    return { homePct, awayPct };
+  };
 
   const renderComparisonTable = (key, title, subtitle, rows, options = {}) => {
     const { layout = "forAgainst" } = options;
@@ -480,37 +493,69 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
           </div>
           <div className={styles.table}>
             <div className={styles.headerRow}>
-              <span className={styles.simpleHeaderMetric}>Metric</span>
               <span className={`${styles.simpleHeaderTeam} ${styles.simpleHeaderTeamHome}`}>
                 {homeTeamLabel}
               </span>
+              <span className={styles.metricLabel} style={{ gridColumn: 2 }}>Metric</span>
               <span className={`${styles.simpleHeaderTeam} ${styles.simpleHeaderTeamAway}`}>
                 {awayTeamLabel}
               </span>
             </div>
             <div className={styles.rows}>
-              {rows.map((row) => (
-                <div className={styles.row} key={row.key}>
-                  <div className={styles.metric}>
-                    <span className={styles.metricLabel}>{row.label}</span>
-                    {row.hint ? <span className={styles.metricHint}>{row.hint}</span> : null}
+              {rows.map((row) => {
+                // Single layout typically compares one scalar per team
+                // We can show a simple bar fill if we assume max is max(home, away) * 1.2
+                const homeVal = parseFloat(row.home.display) || 0;
+                const awayVal = parseFloat(row.away.display) || 0;
+                const maxVal = Math.max(homeVal, awayVal) * 1.1 || 10;
+                const { homePct, awayPct } = calculateBarWidths(homeVal, awayVal, maxVal);
+
+                // For league avg marker
+                const leagueVal = row.hint ? parseFloat(row.hint.split(': ')[1]) : null;
+                const leaguePct = leagueVal ? (leagueVal / maxVal) * 100 : null;
+
+                return (
+                  <div className={styles.row} key={row.key}>
+
+                    <div className={`${styles.barCell} ${styles.barCellHome}`}>
+                      <div className={styles.barContainer}>
+                        <div className={`${styles.barFill} ${styles.barFillHome}`} style={{ width: `${homePct}%` }} />
+                        {leaguePct && <div className={styles.avgMarker} style={{ right: `${100 - leaguePct}%` }} />}
+                      </div>
+                    </div>
+
+                    <div className={`${styles.valueCell} ${styles.valueCellHome}`}>
+                      <span>{row.home.display}</span>
+                      {renderRankBadge(row.home)}
+                    </div>
+
+                    <div className={styles.metric}>
+                      <span className={styles.metricLabel}>{row.label}</span>
+                      {/* Hint often too long for this tight space, maybe tooltip? Or simplified */}
+                    </div>
+
+                    <div className={`${styles.valueCell} ${styles.valueCellAway}`}>
+                      <span>{row.away.display}</span>
+                      {renderRankBadge(row.away)}
+                    </div>
+
+                    <div className={`${styles.barCell} ${styles.barCellAway}`}>
+                      <div className={styles.barContainer}>
+                        <div className={`${styles.barFill} ${styles.barFillAway}`} style={{ width: `${awayPct}%` }} />
+                        {leaguePct && <div className={styles.avgMarker} style={{ left: `${leaguePct}%` }} />}
+                      </div>
+                    </div>
+
                   </div>
-                  <div className={styles.valueCell}>
-                    <span>{row.home.display}</span>
-                    {renderRankBadge(row.home)}
-                  </div>
-                  <div className={styles.valueCell}>
-                    <span>{row.away.display}</span>
-                    {renderRankBadge(row.away)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
       );
     }
 
+    // "forAgainst" layout (Main stats)
     return (
       <div className={styles.section} key={key}>
         <div className={styles.sectionHeader}>
@@ -518,64 +563,108 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
           <h3 className={styles.sectionTitle}>{title}</h3>
         </div>
         <div className={styles.table}>
-          <div className={styles.mainHeader}>
-            <span
-              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelHomeFor}`}
-            >
-              For
-            </span>
-            <span
-              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelHomeAgainst}`}
-            >
-              Against
-            </span>
-            <span className={styles.mainHeaderMetric}>Metric</span>
-            <span
-              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelAwayFor}`}
-            >
-              For
-            </span>
-            <span
-              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelAwayAgainst}`}
-            >
-              Against
-            </span>
-          </div>
+          {/* We hide the complex header in CSS or repurpose it */}
+
           <div className={styles.rows}>
-            {rows.map((row) => (
-              <div className={`${styles.row} ${styles.mainRow}`} key={row.key}>
-                <div
-                  className={`${styles.valueCell} ${styles.valueCellHome} ${styles.valueCellFor}`}
-                >
-                  <span>{row.home.for.display}</span>
-                  {renderRankBadge(row.home.for)}
+            {/* Header Labels for columns (Custom insertion) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 140px 60px 1fr', padding: '8px 18px', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              <div style={{ textAlign: 'right' }}>{homeTeamLabel}</div>
+              <div style={{ gridColumn: '2/5', textAlign: 'center' }}>Stats (For)</div>
+              <div style={{ textAlign: 'left' }}>{awayTeamLabel}</div>
+            </div>
+
+            {rows.map((row) => {
+              // FOR STATS
+              const homeFor = parseFloat(row.home.for.display) || 0;
+              const awayFor = parseFloat(row.away.for.display) || 0;
+              // Extract league avg for 'For'
+              // hint format: "League avg (for/against): 1.5 / 1.2"
+              let leagueForVal = 0;
+              // Parsing the hint string is brittle but efficient given current structure
+              if (row.hint && row.hint.includes("For:")) { // Wait, check usage
+                // Re-parsing or we pass raw values. 
+                // It's cleaner to pass raw values in 'rows' if possible, but let's parse display for now or use relative scaling
+              }
+
+              // We'll use a local max for the row
+              const maxFor = Math.max(homeFor, awayFor, 0.1) * 1.25;
+              const { homePct: homeForPct, awayPct: awayForPct } = calculateBarWidths(homeFor, awayFor, maxFor);
+
+              return (
+                <div key={row.key} className={styles.subRows}>
+                  {/* FOR ROW */}
+                  <div className={styles.subRow}>
+                    <div className={`${styles.barCell} ${styles.barCellHome}`}>
+                      <div className={styles.barContainer}>
+                        <div className={`${styles.barFill} ${styles.barFillHome}`} style={{ width: `${homeForPct}%` }} />
+                      </div>
+                    </div>
+                    <div className={`${styles.valueCell} ${styles.valueCellHome}`}>
+                      {renderRankBadge(row.home.for)}
+                      <span>{row.home.for.display}</span>
+                    </div>
+
+                    <div className={styles.metric}>
+                      <span className={styles.metricLabel}>{row.label}</span>
+                      <span className={styles.subRowLabel} style={{ fontSize: '0.6rem' }}>For</span>
+                    </div>
+
+                    <div className={`${styles.valueCell} ${styles.valueCellAway}`}>
+                      <span>{row.away.for.display}</span>
+                      {renderRankBadge(row.away.for)}
+                    </div>
+                    <div className={`${styles.barCell} ${styles.barCellAway}`}>
+                      <div className={styles.barContainer}>
+                        <div className={`${styles.barFill} ${styles.barFillAway}`} style={{ width: `${awayForPct}%` }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AGAINST ROW - Optional, or maybe separate section? 
+                      User asked for "Bars and numbers"
+                      If we show Against immediately below, it might be crowded.
+                      Let's stick to showing FOR stats as the primary comparison for "Team Stats" usually,
+                      OR show Against as a secondary smaller row.
+                      The previous layout had 4 columns.
+                  */}
+
+                  <div className={styles.subRow} style={{ opacity: 0.8 }}>
+                    {/* Recalculate for Against */}
+                    {(() => {
+                      const homeAg = parseFloat(row.home.against.display) || 0;
+                      const awayAg = parseFloat(row.away.against.display) || 0;
+                      const maxAg = Math.max(homeAg, awayAg, 0.1) * 1.25;
+                      const { homePct: hP, awayPct: aP } = calculateBarWidths(homeAg, awayAg, maxAg);
+                      return (
+                        <>
+                          <div className={`${styles.barCell} ${styles.barCellHome}`}>
+                            <div className={styles.barContainer} style={{ opacity: 0.6 }}>
+                              {/* Invert color or use different shade for against? Keeping simple for now */}
+                              <div className={`${styles.barFill} ${styles.barFillHome}`} style={{ width: `${hP}%`, background: '#be123c' }} />
+                            </div>
+                          </div>
+                          <div className={`${styles.valueCell} ${styles.valueCellHome}`} style={{ fontSize: '0.85rem' }}>
+                            <span>{row.home.against.display}</span>
+                          </div>
+                          <div className={styles.metric}>
+                            <span className={styles.subRowLabel}>Against</span>
+                          </div>
+                          <div className={`${styles.valueCell} ${styles.valueCellAway}`} style={{ fontSize: '0.85rem' }}>
+                            <span>{row.away.against.display}</span>
+                          </div>
+                          <div className={`${styles.barCell} ${styles.barCellAway}`}>
+                            <div className={styles.barContainer} style={{ opacity: 0.6 }}>
+                              <div className={`${styles.barFill} ${styles.barFillAway}`} style={{ width: `${aP}%`, background: '#047857' }} />
+                            </div>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+
                 </div>
-                <div
-                  className={`${styles.valueCell} ${styles.valueCellHome} ${styles.valueCellAgainst}`}
-                >
-                  <span>{row.home.against.display}</span>
-                  {renderRankBadge(row.home.against)}
-                </div>
-                <div className={`${styles.metric} ${styles.metricMain}`}>
-                  <span className={styles.metricLabel}>{row.label}</span>
-                  {row.hint ? (
-                    <span className={styles.metricHint}>{row.hint}</span>
-                  ) : null}
-                </div>
-                <div
-                  className={`${styles.valueCell} ${styles.valueCellAway} ${styles.valueCellFor}`}
-                >
-                  <span>{row.away.for.display}</span>
-                  {renderRankBadge(row.away.for)}
-                </div>
-                <div
-                  className={`${styles.valueCell} ${styles.valueCellAway} ${styles.valueCellAgainst}`}
-                >
-                  <span>{row.away.against.display}</span>
-                  {renderRankBadge(row.away.against)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -613,30 +702,43 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
         formatter
       );
 
+      // We pass raw values for bar calculation if needed, but display is used for text
+      // Ideally we refactor 'rows' to include raw numbers for bars
+
       return {
         key,
         label,
         hint: leagueAvgHint,
+        // Passing raw values for bar calc
         home: {
           for: {
             display: formatMetricValue(homeForNode?.value, formatter),
             rank: homeForNode?.rank ?? null,
+            raw: homeForNode?.value
           },
           against: {
             display: formatMetricValue(homeAgainstNode?.value, formatter),
             rank: homeAgainstNode?.rank ?? null,
+            raw: homeAgainstNode?.value
           },
         },
         away: {
           for: {
             display: formatMetricValue(awayForNode?.value, formatter),
             rank: awayForNode?.rank ?? null,
+            raw: awayForNode?.value
           },
           against: {
             display: formatMetricValue(awayAgainstNode?.value, formatter),
             rank: awayAgainstNode?.rank ?? null,
+            raw: awayAgainstNode?.value
           },
         },
+        // Also pass league averages raw
+        league: {
+          for: leagueAvgForNode?.value,
+          against: leagueAvgAgainstNode?.value
+        }
       };
     });
 
@@ -644,7 +746,8 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
       "team-statistics",
       "Lagstatistik",
       selectedPeriodOption.label,
-      rows
+      rows,
+      { layout: "forAgainst" }
     );
   };
 
@@ -871,7 +974,7 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
           </label>
           <select
             id="team-compare-period"
-            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="rounded-md border border-gray-300 bg-gray-50 px-2 py-1 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             value={selectedPeriod}
             onChange={(event) => setSelectedPeriod(event.target.value)}
           >
@@ -911,7 +1014,7 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
 
   return (
     <div className={containerClass}>
-    <div className="overflow-auto p-4 lg:flex-1 lg:min-h-0">{renderBody()}</div>
+      <div className="overflow-auto p-4 lg:flex-1 lg:min-h-0">{renderBody()}</div>
     </div>
   );
 }
