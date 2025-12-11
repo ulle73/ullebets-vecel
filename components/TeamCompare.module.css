@@ -1,8 +1,10 @@
-
+/* Main Section Container - Made seamless for new layout */
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  background: transparent;
+  width: 100%;
 }
 
 .section + .section {
@@ -10,9 +12,7 @@
 }
 
 .sectionHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: none; /* Hiding the internal header as requested by user */
 }
 
 .sectionTitle {
@@ -169,10 +169,19 @@
 .barContainer {
   position: relative;
   width: 100%;
-  height: 6px;
+  height: 8px; /* Thicker bars */
   background: var(--surface-secondary);
   border-radius: 99px;
-  overflow: hidden;
+  overflow: visible; /* Allowed for avg marker to peek if needed, though clip is usually safer. Let's try visible for glow */
+}
+
+/* Background track for better contrast */
+.barContainer::before {
+   content: '';
+   position: absolute;
+   inset: 0;
+   background: rgba(255,255,255,0.05); /* Very subtle track */
+   border-radius: 99px;
 }
 
 .barFill {
@@ -181,26 +190,30 @@
   bottom: 0;
   border-radius: 99px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(0,0,0,0.3); /* Depth */
 }
 
 .barFillHome {
   right: 0;
-  background: #047857; /* Emerald-600 */
+  background: #10b981; /* Emerald-500 brighter */
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
 }
 
 .barFillAway {
   left: 0;
-  background: #be185d; /* Rose-600 */
+  background: #f43f5e; /* Rose-500 brighter */
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.3);
 }
 
 /* League Avg Marker */
 .avgMarker {
   position: absolute;
-  top: -2px;
-  bottom: -2px;
+  top: -3px; /* Extends slightly above/below */
+  bottom: -3px;
   width: 2px;
-  background: rgba(255, 255, 255, 0.6);
+  background: #ffffff;
   z-index: 10;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8), 0 0 2px rgba(0,0,0,0.5); /* Glow + Shadow for contrast against bar */
 }
 
 /* Rank Badge */
@@ -212,7 +225,7 @@
   height: 20px;
   padding: 0 6px;
   border-radius: 6px;
-  background: var(--surface-muted);
+  background: rgba(255,255,255,0.1);
   color: var(--text-secondary);
   font-size: 0.65rem;
   font-weight: 600;
@@ -247,7 +260,7 @@
   grid-template-columns: 1fr 60px 140px 60px 1fr;
   gap: 8px;
   align-items: center;
-  padding: 6px 0;
+  padding: 8px 0; /* More breathing room */
 }
 
 .subRowLabel {
@@ -274,6 +287,6 @@
   }
 
   .barContainer {
-    height: 4px;
+    height: 6px;
   }
 }

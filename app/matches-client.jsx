@@ -9,6 +9,7 @@ import DayInsights from "@/components/DayInsights-copy-v2";
 import Lineups from "@/components/Lineups";
 import BacktestPage from "@/components/BacktestPage";
 import ClosingOddsCard from "@/components/ClosingOddsCard";
+import MatchDetailsTabs from "@/components/MatchDetailsTabs";
 import { normalizeMatch } from "@/lib/core/matchups";
 import {
   buildMatchesByDateKey,
@@ -51,15 +52,15 @@ function toMatchId(value) {
   if (typeof value === "object") {
     return toMatchId(
       value.matchId ??
-        value.id ??
-        value._id ??
-        value.eventId ??
-        value.event_id ??
-        value.event?.id ??
-        value.raw?.matchId ??
-        value.raw?.id ??
-        value.raw?.eventId ??
-        null
+      value.id ??
+      value._id ??
+      value.eventId ??
+      value.event_id ??
+      value.event?.id ??
+      value.raw?.matchId ??
+      value.raw?.id ??
+      value.raw?.eventId ??
+      null
     );
   }
   return null;
@@ -190,8 +191,8 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   //   if (error) {
   //     debugError("matches:error", error);
   //   }
-  
-  
+
+
   const {
     data,
     error,
@@ -291,210 +292,202 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   }
 
 
-    // const allItems = useMemo(() => data?.items ?? [], [data]);
+  // const allItems = useMemo(() => data?.items ?? [], [data]);
 
-    // const items = useMemo(() => {
-    //   return allItems.filter((entry) => {
-    //     const ts = getTimestamp(entry);
-    //     if (!ts) return false;
-    //     return ymdSEFromTs(ts) === date;
-    //   });
-    // }, [allItems, date]);
-    
-    // const items = useMemo(() => data?.items ?? [], [data]);
+  // const items = useMemo(() => {
+  //   return allItems.filter((entry) => {
+  //     const ts = getTimestamp(entry);
+  //     if (!ts) return false;
+  //     return ymdSEFromTs(ts) === date;
+  //   });
+  // }, [allItems, date]);
 
-    // const matches = useMemo(() => {
-    //   const normalized = items.map(normalizeMatch);
-    //   debug("matches:normalized", {
-    //     count: normalized.length,
-    //     sample: normalized.slice(0, 3).map((match) => ({
-    //       matchId: match.id,
-    //       leagueId: match.leagueId,
-    //       homeTeamId: match.homeTeamId,
-    //       awayTeamId: match.awayTeamId,
-    //     })),
-    //   });
-    //   return normalized;
-    // }, [items]);
+  // const items = useMemo(() => data?.items ?? [], [data]);
 
-    useEffect(() => {
-      if (!selectedMatchId) return;
-      const stillExists = matches.some((match) => match.id === selectedMatchId);
-      if (!stillExists) {
-        debug("selection:cleared", {
-          reason: "match not in current list",
-          selectedMatchId,
-        });
-        setSelectedMatchId(null);
-      }
-    }, [matches, selectedMatchId]);
+  // const matches = useMemo(() => {
+  //   const normalized = items.map(normalizeMatch);
+  //   debug("matches:normalized", {
+  //     count: normalized.length,
+  //     sample: normalized.slice(0, 3).map((match) => ({
+  //       matchId: match.id,
+  //       leagueId: match.leagueId,
+  //       homeTeamId: match.homeTeamId,
+  //       awayTeamId: match.awayTeamId,
+  //     })),
+  //   });
+  //   return normalized;
+  // }, [items]);
 
-    const formatter = useMemo(makeFormatter, []);
-    const formatTime = (ts) => (ts ? formatter.format(new Date(ts * 1000)) : "—");
+  useEffect(() => {
+    if (!selectedMatchId) return;
+    const stillExists = matches.some((match) => match.id === selectedMatchId);
+    if (!stillExists) {
+      debug("selection:cleared", {
+        reason: "match not in current list",
+        selectedMatchId,
+      });
+      setSelectedMatchId(null);
+    }
+  }, [matches, selectedMatchId]);
 
-    const matchDetailsKey = selectedMatchId
-      ? buildMatchDetailsKey(selectedMatchId)
-      : null;
+  const formatter = useMemo(makeFormatter, []);
+  const formatTime = (ts) => (ts ? formatter.format(new Date(ts * 1000)) : "—");
 
-    const {
-      data: matchDetails,
-      error: matchError,
-      isLoading: isMatchLoading,
-    } = useSWR(matchDetailsKey, fetchJsonAllow404, {
-      shouldRetryOnError: false,
-      revalidateOnFocus: false,
-      revalidateIfStale: false,
-      revalidateOnReconnect: false,
+  const matchDetailsKey = selectedMatchId
+    ? buildMatchDetailsKey(selectedMatchId)
+    : null;
+
+  const {
+    data: matchDetails,
+    error: matchError,
+    isLoading: isMatchLoading,
+  } = useSWR(matchDetailsKey, fetchJsonAllow404, {
+    shouldRetryOnError: false,
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    revalidateOnReconnect: false,
+  });
+
+  useEffect(() => {
+    if (!selectedMatchId) return;
+    debug("details:fetch", {
+      selectedMatchId,
+      isMatchLoading,
+      hasDetails: Boolean(matchDetails),
+      error: matchError ? matchError.message : null,
     });
+  }, [selectedMatchId, matchDetails, isMatchLoading, matchError]);
 
-    useEffect(() => {
-      if (!selectedMatchId) return;
-      debug("details:fetch", {
-        selectedMatchId,
-        isMatchLoading,
-        hasDetails: Boolean(matchDetails),
-        error: matchError ? matchError.message : null,
-      });
-    }, [selectedMatchId, matchDetails, isMatchLoading, matchError]);
+  const selectedMatchSummary = useMemo(
+    () => matches.find((match) => match.id === selectedMatchId) ?? null,
+    [matches, selectedMatchId]
+  );
 
-    const selectedMatchSummary = useMemo(
-      () => matches.find((match) => match.id === selectedMatchId) ?? null,
-      [matches, selectedMatchId]
-    );
+  useEffect(() => {
+    if (!selectedMatchId) return;
+    debug("selection:update", {
+      selectedMatchId,
+      summary: selectedMatchSummary
+        ? {
+          leagueId: selectedMatchSummary.leagueId,
+          homeTeamId: selectedMatchSummary.homeTeamId,
+          awayTeamId: selectedMatchSummary.awayTeamId,
+        }
+        : null,
+    });
+  }, [selectedMatchId, selectedMatchSummary]);
 
-    useEffect(() => {
-      if (!selectedMatchId) return;
-      debug("selection:update", {
-        selectedMatchId,
-        summary: selectedMatchSummary
-          ? {
-              leagueId: selectedMatchSummary.leagueId,
-              homeTeamId: selectedMatchSummary.homeTeamId,
-              awayTeamId: selectedMatchSummary.awayTeamId,
-            }
-          : null,
-      });
-    }, [selectedMatchId, selectedMatchSummary]);
+  const mergedMatch = useMemo(() => {
+    if (!selectedMatchSummary) return null;
+    const merged = {
+      leagueId: selectedMatchSummary.leagueId,
+      leagueName: selectedMatchSummary.leagueName,
+      ...selectedMatchSummary.raw,
+      ...(matchDetails ?? {}),
+      matchId: selectedMatchSummary.id,
+      homeTeamName: matchDetails?.homeTeamName ?? selectedMatchSummary.homeTeamName,
+      awayTeamName: matchDetails?.awayTeamName ?? selectedMatchSummary.awayTeamName,
+      homeTeamId: matchDetails?.homeTeamId ?? selectedMatchSummary.homeTeamId,
+      awayTeamId: matchDetails?.awayTeamId ?? selectedMatchSummary.awayTeamId,
+    };
+    debug("match:merged", {
+      matchId: merged.matchId,
+      leagueId: merged.leagueId,
+      homeTeamId: merged.homeTeamId,
+      awayTeamId: merged.awayTeamId,
+      hasDetails: Boolean(matchDetails),
+    });
+    return merged;
+  }, [selectedMatchSummary, matchDetails]);
 
-    const mergedMatch = useMemo(() => {
-      if (!selectedMatchSummary) return null;
-      const merged = {
-        leagueId: selectedMatchSummary.leagueId,
-        leagueName: selectedMatchSummary.leagueName,
-        ...selectedMatchSummary.raw,
-        ...(matchDetails ?? {}),
-        matchId: selectedMatchSummary.id,
-        homeTeamName: matchDetails?.homeTeamName ?? selectedMatchSummary.homeTeamName,
-        awayTeamName: matchDetails?.awayTeamName ?? selectedMatchSummary.awayTeamName,
-        homeTeamId: matchDetails?.homeTeamId ?? selectedMatchSummary.homeTeamId,
-        awayTeamId: matchDetails?.awayTeamId ?? selectedMatchSummary.awayTeamId,
-      };
-      debug("match:merged", {
-        matchId: merged.matchId,
-        leagueId: merged.leagueId,
-        homeTeamId: merged.homeTeamId,
-        awayTeamId: merged.awayTeamId,
-        hasDetails: Boolean(matchDetails),
-      });
-      return merged;
-    }, [selectedMatchSummary, matchDetails]);
-
-    const handlePrefetchMatch = useCallback(
-      (match) => {
-        if (!match) return;
-        void prefetchTeamProfiles([match]).catch((prefetchError) => {
-          debugError("teamprofiles:prefetch:on-hover", {
-            matchId: match.id ?? match.matchId ?? null,
-            message: prefetchError?.message,
-          });
+  const handlePrefetchMatch = useCallback(
+    (match) => {
+      if (!match) return;
+      void prefetchTeamProfiles([match]).catch((prefetchError) => {
+        debugError("teamprofiles:prefetch:on-hover", {
+          matchId: match.id ?? match.matchId ?? null,
+          message: prefetchError?.message,
         });
-      },
-      [prefetchTeamProfiles]
-    );
-
-    const handleSelectMatch = useCallback((payload) => {
-      const resolvedId = toMatchId(payload);
-      if (!resolvedId) {
-        debugError("selection:invalid", { payload });
-        return;
-      }
-      debug("selection:requested", {
-        payload,
-        resolvedId,
       });
-      const matchForSelection = matches.find((match) => match.id === resolvedId);
-      if (matchForSelection) {
-        void prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
-          debugError("teamprofiles:prefetch:on-select", {
-            matchId: resolvedId,
-            message: prefetchError?.message,
-          });
+    },
+    [prefetchTeamProfiles]
+  );
+
+  const handleSelectMatch = useCallback((payload) => {
+    const resolvedId = toMatchId(payload);
+    if (!resolvedId) {
+      debugError("selection:invalid", { payload });
+      return;
+    }
+    debug("selection:requested", {
+      payload,
+      resolvedId,
+    });
+    const matchForSelection = matches.find((match) => match.id === resolvedId);
+    if (matchForSelection) {
+      void prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
+        debugError("teamprofiles:prefetch:on-select", {
+          matchId: resolvedId,
+          message: prefetchError?.message,
         });
-      } else {
-        void Promise.resolve(prefetchInFlightRef.current);
-      }
+      });
+    } else {
+      void Promise.resolve(prefetchInFlightRef.current);
+    }
 
-      setSelectedMatchId(resolvedId);
-    }, [matches, prefetchTeamProfiles]);
+    setSelectedMatchId(resolvedId);
+  }, [matches, prefetchTeamProfiles]);
 
-    const showDetails = Boolean(selectedMatchSummary);
+  const showDetails = Boolean(selectedMatchSummary);
 
-    const containerWidthClass = showDetails ? "max-w-full" : "md:max-w-[70vw]";
-    const containerPaddingClass = showDetails ? "px-3 sm:px-6 lg:px-8" : "px-4 sm:px-6";
-    const gridColumnsClass = showDetails
-      ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
-      : "grid-cols-1 md:[grid-template-columns:1fr_2fr] xl:[grid-template-columns:1fr_2fr]";
-    const gridRowClass = "auto-rows-auto md:auto-rows-[minmax(0,1fr)]";
+  const containerWidthClass = showDetails ? "max-w-full" : "md:max-w-[70vw]";
+  const containerPaddingClass = showDetails ? "px-3 sm:px-6 lg:px-8" : "px-4 sm:px-6";
+  const gridColumnsClass = showDetails
+    ? "grid-cols-1 md:[grid-template-columns:350px_1fr] xl:[grid-template-columns:400px_1fr]"
+    : "grid-cols-1 md:[grid-template-columns:1fr_2fr] xl:[grid-template-columns:1fr_2fr]";
+  const gridRowClass = "auto-rows-auto md:auto-rows-[minmax(0,1fr)]";
 
-    return (
-      <div className="flex w-full flex-col overflow-x-hidden lg:h-full lg:min-h-0 lg:overflow-hidden">
+  return (
+    <div className="flex w-full flex-col overflow-x-hidden lg:h-full lg:min-h-0 lg:overflow-hidden">
+      <div
+        className={`mx-auto flex w-full flex-1 flex-col overflow-x-hidden pb-6 ${containerPaddingClass} ${containerWidthClass} lg:h-full lg:min-h-0 lg:overflow-hidden`}
+      >
         <div
-          className={`mx-auto flex w-full flex-1 flex-col overflow-x-hidden pb-6 ${containerPaddingClass} ${containerWidthClass} lg:h-full lg:min-h-0 lg:overflow-hidden`}
+          className={`grid w-full gap-4 ${gridColumnsClass} ${gridRowClass} md:h-full md:min-h-0 md:overflow-y-auto md:overscroll-contain lg:h-full lg:min-h-0 lg:overflow-visible lg:overscroll-auto`}
         >
-          <div
-            className={`grid w-full gap-4 ${gridColumnsClass} ${gridRowClass} md:h-full md:min-h-0 md:overflow-y-auto md:overscroll-contain lg:h-full lg:min-h-0 lg:overflow-visible lg:overscroll-auto`}
-          >
-            <LeagueTables
-              date={date}
-              onDateChange={setDate}
-              items={items}
-              formatTime={formatTime}
-              onSelectMatch={handleSelectMatch}
-              onPrefetchMatch={handlePrefetchMatch}
-              selectedMatchId={selectedMatchId}
-              isLoading={isLoading}
-              error={error}
-              matchesCount={matches.length}
-            />
+          <LeagueTables
+            date={date}
+            onDateChange={setDate}
+            items={items}
+            formatTime={formatTime}
+            onSelectMatch={handleSelectMatch}
+            onPrefetchMatch={handlePrefetchMatch}
+            selectedMatchId={selectedMatchId}
+            isLoading={isLoading}
+            error={error}
+            matchesCount={matches.length}
+          />
 
-            
 
-            {showDetails ? (
-              <TeamCompare
+
+          {showDetails ? (
+            <div className="md:h-full md:min-h-0 lg:h-full lg:min-h-0 lg:overflow-hidden">
+              <MatchDetailsTabs
                 match={mergedMatch}
                 isLoading={isMatchLoading}
                 error={matchError}
               />
-            ) : (
-              <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-1">
-                {/* Kommentera ut denna rad om du vill gömma originalversionen */}
-                <DayInsightsLegacy date={date} items={items} />
-                {/* Kommentera ut denna rad om du vill gömma nya prognosversionen */}
-                {/* <DayInsights date={date} items={items} /> */}
-              </div>
-            )}
-
-            {showDetails ? (
-              <ClosingOddsCard match={mergedMatch} />
-            ) : null}
-
-            {showDetails ? (
-              <Lineups match={mergedMatch} isLoading={isMatchLoading} />
-            ) : null}
-
-            {showDetails ? <BacktestPage match={mergedMatch} /> : null}
-          </div>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-1">
+              {/* Kommentera ut denna rad om du vill gömma originalversionen */}
+              <DayInsightsLegacy date={date} items={items} />
+              {/* Kommentera ut denna rad om du vill gömma nya prognosversionen */}
+              {/* <DayInsights date={date} items={items} /> */}
+            </div>
+          )}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
