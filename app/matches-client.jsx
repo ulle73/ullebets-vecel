@@ -443,7 +443,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const containerWidthClass = showDetails ? "max-w-full" : "md:max-w-[70vw]";
   const containerPaddingClass = showDetails ? "px-3 sm:px-6 lg:px-8" : "px-4 sm:px-6";
   const gridColumnsClass = showDetails
-    ? "grid-cols-1 md:[grid-template-columns:350px_1fr] xl:[grid-template-columns:400px_1fr]"
+    ? "grid-cols-1 md:[grid-template-columns:500px_1fr] xl:[grid-template-columns:550px_1fr]"
     : "grid-cols-1 md:[grid-template-columns:1fr_2fr] xl:[grid-template-columns:1fr_2fr]";
   const gridRowClass = "auto-rows-auto md:auto-rows-[minmax(0,1fr)]";
 

@@ -4,8 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import TeamCompare, { PERIOD_OPTIONS } from "@/components/TeamCompare";
 import Lineups from "@/components/Lineups";
 import BacktestPage from "@/components/BacktestPage";
-import ClosingOddsCard from "@/components/ClosingOddsCard";
+import ClosingOddsCard from "@/components/ClosingOddsCard"; // We can keep the import or remove it if unused, but removing section is key
 import Image from "next/image";
+import { FormBadges } from "@/components/TeamOddsHistory";
 
 const TABS = [
   { id: "stats", label: "STATISTIK" },
@@ -49,6 +50,7 @@ function MatchHeader({ match }) {
           <h2 className="text-lg md:text-xl font-bold text-white leading-tight tracking-wide drop-shadow-md">
             {match.homeTeamName}
           </h2>
+          <FormBadges teamName={match.homeTeamName} />
         </div>
 
         <div className="flex flex-col items-center gap-2">
@@ -81,6 +83,7 @@ function MatchHeader({ match }) {
           <h2 className="text-lg md:text-xl font-bold text-white leading-tight tracking-wide drop-shadow-md">
             {match.awayTeamName}
           </h2>
+          <FormBadges teamName={match.awayTeamName} />
         </div>
       </div>
     </div>
@@ -109,40 +112,13 @@ export default function MatchDetailsTabs({ match, isLoading, error }) {
       {/* 2. Header Section */}
       <div className="flex-none bg-black/20 backdrop-blur-md border-b border-white/5 z-10 relative">
         <MatchHeader match={match} />
+        <div className="flex justify-center pb-2">
+          {/* Tab Navigation used to be here, moved below header visual */}
+        </div>
 
-        {/* Period Selector - Centered below logos */}
-        {activeTab === "stats" && PERIOD_OPTIONS && (
-          <div className="flex justify-center pb-6 -mt-2 relative z-10">
-            <div className="flex gap-1 p-1 bg-black/40 backdrop-blur-md rounded-full border border-white/5 shadow-lg">
-              {PERIOD_OPTIONS.map((opt) => {
-                const isPeriodActive = selectedPeriod === opt.value;
-                // Simplistic labels for buttons: "ALL", "1ST", "2ND" based on options
-                // Or use the full label. Let's use short logic if possible, or full. User screenshot showed "ALL", "1ST", "2ND".
-                // The export from TeamCompare has "Hela matchen", "Första halvlek". I should map them to short labels for the pill look.
-                const shortLabel = opt.value === "ALL" ? "ALL" : opt.value === "1ST" ? "1ST" : "2ND";
-
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={() => setSelectedPeriod(opt.value)}
-                    className={`
-                                   px-6 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest transition-all duration-300
-                                   ${isPeriodActive
-                        ? "bg-cyan-400 text-black shadow-[0_0_15px_rgba(34,211,238,0.5)] scale-105"
-                        : "text-slate-500 hover:text-slate-300 hover:bg-white/5"}
-                               `}
-                  >
-                    {shortLabel}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Navigation Tabs - Top Right Absolute */}
-        <div className="absolute top-6 right-6 z-20">
-          <div className="relative p-1 bg-white/5 rounded-full border border-white/5 flex gap-1 shadow-inner backdrop-blur-md">
+        {/* Floating Tab Bar - Centered */}
+        <div className="w-full flex justify-center -mb-[18px]">
+          <div className="flex bg-[#0F0F10] border border-white/10 rounded-full p-1.5 shadow-xl backdrop-blur-md gap-1">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -170,7 +146,7 @@ export default function MatchDetailsTabs({ match, isLoading, error }) {
         ref={contentRef}
         className="flex-1 overflow-y-auto overflow-x-hidden p-0 custom-scrollbar scroll-smooth"
       >
-        <div className="max-w-7xl mx-auto min-h-full">
+        <div className="w-full max-w-[98%] mx-auto min-h-full">
 
           {/* Tab: STATISTICS */}
           {activeTab === "stats" && (
@@ -189,12 +165,9 @@ export default function MatchDetailsTabs({ match, isLoading, error }) {
           {activeTab === "lineups" && (
             <div className="h-full animate-in fade-in slide-in-from-bottom-2 duration-500 p-4 md:p-6 space-y-8">
               <div className="grid grid-cols-1 gap-6">
-                <section>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 pl-1">Closing Odds</h3>
-                  <div className="bg-[#0A0A0A] rounded-xl border border-white/5 shadow-lg overflow-hidden">
-                    <ClosingOddsCard match={match} />
-                  </div>
-                </section>
+
+                {/* Closing Odds Header Removed as requested */}
+
                 <section>
                   <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 pl-1">Laguppställningar</h3>
                   <Lineups match={match} isLoading={isLoading} />

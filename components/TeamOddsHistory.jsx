@@ -8,24 +8,18 @@ import { extractClosingOdds } from "@/lib/utils/closingOdds";
 const TEAM_STATS_ENDPOINT = "/api/backtest";
 const TEAM_MATCH_LIMIT = 10;
 
-async function requestTeamMatches(teamName, matchType) {
-  console.log(`[requestTeamMatches] Fetching for team: '${teamName}', type: '${matchType}'`);
+// Exporting this to separate logic if needed, but keeping it simple
+export async function requestTeamMatches(teamName, matchType) {
   const res = await fetch(TEAM_STATS_ENDPOINT, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ action: "team-stats", teamName, matchType }),
   });
 
-  console.log(`[requestTeamMatches] API response status for '${teamName}': ${res.status}`);
   const payload = await res.json().catch(() => ({}));
-  console.log(`[requestTeamMatches] API payload for '${teamName}':`, payload);
-
   if (!res.ok) {
-    const message = payload?.message || `Failed to fetch matches for ${teamName}`;
-    console.error(`[requestTeamMatches] Error for '${teamName}':`, message);
-    throw new Error(message);
+    throw new Error(payload?.message || `Failed to fetch matches for ${teamName}`);
   }
-
   return Array.isArray(payload?.matches) ? payload.matches : [];
 }
 
@@ -62,25 +56,6 @@ function resolveMatchDate(match) {
   return Number.isNaN(date.getTime())
     ? ""
     : date.toISOString().slice(0, 10);
-}
-
-function resolveOpponent(match, perspective) {
-  if (perspective === "home") {
-    return (
-      match?.awayTeamName ||
-      match?.awayTeam?.name ||
-      match?.awayTeam?.teamName ||
-      match?.awayTeam ||
-      null
-    );
-  }
-  return (
-    match?.homeTeamName ||
-    match?.homeTeam?.name ||
-    match?.homeTeam?.teamName ||
-    match?.homeTeam ||
-    null
-  );
 }
 
 function resolvePerspective(match, teamName) {
@@ -132,15 +107,12 @@ function formatOddsValue(value) {
   return value ? String(value) : "–";
 }
 
-function useTeamOdds(teamName) {
+export function useTeamOdds(teamName) {
   return useSWR(teamName ? ["team-odds-history", teamName] : null, ([, team]) => requestTeamMatches(team, "all"), {
     revalidateOnFocus: false,
     revalidateIfStale: false,
     revalidateOnReconnect: false,
     dedupingInterval: 5 * 60 * 1000,
-    onError: (error) => {
-      console.error(`[useTeamOdds] API error for '${teamName}':`, error);
-    }
   });
 }
 
@@ -152,7 +124,7 @@ function getResult(venue, winner) {
   return "L";
 }
 
-function MatchResultBadge({ result }) {
+export function MatchResultBadge({ result, className = "" }) {
   const styles = {
     W: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     D: "bg-slate-500/10 text-slate-400 border-slate-500/20",
@@ -161,13 +133,23 @@ function MatchResultBadge({ result }) {
   const style = styles[result] || "bg-slate-800 text-slate-600 border-transparent";
 
   return (
-    <div className={`flex items-center justify-center w-5 h-5 rounded border text-[10px] font-bold ${style}`}>
+    <div className={`flex items-center justify-center w-6 h-6 rounded border text-[11px] font-bold ${style} ${className}`}>
       {result || "-"}
     </div>
   );
 }
 
-function TeamOddsList({ teamName, data, loading, error }) {
+// ------------------------------------------------------------------
+// Odds Highlight Logic
+// ------------------------------------------------------------------
+function getOddsPillStyle(result) {
+  if (result === 'W') return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+  if (result === 'D') return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+  if (result === 'L') return "bg-rose-500/10 text-rose-400 border-rose-500/20";
+  return "text-slate-600 border-transparent";
+}
+
+export function TeamOddsList({ teamName, data, loading, error }) {
   const getLogo = (id) => id ? `/images/teams/${id}.png` : "/images/teams/placeholder.png";
 
   const items = useMemo(() => {
@@ -184,73 +166,125 @@ function TeamOddsList({ teamName, data, loading, error }) {
   if (!items.length) return <div className="p-4 text-center text-xs text-slate-500">Ingen historik hittades.</div>;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between px-2 pb-2 border-b border-white/5">
+    <div className="flex flex-col gap-1.5 h-full">
+      <div className="flex items-center justify-between px-2 pb-2 border-b border-white/5 shrink-0">
         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{teamName}</span>
-        <span className="text-[10px] text-slate-600">SENASTE 10</span>
+        <div className="text-[9px] text-slate-600 font-mono">SENASTE {items.length}</div>
       </div>
-      <div className="flex flex-col gap-1">
+
+      <div className="flex flex-col gap-3 flex-1 overflow-y-auto pr-1">
         {items.map((item) => {
           const result = getResult(item.venue, item.closingWinner);
 
+          // Determine styling based on the result of the FOCUS TEAM
+          // But apply it to the outcome that occurred.
+          // IF Result is L (Loss), highlight the winner (which isn't us) in Red.
+          // IF Result is W (Win), highlight the winner (us) in Green.
+          // IF Result is D (Draw), highlight Draw in Gray.
+
+          const highlightStyle = getOddsPillStyle(result);
+
           return (
-            <div key={item.id} className="group flex items-center justify-between p-2 rounded hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+            <div key={item.id} className="group flex flex-col gap-2 p-3 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
 
-              {/* Left: Date + Matchup */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                {/* Date */}
-                <div className="flex flex-col w-[40px] shrink-0">
-                  <span className="text-[9px] text-slate-500 font-mono tracking-tight">{item.date}</span>
-                </div>
-
-                {/* Matchup Center */}
-                <div className="flex items-center gap-1.5 text-xs min-w-0 flex-1">
-                  {/* Home Team */}
-                  <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
-                    <span className={`truncate text-right text-[10px] ${item.homeTeam.name === teamName ? 'text-white font-semibold' : 'text-slate-400'}`}>
-                      {item.homeTeam.name}
-                    </span>
-                    <div className="relative w-4 h-4 shrink-0">
-                      <Image src={getLogo(item.homeTeam.id)} alt={item.homeTeam.name || ''} fill className="object-contain" unoptimized />
-                    </div>
-                  </div>
-
-                  <span className="text-slate-700 font-mono text-[9px] shrink-0">-</span>
-
-                  {/* Away Team */}
-                  <div className="flex items-center gap-1.5 flex-1 justify-start min-w-0">
-                    <div className="relative w-4 h-4 shrink-0">
-                      <Image src={getLogo(item.awayTeam.id)} alt={item.awayTeam.name || ''} fill className="object-contain" unoptimized />
-                    </div>
-                    <span className={`truncate text-left text-[10px] ${item.awayTeam.name === teamName ? 'text-white font-semibold' : 'text-slate-400'}`}>
-                      {item.awayTeam.name}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: Result + Odds */}
-              <div className="flex items-center gap-2 pl-2 border-l border-white/5 shrink-0 ml-1">
+              {/* Row 1: Header - Date and Result Badge */}
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 font-mono tracking-tight">{item.date}</span>
                 <MatchResultBadge result={result} />
+              </div>
 
-                <div className="flex gap-1 text-[9px] font-mono justify-end">
-                  {/* 1 */}
-                  <span className={`min-w-[24px] text-center py-0.5 rounded ${item.closingWinner === 'home' ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'text-slate-600'}`}>
-                    {formatOddsValue(item.closingOdds?.home)}
+              {/* Row 2: Matchup - Names White, Wide */}
+              <div className="flex items-center justify-center gap-2 py-1 w-full relative">
+                {/* Home */}
+                <div className="flex items-center justify-end gap-2 flex-1 min-w-0">
+                  <span className="text-[11px] truncate w-[90%] text-right text-white font-medium block">
+                    {item.homeTeam.name}
                   </span>
-                  {/* X */}
-                  <span className={`min-w-[24px] text-center py-0.5 rounded ${item.closingWinner === 'draw' ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'text-slate-600'}`}>
-                    {formatOddsValue(item.closingOdds?.draw)}
-                  </span>
-                  {/* 2 */}
-                  <span className={`min-w-[24px] text-center py-0.5 rounded ${item.closingWinner === 'away' ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'text-slate-600'}`}>
-                    {formatOddsValue(item.closingOdds?.away)}
+                  <div className="relative w-5 h-5 shrink-0">
+                    <Image src={getLogo(item.homeTeam.id)} alt="" fill className="object-contain" unoptimized />
+                  </div>
+                </div>
+
+                <span className="text-slate-600 text-[10px] font-bold shrink-0 px-1">VS</span>
+
+                {/* Away */}
+                <div className="flex items-center justify-start gap-2 flex-1 min-w-0">
+                  <div className="relative w-5 h-5 shrink-0">
+                    <Image src={getLogo(item.awayTeam.id)} alt="" fill className="object-contain" unoptimized />
+                  </div>
+                  <span className="text-[11px] truncate w-[90%] text-left text-white font-medium block">
+                    {item.awayTeam.name}
                   </span>
                 </div>
               </div>
+
+              {/* Row 3: Odds */}
+              <div className="flex items-center justify-center gap-1 border-t border-dashed border-white/5 pt-2">
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-mono border ${item.closingWinner === 'home' ? highlightStyle : 'text-slate-600 border-transparent'}`}>
+                  <span className="text-[9px] opacity-60">1</span>
+                  <span className="font-bold">{formatOddsValue(item.closingOdds?.home)}</span>
+                </div>
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-mono border ${item.closingWinner === 'draw' ? highlightStyle : 'text-slate-600 border-transparent'}`}>
+                  <span className="text-[9px] opacity-60">X</span>
+                  <span className="font-bold">{formatOddsValue(item.closingOdds?.draw)}</span>
+                </div>
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-mono border ${item.closingWinner === 'away' ? highlightStyle : 'text-slate-600 border-transparent'}`}>
+                  <span className="text-[9px] opacity-60">2</span>
+                  <span className="font-bold">{formatOddsValue(item.closingOdds?.away)}</span>
+                </div>
+              </div>
+
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// Helper component for the header form
+export function FormBadges({ teamName, limit = 5 }) {
+  const { data } = useTeamOdds(teamName);
+
+  // Process items same as list
+  const items = useMemo(() => {
+    if (!Array.isArray(data) || !data.length) return [];
+    return data
+      .map((match) => normalizeMatchEntry(match, resolvePerspective(match, teamName)))
+      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+      .slice(0, limit);
+  }, [data, teamName, limit]);
+
+  if (!items.length) return null;
+
+  return (
+    <div className="flex items-center justify-center gap-1 mt-3 animate-in fade-in duration-500">
+      {items.map(item => {
+        const result = getResult(item.venue, item.closingWinner);
+        return <MatchResultBadge key={item.id} result={result} className="w-5 h-5 text-[9px]" />;
+      })}
+    </div>
+  );
+}
+
+
+export function TeamOddsSingle({ teamName, className = "" }) {
+  const { data, isLoading, error } = useTeamOdds(teamName);
+
+  return (
+    <div className={`flex flex-col bg-[#09090b] rounded-xl border border-white/5 overflow-hidden h-full ${className}`}>
+      <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02] shrink-0">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-200">
+          Form & Odds
+        </h3>
+      </div>
+      <div className="p-4 flex-1 min-h-0 overflow-y-auto">
+        <TeamOddsList
+          teamName={teamName}
+          data={data}
+          loading={isLoading}
+          error={error}
+        />
       </div>
     </div>
   );
@@ -269,10 +303,10 @@ export default function TeamOddsHistory({
   const awayOdds = useTeamOdds(awayTeamName);
 
   return (
-    <div className={`flex flex-col bg-[#050505] rounded-xl border border-white/5 overflow-hidden ${className}`}>
+    <div className={`flex flex-col bg-[#09090b] rounded-xl border border-white/5 overflow-hidden ${className}`}>
       {showHeader && (
         <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02]">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-200">
             Form & Odds
           </h3>
         </div>
