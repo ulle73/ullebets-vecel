@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import clientPromise from "../lib/mongo.js";
 import { execSync } from "child_process";
+import { computeBehaviourProfile } from "../config/behaviour-profile-rules.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1061,6 +1062,30 @@ function applyLeagueRankings(leagueProfilesByMatchType) {
   }
 }
 
+/**
+ * Retry wrapper for MongoDB operations that may fail due to network issues
+ */
+async function withRetry(fn, retries = 3) {
+  let lastErr;
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      const isConnReset =
+        e?.code === "ECONNRESET" ||
+        e?.errorResponse?.code === "ECONNRESET" ||
+        e?.errorResponse?.name === "MongoNetworkError" ||
+        e?.name === "MongoNetworkError" ||
+        e?.message?.includes("ECONNRESET");
+      if (!isConnReset) throw e;
+      console.warn(`⚠️  Network error on attempt ${i + 1}/${retries}, retrying in ${500 * (i + 1)}ms...`);
+      await new Promise(r => setTimeout(r, 500 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 async function saveProfilesToDatabase(collection, profiles, generatedAt) {
   if (!Array.isArray(profiles) || !profiles.length) {
     console.log("Info: No team profiles to upsert into database.");
@@ -1092,10 +1117,13 @@ async function saveProfilesToDatabase(collection, profiles, generatedAt) {
     };
   });
 
-  const chunkSize = 500;
+  const chunkSize = 300; // Reduced from 500 for more reliable writes
   for (let i = 0; i < operations.length; i += chunkSize) {
     const chunk = operations.slice(i, i + chunkSize);
-    await collection.bulkWrite(chunk, { ordered: false });
+    const chunkNum = Math.floor(i / chunkSize) + 1;
+    const totalChunks = Math.ceil(operations.length / chunkSize);
+    await withRetry(() => collection.bulkWrite(chunk, { ordered: false }));
+    console.log(`  ✓ Chunk ${chunkNum}/${totalChunks} written (${chunk.length} ops)`);
   }
 
   console.log(`Success: Upserted ${operations.length} team profiles into MongoDB collection: ${collection.collectionName}`);
@@ -1194,6 +1222,7 @@ async function main() {
             games,
             statistics,
             specials,
+            // Behaviour profile will be computed after league averages are applied
           };
 
           leagueProfilesByMatchType[matchType].push(profile);
@@ -1203,6 +1232,16 @@ async function main() {
       }
 
       applyLeagueRankings(leagueProfilesByMatchType);
+
+      // Compute behaviour profiles after league averages are available
+      for (const matchType of MATCH_TYPES) {
+        for (const profile of leagueProfilesByMatchType[matchType]) {
+          const leagueAverage = profile.specials?.leagueAverage;
+          if (leagueAverage) {
+            profile.behaviour = computeBehaviourProfile(profile.specials, leagueAverage);
+          }
+        }
+      }
 
       for (const file of filesToWrite) {
         await fs.writeFile(file.outputPath, JSON.stringify(file.profile, null, 2), "utf-8");
