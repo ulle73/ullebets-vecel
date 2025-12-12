@@ -126,11 +126,11 @@ function getResult(venue, winner) {
 
 export function MatchResultBadge({ result, className = "" }) {
   const styles = {
-    W: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    D: "bg-slate-500/10 text-slate-400 border-slate-500/20",
-    L: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+    W: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", // Increased contrast: Lighter text, slightly stronger bg
+    D: "bg-slate-500/20 text-slate-300 border-slate-500/30",
+    L: "bg-rose-500/20 text-rose-300 border-rose-500/30",
   };
-  const style = styles[result] || "bg-slate-800 text-slate-600 border-transparent";
+  const style = styles[result] || "bg-slate-800 text-slate-400 border-transparent";
 
   return (
     <div className={`flex items-center justify-center w-6 h-6 rounded border text-[11px] font-bold ${style} ${className}`}>
@@ -143,10 +143,10 @@ export function MatchResultBadge({ result, className = "" }) {
 // Odds Highlight Logic
 // ------------------------------------------------------------------
 function getOddsPillStyle(result) {
-  if (result === 'W') return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-  if (result === 'D') return "bg-slate-500/10 text-slate-400 border-slate-500/20";
-  if (result === 'L') return "bg-rose-500/10 text-rose-400 border-rose-500/20";
-  return "text-slate-600 border-transparent";
+  if (result === 'W') return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+  if (result === 'D') return "bg-slate-500/20 text-slate-300 border-slate-500/30";
+  if (result === 'L') return "bg-rose-500/20 text-rose-300 border-rose-500/30";
+  return "text-slate-400 border-transparent";
 }
 
 export function TeamOddsList({ teamName, data, loading, error }) {
@@ -167,11 +167,6 @@ export function TeamOddsList({ teamName, data, loading, error }) {
 
   return (
     <div className="flex flex-col gap-1.5 h-full">
-      <div className="flex items-center justify-between px-2 pb-2 border-b border-white/5 shrink-0">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{teamName}</span>
-        <div className="text-[9px] text-slate-600 font-mono">SENASTE {items.length}</div>
-      </div>
-
       <div className="flex flex-col gap-3 flex-1 overflow-y-auto pr-1">
         {items.map((item) => {
           const result = getResult(item.venue, item.closingWinner);
@@ -185,7 +180,7 @@ export function TeamOddsList({ teamName, data, loading, error }) {
           const highlightStyle = getOddsPillStyle(result);
 
           return (
-            <div key={item.id} className="group flex flex-col gap-2 p-3 rounded bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+            <div key={item.id} className="group flex flex-col gap-2 py-3 border-b border-white/10 last:border-0 transition-colors">
 
               {/* Row 1: Header - Date and Result Badge */}
               <div className="flex items-center justify-between">
@@ -197,7 +192,7 @@ export function TeamOddsList({ teamName, data, loading, error }) {
               <div className="flex items-center justify-center gap-2 py-1 w-full relative">
                 {/* Home */}
                 <div className="flex items-center justify-end gap-2 flex-1 min-w-0">
-                  <span className="text-[11px] truncate w-[90%] text-right text-white font-medium block">
+                  <span className="text-[11px] truncate w-full text-right text-white font-medium block">
                     {item.homeTeam.name}
                   </span>
                   <div className="relative w-5 h-5 shrink-0">
@@ -212,14 +207,14 @@ export function TeamOddsList({ teamName, data, loading, error }) {
                   <div className="relative w-5 h-5 shrink-0">
                     <Image src={getLogo(item.awayTeam.id)} alt="" fill className="object-contain" unoptimized />
                   </div>
-                  <span className="text-[11px] truncate w-[90%] text-left text-white font-medium block">
+                  <span className="text-[11px] truncate w-full text-left text-white font-medium block">
                     {item.awayTeam.name}
                   </span>
                 </div>
               </div>
 
-              {/* Row 3: Odds */}
-              <div className="flex items-center justify-center gap-1 border-t border-dashed border-white/5 pt-2">
+              {/* Row 3: Odds -  Solid Divider 80% - Much Weaker */}
+              <div className="flex items-center justify-center gap-1 border-t border-white/[0.03] w-[80%] mx-auto pt-2">
                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-mono border ${item.closingWinner === 'home' ? highlightStyle : 'text-slate-600 border-transparent'}`}>
                   <span className="text-[9px] opacity-60">1</span>
                   <span className="font-bold">{formatOddsValue(item.closingOdds?.home)}</span>

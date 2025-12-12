@@ -353,7 +353,7 @@ function CombinedPitch({ homeLineup, awayLineup, className = "" }) {
   const awayBadge = resolveBadgeClass("away");
 
   const containerClass = [
-    "relative isolate w-full overflow-hidden rounded-2xl border border-emerald-700 shadow-lg",
+    "relative isolate w-full overflow-hidden rounded-2xl",
     className,
   ]
     .filter(Boolean)
@@ -381,20 +381,22 @@ function SubstitutesList({ players }) {
   if (!Array.isArray(players) || players.length === 0) return null;
 
   return (
-    <div className="mt-2">
-      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+    <div className="mt-4">
+      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 border-b border-white/5 pb-1">
         Avbytare
       </h4>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col divide-y divide-white/5">
         {players.map((player) => {
           const jersey = formatJerseyNumber(player);
           return (
             <div key={player.id ?? `${player.name}-${jersey}`}
-              className="flex items-center gap-1.5 bg-black/40 border border-white/5 rounded px-2 py-1 text-xs text-slate-300">
-              {jersey && <span className="font-mono text-slate-500 text-[10px]">{jersey}</span>}
-              <span className="truncate max-w-[100px]">{formatPlayerName(player)}</span>
+              className="flex items-center justify-between py-2 text-xs text-slate-300 hover:bg-white/[0.02] -mx-2 px-2 rounded-sm transition-colors">
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-slate-500 text-[10px] w-4 text-center">{jersey || "-"}</span>
+                <span className="truncate max-w-[120px]">{formatPlayerName(player)}</span>
+              </div>
               {player.rating && (
-                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1 rounded">
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
                   {player.rating}
                 </span>
               )}
@@ -416,7 +418,7 @@ function TeamLineup({ lineup, teamLabel }) {
   }
 
   return (
-    <div className="flex flex-col rounded-lg border border-white/5 bg-white/[0.02] p-4">
+    <div className="flex flex-col rounded-lg border border-white/5 bg-white/[0.02] p-4"> {/* Added border */}
       <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/80 block mb-0.5">
@@ -565,7 +567,7 @@ export default function Lineups({ match, isLoading, className = "" }) {
   const confirmed = data?.confirmed;
 
   const containerClass = [
-    "flex flex-col rounded-lg border border-white/5 bg-[#09090b] shadow-sm",
+    "flex flex-col rounded-lg",
     "lg:h-full lg:min-h-0", // Make sure it takes height if needed
     className,
   ]
@@ -585,26 +587,42 @@ export default function Lineups({ match, isLoading, className = "" }) {
 
   return (
     <div className={containerClass}>
-      <div className="border-b border-white/5 px-4 py-3 flex justify-between items-center">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
-          Lineups
-        </h2>
-        {/* Status indicator always visible */}
-        <div className="flex gap-4 items-center">
-          {(confirmed !== undefined) && (
-            <p className="text-xs font-semibold text-emerald-400">
-              {confirmed ? "Bekräftad" : "Preliminär"}
-            </p>
+      {/* Refactored Header: Centered Status & Formations - No Border */}
+      <div className="px-4 py-3 flex justify-center items-center relative">
+        <div className="flex gap-8 items-center">
+          {/* Home Formation */}
+          {homeLineup?.formation && (
+            <span className="text-sm font-mono font-bold text-white bg-white/10 px-2.5 py-1 rounded">
+              {homeLineup.formation}
+            </span>
           )}
-          <button
-            type="button"
-            onClick={handleManualRefresh}
-            disabled={!shouldFetchLineups}
-            className="text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-50"
-          >
-            Refresh
-          </button>
+
+          {/* Status Center */}
+          <div className="flex flex-col items-center">
+            {(confirmed !== undefined) && (
+              <p className={`text-xs font-bold uppercase tracking-widest ${confirmed ? "text-emerald-400" : "text-amber-400"}`}>
+                {confirmed ? "Bekräftad" : "Preliminär"}
+              </p>
+            )}
+          </div>
+
+          {/* Away Formation */}
+          {awayLineup?.formation && (
+            <span className="text-sm font-mono font-bold text-white bg-white/10 px-2.5 py-1 rounded">
+              {awayLineup.formation}
+            </span>
+          )}
         </div>
+
+        {/* Refresh button absolute right */}
+        <button
+          type="button"
+          onClick={handleManualRefresh}
+          disabled={!shouldFetchLineups}
+          className="absolute right-4 text-[10px] font-semibold text-slate-500 hover:text-white disabled:opacity-30 uppercase tracking-wider"
+        >
+          Refresh
+        </button>
       </div>
 
       <div className="flex flex-col lg:flex-1 lg:min-h-0">
@@ -626,12 +644,12 @@ export default function Lineups({ match, isLoading, className = "" }) {
           <TeamOddsHistory match={match} />
         </div>
 
-        {/* Desktop View: 3-column Grid (30-40-30) */}
-        <div className="hidden lg:grid lg:grid-cols-[30%_40%_30%] gap-4 p-4 h-full items-start overflow-y-auto">
+        {/* Desktop View: 3-column Grid (3fr-4fr-3fr) */}
+        <div className="hidden lg:grid lg:grid-cols-[3fr_4fr_3fr] gap-4 p-4 h-full items-start overflow-y-auto">
 
-          {/* Left Column: Home Odds */}
+          {/* Left Column: Home Odds - FIXED WIDTH */}
           <div className="flex flex-col gap-4">
-            <TeamOddsSingle teamName={match?.homeTeamName} className="shadow-lg w-[95%] mx-auto" />
+            <TeamOddsSingle teamName={match?.homeTeamName} className="w-full" />
           </div>
 
           {/* Center Column: Pitch + Lineups */}
@@ -664,9 +682,9 @@ export default function Lineups({ match, isLoading, className = "" }) {
             </div>
           </div>
 
-          {/* Right Column: Away Odds */}
+          {/* Right Column: Away Odds - FIXED WIDTH */}
           <div className="flex flex-col gap-4">
-            <TeamOddsSingle teamName={match?.awayTeamName} className="shadow-lg w-[95%] mx-auto" />
+            <TeamOddsSingle teamName={match?.awayTeamName} className="w-full" />
           </div>
 
         </div>

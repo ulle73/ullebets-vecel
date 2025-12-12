@@ -54,7 +54,7 @@ function ImageWithFallback({ candidates, alt, size = 20, className }) {
       onError={() => {
         setIndex((prev) => (prev < sources.length - 1 ? prev + 1 : prev));
       }}
-      unoptimized 
+      unoptimized
     />
   );
 }
@@ -175,12 +175,13 @@ export default function LeagueTable({
               <h2 className={styles.leagueTitle}>{leagueName}</h2>
             </div>
             <div className={styles.table}>
+              {/* Header with hidden labels as requested */}
               <div className={styles.tableHeader}>
                 <div className={styles.tableHeaderRow}>
                   <span>Tid</span>
-                  <span>Hemmalag</span>
-                  <span>Resultat</span>
-                  <span>Bortalag</span>
+                  <span></span> {/* Hemmalag removed */}
+                  <span></span> {/* Resultat removed */}
+                  <span></span> {/* Bortalag removed */}
                 </div>
               </div>
               <div className={styles.rows}>
@@ -215,33 +216,38 @@ export default function LeagueTable({
                     .join(" ");
 
                   return (
-                  <button
-                    key={match.id}
-                    type="button"
-                    onClick={() => handleRowClick(match)}
-                    onPointerEnter={() => handlePrefetchMatch(match)}
-                    onFocus={() => handlePrefetchMatch(match)}
-                    className={rowClassName}
-                    data-match-id={match.matchId}
+                    <button
+                      key={match.id}
+                      type="button"
+                      onClick={() => handleRowClick(match)}
+                      onPointerEnter={() => handlePrefetchMatch(match)}
+                      onFocus={() => handlePrefetchMatch(match)}
+                      className={rowClassName}
+                      data-match-id={match.matchId}
                       data-league-id={match.leagueId ?? undefined}
                       data-home-team-id={match.homeTeamId ?? undefined}
                       data-away-team-id={match.awayTeamId ?? undefined}
                     >
                       <span className={styles.timeCell}>{timeLabel}</span>
-                      <span className={styles.teamCell}>
+
+                      {/* Home Team: NAME first, then ICON */}
+                      <span className={`${styles.teamCell} ${styles.homeTeamCell}`}>
+                        <span className={styles.teamName}>{match.homeTeamName}</span>
                         <ImageWithFallback
                           candidates={teamLogoCandidates(match.homeTeamId)}
                           alt={match.homeTeamName}
-                          size={20}
+                          size={22} /* LARGER ICON */
                         />
-                        <span className={styles.teamName}>{match.homeTeamName}</span>
                       </span>
+
                       <span className={scoreClassName}>{scoreLabel}</span>
+
+                      {/* Away Team: ICON first, then NAME */}
                       <span className={styles.teamCell}>
                         <ImageWithFallback
                           candidates={teamLogoCandidates(match.awayTeamId)}
                           alt={match.awayTeamName}
-                          size={20}
+                          size={22} /* LARGER ICON */
                         />
                         <span className={styles.teamName}>{match.awayTeamName}</span>
                       </span>
@@ -256,4 +262,3 @@ export default function LeagueTable({
     </div>
   );
 }
-
