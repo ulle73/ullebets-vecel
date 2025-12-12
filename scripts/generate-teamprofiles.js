@@ -420,6 +420,30 @@ function determineScoreState(homeScore, awayScore, teamIsHome) {
   return "tied";
 }
 
+function arrifyShotmap(match) {
+  const candidates = [
+    match?.shotmap?.shotmap, // { shotmap: [...] }
+    match?.shotmap, // direkt array
+    match?.matchDetails?.shotmap, // fallback
+  ];
+  for (const cand of candidates) {
+    if (Array.isArray(cand)) return cand;
+  }
+  return [];
+}
+
+function arrifyIncidents(match) {
+  const candidates = [
+    match?.incidents?.incidents, // { incidents: [...] }
+    match?.incidents, // direkt array
+    match?.matchDetails?.incidents, // fallback
+  ];
+  for (const cand of candidates) {
+    if (Array.isArray(cand)) return cand;
+  }
+  return [];
+}
+
 function buildScoreSegments(incidents, teamIsHome, matchDuration) {
   const goals = Array.isArray(incidents)
     ? incidents
@@ -604,10 +628,10 @@ function computeSpecials(matches, matchType) {
   };
 
   for (const match of matches) {
-    const shotEntries = match?.shotmap?.shotmap;
-    const incidents = match?.incidents?.incidents;
-    const hasShotmap = Array.isArray(shotEntries);
-    const hasIncidents = Array.isArray(incidents);
+    const shotEntries = arrifyShotmap(match);
+    const incidents = arrifyIncidents(match);
+    const hasShotmap = Array.isArray(shotEntries) && shotEntries.length > 0;
+    const hasIncidents = Array.isArray(incidents) && incidents.length > 0;
 
     if (hasShotmap) {
       matchesWithShotmap += 1;

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import styles from "./TeamCompare.module.css";
+import GameStateChart from "./GameStateChart";
 import {
   buildTeamProfileKeyForMatch,
   toNumericId,
@@ -848,21 +849,29 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
           for: {
             display: formatMetricValue(homeFor.value, formatRate),
             rank: homeFor.rank,
+            value: homeFor.value
           },
           against: {
             display: formatMetricValue(homeAgainst.value, formatRate),
             rank: homeAgainst.rank,
+            value: homeAgainst.value
           },
         },
         away: {
           for: {
             display: formatMetricValue(awayFor.value, formatRate),
             rank: awayFor.rank,
+            value: awayFor.value
           },
           against: {
             display: formatMetricValue(awayAgainst.value, formatRate),
             rank: awayAgainst.rank,
+            value: awayAgainst.value
           },
+        },
+        league: {
+          for: leagueFor,
+          against: leagueAgainst
         },
         hasData,
       };
@@ -959,12 +968,12 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
 
     if (shotsPerMinuteRows.length) {
       specials.push(
-        renderComparisonTable(
-          "shots-per-minute",
-          "Shots per minute",
-          "Game state",
-          shotsPerMinuteRows
-        )
+        <GameStateChart
+          key="shots-per-minute-chart"
+          rows={shotsPerMinuteRows}
+          homeTeamName={homeTeamLabel}
+          awayTeamName={awayTeamLabel}
+        />
       );
     }
 
