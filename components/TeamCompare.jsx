@@ -685,7 +685,7 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
                                   opacity: homeAgOp
                                 }}
                               />
-                              {leagueAgPct && <div className={styles.avgMarker} style={{ right: `${leagueAgPct}%`, height: '140%', top: '-20%' }} />}
+                              {leagueAgPct && <div className={styles.avgMarker} style={{ right: `${leagueAgPct}%`, height: '140%', top: '-20%' }} title={`League Avg: ${leagueAgainstVal}`} />}
                             </div>
                           </div>
                           <div className={`${styles.valueCell} ${styles.valueCellHome}`} style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
@@ -714,7 +714,7 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
                                   opacity: awayAgOp
                                 }}
                               />
-                              {leagueAgPct && <div className={styles.avgMarker} style={{ left: `${leagueAgPct}%`, height: '140%', top: '-20%' }} />}
+                              {leagueAgPct && <div className={styles.avgMarker} style={{ left: `${leagueAgPct}%`, height: '140%', top: '-20%' }} title={`League Avg: ${leagueAgainstVal}`} />}
                             </div>
                           </div>
                         </>

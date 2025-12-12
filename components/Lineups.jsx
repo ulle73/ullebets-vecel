@@ -217,7 +217,7 @@ function buildPitchPlayers(starters, formation, orientation) {
     const y = computeLineY(totalRows, rowIndex, orientation);
     // const xs = computeLineXs(players.length || 1);
     const xs = computeLineXs(players.length || 1, {
-mode: "around",      // eller "between"
+      mode: "around",      // eller "between"
       sidePadding: 0,      // t.ex. 8% extra marginal från kanter
       minGap: 4,           // t.ex. minst 6% mellan spelare
       minX: 14,
@@ -370,7 +370,7 @@ function CombinedPitch({ homeLineup, awayLineup, className = "" }) {
 
   return (
     <div className={containerClass}>
-      <div className="relative w-full pb-[150%]">
+      <div className="relative w-full pb-[125%]">
         <div className="absolute inset-0 bg-[url('/images/pitch4.png')] bg-cover bg-center" />
         {[homePlayers, awayPlayers].map((group, index) =>
           group.map((player) => (
@@ -387,60 +387,69 @@ function CombinedPitch({ homeLineup, awayLineup, className = "" }) {
 }
 
 function SubstitutesList({ players }) {
-  if (!Array.isArray(players) || players.length === 0) {
-    return null;
-  }
+  if (!Array.isArray(players) || players.length === 0) return null;
+
   return (
-    <div>
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+    <div className="mt-2">
+      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
         Avbytare
       </h4>
-      <ul className="mt-2 space-y-1 text-xs text-gray-600">
+      <div className="flex flex-wrap gap-2">
         {players.map((player) => {
           const jersey = formatJerseyNumber(player);
-          const position = formatPosition(player);
           return (
-            <li key={player.id ?? `${player.name}-${jersey}`}
-              className="flex flex-wrap items-center gap-x-2 gap-y-0.5"
-            >
-              <span className="font-medium text-gray-700">{formatPlayerName(player)}</span>
-              {jersey ? <span className="text-gray-400">#{jersey}</span> : null}
-              {position ? <span className="text-gray-400">{position}</span> : null}
-              {player.rating != null ? (
-                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[7.5px] font-semibold text-emerald-700">
+            <div key={player.id ?? `${player.name}-${jersey}`}
+              className="flex items-center gap-1.5 bg-black/40 border border-white/5 rounded px-2 py-1 text-xs text-slate-300">
+              {jersey && <span className="font-mono text-slate-500 text-[10px]">{jersey}</span>}
+              <span className="truncate max-w-[100px]">{formatPlayerName(player)}</span>
+              {player.rating && (
+                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1 rounded">
                   {player.rating}
                 </span>
-              ) : null}
-            </li>
+              )}
+            </div>
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 }
 
 function TeamLineup({ lineup, teamLabel }) {
+  if (!lineup) {
+    return (
+      <div className="rounded-lg border border-dashed border-white/10 p-4 text-center text-xs text-slate-600">
+        Ingen info för {teamLabel.toLowerCase()}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-3">
+    <div className="flex flex-col rounded-lg border border-white/5 bg-white/[0.02] p-4">
+      <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/80 block mb-0.5">
             {teamLabel}
-          </p>
-          <h3 className="text-base font-semibold text-gray-900">
-            {lineup?.teamName || "Okänt lag"}
+          </span>
+          <h3 className="text-sm font-bold text-white leading-tight">
+            {lineup.teamName || "Okänt lag"}
           </h3>
-          {lineup?.coach ? (
-            <p className="text-xs text-gray-500">Tränare: {lineup.coach}</p>
-          ) : null}
         </div>
-        {lineup?.formation ? (
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+        {lineup.formation && (
+          <span className="text-[10px] font-mono font-bold bg-white/5 px-2 py-1 rounded text-slate-300">
             {lineup.formation}
           </span>
-        ) : null}
+        )}
       </div>
-      <SubstitutesList players={lineup?.substitutes ?? []} />
+
+      {lineup.coach && (
+        <div className="flex items-center gap-2 mb-3 text-xs text-slate-400">
+          <span className="text-slate-600 uppercase text-[10px] font-bold tracking-wide">Coach</span>
+          <span>{lineup.coach}</span>
+        </div>
+      )}
+
+      <SubstitutesList players={lineup.substitutes ?? []} />
     </div>
   );
 }
@@ -615,8 +624,8 @@ export default function Lineups({ match, isLoading, className = "" }) {
               {confirmed === true
                 ? "Bekräftad uppställning"
                 : confirmed === false
-                ? "Inte bekräftad"
-                : "Okänd status"}
+                  ? "Inte bekräftad"
+                  : "Okänd status"}
             </p>
             {/* {data?.provider ? (
               <p className="text-xs text-gray-400">Källa: {data.provider}</p>
@@ -624,18 +633,18 @@ export default function Lineups({ match, isLoading, className = "" }) {
           </div>
           <button
             type="button"
-          onClick={handleManualRefresh}
-          disabled={!shouldFetchLineups}
-          className="rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
-        >
-          Uppdatera
-        </button>
-      </div>
+            onClick={handleManualRefresh}
+            disabled={!shouldFetchLineups}
+            className="rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+          >
+            Uppdatera
+          </button>
+        </div>
         <div className="flex-none">
           <CombinedPitch
             homeLineup={homeLineup}
             awayLineup={awayLineup}
-            // className="max-h-full "
+          // className="max-h-full "
           />
         </div>
         <div className="grid gap-6 lg:grid-cols-2">

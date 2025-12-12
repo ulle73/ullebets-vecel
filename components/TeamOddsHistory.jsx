@@ -2,10 +2,11 @@
 
 import { useMemo } from "react";
 import useSWR from "swr";
+import Image from "next/image";
 import { extractClosingOdds } from "@/lib/utils/closingOdds";
 
 const TEAM_STATS_ENDPOINT = "/api/backtest";
-const TEAM_MATCH_LIMIT = 5;
+const TEAM_MATCH_LIMIT = 10;
 
 async function requestTeamMatches(teamName, matchType) {
   console.log(`[requestTeamMatches] Fetching for team: '${teamName}', type: '${matchType}'`);
@@ -96,38 +97,33 @@ function resolvePerspective(match, teamName) {
 }
 
 function normalizeMatchEntry(match, perspective) {
-   // console.log(`[normalizeMatchEntry] Normalizing match for perspective '${perspective}':`, match);
-   const timestamp = toTimestamp(match);
-   const closingInfo = extractClosingOdds(match) || null;
-   const closing = closingInfo?.values || null;
-   const winner = closingInfo?.winner || null;
+  const timestamp = toTimestamp(match);
+  const closingInfo = extractClosingOdds(match) || null;
+  const closing = closingInfo?.values || null;
+  const winner = closingInfo?.winner || null;
 
-   // Debug logging for Genoa
-   if (match?.homeTeamName?.toLowerCase().includes('genoa') || match?.awayTeamName?.toLowerCase().includes('genoa')) {
-     console.log(`[normalizeMatchEntry] Genoa match found:`, {
-       homeTeam: match?.homeTeamName,
-       awayTeam: match?.awayTeamName,
-       hasClosingOdds: !!closing,
-       closingOdds: closing,
-       matchStructure: Object.keys(match).slice(0, 10)
-     });
-   }
-
-   return {
-     id:
-       match?.matchId ||
-       match?.id ||
-       match?.gameId ||
-       match?.eventId ||
-       `${match?.date || ""}-${match?.homeTeamName || ""}-${match?.awayTeamName || ""}`,
-     timestamp: timestamp ?? 0,
-     date: resolveMatchDate(match),
-     opponent: resolveOpponent(match, perspective),
-     venue: perspective,
-     closingOdds: closing,
-     closingWinner: winner,
-   };
- }
+  return {
+    id:
+      match?.matchId ||
+      match?.id ||
+      match?.gameId ||
+      match?.eventId ||
+      `${match?.date || ""}-${match?.homeTeamName || ""}-${match?.awayTeamName || ""}`,
+    timestamp: timestamp ?? 0,
+    date: resolveMatchDate(match),
+    venue: perspective,
+    closingOdds: closing,
+    closingWinner: winner,
+    homeTeam: {
+      id: match?.homeTeamId || match?.homeTeam?.id,
+      name: match?.homeTeamName || match?.homeTeam?.name,
+    },
+    awayTeam: {
+      id: match?.awayTeamId || match?.awayTeam?.id,
+      name: match?.awayTeamName || match?.awayTeam?.name,
+    }
+  };
+}
 
 function formatOddsValue(value) {
   if (typeof value === "number") {
@@ -137,154 +133,125 @@ function formatOddsValue(value) {
 }
 
 function useTeamOdds(teamName) {
-  console.log(`[useTeamOdds] SWR hook initialized for team: '${teamName}'`);
   return useSWR(teamName ? ["team-odds-history", teamName] : null, ([, team]) => requestTeamMatches(team, "all"), {
     revalidateOnFocus: false,
     revalidateIfStale: false,
     revalidateOnReconnect: false,
     dedupingInterval: 5 * 60 * 1000,
-    onSuccess: (data) => {
-      console.log(`[useTeamOdds] API success for '${teamName}': ${data?.length || 0} matches`);
-      if (data && data.length > 0) {
-        const matchesWithOdds = data.filter(match => extractClosingOdds(match));
-        console.log(`[useTeamOdds] '${teamName}' matches with closing odds: ${matchesWithOdds.length}/${data.length}`);
-        if (matchesWithOdds.length === 0) {
-          console.log(`[useTeamOdds] Sample match structure for '${teamName}':`, JSON.stringify(data[0], null, 2).slice(0, 1000));
-        }
-      }
-    },
     onError: (error) => {
       console.error(`[useTeamOdds] API error for '${teamName}':`, error);
     }
   });
 }
 
-function TeamOddsTable({ teamName, data, loading, error }) {
-  console.log(`[TeamOddsTable] Rendering for team: '${teamName}'`, { data, loading, error });
+function getResult(venue, winner) {
+  if (!winner) return null;
+  if (winner === "draw") return "D";
+  if (venue === "home" && winner === "home") return "W";
+  if (venue === "away" && winner === "away") return "W";
+  return "L";
+}
 
-  const items = useMemo(() => {
-    if (!Array.isArray(data) || !data.length) {
-      console.log(`[TeamOddsTable] No data for '${teamName}', returning empty items.`);
-      return [];
-    }
-
-    // Felsäker sortering: placera matcher utan giltigt timestamp sist.
-    const normalized = data
-      .map((match) => normalizeMatchEntry(match, resolvePerspective(match, teamName)))
-      .sort((a, b) => {
-        const tsA = a.timestamp || 0;
-        const tsB = b.timestamp || 0;
-        if (tsA === 0 && tsB > 0) return 1; // a (utan ts) ska komma efter b
-        if (tsB === 0 && tsA > 0) return -1; // b (utan ts) ska komma efter a
-        return tsB - tsA; // Sortera normalt efter timestamp
-      });
-    console.log(`[TeamOddsTable] Normalized and sorted data for '${teamName}':`, normalized);
-    return normalized.slice(0, TEAM_MATCH_LIMIT);
-  }, [data, teamName]);
-
-  let content = null;
-
-  if (!teamName) {
-    content = (
-      <div className="flex flex-1 items-center justify-center text-xs text-gray-400">
-        Välj en match för att se odds.
-      </div>
-    );
-  } else if (loading) {
-    content = (
-      <div className="flex flex-1 items-center justify-center text-xs text-gray-500">
-        Hämtar odds…
-      </div>
-    );
-  } else if (error) {
-    content = (
-      <div className="flex flex-1 items-center justify-center px-2 text-center text-xs text-gray-500">
-        Kunde inte hämta oddsdata.
-      </div>
-    );
-  } else if (!items.length) {
-    content = (
-      <div className="flex flex-1 items-center justify-center text-xs text-gray-400">
-        Inga tidigare matcher hittades.
-      </div>
-    );
-  } else {
-    content = (
-      <div className="flex-1 overflow-auto">
-        <table className="min-w-full table-fixed text-left text-[8.25px] text-gray-600">
-          <thead className="sticky top-0 bg-gray-50 text-[7.5px] uppercase tracking-wide text-gray-500">
-            <tr>
-              <th className="w-20 px-2 py-1 font-semibold">Datum</th>
-              <th className="px-2 py-1 font-semibold">Motstånd</th>
-              <th className="w-10 px-2 py-1 text-right font-semibold">1</th>
-              <th className="w-10 px-2 py-1 text-right font-semibold">X</th>
-              <th className="w-10 px-2 py-1 text-right font-semibold">2</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id} className="border-b border-gray-100 last:border-b-0">
-                <td className="px-2 py-1 align-middle text-xs font-medium text-gray-700">
-                  {item.date || "–"}
-                </td>
-                <td className="px-2 py-1 align-middle text-xs text-gray-600">
-                  <span className="font-medium text-gray-700">
-                    {item.venue === "home" ? "vs" : "@"}
-                  </span>{" "}
-                  {item.opponent || "Okänd"}
-                </td>
-                <td className="px-2 py-1 text-right text-xs font-semibold">
-                  <span
-                    className={[
-                      "inline-flex min-w-[2rem] justify-end rounded px-1 py-0.5",
-                      item.closingWinner === "home"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "text-gray-700",
-                    ].join(" ")}
-                  >
-                    {formatOddsValue(item.closingOdds?.home)}
-                  </span>
-                </td>
-                <td className="px-2 py-1 text-right text-xs font-semibold">
-                  <span
-                    className={[
-                      "inline-flex min-w-[2rem] justify-end rounded px-1 py-0.5",
-                      item.closingWinner === "draw"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "text-gray-700",
-                    ].join(" ")}
-                  >
-                    {formatOddsValue(item.closingOdds?.draw)}
-                  </span>
-                </td>
-                <td className="px-2 py-1 text-right text-xs font-semibold">
-                  <span
-                    className={[
-                      "inline-flex min-w-[2rem] justify-end rounded px-1 py-0.5",
-                      item.closingWinner === "away"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "text-gray-700",
-                    ].join(" ")}
-                  >
-                    {formatOddsValue(item.closingOdds?.away)}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
+function MatchResultBadge({ result }) {
+  const styles = {
+    W: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    D: "bg-slate-500/10 text-slate-400 border-slate-500/20",
+    L: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+  };
+  const style = styles[result] || "bg-slate-800 text-slate-600 border-transparent";
 
   return (
-    <div className="flex flex-col lg:h-full lg:min-h-0">
-      <div className="flex items-center justify-between px-2 pb-1">
-        <p className="text-[8.25px] font-semibold uppercase tracking-wide text-gray-500">
-          {teamName || "Ingen match"}
-        </p>
+    <div className={`flex items-center justify-center w-5 h-5 rounded border text-[10px] font-bold ${style}`}>
+      {result || "-"}
+    </div>
+  );
+}
+
+function TeamOddsList({ teamName, data, loading, error }) {
+  const getLogo = (id) => id ? `/images/teams/${id}.png` : "/images/teams/placeholder.png";
+
+  const items = useMemo(() => {
+    if (!Array.isArray(data) || !data.length) return [];
+    return data
+      .map((match) => normalizeMatchEntry(match, resolvePerspective(match, teamName)))
+      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+      .slice(0, TEAM_MATCH_LIMIT);
+  }, [data, teamName]);
+
+  if (!teamName) return <div className="p-4 text-center text-xs text-slate-500">Välj en match...</div>;
+  if (loading) return <div className="p-4 text-center text-xs text-slate-500">Hämtar historik...</div>;
+  if (error) return <div className="p-4 text-center text-xs text-rose-500">Kunde inte hämta data</div>;
+  if (!items.length) return <div className="p-4 text-center text-xs text-slate-500">Ingen historik hittades.</div>;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between px-2 pb-2 border-b border-white/5">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{teamName}</span>
+        <span className="text-[10px] text-slate-600">SENASTE 10</span>
       </div>
-      {content}
+      <div className="flex flex-col gap-1">
+        {items.map((item) => {
+          const result = getResult(item.venue, item.closingWinner);
+
+          return (
+            <div key={item.id} className="group flex items-center justify-between p-2 rounded hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+
+              {/* Left: Date + Matchup */}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                {/* Date */}
+                <div className="flex flex-col w-[40px] shrink-0">
+                  <span className="text-[9px] text-slate-500 font-mono tracking-tight">{item.date}</span>
+                </div>
+
+                {/* Matchup Center */}
+                <div className="flex items-center gap-1.5 text-xs min-w-0 flex-1">
+                  {/* Home Team */}
+                  <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+                    <span className={`truncate text-right text-[10px] ${item.homeTeam.name === teamName ? 'text-white font-semibold' : 'text-slate-400'}`}>
+                      {item.homeTeam.name}
+                    </span>
+                    <div className="relative w-4 h-4 shrink-0">
+                      <Image src={getLogo(item.homeTeam.id)} alt={item.homeTeam.name || ''} fill className="object-contain" unoptimized />
+                    </div>
+                  </div>
+
+                  <span className="text-slate-700 font-mono text-[9px] shrink-0">-</span>
+
+                  {/* Away Team */}
+                  <div className="flex items-center gap-1.5 flex-1 justify-start min-w-0">
+                    <div className="relative w-4 h-4 shrink-0">
+                      <Image src={getLogo(item.awayTeam.id)} alt={item.awayTeam.name || ''} fill className="object-contain" unoptimized />
+                    </div>
+                    <span className={`truncate text-left text-[10px] ${item.awayTeam.name === teamName ? 'text-white font-semibold' : 'text-slate-400'}`}>
+                      {item.awayTeam.name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Result + Odds */}
+              <div className="flex items-center gap-2 pl-2 border-l border-white/5 shrink-0 ml-1">
+                <MatchResultBadge result={result} />
+
+                <div className="flex gap-1 text-[9px] font-mono justify-end">
+                  {/* 1 */}
+                  <span className={`min-w-[24px] text-center py-0.5 rounded ${item.closingWinner === 'home' ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'text-slate-600'}`}>
+                    {formatOddsValue(item.closingOdds?.home)}
+                  </span>
+                  {/* X */}
+                  <span className={`min-w-[24px] text-center py-0.5 rounded ${item.closingWinner === 'draw' ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'text-slate-600'}`}>
+                    {formatOddsValue(item.closingOdds?.draw)}
+                  </span>
+                  {/* 2 */}
+                  <span className={`min-w-[24px] text-center py-0.5 rounded ${item.closingWinner === 'away' ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'text-slate-600'}`}>
+                    {formatOddsValue(item.closingOdds?.away)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -295,69 +262,34 @@ export default function TeamOddsHistory({
   showHeader = true,
   contentClassName = "",
 }) {
-  console.log("--- TeamOddsHistory Render ---");
-  console.log("Received match object:", match);
-  const homeTeamName =
-    match?.homeTeamName ||
-    match?.homeTeam?.name ||
-    match?.homeTeam?.teamName ||
-    null;
-  const awayTeamName =
-    match?.awayTeamName ||
-    match?.awayTeam?.name ||
-    match?.awayTeam?.teamName ||
-    null;
+  const homeTeamName = match?.homeTeamName || match?.homeTeam?.name || null;
+  const awayTeamName = match?.awayTeamName || match?.awayTeam?.name || null;
 
-  console.log(`Requesting odds for HOME: '${homeTeamName}' and AWAY: '${awayTeamName}'`);
   const homeOdds = useTeamOdds(homeTeamName);
   const awayOdds = useTeamOdds(awayTeamName);
 
-  const containerClass = [
-    "flex flex-col bg-gray-50/60",
-    "lg:h-full lg:min-h-0",
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const contentWrapperClass = [
-    "flex flex-col gap-3 overflow-hidden",
-    "px-4 py-3",
-    "lg:flex-1 lg:flex-row lg:min-h-0",
-    contentClassName,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   return (
-    <div className={containerClass}>
-      {showHeader ? (
-        <div className="border-b border-gray-200 px-4 py-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-600">
-            Senaste 5 closing odds
+    <div className={`flex flex-col bg-[#050505] rounded-xl border border-white/5 overflow-hidden ${className}`}>
+      {showHeader && (
+        <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">
+            Form & Odds
           </h3>
-          <p className="text-[8.25px] text-gray-500">
-            Hämtar hem- och bortastatistik från databasen.
-          </p>
         </div>
-      ) : null}
-      <div className={contentWrapperClass}>
-        <div className="flex w-full flex-col rounded-lg border border-gray-200 bg-gray-50 p-2 shadow-sm lg:min-h-0 lg:flex-1">
-          <TeamOddsTable
-            teamName={homeTeamName}
-            data={homeOdds.data}
-            loading={homeOdds.isLoading}
-            error={homeOdds.error}
-          />
-        </div>
-        <div className="flex w-full flex-col rounded-lg border border-gray-200 bg-gray-50 p-2 shadow-sm lg:min-h-0 lg:flex-1">
-          <TeamOddsTable
-            teamName={awayTeamName}
-            data={awayOdds.data}
-            loading={awayOdds.isLoading}
-            error={awayOdds.error}
-          />
-        </div>
+      )}
+      <div className={`p-4 grid gap-6 md:grid-cols-2 ${contentClassName}`}>
+        <TeamOddsList
+          teamName={homeTeamName}
+          data={homeOdds.data}
+          loading={homeOdds.isLoading}
+          error={homeOdds.error}
+        />
+        <TeamOddsList
+          teamName={awayTeamName}
+          data={awayOdds.data}
+          loading={awayOdds.isLoading}
+          error={awayOdds.error}
+        />
       </div>
     </div>
   );

@@ -21,9 +21,9 @@ function MatchHeader({ match }) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-8 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center pt-16 pb-10 relative overflow-hidden">
       {/* Dynamic Background Gradient acting as a subtle spotlight behind logos */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-r from-cyan-900/10 via-blue-900/5 to-indigo-900/10 blur-3xl rounded-full -z-10" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[200px] bg-gradient-to-r from-cyan-900/10 via-blue-900/5 to-indigo-900/10 blur-3xl opacity-50 rounded-full -z-10" />
 
       <div className="flex items-center gap-12 z-10">
         <div className="flex flex-col items-center gap-4 w-40 md:w-56 text-center group">

@@ -1411,7 +1411,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
                         <td className="px-6 py-4 text-xs text-slate-300 group-hover:text-white">
                           {formatScope(result.bet.scope, result.bet.homeTeam, result.bet.awayTeam, t)}
                         </td>
-                        <td className="px-6 py-4 text-xs text-slate-400">
+                        <td className="px-6 py-4 text-xs text-emerald-100/70 font-medium tracking-wide">
                           {formatPeriodLabel(result.bet.period, t)}
                         </td>
                         <td className="px-6 py-4 text-xs">
@@ -1422,7 +1422,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
                             {result.bet.direction === "over" ? t("over") : t("under")} {result.bet.line}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm font-mono text-right text-slate-200 group-hover:text-white">
+                        <td className="px-6 py-4 text-sm font-mono text-right text-white font-bold group-hover:text-emerald-300 transition-colors">
                           {result.bet.odds}
                         </td>
                         <td className="px-6 py-4 text-right">
