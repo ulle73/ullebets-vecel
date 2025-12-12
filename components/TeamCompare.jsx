@@ -575,12 +575,16 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
             </div>
 
             {rows.map((row) => {
+              const parseVal = (str) => {
+                if (!str) return 0;
+                return parseFloat(String(str).replace(',', '.')) || 0;
+              };
+
               // FOR STATS
-              const homeFor = parseFloat(row.home.for.display) || 0;
-              const awayFor = parseFloat(row.away.for.display) || 0;
+              const homeFor = parseVal(row.home.for.display);
+              const awayFor = parseVal(row.away.for.display);
 
               // Extract league avg for 'For'
-              // hint format: "League avg (for/against): 1.5 / 1.2" OR "League avg (for): 1.5"
               let leagueForVal = null;
               let leagueAgainstVal = null;
 
@@ -596,11 +600,14 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
                 }
               }
 
-              // We'll use a local max for the row to scale everything
+              // Scale
               const maxFor = Math.max(homeFor, awayFor, leagueForVal || 0, 0.1) * 1.25;
               const { homePct: homeForPct, awayPct: awayForPct } = calculateBarWidths(homeFor, awayFor, maxFor);
-
               const leagueForPct = leagueForVal ? (leagueForVal / maxFor) * 100 : null;
+
+              // Opacity Logic (For): Higher is Better -> Stronger Color
+              const homeForOp = homeFor >= awayFor ? 1 : 0.3;
+              const awayForOp = awayFor >= homeFor ? 1 : 0.3;
 
               return (
                 <div key={row.key} className={styles.subRows}>
@@ -608,7 +615,15 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
                   <div className={styles.subRow}>
                     <div className={`${styles.barCell} ${styles.barCellHome}`}>
                       <div className={styles.barContainer}>
-                        <div className={`${styles.barFill} ${styles.barFillHome}`} style={{ width: `${homeForPct}%` }} />
+                        <div
+                          className={`${styles.barFill} ${styles.barFillHome}`}
+                          style={{
+                            width: `${homeForPct}%`,
+                            background: '#10b981',
+                            opacity: homeForOp,
+                            boxShadow: `0 0 8px rgba(16, 185, 129, ${homeForOp * 0.5})`
+                          }}
+                        />
                         {leagueForPct && <div className={styles.avgMarker} style={{ right: `${leagueForPct}%` }} title={`League Avg: ${leagueForVal}`} />}
                       </div>
                     </div>
@@ -628,7 +643,15 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
                     </div>
                     <div className={`${styles.barCell} ${styles.barCellAway}`}>
                       <div className={styles.barContainer}>
-                        <div className={`${styles.barFill} ${styles.barFillAway}`} style={{ width: `${awayForPct}%` }} />
+                        <div
+                          className={`${styles.barFill} ${styles.barFillAway}`}
+                          style={{
+                            width: `${awayForPct}%`,
+                            background: '#10b981', // Same Green
+                            opacity: awayForOp,
+                            boxShadow: `0 0 8px rgba(16, 185, 129, ${awayForOp * 0.5})`
+                          }}
+                        />
                         {leagueForPct && <div className={styles.avgMarker} style={{ left: `${leagueForPct}%` }} title={`League Avg: ${leagueForVal}`} />}
                       </div>
                     </div>
@@ -637,23 +660,37 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
                   {/* AGAINST ROW */}
                   <div className={styles.subRow} style={{ marginTop: '-4px' }}>
                     {(() => {
-                      const homeAg = parseFloat(row.home.against.display) || 0;
-                      const awayAg = parseFloat(row.away.against.display) || 0;
-                      // Use league against val if parsed
+                      const homeAg = parseVal(row.home.against.display);
+                      const awayAg = parseVal(row.away.against.display);
+
                       const maxAg = Math.max(homeAg, awayAg, leagueAgainstVal || 0, 0.1) * 1.25;
                       const { homePct: hP, awayPct: aP } = calculateBarWidths(homeAg, awayAg, maxAg);
-
                       const leagueAgPct = leagueAgainstVal ? (leagueAgainstVal / maxAg) * 100 : null;
+
+                      // Opacity Logic (Against): Lower is Better -> Stronger Color
+                      // Higher (Worse) gets weak opacity per "det högre talet ska färgen visas svagare"
+                      const homeAgOp = homeAg <= awayAg ? 1 : 0.3;
+                      const awayAgOp = awayAg <= homeAg ? 1 : 0.3;
 
                       return (
                         <>
                           <div className={`${styles.barCell} ${styles.barCellHome}`}>
-                            <div className={styles.barContainer} style={{ height: '4px', opacity: 0.8 }}>
-                              <div className={`${styles.barFill} ${styles.barFillHome}`} style={{ width: `${hP}%`, background: '#f43f5e', boxShadow: 'none' }} />
+                            <div className={styles.barContainer} style={{ height: '4px', opacity: 1 }}> {/* Keep container full opacity, modulate bar */}
+                              <div
+                                className={`${styles.barFill} ${styles.barFillHome}`}
+                                style={{
+                                  width: `${hP}%`,
+                                  background: '#f43f5e',
+                                  boxShadow: 'none',
+                                  opacity: homeAgOp
+                                }}
+                              />
                               {leagueAgPct && <div className={styles.avgMarker} style={{ right: `${leagueAgPct}%`, height: '140%', top: '-20%' }} />}
                             </div>
                           </div>
                           <div className={`${styles.valueCell} ${styles.valueCellHome}`} style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                            {/* Added Rank Badge for Against */}
+                            {renderRankBadge(row.home.against)}
                             <span>{row.home.against.display}</span>
                           </div>
 
@@ -663,10 +700,20 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
 
                           <div className={`${styles.valueCell} ${styles.valueCellAway}`} style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                             <span>{row.away.against.display}</span>
+                            {/* Added Rank Badge for Against */}
+                            {renderRankBadge(row.away.against)}
                           </div>
                           <div className={`${styles.barCell} ${styles.barCellAway}`}>
-                            <div className={styles.barContainer} style={{ height: '4px', opacity: 0.8 }}>
-                              <div className={`${styles.barFill} ${styles.barFillAway}`} style={{ width: `${aP}%`, background: '#f43f5e', boxShadow: 'none' }} />
+                            <div className={styles.barContainer} style={{ height: '4px', opacity: 1 }}>
+                              <div
+                                className={`${styles.barFill} ${styles.barFillAway}`}
+                                style={{
+                                  width: `${aP}%`,
+                                  background: '#f43f5e', // Same Red
+                                  boxShadow: 'none',
+                                  opacity: awayAgOp
+                                }}
+                              />
                               {leagueAgPct && <div className={styles.avgMarker} style={{ left: `${leagueAgPct}%`, height: '140%', top: '-20%' }} />}
                             </div>
                           </div>
@@ -674,7 +721,6 @@ export default function TeamCompare({ match, isLoading, error, className = "", p
                       )
                     })()}
                   </div>
-
                 </div>
               );
             })}
