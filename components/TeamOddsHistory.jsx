@@ -189,22 +189,22 @@ export function TeamOddsList({ teamName, data, loading, error }) {
               </div>
 
               {/* Row 2: Matchup - Names White, Wide */}
-              <div className="flex items-center justify-center gap-2 py-1 w-full relative">
+              <div className="flex items-center justify-center gap-3 py-1 w-full relative">
                 {/* Home */}
-                <div className="flex items-center justify-end gap-2 flex-1 min-w-0">
+                <div className="flex items-center justify-end gap-3 flex-1 min-w-0">
                   <span className="text-[11px] truncate w-full text-right text-white font-medium block">
                     {item.homeTeam.name}
                   </span>
-                  <div className="relative w-5 h-5 shrink-0">
+                  <div className="relative w-[22px] h-[22px] shrink-0">
                     <Image src={getLogo(item.homeTeam.id)} alt="" fill className="object-contain" unoptimized />
                   </div>
                 </div>
 
-                <span className="text-slate-600 text-[10px] font-bold shrink-0 px-1">VS</span>
+                <span className="text-slate-600 text-[10px] font-bold shrink-0 px-2">VS</span>
 
                 {/* Away */}
-                <div className="flex items-center justify-start gap-2 flex-1 min-w-0">
-                  <div className="relative w-5 h-5 shrink-0">
+                <div className="flex items-center justify-start gap-3 flex-1 min-w-0">
+                  <div className="relative w-[22px] h-[22px] shrink-0">
                     <Image src={getLogo(item.awayTeam.id)} alt="" fill className="object-contain" unoptimized />
                   </div>
                   <span className="text-[11px] truncate w-full text-left text-white font-medium block">
