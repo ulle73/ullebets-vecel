@@ -103,6 +103,9 @@ function mapScoreEntry(entry) {
   const scope = entry.scope ?? "total";
   const outcomeInfo = deriveOutcomeForScope(entry.outcome, scope);
   const leagueBaseline = toNum(entry?.forecast?.leagueBaseline);
+  const marketBias = entry.marketBias ?? null;
+  const homeBehaviour = entry.homeBehaviour ?? null;
+  const awayBehaviour = entry.awayBehaviour ?? null;
   return {
     matchId: entry.matchId ?? matchLabel,
     leagueName: entry.league ?? null,
@@ -119,6 +122,9 @@ function mapScoreEntry(entry) {
     scoreFormat: (value) => `${value.toFixed(1)}/100`,
     scoreThresholds: DEFAULT_SCORE_THRESHOLDS,
     leagueBaseline,
+    marketBias,
+    homeBehaviour,
+    awayBehaviour,
     ...outcomeInfo,
   };
 }

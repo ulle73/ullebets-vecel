@@ -116,6 +116,22 @@ function readValue(profile, type, statKey, period) {
   return toNum(p?.value ?? p?.Value);
 }
 
+function readMarketBias(profile, statKey, period) {
+  if (!profile || !statKey || !period) return null;
+  const primary = normalizeStatKeyForScew(statKey);
+  const candidates = [];
+  const node = profile.statistics?.for?.[statKey];
+  const aliasNode =
+    primary && primary !== statKey ? profile.statistics?.for?.[primary] : null;
+  if (node) candidates.push(node);
+  if (aliasNode) candidates.push(aliasNode);
+  for (const cand of candidates) {
+    const p = getPeriodNode(cand, period);
+    if (p?.marketBias) return p.marketBias;
+  }
+  return null;
+}
+
 function leagueSizeFromMeta(profile) {
   return (
     toNum(profile?.meta?.leagueTeamCount) ??
@@ -532,6 +548,8 @@ function buildScoreSnapshot(pairs, leagueSizeMap, limit = 200) {
           statKey,
           statLabel,
           period: periodKey,
+          homeBehaviour: p.home.profile?.behaviour ?? null,
+          awayBehaviour: p.away.profile?.behaviour ?? null,
         };
         const scewHome = selectScew(p.home.profile, statKey, periodKey);
         const scewAway = selectScew(p.away.profile, statKey, periodKey);
@@ -549,12 +567,22 @@ function buildScoreSnapshot(pairs, leagueSizeMap, limit = 200) {
             scope === "home" ? scewHome :
             scope === "away" ? scewAway :
             scewTotal;
+          const marketBias =
+            scope === "home"
+              ? readMarketBias(p.home.profile, statKey, periodKey)
+              : scope === "away"
+              ? readMarketBias(p.away.profile, statKey, periodKey)
+              : {
+                  home: readMarketBias(p.home.profile, statKey, periodKey),
+                  away: readMarketBias(p.away.profile, statKey, periodKey),
+                };
           const entry = attachLeagueAvg(
             {
               ...baseEntry,
               scope,
               condition: direction,
               score: rounded,
+              marketBias,
               ...(scew
                 ? {
                     scewScore: scew.scewScore ?? scew.score ?? null,

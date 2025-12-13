@@ -220,7 +220,15 @@ main {
 
 [data-theme] .bg-slate-900,
 [data-theme] .bg-slate-950 {
-  background: color-mix(in srgb, var(--surface-inverse) 92%, #000 10%) !important;
+  background: #000000 !important;
+}
+
+[data-theme] .bg-slate-900\/40 {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+[data-theme] .bg-slate-800\/95 {
+  background: rgba(0, 0, 0, 0.95) !important;
 }
 
 [data-theme] .bg-blue-500,
@@ -339,4 +347,3 @@ button:hover,
 a:hover {
   transform: translateY(-0.5px);
 }
-

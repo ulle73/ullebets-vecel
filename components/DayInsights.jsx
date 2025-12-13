@@ -74,6 +74,27 @@
     return formatValue(value, { isPercentage: key === "ballPossession" });
   }
 
+  function getPeriodNode(metricNode, period) {
+    if (!metricNode || typeof metricNode !== "object") return null;
+    return metricNode[period] ?? metricNode.ALL ?? null;
+  }
+
+  function readMarketBias(profile, statKey, period) {
+    if (!profile || !statKey || !period) return null;
+    const primary = normalizeStatKeyForScew(statKey);
+    const candidates = [];
+    const node = profile.statistics?.for?.[statKey];
+    const aliasNode =
+      primary && primary !== statKey ? profile.statistics?.for?.[primary] : null;
+    if (node) candidates.push(node);
+    if (aliasNode) candidates.push(aliasNode);
+    for (const cand of candidates) {
+      const p = getPeriodNode(cand, period);
+      if (p?.marketBias) return p.marketBias;
+    }
+    return null;
+  }
+
   function buildFilterChips(options, activeValue, onChange) {
     return options.map((option) => {
       const isActive = option.value === activeValue;
@@ -85,7 +106,7 @@
           className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
             isActive
               ? "border-blue-500 bg-blue-500 text-white shadow"
-              : "border-gray-300 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-600"
+              : "border-gray-300 bg-gray-50 text-gray-600 hover:border-blue-300 hover:text-blue-600"
           }`}
         >
           {option.label}
@@ -211,6 +232,8 @@
                 }
                 return null;
               })();
+              const marketBias = type === "for" ? readMarketBias(entry.profile, key, period) : null;
+              const behaviour = entry.profile?.behaviour ?? null;
               points.push({
                 key: `${entry.key}:${key}:${type}:${period}`,
                 metricKey: key,
@@ -225,6 +248,8 @@
                 value,
                 displayValue: formatStatValue(key, value),
                 scewScore,
+                marketBias,
+                behaviour,
               });
             }
           }
@@ -272,7 +297,7 @@
           {points.map((point) => (
             <li
               key={point.key}
-              className="flex items-start justify-between rounded border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm"
+              className="flex items-start justify-between rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm shadow-sm"
             >
               <div className="flex flex-col text-left">
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -298,6 +323,30 @@
                       SCEW {(point.scewScore > 0 ? "+" : "") + point.scewScore.toFixed(1)}
                     </span>
                   ) : null}
+                  {point.marketBias ? (
+                    <span
+                      className={`ml-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        point.marketBias.direction === "over"
+                          ? "bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/30"
+                          : point.marketBias.direction === "under"
+                          ? "bg-rose-500/10 text-rose-700 ring-1 ring-rose-500/30"
+                          : "bg-slate-100 text-slate-700 ring-1 ring-slate-300/60"
+                      }`}
+                    >
+                      MB {point.marketBias.direction ?? "–"}
+                      {Number.isFinite(point.marketBias.bias)
+                        ? ` ${point.marketBias.bias.toFixed(2)}`
+                        : ""}
+                      {Number.isFinite(point.marketBias.sampleSize)
+                        ? ` · n=${point.marketBias.sampleSize}`
+                        : ""}
+                    </span>
+                  ) : null}
+                  {point.behaviour?.label ? (
+                    <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-300/60">
+                      {point.behaviour.emoji ?? "•"} {point.behaviour.label}
+                    </span>
+                  ) : null}
                 </div>
               </div>
               <span className="text-sm font-semibold text-gray-900">{point.displayValue}</span>
@@ -312,7 +361,7 @@
     const isWarmup = profilesCount === 0;
 
     return (
-      <div className="flex h-full min-h-0 flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="flex h-full min-h-0 flex-col rounded-lg border border-gray-200 bg-gray-50 shadow-sm">
         <div className="border-b border-gray-100 px-4 py-3">
           <h2 className="text-lg font-semibold text-gray-900">Div2 – Dagens spaning</h2>
           <p className="mt-1 text-xs text-gray-500">
@@ -351,7 +400,7 @@
               Liga
             </label>
             <select
-              className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 w-full rounded border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               value={leagueFilter}
               onChange={(event) => setLeagueFilter(event.target.value)}
             >

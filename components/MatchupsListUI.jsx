@@ -88,6 +88,35 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
   if (homeDetail != null) outcomeDetails.push(`Hem ${homeDetail}`);
   if (awayDetail != null) outcomeDetails.push(`Bort ${awayDetail}`);
 
+  const renderBehaviour = (behaviour, prefix = null) => {
+    if (!behaviour?.label) return null;
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-700 ring-1 ring-slate-200">
+        {prefix ? <span className="font-bold text-slate-500">{prefix}</span> : null}
+        {behaviour.emoji ?? "•"} {behaviour.label}
+      </span>
+    );
+  };
+
+  const renderMarketBiasBadge = (bias, labelPrefix = "MB") => {
+    if (!bias) return null;
+    const dir = bias.direction ?? "–";
+    const tone =
+      dir === "over"
+        ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+        : dir === "under"
+        ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
+        : "bg-gray-100 text-gray-700 ring-1 ring-gray-200";
+    const biasText = Number.isFinite(bias.bias) ? bias.bias.toFixed(2) : null;
+    const nText = Number.isFinite(bias.sampleSize) ? `n=${bias.sampleSize}` : null;
+    const parts = [dir, biasText, nText].filter(Boolean).join(" · ");
+    return (
+      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ${tone}`}>
+        {labelPrefix} {parts || dir}
+      </span>
+    );
+  };
+
   return (
     <li
       className={`flex min-h-[100px] items-start justify-between rounded bg-white px-4 py-4 text-sm shadow-sm transition-colors ${borderHighlight}`}
@@ -119,6 +148,24 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
               >
                 SCEW {(r.scewScore > 0 ? "+" : "") + r.scewScore.toFixed(1)}
               </span>
+            ) : null}
+            {r.marketBias
+              ? r.scope === "total" && typeof r.marketBias === "object" && (r.marketBias.home || r.marketBias.away)
+                ? (
+                  <>
+                    {renderMarketBiasBadge(r.marketBias.home, "MB H")}
+                    {renderMarketBiasBadge(r.marketBias.away, "MB B")}
+                  </>
+                )
+                : renderMarketBiasBadge(r.marketBias, "MB")
+              : null}
+            {r.scope === "home" ? renderBehaviour(r.homeBehaviour, "H") : null}
+            {r.scope === "away" ? renderBehaviour(r.awayBehaviour, "B") : null}
+            {r.scope === "total" ? (
+              <>
+                {renderBehaviour(r.homeBehaviour, "H")}
+                {renderBehaviour(r.awayBehaviour, "B")}
+              </>
             ) : null}
           </div>
           {r.leagueName ? (

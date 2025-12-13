@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
-import TeamOddsHistory from "@/components/TeamOddsHistory";
+import TeamOddsHistory, { TeamOddsSingle } from "@/components/TeamOddsHistory";
 import { buildLineupsKey } from "@/lib/utils/apiKeys";
 import { fetchJson } from "@/lib/utils/fetchers";
 
@@ -135,15 +135,6 @@ function computeLineY(totalRows, rowIndex, orientation) {
   return start + (end - start) * fraction;
 }
 
-// function computeLineXs(count) {
-//   if (count <= 0) return [];
-//   if (count === 1) return [50];
-//   const minX = 18;
-//   const maxX = 82;
-//   const step = (maxX - minX) / (count - 1);
-//   return Array.from({ length: count }, (_, index) => minX + step * index);
-// }
-
 // Ny: flexibel spridning med padding och minsta avstånd
 function computeLineXs(
   count,
@@ -217,7 +208,7 @@ function buildPitchPlayers(starters, formation, orientation) {
     const y = computeLineY(totalRows, rowIndex, orientation);
     // const xs = computeLineXs(players.length || 1);
     const xs = computeLineXs(players.length || 1, {
-mode: "around",      // eller "between"
+      mode: "around",      // eller "between"
       sidePadding: 0,      // t.ex. 8% extra marginal från kanter
       minGap: 4,           // t.ex. minst 6% mellan spelare
       minX: 14,
@@ -362,7 +353,7 @@ function CombinedPitch({ homeLineup, awayLineup, className = "" }) {
   const awayBadge = resolveBadgeClass("away");
 
   const containerClass = [
-    "relative isolate w-full overflow-hidden rounded-2xl border border-emerald-700 shadow-lg",
+    "relative isolate w-full overflow-hidden rounded-2xl",
     className,
   ]
     .filter(Boolean)
@@ -370,7 +361,7 @@ function CombinedPitch({ homeLineup, awayLineup, className = "" }) {
 
   return (
     <div className={containerClass}>
-      <div className="relative w-full pb-[150%]">
+      <div className="relative w-full pb-[160%]">
         <div className="absolute inset-0 bg-[url('/images/pitch4.png')] bg-cover bg-center" />
         {[homePlayers, awayPlayers].map((group, index) =>
           group.map((player) => (
@@ -387,60 +378,71 @@ function CombinedPitch({ homeLineup, awayLineup, className = "" }) {
 }
 
 function SubstitutesList({ players }) {
-  if (!Array.isArray(players) || players.length === 0) {
-    return null;
-  }
+  if (!Array.isArray(players) || players.length === 0) return null;
+
   return (
-    <div>
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+    <div className="mt-4">
+      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 border-b border-white/5 pb-1">
         Avbytare
       </h4>
-      <ul className="mt-2 space-y-1 text-xs text-gray-600">
+      <div className="flex flex-col divide-y divide-white/5">
         {players.map((player) => {
           const jersey = formatJerseyNumber(player);
-          const position = formatPosition(player);
           return (
-            <li key={player.id ?? `${player.name}-${jersey}`}
-              className="flex flex-wrap items-center gap-x-2 gap-y-0.5"
-            >
-              <span className="font-medium text-gray-700">{formatPlayerName(player)}</span>
-              {jersey ? <span className="text-gray-400">#{jersey}</span> : null}
-              {position ? <span className="text-gray-400">{position}</span> : null}
-              {player.rating != null ? (
-                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[7.5px] font-semibold text-emerald-700">
+            <div key={player.id ?? `${player.name}-${jersey}`}
+              className="flex items-center justify-between py-2 text-xs text-slate-300 hover:bg-white/[0.02] -mx-2 px-2 rounded-sm transition-colors">
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-slate-500 text-[10px] w-4 text-center">{jersey || "-"}</span>
+                <span className="truncate max-w-[120px]">{formatPlayerName(player)}</span>
+              </div>
+              {player.rating && (
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
                   {player.rating}
                 </span>
-              ) : null}
-            </li>
+              )}
+            </div>
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 }
 
 function TeamLineup({ lineup, teamLabel }) {
+  if (!lineup) {
+    return (
+      <div className="rounded-lg border border-dashed border-white/10 p-4 text-center text-xs text-slate-600">
+        Ingen info för {teamLabel.toLowerCase()}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-3">
+    <div className="flex flex-col rounded-lg border border-white/5 bg-white/[0.02] p-4"> {/* Added border */}
+      <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/80 block mb-0.5">
             {teamLabel}
-          </p>
-          <h3 className="text-base font-semibold text-gray-900">
-            {lineup?.teamName || "Okänt lag"}
+          </span>
+          <h3 className="text-sm font-bold text-white leading-tight">
+            {lineup.teamName || "Okänt lag"}
           </h3>
-          {lineup?.coach ? (
-            <p className="text-xs text-gray-500">Tränare: {lineup.coach}</p>
-          ) : null}
         </div>
-        {lineup?.formation ? (
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+        {lineup.formation && (
+          <span className="text-[10px] font-mono font-bold bg-white/5 px-2 py-1 rounded text-slate-300">
             {lineup.formation}
           </span>
-        ) : null}
+        )}
       </div>
-      <SubstitutesList players={lineup?.substitutes ?? []} />
+
+      {lineup.coach && (
+        <div className="flex items-center gap-2 mb-3 text-xs text-slate-400">
+          <span className="text-slate-600 uppercase text-[10px] font-bold tracking-wide">Coach</span>
+          <span>{lineup.coach}</span>
+        </div>
+      )}
+
+      <SubstitutesList players={lineup.substitutes ?? []} />
     </div>
   );
 }
@@ -564,131 +566,129 @@ export default function Lineups({ match, isLoading, className = "" }) {
 
   const confirmed = data?.confirmed;
 
-  let content = null;
-
-  if (!match) {
-    content = (
-      <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-400">
-        Välj en match för att se laguppställning.
-      </div>
-    );
-  } else if (isOutsideFetchWindow) {
-    content = (
-      <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-gray-500">
-        {isFutureMatch === false
-          ? "Laguppställningar sparas i upp till 24 timmar efter matchstart."
-          : "Laguppställningar blir tillgängliga tidigast 24 timmar före matchstart."}
-      </div>
-    );
-  } else if (loading) {
-    content = (
-      <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-500">
-        Hämtar laguppställningar…
-      </div>
-    );
-  } else if (error) {
-    content = (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-gray-500">
-        <p>Kunde inte hämta laguppställningar.</p>
-        <button
-          type="button"
-          onClick={() => mutate()}
-          className="rounded bg-gray-900 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-gray-700"
-        >
-          Försök igen
-        </button>
-      </div>
-    );
-  } else if (!homeLineup && !awayLineup) {
-    content = (
-      <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-500">
-        Ingen laguppställning hittades ännu. Förhandsinfo kan saknas.
-      </div>
-    );
-  } else {
-    content = (
-      <div className="flex flex-1 min-h-0 flex-col gap-6 p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500">Status</p>
-            <p className="text-sm font-semibold text-gray-900">
-              {confirmed === true
-                ? "Bekräftad uppställning"
-                : confirmed === false
-                ? "Inte bekräftad"
-                : "Okänd status"}
-            </p>
-            {/* {data?.provider ? (
-              <p className="text-xs text-gray-400">Källa: {data.provider}</p>
-            ) : null} */}
-          </div>
-          <button
-            type="button"
-          onClick={handleManualRefresh}
-          disabled={!shouldFetchLineups}
-          className="rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-800 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
-        >
-          Uppdatera
-        </button>
-      </div>
-        <div className="flex-none">
-          <CombinedPitch
-            homeLineup={homeLineup}
-            awayLineup={awayLineup}
-            // className="max-h-full "
-          />
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          {homeLineup ? (
-            <TeamLineup
-              lineup={homeLineup}
-              teamLabel="Hemma"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
-              <p>Ingen laguppställning hittades för hemmalaget ännu.</p>
-            </div>
-          )}
-          {awayLineup ? (
-            <TeamLineup
-              lineup={awayLineup}
-              teamLabel="Borta"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
-              <p>Ingen laguppställning hittades för bortalaget ännu.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   const containerClass = [
-    "flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
-    "lg:h-full lg:min-h-0",
+    "flex flex-col rounded-lg",
+    "lg:h-full lg:min-h-0", // Make sure it takes height if needed
     className,
   ]
     .filter(Boolean)
     .join(" ");
 
+  // Handle various states
+  if (!match) {
+    return (
+      <div className={containerClass}>
+        <div className="flex flex-1 items-center justify-center p-6 text-sm text-slate-500">
+          Välj en match för att se laguppställning.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={containerClass}>
-      <div className="border-b border-gray-100 px-4 py-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-          Lineups
-        </h2>
+      {/* Refactored Header: Centered Status & Formations - No Border */}
+      <div className="px-4 py-3 flex justify-center items-center relative">
+        <div className="flex gap-8 items-center">
+          {/* Home Formation */}
+          {homeLineup?.formation && (
+            <span className="text-sm font-mono font-bold text-white bg-white/10 px-2.5 py-1 rounded">
+              {homeLineup.formation}
+            </span>
+          )}
+
+          {/* Status Center */}
+          <div className="flex flex-col items-center">
+            {(confirmed !== undefined) && (
+              <p className={`text-xs font-bold uppercase tracking-widest ${confirmed ? "text-emerald-400" : "text-amber-400"}`}>
+                {confirmed ? "Bekräftad" : "Preliminär"}
+              </p>
+            )}
+          </div>
+
+          {/* Away Formation */}
+          {awayLineup?.formation && (
+            <span className="text-sm font-mono font-bold text-white bg-white/10 px-2.5 py-1 rounded">
+              {awayLineup.formation}
+            </span>
+          )}
+        </div>
+
+        {/* Refresh button absolute right */}
+        <button
+          type="button"
+          onClick={handleManualRefresh}
+          disabled={!shouldFetchLineups}
+          className="absolute right-4 text-[10px] font-semibold text-slate-500 hover:text-white disabled:opacity-30 uppercase tracking-wider"
+        >
+          Refresh
+        </button>
       </div>
+
       <div className="flex flex-col lg:flex-1 lg:min-h-0">
-        <div className="hidden lg:flex lg:flex-[0_0_31.5%] lg:flex-col lg:min-h-0">
-          <TeamOddsHistory
-            match={match}
-            className="border-b border-gray-100 lg:flex-1 lg:min-h-0"
-          />
+
+        {/* Mobile View: Stacked */}
+        <div className="lg:hidden flex flex-col gap-6 p-4">
+          {/* Mobile Pitch */}
+          <div className="flex-none">
+            <CombinedPitch homeLineup={homeLineup} awayLineup={awayLineup} />
+          </div>
+
+          {/* Mobile Lists */}
+          <div className="grid gap-6">
+            {homeLineup && <TeamLineup lineup={homeLineup} teamLabel="Hemma" />}
+            {awayLineup && <TeamLineup lineup={awayLineup} teamLabel="Borta" />}
+          </div>
+
+          {/* Mobile Odds */}
+          <TeamOddsHistory match={match} />
         </div>
-        <div className="flex flex-col pr-2 lg:flex-[2] lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain">
-          {content}
+
+        {/* Desktop View: 3-column Grid (3fr-4fr-3fr) */}
+        <div className="hidden lg:grid lg:grid-cols-[3fr_4fr_3fr] gap-4 p-4 h-full items-start overflow-y-auto">
+
+          {/* Left Column: Home Odds - FIXED WIDTH */}
+          <div className="flex flex-col gap-4">
+            <TeamOddsSingle teamName={match?.homeTeamName} className="w-full" />
+          </div>
+
+          {/* Center Column: Pitch + Lineups */}
+          <div className="flex flex-col gap-4">
+            {/* Pitch */}
+            <div className="flex-none">
+              {loading ? (
+                <div className="h-[300px] flex items-center justify-center text-slate-500">Hämtar pitch...</div>
+              ) : (
+                <CombinedPitch homeLineup={homeLineup} awayLineup={awayLineup} />
+              )}
+            </div>
+
+            {/* Lineup Cards */}
+            <div className="grid gap-4 md:grid-cols-2">
+              {homeLineup ? (
+                <TeamLineup lineup={homeLineup} teamLabel="Hemma" />
+              ) : (
+                <div className="p-4 text-center border border-dashed border-white/10 rounded-lg text-slate-500 text-xs text-slate-500">
+                  {loading ? "Laddar..." : "Ingen info hemma"}
+                </div>
+              )}
+              {awayLineup ? (
+                <TeamLineup lineup={awayLineup} teamLabel="Borta" />
+              ) : (
+                <div className="p-4 text-center border border-dashed border-white/10 rounded-lg text-slate-500 text-xs text-slate-500">
+                  {loading ? "Laddar..." : "Ingen info borta"}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Away Odds - FIXED WIDTH */}
+          <div className="flex flex-col gap-4">
+            <TeamOddsSingle teamName={match?.awayTeamName} className="w-full" />
+          </div>
+
         </div>
+
       </div>
     </div>
   );

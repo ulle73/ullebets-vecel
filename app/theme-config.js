@@ -7,4 +7,4 @@ export const AVAILABLE_THEMES = [
   "light-animations",
 ];
 
-export const ACTIVE_THEME = "light-clean  ";
+export const ACTIVE_THEME = "dark-clean";

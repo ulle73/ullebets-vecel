@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import styles from "./TeamCompare.module.css";
+import GameStateChart from "./GameStateChart";
 import {
   buildTeamProfileKeyForMatch,
   toNumericId,
@@ -70,7 +71,7 @@ const SHOTS_PER_TEN_MINUTES_METRICS = [
   { key: "81-90", label: "81-90 min" },
 ];
 
-const PERIOD_OPTIONS = [
+export const PERIOD_OPTIONS = [
   { value: "ALL", label: "Hela matchen" },
   { value: "1ST", label: "Första halvlek" },
   { value: "2ND", label: "Andra halvlek" },
@@ -395,7 +396,7 @@ function useTeamProfiles(match) {
   };
 }
 
-export default function TeamCompare({ match, isLoading, error, className = "" }) {
+export default function TeamCompare({ match, isLoading, error, className = "", period = "ALL" }) {
   useEffect(() => {
     if (!match) {
       debug("render", { state: "no-match" });
@@ -420,23 +421,24 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
   const loading = isLoading || isProfileLoading;
   const combinedError = error ?? profileError ?? null;
 
-  const [selectedPeriod, setSelectedPeriod] = useState(PERIOD_OPTIONS[0].value);
+  // Internal state removed, use prop
+  const selectedPeriod = period || "ALL";
   const selectedPeriodOption =
     PERIOD_OPTIONS.find((option) => option.value === selectedPeriod) ?? PERIOD_OPTIONS[0];
 
   const homeTeamId =
     toNumericId(
       match?.homeTeamId ??
-        match?.raw?.homeTeamId ??
-        match?.homeTeam?.id ??
-        match?.raw?.homeTeam?.id
+      match?.raw?.homeTeamId ??
+      match?.homeTeam?.id ??
+      match?.raw?.homeTeam?.id
     ) ?? null;
   const awayTeamId =
     toNumericId(
       match?.awayTeamId ??
-        match?.raw?.awayTeamId ??
-        match?.awayTeam?.id ??
-        match?.raw?.awayTeam?.id
+      match?.raw?.awayTeamId ??
+      match?.awayTeam?.id ??
+      match?.raw?.awayTeam?.id
     ) ?? null;
   const homeTeamLabel =
     match?.homeTeamName ??
@@ -458,12 +460,25 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
   }, [combinedError]);
 
   const containerClass = [
-    "flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm",
+    "flex flex-col rounded-lg border border-gray-200 bg-gray-50 shadow-sm",
     "lg:h-full lg:min-h-0",
     className,
   ]
     .filter(Boolean)
     .join(" ");
+
+  /* Helper to calculate bar widths */
+  const calculateBarWidths = (homeVal, awayVal, maxVal) => {
+    const rawHome = typeof homeVal === 'number' ? homeVal : 0;
+    const rawAway = typeof awayVal === 'number' ? awayVal : 0;
+    const safeMax = typeof maxVal === 'number' && maxVal > 0 ? maxVal : Math.max(rawHome, rawAway, 1);
+
+    // Cap at 100%
+    const homePct = Math.min((rawHome / safeMax) * 100, 100);
+    const awayPct = Math.min((rawAway / safeMax) * 100, 100);
+
+    return { homePct, awayPct };
+  };
 
   const renderComparisonTable = (key, title, subtitle, rows, options = {}) => {
     const { layout = "forAgainst" } = options;
@@ -480,37 +495,69 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
           </div>
           <div className={styles.table}>
             <div className={styles.headerRow}>
-              <span className={styles.simpleHeaderMetric}>Metric</span>
               <span className={`${styles.simpleHeaderTeam} ${styles.simpleHeaderTeamHome}`}>
                 {homeTeamLabel}
               </span>
+              <span className={styles.metricLabel} style={{ gridColumn: 2 }}>Metric</span>
               <span className={`${styles.simpleHeaderTeam} ${styles.simpleHeaderTeamAway}`}>
                 {awayTeamLabel}
               </span>
             </div>
             <div className={styles.rows}>
-              {rows.map((row) => (
-                <div className={styles.row} key={row.key}>
-                  <div className={styles.metric}>
-                    <span className={styles.metricLabel}>{row.label}</span>
-                    {row.hint ? <span className={styles.metricHint}>{row.hint}</span> : null}
+              {rows.map((row) => {
+                // Single layout typically compares one scalar per team
+                // We can show a simple bar fill if we assume max is max(home, away) * 1.2
+                const homeVal = parseFloat(row.home.display) || 0;
+                const awayVal = parseFloat(row.away.display) || 0;
+                const maxVal = Math.max(homeVal, awayVal) * 1.1 || 10;
+                const { homePct, awayPct } = calculateBarWidths(homeVal, awayVal, maxVal);
+
+                // For league avg marker
+                const leagueVal = row.hint ? parseFloat(row.hint.split(': ')[1]) : null;
+                const leaguePct = leagueVal ? (leagueVal / maxVal) * 100 : null;
+
+                return (
+                  <div className={styles.row} key={row.key}>
+
+                    <div className={`${styles.barCell} ${styles.barCellHome}`}>
+                      <div className={styles.barContainer}>
+                        <div className={`${styles.barFill} ${styles.barFillHome}`} style={{ width: `${homePct}%` }} />
+                        {leaguePct && <div className={styles.avgMarker} style={{ right: `${100 - leaguePct}%` }} />}
+                      </div>
+                    </div>
+
+                    <div className={`${styles.valueCell} ${styles.valueCellHome}`}>
+                      <span>{row.home.display}</span>
+                      {renderRankBadge(row.home)}
+                    </div>
+
+                    <div className={styles.metric}>
+                      <span className={styles.metricLabel}>{row.label}</span>
+                      {/* Hint often too long for this tight space, maybe tooltip? Or simplified */}
+                    </div>
+
+                    <div className={`${styles.valueCell} ${styles.valueCellAway}`}>
+                      <span>{row.away.display}</span>
+                      {renderRankBadge(row.away)}
+                    </div>
+
+                    <div className={`${styles.barCell} ${styles.barCellAway}`}>
+                      <div className={styles.barContainer}>
+                        <div className={`${styles.barFill} ${styles.barFillAway}`} style={{ width: `${awayPct}%` }} />
+                        {leaguePct && <div className={styles.avgMarker} style={{ left: `${leaguePct}%` }} />}
+                      </div>
+                    </div>
+
                   </div>
-                  <div className={styles.valueCell}>
-                    <span>{row.home.display}</span>
-                    {renderRankBadge(row.home)}
-                  </div>
-                  <div className={styles.valueCell}>
-                    <span>{row.away.display}</span>
-                    {renderRankBadge(row.away)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
       );
     }
 
+    // "forAgainst" layout (Main stats)
     return (
       <div className={styles.section} key={key}>
         <div className={styles.sectionHeader}>
@@ -518,64 +565,166 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
           <h3 className={styles.sectionTitle}>{title}</h3>
         </div>
         <div className={styles.table}>
-          <div className={styles.mainHeader}>
-            <span
-              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelHomeFor}`}
-            >
-              For
-            </span>
-            <span
-              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelHomeAgainst}`}
-            >
-              Against
-            </span>
-            <span className={styles.mainHeaderMetric}>Metric</span>
-            <span
-              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelAwayFor}`}
-            >
-              For
-            </span>
-            <span
-              className={`${styles.mainHeaderLabel} ${styles.mainHeaderLabelAwayAgainst}`}
-            >
-              Against
-            </span>
-          </div>
+          {/* We hide the complex header in CSS or repurpose it */}
+
           <div className={styles.rows}>
-            {rows.map((row) => (
-              <div className={`${styles.row} ${styles.mainRow}`} key={row.key}>
-                <div
-                  className={`${styles.valueCell} ${styles.valueCellHome} ${styles.valueCellFor}`}
-                >
-                  <span>{row.home.for.display}</span>
-                  {renderRankBadge(row.home.for)}
+            {/* Header Labels for columns (Custom insertion) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 140px 60px 1fr', padding: '8px 18px', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              <div style={{ textAlign: 'right' }}>{homeTeamLabel}</div>
+              <div style={{ gridColumn: '2/5', textAlign: 'center' }}>Stats (For)</div>
+              <div style={{ textAlign: 'left' }}>{awayTeamLabel}</div>
+            </div>
+
+            {rows.map((row) => {
+              const parseVal = (str) => {
+                if (!str) return 0;
+                return parseFloat(String(str).replace(',', '.')) || 0;
+              };
+
+              // FOR STATS
+              const homeFor = parseVal(row.home.for.display);
+              const awayFor = parseVal(row.away.for.display);
+
+              // Extract league avg for 'For'
+              let leagueForVal = null;
+              let leagueAgainstVal = null;
+
+              if (row.hint) {
+                const avgMatch = row.hint.match(/(\d+[.,]?\d*)/g);
+                if (avgMatch) {
+                  if (row.hint.includes("for/against") && avgMatch.length >= 2) {
+                    leagueForVal = parseFloat(avgMatch[0].replace(',', '.'));
+                    leagueAgainstVal = parseFloat(avgMatch[1].replace(',', '.'));
+                  } else if (row.hint.includes("for") && avgMatch.length >= 1) {
+                    leagueForVal = parseFloat(avgMatch[0].replace(',', '.'));
+                  }
+                }
+              }
+
+              // Scale
+              const maxFor = Math.max(homeFor, awayFor, leagueForVal || 0, 0.1) * 1.25;
+              const { homePct: homeForPct, awayPct: awayForPct } = calculateBarWidths(homeFor, awayFor, maxFor);
+              const leagueForPct = leagueForVal ? (leagueForVal / maxFor) * 100 : null;
+
+              // Opacity Logic (For): Higher is Better -> Stronger Color
+              const homeForOp = homeFor >= awayFor ? 1 : 0.3;
+              const awayForOp = awayFor >= homeFor ? 1 : 0.3;
+
+              return (
+                <div key={row.key} className={styles.subRows}>
+                  {/* FOR ROW */}
+                  <div className={styles.subRow}>
+                    <div className={`${styles.barCell} ${styles.barCellHome}`}>
+                      <div className={styles.barContainer}>
+                        <div
+                          className={`${styles.barFill} ${styles.barFillHome}`}
+                          style={{
+                            width: `${homeForPct}%`,
+                            background: '#10b981',
+                            opacity: homeForOp,
+                            boxShadow: `0 0 8px rgba(16, 185, 129, ${homeForOp * 0.5})`
+                          }}
+                        />
+                        {leagueForPct && <div className={styles.avgMarker} style={{ right: `${leagueForPct}%` }} title={`League Avg: ${leagueForVal}`} />}
+                      </div>
+                    </div>
+                    <div className={`${styles.valueCell} ${styles.valueCellHome}`}>
+                      {renderRankBadge(row.home.for)}
+                      <span>{row.home.for.display}</span>
+                    </div>
+
+                    <div className={styles.metric}>
+                      <span className={styles.metricLabel}>{row.label}</span>
+                      <span className={styles.subRowLabel} style={{ fontSize: '0.6rem', color: '#10b981' }}>FOR</span>
+                    </div>
+
+                    <div className={`${styles.valueCell} ${styles.valueCellAway}`}>
+                      <span>{row.away.for.display}</span>
+                      {renderRankBadge(row.away.for)}
+                    </div>
+                    <div className={`${styles.barCell} ${styles.barCellAway}`}>
+                      <div className={styles.barContainer}>
+                        <div
+                          className={`${styles.barFill} ${styles.barFillAway}`}
+                          style={{
+                            width: `${awayForPct}%`,
+                            background: '#10b981', // Same Green
+                            opacity: awayForOp,
+                            boxShadow: `0 0 8px rgba(16, 185, 129, ${awayForOp * 0.5})`
+                          }}
+                        />
+                        {leagueForPct && <div className={styles.avgMarker} style={{ left: `${leagueForPct}%` }} title={`League Avg: ${leagueForVal}`} />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AGAINST ROW */}
+                  <div className={styles.subRow} style={{ marginTop: '-4px' }}>
+                    {(() => {
+                      const homeAg = parseVal(row.home.against.display);
+                      const awayAg = parseVal(row.away.against.display);
+
+                      const maxAg = Math.max(homeAg, awayAg, leagueAgainstVal || 0, 0.1) * 1.25;
+                      const { homePct: hP, awayPct: aP } = calculateBarWidths(homeAg, awayAg, maxAg);
+                      const leagueAgPct = leagueAgainstVal ? (leagueAgainstVal / maxAg) * 100 : null;
+
+                      // Opacity Logic (Against): Lower is Better -> Stronger Color
+                      // Higher (Worse) gets weak opacity per "det högre talet ska färgen visas svagare"
+                      const homeAgOp = homeAg <= awayAg ? 1 : 0.3;
+                      const awayAgOp = awayAg <= homeAg ? 1 : 0.3;
+
+                      return (
+                        <>
+                          <div className={`${styles.barCell} ${styles.barCellHome}`}>
+                            <div className={styles.barContainer} style={{ height: '4px', opacity: 1 }}> {/* Keep container full opacity, modulate bar */}
+                              <div
+                                className={`${styles.barFill} ${styles.barFillHome}`}
+                                style={{
+                                  width: `${hP}%`,
+                                  background: '#f43f5e',
+                                  boxShadow: 'none',
+                                  opacity: homeAgOp
+                                }}
+                              />
+                              {leagueAgPct && <div className={styles.avgMarker} style={{ right: `${leagueAgPct}%`, height: '140%', top: '-20%' }} title={`League Avg: ${leagueAgainstVal}`} />}
+                            </div>
+                          </div>
+                          <div className={`${styles.valueCell} ${styles.valueCellHome}`} style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                            {/* Added Rank Badge for Against */}
+                            {renderRankBadge(row.home.against)}
+                            <span>{row.home.against.display}</span>
+                          </div>
+
+                          <div className={styles.metric}>
+                            <span className={styles.subRowLabel} style={{ fontSize: '0.6rem', color: '#f43f5e' }}>AGAINST</span>
+                          </div>
+
+                          <div className={`${styles.valueCell} ${styles.valueCellAway}`} style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                            <span>{row.away.against.display}</span>
+                            {/* Added Rank Badge for Against */}
+                            {renderRankBadge(row.away.against)}
+                          </div>
+                          <div className={`${styles.barCell} ${styles.barCellAway}`}>
+                            <div className={styles.barContainer} style={{ height: '4px', opacity: 1 }}>
+                              <div
+                                className={`${styles.barFill} ${styles.barFillAway}`}
+                                style={{
+                                  width: `${aP}%`,
+                                  background: '#f43f5e', // Same Red
+                                  boxShadow: 'none',
+                                  opacity: awayAgOp
+                                }}
+                              />
+                              {leagueAgPct && <div className={styles.avgMarker} style={{ left: `${leagueAgPct}%`, height: '140%', top: '-20%' }} title={`League Avg: ${leagueAgainstVal}`} />}
+                            </div>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
                 </div>
-                <div
-                  className={`${styles.valueCell} ${styles.valueCellHome} ${styles.valueCellAgainst}`}
-                >
-                  <span>{row.home.against.display}</span>
-                  {renderRankBadge(row.home.against)}
-                </div>
-                <div className={`${styles.metric} ${styles.metricMain}`}>
-                  <span className={styles.metricLabel}>{row.label}</span>
-                  {row.hint ? (
-                    <span className={styles.metricHint}>{row.hint}</span>
-                  ) : null}
-                </div>
-                <div
-                  className={`${styles.valueCell} ${styles.valueCellAway} ${styles.valueCellFor}`}
-                >
-                  <span>{row.away.for.display}</span>
-                  {renderRankBadge(row.away.for)}
-                </div>
-                <div
-                  className={`${styles.valueCell} ${styles.valueCellAway} ${styles.valueCellAgainst}`}
-                >
-                  <span>{row.away.against.display}</span>
-                  {renderRankBadge(row.away.against)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -613,30 +762,43 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
         formatter
       );
 
+      // We pass raw values for bar calculation if needed, but display is used for text
+      // Ideally we refactor 'rows' to include raw numbers for bars
+
       return {
         key,
         label,
         hint: leagueAvgHint,
+        // Passing raw values for bar calc
         home: {
           for: {
             display: formatMetricValue(homeForNode?.value, formatter),
             rank: homeForNode?.rank ?? null,
+            raw: homeForNode?.value
           },
           against: {
             display: formatMetricValue(homeAgainstNode?.value, formatter),
             rank: homeAgainstNode?.rank ?? null,
+            raw: homeAgainstNode?.value
           },
         },
         away: {
           for: {
             display: formatMetricValue(awayForNode?.value, formatter),
             rank: awayForNode?.rank ?? null,
+            raw: awayForNode?.value
           },
           against: {
             display: formatMetricValue(awayAgainstNode?.value, formatter),
             rank: awayAgainstNode?.rank ?? null,
+            raw: awayAgainstNode?.value
           },
         },
+        // Also pass league averages raw
+        league: {
+          for: leagueAvgForNode?.value,
+          against: leagueAvgAgainstNode?.value
+        }
       };
     });
 
@@ -644,7 +806,8 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
       "team-statistics",
       "Lagstatistik",
       selectedPeriodOption.label,
-      rows
+      rows,
+      { layout: "forAgainst" }
     );
   };
 
@@ -686,21 +849,29 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
           for: {
             display: formatMetricValue(homeFor.value, formatRate),
             rank: homeFor.rank,
+            value: homeFor.value
           },
           against: {
             display: formatMetricValue(homeAgainst.value, formatRate),
             rank: homeAgainst.rank,
+            value: homeAgainst.value
           },
         },
         away: {
           for: {
             display: formatMetricValue(awayFor.value, formatRate),
             rank: awayFor.rank,
+            value: awayFor.value
           },
           against: {
             display: formatMetricValue(awayAgainst.value, formatRate),
             rank: awayAgainst.rank,
+            value: awayAgainst.value
           },
+        },
+        league: {
+          for: leagueFor,
+          against: leagueAgainst
         },
         hasData,
       };
@@ -797,12 +968,12 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
 
     if (shotsPerMinuteRows.length) {
       specials.push(
-        renderComparisonTable(
-          "shots-per-minute",
-          "Shots per minute",
-          "Game state",
-          shotsPerMinuteRows
-        )
+        <GameStateChart
+          key="shots-per-minute-chart"
+          rows={shotsPerMinuteRows}
+          homeTeamName={homeTeamLabel}
+          awayTeamName={awayTeamLabel}
+        />
       );
     }
 
@@ -855,63 +1026,16 @@ export default function TeamCompare({ match, isLoading, error, className = "" })
     }
 
     return (
-      <>
-        <div className="mb-6 flex flex-col gap-1">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">Lagprofiler</h2>
-          <p className="text-xs text-gray-500">
-            {match.homeTeamName} vs {match.awayTeamName}
-          </p>
-        </div>
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <label
-            className="text-xs font-semibold uppercase tracking-wide text-gray-600"
-            htmlFor="team-compare-period"
-          >
-            Period
-          </label>
-          <select
-            id="team-compare-period"
-            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={selectedPeriod}
-            onChange={(event) => setSelectedPeriod(event.target.value)}
-          >
-            {PERIOD_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className={styles.teamIdentities}>
-          <div className={styles.teamIdentity}>
-            <TeamLogo
-              teamId={homeTeamId}
-              teamName={homeTeamLabel}
-              size={72}
-              className={styles.teamIdentityLogo}
-            />
-            <span className={styles.teamIdentityName}>{homeTeamLabel}</span>
-          </div>
-          <span className={styles.teamIdentitiesDivider}>vs</span>
-          <div className={styles.teamIdentity}>
-            <TeamLogo
-              teamId={awayTeamId}
-              teamName={awayTeamLabel}
-              size={72}
-              className={styles.teamIdentityLogo}
-            />
-            <span className={styles.teamIdentityName}>{awayTeamLabel}</span>
-          </div>
-        </div>
+      <div className="flex flex-col gap-6 w-full">
         {renderStatistics()}
         {renderSpecials()}
-      </>
+      </div>
     );
   };
 
   return (
     <div className={containerClass}>
-    <div className="overflow-auto p-4 lg:flex-1 lg:min-h-0">{renderBody()}</div>
+      <div className="overflow-auto p-4 lg:flex-1 lg:min-h-0">{renderBody()}</div>
     </div>
   );
 }
