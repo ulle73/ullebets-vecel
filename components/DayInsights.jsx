@@ -74,6 +74,27 @@
     return formatValue(value, { isPercentage: key === "ballPossession" });
   }
 
+  function getPeriodNode(metricNode, period) {
+    if (!metricNode || typeof metricNode !== "object") return null;
+    return metricNode[period] ?? metricNode.ALL ?? null;
+  }
+
+  function readMarketBias(profile, statKey, period) {
+    if (!profile || !statKey || !period) return null;
+    const primary = normalizeStatKeyForScew(statKey);
+    const candidates = [];
+    const node = profile.statistics?.for?.[statKey];
+    const aliasNode =
+      primary && primary !== statKey ? profile.statistics?.for?.[primary] : null;
+    if (node) candidates.push(node);
+    if (aliasNode) candidates.push(aliasNode);
+    for (const cand of candidates) {
+      const p = getPeriodNode(cand, period);
+      if (p?.marketBias) return p.marketBias;
+    }
+    return null;
+  }
+
   function buildFilterChips(options, activeValue, onChange) {
     return options.map((option) => {
       const isActive = option.value === activeValue;
@@ -211,6 +232,8 @@
                 }
                 return null;
               })();
+              const marketBias = type === "for" ? readMarketBias(entry.profile, key, period) : null;
+              const behaviour = entry.profile?.behaviour ?? null;
               points.push({
                 key: `${entry.key}:${key}:${type}:${period}`,
                 metricKey: key,
@@ -225,6 +248,8 @@
                 value,
                 displayValue: formatStatValue(key, value),
                 scewScore,
+                marketBias,
+                behaviour,
               });
             }
           }
@@ -296,6 +321,30 @@
                       }`}
                     >
                       SCEW {(point.scewScore > 0 ? "+" : "") + point.scewScore.toFixed(1)}
+                    </span>
+                  ) : null}
+                  {point.marketBias ? (
+                    <span
+                      className={`ml-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        point.marketBias.direction === "over"
+                          ? "bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/30"
+                          : point.marketBias.direction === "under"
+                          ? "bg-rose-500/10 text-rose-700 ring-1 ring-rose-500/30"
+                          : "bg-slate-100 text-slate-700 ring-1 ring-slate-300/60"
+                      }`}
+                    >
+                      MB {point.marketBias.direction ?? "–"}
+                      {Number.isFinite(point.marketBias.bias)
+                        ? ` ${point.marketBias.bias.toFixed(2)}`
+                        : ""}
+                      {Number.isFinite(point.marketBias.sampleSize)
+                        ? ` · n=${point.marketBias.sampleSize}`
+                        : ""}
+                    </span>
+                  ) : null}
+                  {point.behaviour?.label ? (
+                    <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-300/60">
+                      {point.behaviour.emoji ?? "•"} {point.behaviour.label}
                     </span>
                   ) : null}
                 </div>
