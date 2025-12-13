@@ -120,6 +120,22 @@ function readRank(profile, type, statKey, period) {
   return Number.isFinite(num) ? num : null;
 }
 
+function readMarketBias(profile, statKey, period) {
+  if (!profile || !statKey || !period) return null;
+  const primary = normalizeStatKeyForScew(statKey);
+  const candidates = [];
+  const node = profile.statistics?.for?.[statKey];
+  const aliasNode =
+    primary && primary !== statKey ? profile.statistics?.for?.[primary] : null;
+  if (node) candidates.push(node);
+  if (aliasNode) candidates.push(aliasNode);
+  for (const cand of candidates) {
+    const p = getPeriodNode(cand, period);
+    if (p?.marketBias) return p.marketBias;
+  }
+  return null;
+}
+
 function normalizeMatch(item) {
   if (!item) return null;
   const id = String(
@@ -358,6 +374,17 @@ function buildLeagueAvgSnapshot(pairs, limit = 200) {
             scopeLabel,
             condition: "ratio",
             score: roundScore(normalized),
+            marketBias:
+              scopeKey === "home"
+                ? readMarketBias(pair.home.profile, statKey, periodKey)
+                : scopeKey === "away"
+                ? readMarketBias(pair.away.profile, statKey, periodKey)
+                : {
+                    home: readMarketBias(pair.home.profile, statKey, periodKey),
+                    away: readMarketBias(pair.away.profile, statKey, periodKey),
+                  },
+            homeBehaviour: pair.home.profile?.behaviour ?? null,
+            awayBehaviour: pair.away.profile?.behaviour ?? null,
             forecast: {
               baseline: forecastBundle?.baseline?.perScope?.[bundleScope] ?? null,
               leagueBaseline: forecastBundle?.baseline?.league?.perScope?.[bundleScope] ?? null,
