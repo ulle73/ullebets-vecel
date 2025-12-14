@@ -850,7 +850,7 @@ export function AIUserWorkspace({ defaultDate }) {
                   />
                 ) : (
                   <div className="w-full max-w-4xl mx-auto grid gap-3 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1 text-sm text-slate-200">
+                    <label className="flex flex-col gap-1 text-sm text-white">
                       Min odds
                       <input
                         type="number"
@@ -861,10 +861,10 @@ export function AIUserWorkspace({ defaultDate }) {
                           handleOddsRangeChange({ min: Number(e.target.value), max: oddsRange.max })
                         }
                         disabled={!showResults}
-                        className="rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                        className="rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-white/80 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
                       />
                     </label>
-                    <label className="flex flex-col gap-1 text-sm text-slate-200">
+                    <label className="flex flex-col gap-1 text-sm text-white">
                       Max odds
                       <input
                         type="number"
@@ -875,7 +875,7 @@ export function AIUserWorkspace({ defaultDate }) {
                           handleOddsRangeChange({ min: oddsRange.min, max: Number(e.target.value) })
                         }
                         disabled={!showResults}
-                        className="rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                        className="rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-white/80 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
                       />
                     </label>
                   </div>
@@ -920,5 +920,4 @@ export function AIUserWorkspace({ defaultDate }) {
     </div>
   );
 }
-
 
