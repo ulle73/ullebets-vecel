@@ -472,10 +472,12 @@ async function buildPairs(matches, client) {
       leagueId: hId ?? aId ?? match.leagueId ?? null,
       leagueName: hName ?? aName ?? leagueName,
       home: {
+        id: match.homeTeamId,
         name: homeProfile?.meta?.lagnamn ?? match.homeTeamName ?? "Hemma",
         profile: homeProfile,
       },
       away: {
+        id: match.awayTeamId,
         name: awayProfile?.meta?.lagnamn ?? match.awayTeamName ?? "Borta",
         profile: awayProfile,
       },
@@ -545,6 +547,8 @@ function buildScoreSnapshot(pairs, leagueSizeMap, limit = 200) {
           league: p.leagueName,
           leagueId: p.leagueId,
           matchId: p.matchId,
+          homeTeamId: p.home.id,
+          awayTeamId: p.away.id,
           statKey,
           statLabel,
           period: periodKey,

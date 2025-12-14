@@ -440,7 +440,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
 
   const showDetails = Boolean(selectedMatchSummary);
 
-  const containerWidthClass = showDetails ? "max-w-full" : "md:max-w-[70vw]";
+  const containerWidthClass = showDetails ? "max-w-full" : "md:max-w-[85vw]";
   const containerPaddingClass = showDetails ? "px-3 sm:px-6 lg:px-8" : "px-4 sm:px-6";
   const gridColumnsClass = showDetails
     ? "grid-cols-1 md:[grid-template-columns:500px_1fr] xl:[grid-template-columns:550px_1fr]"
