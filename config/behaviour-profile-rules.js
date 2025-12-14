@@ -10,11 +10,11 @@
 
 // Profile definitions with keys, scores, and labels
 export const PROFILES = {
-  VERY_STRONG_OVER: { key: "VERY_STRONG_OVER", score: 2, label: "🔥 Very Strong Over", emoji: "🔥" },
-  STRONG_OVER: { key: "STRONG_OVER", score: 1, label: "🔴 Strong Over", emoji: "🔴" },
-  NEUTRAL: { key: "NEUTRAL", score: 0, label: "⚪ Neutral", emoji: "⚪" },
-  STRONG_UNDER: { key: "STRONG_UNDER", score: -1, label: "🔵 Strong Under", emoji: "🔵" },
-  VERY_STRONG_UNDER: { key: "VERY_STRONG_UNDER", score: -2, label: "🧊 Very Strong Under", emoji: "🧊" },
+  VERY_STRONG_OVER: { key: "VERY_STRONG_OVER", score: 2, label: "Very Strong Over", emoji: "🔥" },
+  STRONG_OVER: { key: "STRONG_OVER", score: 1, label: "Strong Over", emoji: "🔴" },
+  NEUTRAL: { key: "NEUTRAL", score: 0, label: "Neutral", emoji: "⚪" },
+  STRONG_UNDER: { key: "STRONG_UNDER", score: -1, label: "Strong Under", emoji: "🔵" },
+  VERY_STRONG_UNDER: { key: "VERY_STRONG_UNDER", score: -2, label: "Very Strong Under", emoji: "🧊" },
 };
 
 // Priority order for profile evaluation (first match wins)
@@ -201,22 +201,24 @@ function evaluateProfile(profileKey, context) {
  * 
  * @param {Object} specials - The team's specials object from teamprofile
  * @param {Object} leagueAverage - The league's average specials object
+ * @param {string} side - "for" (offensive) or "against" (defensive), default "for"
  * @returns {Object} { key, score, label, emoji }
  */
-export function computeBehaviourProfile(specials, leagueAverage) {
+export function computeBehaviourProfile(specials, leagueAverage, side = "for") {
   // Build context object with all required variables
   const shotsPerMin = specials?.shotsPerMinute || {};
   const firstGoal = specials?.firstGoal || {};
   const leagueShotsPerMin = leagueAverage?.shotsPerMinute || {};
   const leagueFirstGoal = leagueAverage?.firstGoal || {};
 
-  const shots_trailing = shotsPerMin.for?.trailing ?? null;
-  const shots_leading = shotsPerMin.for?.leading ?? null;
-  const shots_tied = shotsPerMin.for?.tied ?? null;
+  // Use the 'side' parameter to read from .for or .against
+  const shots_trailing = shotsPerMin[side]?.trailing ?? null;
+  const shots_leading = shotsPerMin[side]?.leading ?? null;
+  const shots_tied = shotsPerMin[side]?.tied ?? null;
 
-  const league_avg_trailing = leagueShotsPerMin.for?.trailing ?? null;
-  const league_avg_leading = leagueShotsPerMin.for?.leading ?? null;
-  const league_avg_tied = leagueShotsPerMin.for?.tied ?? null;
+  const league_avg_trailing = leagueShotsPerMin[side]?.trailing ?? null;
+  const league_avg_leading = leagueShotsPerMin[side]?.leading ?? null;
+  const league_avg_tied = leagueShotsPerMin[side]?.tied ?? null;
 
   // Calculate delta_trail_lead
   const delta_trail_lead = (shots_trailing !== null && shots_leading !== null)

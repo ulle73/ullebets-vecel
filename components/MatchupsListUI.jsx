@@ -3,6 +3,14 @@
 import Image from "next/image";
 import { deriveScopeLabel } from "@/lib/utils/matchups";
 
+const BEHAVIOUR_EXPLANATIONS = {
+  "VERY_STRONG_OVER": "Öser in mål och släpper in lika många.",
+  "STRONG_OVER": "Tenderar att spela målrika matcher.",
+  "NEUTRAL": "Ingen tydlig mål-bias.",
+  "STRONG_UNDER": "Tenderar att hålla tätt bakåt.",
+  "VERY_STRONG_UNDER": "Extremt defensiva, få mål."
+};
+
 export const DEFAULT_SCORE_THRESHOLDS = { high: 95, medium: 70 };
 
 export function ScoreChip({ score, formatScore, thresholds }) {
@@ -200,24 +208,51 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
               (r.marketBias.direction && <SignalBar label="Market" value={r.marketBias.direction} color={r.marketBias.direction === 'over' ? "bg-emerald-500" : "bg-rose-500"} />)
             )}
 
-            {/* Behaviour */}
-            {(r.homeBehaviour?.label || r.awayBehaviour?.label) && (
+            {/* Behaviour - Offensive (.for) */}
+            {(r.homeBehaviour?.for?.key || r.awayBehaviour?.for?.key) && (
               <>
-                {r.homeBehaviour?.label && (
-                  <div className="flex items-center justify-between gap-3 text-[10px] w-full">
-                    <span className="text-slate-400 font-medium">Trend (H)</span>
-                    <span className="text-slate-200">{r.homeBehaviour.emoji} {r.homeBehaviour.label.replace(/Very Strong|Strong/, '').trim()}</span>
+                {r.homeBehaviour?.for?.key && (
+                  <div className="flex flex-col gap-0.5 w-full">
+                    <div className="flex items-center justify-between gap-2 text-[10px]">
+                      <span className="text-slate-400 font-medium">Offensiv (H)</span>
+                      <span className="text-slate-200">{r.homeBehaviour.for.emoji} {BEHAVIOUR_EXPLANATIONS[r.homeBehaviour.for.key] || r.homeBehaviour.for.label}</span>
+                    </div>
                   </div>
                 )}
-                {r.awayBehaviour?.label && (
-                  <div className="flex items-center justify-between gap-3 text-[10px] w-full">
-                    <span className="text-slate-400 font-medium">Trend (A)</span>
-                    <span className="text-slate-200">{r.awayBehaviour.emoji} {r.awayBehaviour.label.replace(/Very Strong|Strong/, '').trim()}</span>
+                {r.awayBehaviour?.for?.key && (
+                  <div className="flex flex-col gap-0.5 w-full">
+                    <div className="flex items-center justify-between gap-2 text-[10px]">
+                      <span className="text-slate-400 font-medium">Offensiv (A)</span>
+                      <span className="text-slate-200">{r.awayBehaviour.for.emoji} {BEHAVIOUR_EXPLANATIONS[r.awayBehaviour.for.key] || r.awayBehaviour.for.label}</span>
+                    </div>
                   </div>
                 )}
               </>
             )}
-            {!r.marketBias && !r.homeBehaviour && !r.awayBehaviour && (
+
+            {/* Behaviour - Defensive (.against) */}
+            {(r.homeBehaviour?.against?.key || r.awayBehaviour?.against?.key) && (
+              <>
+                {r.homeBehaviour?.against?.key && (
+                  <div className="flex flex-col gap-0.5 w-full">
+                    <div className="flex items-center justify-between gap-2 text-[10px]">
+                      <span className="text-slate-400 font-medium">Defensiv (H)</span>
+                      <span className="text-slate-200">{r.homeBehaviour.against.emoji} {BEHAVIOUR_EXPLANATIONS[r.homeBehaviour.against.key] || r.homeBehaviour.against.label}</span>
+                    </div>
+                  </div>
+                )}
+                {r.awayBehaviour?.against?.key && (
+                  <div className="flex flex-col gap-0.5 w-full">
+                    <div className="flex items-center justify-between gap-2 text-[10px]">
+                      <span className="text-slate-400 font-medium">Defensiv (A)</span>
+                      <span className="text-slate-200">{r.awayBehaviour.against.emoji} {BEHAVIOUR_EXPLANATIONS[r.awayBehaviour.against.key] || r.awayBehaviour.against.label}</span>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {!r.marketBias && !r.homeBehaviour?.for && !r.awayBehaviour?.for && !r.homeBehaviour?.against && !r.awayBehaviour?.against && (
               <span className="text-[10px] text-slate-600 italic">— No strong biases</span>
             )}
           </div>

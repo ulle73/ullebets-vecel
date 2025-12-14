@@ -552,8 +552,12 @@ function buildScoreSnapshot(pairs, leagueSizeMap, limit = 200) {
           statKey,
           statLabel,
           period: periodKey,
-          homeBehaviour: p.home.profile?.behaviour ?? null,
-          awayBehaviour: p.away.profile?.behaviour ?? null,
+          homeBehaviour: p.home.profile?.behaviour 
+            ? { for: p.home.profile.behaviour.for ?? null, against: p.home.profile.behaviour.against ?? null }
+            : null,
+          awayBehaviour: p.away.profile?.behaviour 
+            ? { for: p.away.profile.behaviour.for ?? null, against: p.away.profile.behaviour.against ?? null }
+            : null,
         };
         const scewHome = selectScew(p.home.profile, statKey, periodKey);
         const scewAway = selectScew(p.away.profile, statKey, periodKey);

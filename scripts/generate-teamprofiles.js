@@ -1238,7 +1238,10 @@ async function main() {
         for (const profile of leagueProfilesByMatchType[matchType]) {
           const leagueAverage = profile.specials?.leagueAverage;
           if (leagueAverage) {
-            profile.behaviour = computeBehaviourProfile(profile.specials, leagueAverage);
+            profile.behaviour = {
+              for: computeBehaviourProfile(profile.specials, leagueAverage, "for"),
+              against: computeBehaviourProfile(profile.specials, leagueAverage, "against"),
+            };
           }
         }
       }
