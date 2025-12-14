@@ -163,6 +163,7 @@ export async function POST(request) {
       const enrichedResults = positiveResults.map(result => ({
         ...result,
         date: dateStr,
+        startTime: result.match?.timestamp || result.match?.startTimestamp || result.match?.matchDate,
         generatedAt: new Date(),
       }));
 
@@ -186,3 +187,4 @@ export async function POST(request) {
     }, { status: 500 });
   }
 }
+

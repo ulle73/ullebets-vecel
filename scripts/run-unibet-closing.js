@@ -53,13 +53,15 @@ if (allMatches.length > 0) {
 const upcomingMatches = allMatches.filter(match => {
   const matchTime = coerceDate(match.matchDate || match.timestamp || match.start || match.startTimestamp || match.event?.start);
   if (!matchTime) return false;
-  return matchTime >= now && matchTime <= twentyMinutesFromNow;
+  // Only matches starting between 5-20 minutes from now (to avoid processing matches that might start during execution)
+  const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+  return matchTime >= fiveMinutesFromNow && matchTime <= twentyMinutesFromNow;
 });
 
-console.log(`Found ${upcomingMatches.length} matches starting within 20 minutes`);
+console.log(`Found ${upcomingMatches.length} matches starting between 5-20 minutes from now`);
 
 if (upcomingMatches.length > 0) {
-  console.log("⏰ Upcoming matches within 20 minutes:");
+  console.log("⏰ Upcoming matches within 5-20 minutes:");
   upcomingMatches.forEach((match, index) => {
     // Extract team names from various possible paths
     const homeTeam = match.homeTeamName || match.homeTeam?.name || match.event?.homeName || match.event?.homeTeam?.name || 'Unknown';
@@ -79,12 +81,12 @@ if (upcomingMatches.length > 0) {
 }
 
 if (upcomingMatches.length === 0) {
-  console.log("ℹ️ No matches starting within 20 minutes. Aborting closing odds capture.");
+  console.log("ℹ️ No matches starting within 5-20 minutes. Aborting closing odds capture.");
   process.exit(0);
 }
 
 // Proceed with closing odds capture for matches starting soon
-console.log("✅ Found matches starting soon. Proceeding with closing odds capture...\n");
+console.log("✅ Found matches starting within 5-20 minutes. Proceeding with closing odds capture...\n");
 
 await runBacktest({
   type: "closing",

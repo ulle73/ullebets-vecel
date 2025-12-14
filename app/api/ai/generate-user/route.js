@@ -650,6 +650,7 @@ export async function POST(request) {
         comboRank,
         comboScore,
         date: dateStr,
+        startTime: match.timestamp || match.startTimestamp || match.matchDate,
         generatedAt: new Date(),
         source: "ai-user",
         type: "ai-user",
@@ -680,6 +681,7 @@ export async function POST(request) {
             eventId: match.eventId,
             matchId: match.matchId,
             matchDate: dateStr, // run date as match date placeholder
+            startTime: match.timestamp || match.startTimestamp || match.matchDate,
             league: match.leagueName,
             homeTeam: match.homeTeam,
             awayTeam: match.awayTeam,

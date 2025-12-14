@@ -94,6 +94,20 @@ function SignalBar({ label, value, color, icon }) {
   );
 }
 
+function getTempoCategory(score) {
+  if (!Number.isFinite(score)) return null;
+
+  // Check if mixed (some positive, some negative behaviors)
+  const behaviors = [score]; // Since score is sum, check if it's mixed by checking individual scores
+  // But since we don't have individual, perhaps skip mixed for now
+
+  if (score >= 5) return { label: "EXTREME", color: "bg-red-500", icon: "🔥" };
+  if (score >= 2) return { label: "HIGH", color: "bg-orange-500", icon: "⚡" };
+  if (score >= -1) return { label: "NEUTRAL", color: "bg-yellow-500", icon: "⚪" };
+  if (score >= -4) return { label: "LOW", color: "bg-blue-500", icon: "❄️" };
+  return { label: "DEAD", color: "bg-gray-500", icon: "💀" };
+}
+
 export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
   const scopeLabel = r.scopeLabel ?? deriveScopeLabel(r.scope, r.matchLabel);
   const highlightThreshold = r.scoreThresholds?.high ?? 95;
@@ -130,6 +144,13 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
 
   const [homeName, awayName] = r.matchLabel.split(" vs ");
   const getLogo = (id) => id ? `/images/teams/${id}.png` : "/images/teams/placeholder.png";
+
+  // Only show behaviour for stats related to shooting/goal activity
+  const showBehaviour = ['totalShotsOnGoal', 'shotsOnGoal', 'cornerKicks'].includes(r.statKey);
+
+  // Calculate tempo score only if showing behaviour
+  const tempoScore = showBehaviour ? (r.homeBehaviour?.for?.score ?? 0) + (r.awayBehaviour?.for?.score ?? 0) + (r.homeBehaviour?.against?.score ?? 0) + (r.awayBehaviour?.against?.score ?? 0) : null;
+  const tempoCategory = tempoScore !== null ? getTempoCategory(tempoScore) : null;
 
   return (
     <li className={`flex flex-col gap-4 rounded-2xl border p-5 shadow-2xl transition-all duration-200 group ${borderHighlight}`}>
@@ -208,51 +229,66 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
               (r.marketBias.direction && <SignalBar label="Market" value={r.marketBias.direction} color={r.marketBias.direction === 'over' ? "bg-emerald-500" : "bg-rose-500"} />)
             )}
 
-            {/* Behaviour - Offensive (.for) */}
-            {(r.homeBehaviour?.for?.key || r.awayBehaviour?.for?.key) && (
+            {/* Behaviour sections only for relevant stats */}
+            {showBehaviour && (
               <>
-                {r.homeBehaviour?.for?.key && (
-                  <div className="flex flex-col gap-0.5 w-full">
-                    <div className="flex items-center justify-between gap-2 text-[10px]">
-                      <span className="text-slate-400 font-medium">Offensiv (H)</span>
-                      <span className="text-slate-200">{r.homeBehaviour.for.emoji} {BEHAVIOUR_EXPLANATIONS[r.homeBehaviour.for.key] || r.homeBehaviour.for.label}</span>
-                    </div>
-                  </div>
+                {/* Behaviour - Offensive (.for) */}
+                {(r.homeBehaviour?.for?.key || r.awayBehaviour?.for?.key) && (
+                  <>
+                    {r.homeBehaviour?.for?.key && (
+                      <div className="flex flex-col gap-0.5 w-full">
+                        <div className="flex items-center justify-between gap-2 text-[10px]">
+                          <span className="text-slate-400 font-medium">Offensiv (H)</span>
+                          <span className="text-slate-200">{r.homeBehaviour.for.emoji} {BEHAVIOUR_EXPLANATIONS[r.homeBehaviour.for.key] || r.homeBehaviour.for.label}</span>
+                        </div>
+                      </div>
+                    )}
+                    {r.awayBehaviour?.for?.key && (
+                      <div className="flex flex-col gap-0.5 w-full">
+                        <div className="flex items-center justify-between gap-2 text-[10px]">
+                          <span className="text-slate-400 font-medium">Offensiv (A)</span>
+                          <span className="text-slate-200">{r.awayBehaviour.for.emoji} {BEHAVIOUR_EXPLANATIONS[r.awayBehaviour.for.key] || r.awayBehaviour.for.label}</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
-                {r.awayBehaviour?.for?.key && (
-                  <div className="flex flex-col gap-0.5 w-full">
-                    <div className="flex items-center justify-between gap-2 text-[10px]">
-                      <span className="text-slate-400 font-medium">Offensiv (A)</span>
-                      <span className="text-slate-200">{r.awayBehaviour.for.emoji} {BEHAVIOUR_EXPLANATIONS[r.awayBehaviour.for.key] || r.awayBehaviour.for.label}</span>
-                    </div>
-                  </div>
+
+                {/* Behaviour - Defensive (.against) */}
+                {(r.homeBehaviour?.against?.key || r.awayBehaviour?.against?.key) && (
+                  <>
+                    {r.homeBehaviour?.against?.key && (
+                      <div className="flex flex-col gap-0.5 w-full">
+                        <div className="flex items-center justify-between gap-2 text-[10px]">
+                          <span className="text-slate-400 font-medium">Defensiv (H)</span>
+                          <span className="text-slate-200">{r.homeBehaviour.against.emoji} {BEHAVIOUR_EXPLANATIONS[r.homeBehaviour.against.key] || r.homeBehaviour.against.label}</span>
+                        </div>
+                      </div>
+                    )}
+                    {r.awayBehaviour?.against?.key && (
+                      <div className="flex flex-col gap-0.5 w-full">
+                        <div className="flex items-center justify-between gap-2 text-[10px]">
+                          <span className="text-slate-400 font-medium">Defensiv (A)</span>
+                          <span className="text-slate-200">{r.awayBehaviour.against.emoji} {BEHAVIOUR_EXPLANATIONS[r.awayBehaviour.against.key] || r.awayBehaviour.against.label}</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Tempo Indicator */}
+                {tempoCategory && (
+                  <SignalBar
+                    label="Tempo"
+                    value={tempoCategory.label}
+                    color={tempoCategory.color}
+                    icon={tempoCategory.icon}
+                  />
                 )}
               </>
             )}
 
-            {/* Behaviour - Defensive (.against) */}
-            {(r.homeBehaviour?.against?.key || r.awayBehaviour?.against?.key) && (
-              <>
-                {r.homeBehaviour?.against?.key && (
-                  <div className="flex flex-col gap-0.5 w-full">
-                    <div className="flex items-center justify-between gap-2 text-[10px]">
-                      <span className="text-slate-400 font-medium">Defensiv (H)</span>
-                      <span className="text-slate-200">{r.homeBehaviour.against.emoji} {BEHAVIOUR_EXPLANATIONS[r.homeBehaviour.against.key] || r.homeBehaviour.against.label}</span>
-                    </div>
-                  </div>
-                )}
-                {r.awayBehaviour?.against?.key && (
-                  <div className="flex flex-col gap-0.5 w-full">
-                    <div className="flex items-center justify-between gap-2 text-[10px]">
-                      <span className="text-slate-400 font-medium">Defensiv (A)</span>
-                      <span className="text-slate-200">{r.awayBehaviour.against.emoji} {BEHAVIOUR_EXPLANATIONS[r.awayBehaviour.against.key] || r.awayBehaviour.against.label}</span>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {!r.marketBias && !r.homeBehaviour?.for && !r.awayBehaviour?.for && !r.homeBehaviour?.against && !r.awayBehaviour?.against && (
+            {!r.marketBias && (!showBehaviour || (!r.homeBehaviour?.for && !r.awayBehaviour?.for && !r.homeBehaviour?.against && !r.awayBehaviour?.against && !tempoCategory)) && (
               <span className="text-[10px] text-slate-600 italic">— No strong biases</span>
             )}
           </div>

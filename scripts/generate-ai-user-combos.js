@@ -447,6 +447,7 @@ async function step4CalculateEvAndBuildCombos(dateStr, { matchLookup, matchups, 
       legs: 1,
       comboNumber: index + 1,
       date: dateStr,
+      startTime: match?.matchDate ?? null,
       generatedAt: new Date(),
       source: SOURCE,
     };
