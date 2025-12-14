@@ -383,7 +383,7 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
   const headerContent = (
     <div className="flex flex-col sm:flex-row">
       <div className="flex-1">
-        <div className="mb-2 flex justify-between text-[11px] font-bold tracking-widest text-slate-400">
+        <div className="mb-2 flex justify-between text-[11px] font-bold tracking-widest text-[#b3b3b3]">
           <span>
             {`COMBO ${displayRank}`}
             {displayScore != null
@@ -401,7 +401,7 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
             >
               {evPercent.toFixed(1)}%
             </span>
-            <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
+            <span className="text-[11px] font-medium text-[#b3b3b3] uppercase tracking-wide">
               {betDoc.totalEv ? "Total EV för kombon" : "Expected Value"}
             </span>
           </div>
@@ -504,36 +504,36 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
 
                   {/* Description */}
                   <div>
-                    <p className="text-xl font-bold text-slate-100 leading-tight">
+                    <p className="text-xl font-bold text-white leading-tight">
                       {description}
                     </p>
                   </div>
 
                   {/* Stats Row */}
-                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-slate-400">
-                    <span className="text-slate-300">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-[#b3b3b3]">
+                    <span className="text-[#b3b3b3]">
                       EV: <span className={oddsColor}>{line.primaryEv?.toFixed(1)}%</span>
                     </span>
 
                     <div className="flex items-center gap-1.5">
                       <GlobeIcon />
-                      <span className="text-slate-300">{formatStatText(line.statKey)}</span>
+                      <span className="text-[#b3b3b3]">{formatStatText(line.statKey)}</span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
                       <PinIcon />
-                      <span className="text-slate-300">{line.scope || "total"}</span>
+                      <span className="text-[#b3b3b3]">{line.scope || "total"}</span>
                     </div>
 
                     {matchDateLabel && (
-                      <span className="inline-flex items-center gap-1 text-slate-300">
-                        <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="text-slate-100 font-semibold">{matchDateLabel}</span>
+                      <span className="inline-flex items-center gap-1 text-[#b3b3b3]">
+                        <CalendarIcon className="h-3.5 w-3.5 text-[#b3b3b3]" />
+                        <span className="text-[#b3b3b3] font-semibold">{matchDateLabel}</span>
                       </span>
                     )}
 
                     {showOutcome && line.actual !== null && line.actual !== undefined && (
-                      <span className="text-slate-300">
+                      <span className="text-[#b3b3b3]">
                         Utfall: <span className={oddsColor}>{line.actual}</span>
                       </span>
                     )}
@@ -621,7 +621,7 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
 
                 {/* RIGHT: Odds */}
                 <div className="flex min-w-[80px] flex-col items-end justify-center">
-                  <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#b3b3b3]">
                     Odds
                   </span>
                   <span
@@ -630,9 +630,9 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
                     {Number(displayOdds)?.toFixed(2)}
                   </span>
                   {closingOdds != null && (
-                    <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[#b3b3b3]">
                       Closing odds:{" "}
-                      <span className="text-slate-200">{Number(closingOdds)?.toFixed(2)}</span>
+                      <span className="text-white">{Number(closingOdds)?.toFixed(2)}</span>
                     </span>
                   )}
                 </div>
