@@ -418,7 +418,7 @@ function TeamLineup({ lineup, teamLabel }) {
   }
 
   return (
-    <div className="flex flex-col rounded-lg border border-white/5 bg-white/[0.02] p-4"> {/* Added border */}
+    <div className="flex flex-col rounded-xl overflow-hidden border border-white/5 bg-white/[0.02] p-4"> {/* Added border */}
       <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/80 block mb-0.5">

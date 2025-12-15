@@ -79,21 +79,6 @@ export function FilterChips({ options, value, onChange }) {
   );
 }
 
-function SignalBar({ label, value, color, icon }) {
-  return (
-    <div className="flex items-center justify-between gap-3 text-[10px] w-full">
-      <div className="flex items-center gap-2">
-        <div className={`w-1 h-3 rounded-full ${color}`} />
-        <span className="text-slate-400 font-medium">{label}</span>
-      </div>
-      <span className="text-slate-200 font-bold flex items-center gap-1">
-        {icon && <span>{icon}</span>}
-        {value}
-      </span>
-    </div>
-  );
-}
-
 function getTempoCategory(score) {
   if (!Number.isFinite(score)) return null;
 
@@ -101,11 +86,11 @@ function getTempoCategory(score) {
   const behaviors = [score]; // Since score is sum, check if it's mixed by checking individual scores
   // But since we don't have individual, perhaps skip mixed for now
 
-  if (score >= 5) return { label: "EXTREME", color: "bg-red-500", icon: "🔥" };
-  if (score >= 2) return { label: "HIGH", color: "bg-orange-500", icon: "⚡" };
-  if (score >= -1) return { label: "NEUTRAL", color: "bg-yellow-500", icon: "⚪" };
+  if (score >= 5) return { label: "EXTREME", color: "bg-red-500", icon: "🔥🔥" };
+  if (score >= 2) return { label: "HIGH", color: "bg-orange-500", icon: "🔥" };
+  if (score >= -1) return { label: "NEUTRAL", color: "bg-gray-300", icon: "⚪" };
   if (score >= -4) return { label: "LOW", color: "bg-blue-500", icon: "❄️" };
-  return { label: "DEAD", color: "bg-gray-500", icon: "💀" };
+  return { label: "DEAD", color: "bg-gray-500", icon: "❄️❄️" };
 }
 
 export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
@@ -142,7 +127,9 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
   const isRed = (isOver && pctDelta < 0) || (isUnder && pctDelta > 0);
   const pctTone = isGreen ? "text-emerald-400" : isRed ? "text-rose-400" : "text-slate-400";
 
-  const [homeName, awayName] = r.matchLabel.split(" vs ");
+  const [homeNameRaw = "", awayNameRaw = ""] = (r.matchLabel || "").split(" vs ");
+  const homeName = homeNameRaw || r.homeTeamName || "Hemmalag";
+  const awayName = awayNameRaw || r.awayTeamName || "Bortalag";
   const getLogo = (id) => id ? `/images/teams/${id}.png` : "/images/teams/placeholder.png";
 
   // Only show behaviour for stats related to shooting/goal activity
@@ -151,6 +138,33 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
   // Calculate tempo score only if showing behaviour
   const tempoScore = showBehaviour ? (r.homeBehaviour?.for?.score ?? 0) + (r.awayBehaviour?.for?.score ?? 0) + (r.homeBehaviour?.against?.score ?? 0) + (r.awayBehaviour?.against?.score ?? 0) : null;
   const tempoCategory = tempoScore !== null ? getTempoCategory(tempoScore) : null;
+  const marketBiasRows = [];
+
+  if (r.marketBias?.home?.direction) {
+    marketBiasRows.push({
+      label: homeName,
+      direction: r.marketBias.home.direction,
+    });
+  }
+  if (r.marketBias?.away?.direction) {
+    marketBiasRows.push({
+      label: awayName,
+      direction: r.marketBias.away.direction,
+    });
+  }
+  if (!marketBiasRows.length && r.marketBias?.direction) {
+    marketBiasRows.push({
+      label: r.matchLabel,
+      direction: r.marketBias.direction,
+    });
+  }
+  const hasBehaviourContent = showBehaviour && (
+    r.homeBehaviour?.for?.key ||
+    r.awayBehaviour?.for?.key ||
+    r.homeBehaviour?.against?.key ||
+    r.awayBehaviour?.against?.key ||
+    tempoCategory
+  );
 
   return (
     <li className={`flex flex-col gap-4 rounded-2xl border p-5 shadow-2xl transition-all duration-200 group ${borderHighlight}`}>
@@ -208,7 +222,7 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
         </span>
 
         {/* Period Badge - GRAY (Lighter Text) */}
-        <span className="px-3 py-1 rounded-full bg-[#18181b] border border-white/10 text-[10px] font-bold uppercase tracking-wider text-slate-200 shadow-sm">
+        <span className="px-3 py-1 rounded-full bg-[#18181b] border border-white/10 text-[10px] font-bold uppercase tracking-wider text-gray-400 shadow-sm">
           {r.period}
         </span>
       </div>
@@ -221,13 +235,14 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 opacity-50">BIASES</span>
           <div className="flex flex-col gap-2">
             {/* Market Bias */}
-            {r.marketBias && (r.marketBias.home || r.marketBias.away ?
-              (<>
-                {r.marketBias.home && <SignalBar label="Market (H)" value={r.marketBias.home.direction} color={r.marketBias.home.direction === 'over' ? "bg-emerald-500" : "bg-rose-500"} />}
-                {r.marketBias.away && <SignalBar label="Market (A)" value={r.marketBias.away.direction} color={r.marketBias.away.direction === 'over' ? "bg-emerald-500" : "bg-rose-500"} />}
-              </>) :
-              (r.marketBias.direction && <SignalBar label="Market" value={r.marketBias.direction} color={r.marketBias.direction === 'over' ? "bg-emerald-500" : "bg-rose-500"} />)
-            )}
+            {marketBiasRows.map((row) => (
+              <div key={`${row.label}-${row.direction}`} className="flex items-center gap-2 text-[11px] text-left">
+                <div className={`h-3 w-1 rounded-full ${row.direction === 'over' ? "bg-emerald-500" : "bg-rose-500"}`} />
+                <span className="text-slate-200 font-semibold truncate">{row.label}</span>
+                <span className="text-slate-500">•</span>
+                <span className={row.direction === 'over' ? "text-emerald-400" : "text-rose-400"}>{row.direction}</span>
+              </div>
+            ))}
 
             {/* Behaviour sections only for relevant stats */}
             {showBehaviour && (
@@ -278,17 +293,16 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
 
                 {/* Tempo Indicator */}
                 {tempoCategory && (
-                  <SignalBar
-                    label="Tempo"
-                    value={tempoCategory.label}
-                    color={tempoCategory.color}
-                    icon={tempoCategory.icon}
-                  />
+                  <div className="flex items-center gap-2 text-[10px] text-slate-300">
+                    <div className={`h-3 w-1 rounded-sm ${tempoCategory.color}`} />
+                    <span className="text-slate-500 font-medium">Tempo:</span>
+                    <span className="text-lg leading-none">{tempoCategory.icon}</span>
+                  </div>
                 )}
               </>
             )}
 
-            {!r.marketBias && (!showBehaviour || (!r.homeBehaviour?.for && !r.awayBehaviour?.for && !r.homeBehaviour?.against && !r.awayBehaviour?.against && !tempoCategory)) && (
+            {marketBiasRows.length === 0 && !hasBehaviourContent && (
               <span className="text-[10px] text-slate-600 italic">— No strong biases</span>
             )}
           </div>
@@ -301,7 +315,7 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
           {formattedLeagueBaseline != null && (
             <div className="flex items-center gap-2 text-xs">
               <span className="text-slate-500 font-medium">Ligasnitt:</span>
-              <span className="text-white font-mono font-bold">{formattedLeagueBaseline}</span>
+              <span className="text-slate-50 font-mono font-semibold text-sm">{formattedLeagueBaseline}</span>
             </div>
           )}
 
@@ -309,7 +323,7 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
             <div className="flex flex-col items-end gap-1 mt-1">
               <div className="flex items-center gap-2">
                 <span className="text-slate-500 font-medium text-xs">Utfall:</span>
-                <span className="text-xl font-black text-white leading-none">{formattedOutcomeValue}</span>
+                <span className="text-xl font-black text-slate-50 leading-none">{formattedOutcomeValue}</span>
 
                 {/* Pct Badge + Validated Arrow */}
                 {formattedPct && (
