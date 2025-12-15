@@ -81,7 +81,7 @@ function buildLineSignature(line = {}) {
   return parts.join("|");
 }
 
-function buildSnapshotOddsMap(snapshots = []) {
+function buildSnapshotOddsMap(snapshots = [], startTime = null) {
   if (!Array.isArray(snapshots) || !snapshots.length) return new Map();
   const sorted = [...snapshots].sort((a, b) => {
     const aTime = new Date(a.fetchedAt || 0).getTime();
@@ -90,6 +90,7 @@ function buildSnapshotOddsMap(snapshots = []) {
   });
   const map = new Map();
 
+  // First pass: collect firstOdds
   for (const snap of sorted) {
     const lines = Array.isArray(snap.lines) ? snap.lines : [];
     for (const line of lines) {
@@ -99,13 +100,54 @@ function buildSnapshotOddsMap(snapshots = []) {
       if (!Number.isFinite(oddsVal)) continue;
       if (!map.has(sig)) {
         map.set(sig, { firstOdds: oddsVal, closingOdds: oddsVal });
-      } else {
+      }
+    }
+  }
+
+  // Second pass: find closingOdds from snapshot closest to startTime but not after
+  if (startTime) {
+    const startTimeMs = new Date(startTime).getTime();
+    let closestSnap = null;
+    let minDiff = Infinity;
+
+    for (const snap of sorted) {
+      const snapTime = new Date(snap.fetchedAt || 0).getTime();
+      if (snapTime >= startTimeMs) continue; // Skip snapshots after match start
+      const diff = startTimeMs - snapTime;
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestSnap = snap;
+      }
+    }
+
+    if (closestSnap) {
+      const lines = Array.isArray(closestSnap.lines) ? closestSnap.lines : [];
+      for (const line of lines) {
+        const sig = buildLineSignature(line);
+        if (!sig || !map.has(sig)) continue;
+        const oddsVal = Number(line.odds);
+        if (!Number.isFinite(oddsVal)) continue;
+        const entry = map.get(sig);
+        entry.closingOdds = oddsVal;
+        map.set(sig, entry);
+      }
+    }
+  } else {
+    // Fallback: use the last snapshot (original behavior)
+    for (const snap of sorted) {
+      const lines = Array.isArray(snap.lines) ? snap.lines : [];
+      for (const line of lines) {
+        const sig = buildLineSignature(line);
+        if (!sig || !map.has(sig)) continue;
+        const oddsVal = Number(line.odds);
+        if (!Number.isFinite(oddsVal)) continue;
         const entry = map.get(sig);
         entry.closingOdds = oddsVal;
         map.set(sig, entry);
       }
     }
   }
+
   return map;
 }
 
@@ -272,7 +314,7 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
   const primaryLine = lines[0];
   const displayRank = betDoc.comboRank ?? primaryLine?.comboRank ?? index + 1;
   const displayScore = betDoc.comboScore ?? primaryLine?.comboScore ?? null;
-  const snapshotOddsMap = showOutcome ? buildSnapshotOddsMap(betDoc.snapshots) : new Map();
+  const snapshotOddsMap = showOutcome ? buildSnapshotOddsMap(betDoc.snapshots, betDoc.startTime) : new Map();
 
   // Calculate average matchup score
   const matchupScores = lines.map((line) => {
