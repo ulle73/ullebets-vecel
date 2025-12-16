@@ -4357,5 +4357,423 @@
         }
       }
     ]
+  },
+  {
+    "timestamp": "2025-12-16T00:34:25.273030+00:00",
+    "script": "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier2_trainMetaLearner.py",
+    "returncode": 0,
+    "duration_sec": 55.137,
+    "stdout": "🚀 Starting Tier 2 Meta-Learning Training\n============================================================\n\nFound 75 datasets\n\n\n============================================================\nTraining Tier 2: cornerKicks_away_1ST\n============================================================\nTrain samples: 1135\nVal samples: 172\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 8.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.07\n  Val MAE:   1.66\n  Val RMSE:  2.20\n  Val R²:    -0.530\n\n🔍 Top 5 Features:\n  Feature 86: 0.216\n  Feature 81: 0.192\n  Feature 111: 0.097\n  Feature 202: 0.097\n  Feature 84: 0.089\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_away_1ST_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_away_2ND\n============================================================\nTrain samples: 1220\nVal samples: 218\n✅ Loaded Tier 1 model\n✅ Using 44 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 7.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.05\n  Val MAE:   1.44\n  Val RMSE:  1.83\n  Val R²:    -0.395\n\n🔍 Top 5 Features:\n  Feature 94: 0.130\n  Feature 85: 0.121\n  Feature 77: 0.087\n  Feature 98: 0.066\n  Feature 202: 0.061\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_away_2ND_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_away_ALL\n============================================================\nTrain samples: 2243\nVal samples: 390\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 13.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.20\n  Val MAE:   2.65\n  Val RMSE:  3.27\n  Val R²:    -0.345\n\n🔍 Top 5 Features:\n  Feature 94: 0.192\n  Feature 85: 0.152\n  Feature 86: 0.100\n  Feature 202: 0.069\n  Feature 116: 0.043\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_home_1ST\n============================================================\nTrain samples: 1389\nVal samples: 210\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 9.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.05\n  Val MAE:   0.98\n  Val RMSE:  1.41\n  Val R²:    -0.252\n\n🔍 Top 5 Features:\n  Feature 105: 0.131\n  Feature 83: 0.117\n  Feature 112: 0.097\n  Feature 110: 0.088\n  Feature 24: 0.087\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_home_1ST_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_home_2ND\n============================================================\nTrain samples: 1437\nVal samples: 212\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 11.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.06\n  Val MAE:   1.62\n  Val RMSE:  2.05\n  Val R²:    -0.010\n\n🔍 Top 5 Features:\n  Feature 118: 0.105\n  Feature 68: 0.101\n  Feature 78: 0.101\n  Feature 202: 0.073\n  Feature 22: 0.070\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_home_2ND_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_home_ALL\n============================================================\nTrain samples: 2643\nVal samples: 461\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 14.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.24\n  Val MAE:   2.93\n  Val RMSE:  3.47\n  Val R²:    -0.240\n\n🔍 Top 5 Features:\n  Feature 70: 0.156\n  Feature 68: 0.117\n  Feature 78: 0.101\n  Feature 87: 0.063\n  Feature 71: 0.049\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_total_1ST\n============================================================\nTrain samples: 2000\nVal samples: 326\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 13.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.22\n  Val MAE:   1.83\n  Val RMSE:  2.43\n  Val R²:    -0.484\n\n🔍 Top 5 Features:\n  Feature 110: 0.117\n  Feature 105: 0.115\n  Feature 90: 0.073\n  Feature 202: 0.070\n  Feature 127: 0.070\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_total_1ST_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_total_2ND\n============================================================\nTrain samples: 2181\nVal samples: 322\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 12.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.20\n  Val MAE:   2.01\n  Val RMSE:  2.64\n  Val R²:    -0.499\n\n🔍 Top 5 Features:\n  Feature 64: 0.145\n  Feature 87: 0.082\n  Feature 131: 0.070\n  Feature 202: 0.070\n  Feature 60: 0.057\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_total_2ND_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_total_ALL\n============================================================\nTrain samples: 3092\nVal samples: 549\n✅ Loaded Tier 1 model\n✅ Using 40 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [2.0, 19.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.33\n  Val MAE:   3.19\n  Val RMSE:  3.83\n  Val R²:    -0.133\n\n🔍 Top 5 Features:\n  Feature 78: 0.129\n  Feature 110: 0.076\n  Feature 202: 0.076\n  Feature 141: 0.074\n  Feature 130: 0.067\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_total_ALL_stacked.json\n\n============================================================\nTraining Tier 2: fouls_away_1ST\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_away_2ND\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_away_ALL\n============================================================\nTrain samples: 182\nVal samples: 56\n✅ Loaded Tier 1 model\n✅ Using 34 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [4.0, 22.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.08\n  Val MAE:   3.76\n  Val RMSE:  4.83\n  Val R²:    -0.729\n\n🔍 Top 5 Features:\n  Feature 77: 0.194\n  Feature 118: 0.141\n  Feature 70: 0.094\n  Feature 116: 0.090\n  Feature 105: 0.088\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\fouls_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: fouls_home_1ST\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_home_2ND\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_home_ALL\n============================================================\nTrain samples: 174\nVal samples: 53\n✅ Loaded Tier 1 model\n✅ Using 32 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [5.0, 19.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.07\n  Val MAE:   3.62\n  Val RMSE:  5.01\n  Val R²:    0.148\n\n🔍 Top 5 Features:\n  Feature 104: 0.144\n  Feature 133: 0.135\n  Feature 135: 0.098\n  Feature 111: 0.072\n  Feature 76: 0.056\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\fouls_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: fouls_total_1ST\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_total_2ND\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_total_ALL\n============================================================\nTrain samples: 254\nVal samples: 84\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [12.0, 40.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.12\n  Val MAE:   4.69\n  Val RMSE:  5.71\n  Val R²:    -0.036\n\n🔍 Top 5 Features:\n  Feature 104: 0.144\n  Feature 131: 0.107\n  Feature 111: 0.087\n  Feature 137: 0.086\n  Feature 76: 0.080\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\fouls_total_ALL_stacked.json\n\n============================================================\nTraining Tier 2: freeKicks_away_ALL\n============================================================\nTrain samples: 213\nVal samples: 0\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: freeKicks_home_ALL\n============================================================\nTrain samples: 192\nVal samples: 0\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: freeKicks_total_ALL\n============================================================\nTrain samples: 292\nVal samples: 0\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_away_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_away_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_away_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_home_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_home_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_home_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_total_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_total_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_total_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_away_1ST\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_away_2ND\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_away_ALL\n============================================================\nTrain samples: 94\nVal samples: 31\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 6.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.03\n  Val MAE:   0.87\n  Val RMSE:  1.47\n  Val R²:    -0.392\n\n🔍 Top 5 Features:\n  Feature 90: 0.306\n  Feature 22: 0.171\n  Feature 139: 0.133\n  Feature 202: 0.078\n  Feature 21: 0.059\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\offsides_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: offsides_home_1ST\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_home_2ND\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_home_ALL\n============================================================\nTrain samples: 99\nVal samples: 32\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 10.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.04\n  Val MAE:   0.87\n  Val RMSE:  1.17\n  Val R²:    -0.152\n\n🔍 Top 5 Features:\n  Feature 30: 0.270\n  Feature 119: 0.121\n  Feature 76: 0.108\n  Feature 202: 0.081\n  Feature 9: 0.067\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\offsides_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: offsides_total_1ST\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_total_2ND\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_total_ALL\n============================================================\nTrain samples: 165\nVal samples: 56\n✅ Loaded Tier 1 model\n✅ Using 31 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 10.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.05\n  Val MAE:   1.76\n  Val RMSE:  2.21\n  Val R²:    -0.179\n\n🔍 Top 5 Features:\n  Feature 122: 0.165\n  Feature 92: 0.149\n  Feature 23: 0.132\n  Feature 190: 0.093\n  Feature 83: 0.077\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\offsides_total_ALL_stacked.json\n\n============================================================\nTraining Tier 2: shotsOnGoal_away_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_away_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_away_ALL\n============================================================\nTrain samples: 474\nVal samples: 82\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 10.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.08\n  Val MAE:   2.19\n  Val RMSE:  2.90\n  Val R²:    -0.041\n\n🔍 Top 5 Features:\n  Feature 65: 0.253\n  Feature 83: 0.070\n  Feature 127: 0.067\n  Feature 143: 0.065\n  Feature 116: 0.064\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\shotsOnGoal_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: shotsOnGoal_home_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_home_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_home_ALL\n============================================================\nTrain samples: 546\nVal samples: 92\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 12.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.17\n  Val MAE:   2.14\n  Val RMSE:  2.77\n  Val R²:    -0.311\n\n🔍 Top 5 Features:\n  Feature 61: 0.083\n  Feature 98: 0.076\n  Feature 77: 0.073\n  Feature 84: 0.064\n  Feature 202: 0.061\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\shotsOnGoal_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: shotsOnGoal_total_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_total_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_total_ALL\n============================================================\nTrain samples: 750\nVal samples: 126\n✅ Loaded Tier 1 model\n✅ Using 38 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [2.0, 17.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.30\n  Val MAE:   3.13\n  Val RMSE:  3.64\n  Val R²:    -0.362\n\n🔍 Top 5 Features:\n  Feature 70: 0.151\n  Feature 28: 0.100\n  Feature 141: 0.096\n  Feature 84: 0.085\n  Feature 202: 0.081\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\shotsOnGoal_total_ALL_stacked.json\n\n============================================================\nTraining Tier 2: throwIns_away_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_away_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_away_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_home_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_home_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_home_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_total_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_total_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_total_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_away_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_away_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_home_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_home_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_total_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_total_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShots_away_ALL\n============================================================\nTrain samples: 702\nVal samples: 131\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [2.0, 27.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.18\n  Val MAE:   3.07\n  Val RMSE:  3.91\n  Val R²:    0.413\n\n🔍 Top 5 Features:\n  Feature 65: 0.229\n  Feature 202: 0.072\n  Feature 192: 0.057\n  Feature 140: 0.055\n  Feature 70: 0.054\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\totalShots_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: totalShots_home_ALL\n============================================================\nTrain samples: 778\nVal samples: 151\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [3.0, 27.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.25\n  Val MAE:   4.03\n  Val RMSE:  5.12\n  Val R²:    -0.097\n\n🔍 Top 5 Features:\n  Feature 74: 0.180\n  Feature 64: 0.100\n  Feature 198: 0.088\n  Feature 115: 0.061\n  Feature 202: 0.061\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\totalShots_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: totalShots_total_ALL\n============================================================\nTrain samples: 1009\nVal samples: 204\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [13.0, 42.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.41\n  Val MAE:   3.99\n  Val RMSE:  5.00\n  Val R²:    -0.085\n\n🔍 Top 5 Features:\n  Feature 77: 0.122\n  Feature 81: 0.082\n  Feature 202: 0.079\n  Feature 67: 0.075\n  Feature 93: 0.064\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\totalShots_total_ALL_stacked.json\n\n============================================================\nTraining Tier 2: yellowCards_away_1ST\n============================================================\nTrain samples: 4588\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_away_2ND\n============================================================\nTrain samples: 4590\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_away_ALL\n============================================================\nTrain samples: 1390\nVal samples: 251\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 7.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.04\n  Val MAE:   1.38\n  Val RMSE:  1.76\n  Val R²:    -0.284\n\n🔍 Top 5 Features:\n  Feature 76: 0.244\n  Feature 128: 0.127\n  Feature 77: 0.107\n  Feature 93: 0.098\n  Feature 141: 0.069\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\yellowCards_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: yellowCards_home_1ST\n============================================================\nTrain samples: 4588\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_home_2ND\n============================================================\nTrain samples: 4590\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_home_ALL\n============================================================\nTrain samples: 1199\nVal samples: 218\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 7.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.04\n  Val MAE:   0.90\n  Val RMSE:  1.25\n  Val R²:    -0.150\n\n🔍 Top 5 Features:\n  Feature 114: 0.141\n  Feature 66: 0.134\n  Feature 137: 0.123\n  Feature 60: 0.105\n  Feature 23: 0.078\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\yellowCards_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: yellowCards_total_1ST\n============================================================\nTrain samples: 4588\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_total_2ND\n============================================================\nTrain samples: 4590\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_total_ALL\n============================================================\nTrain samples: 2017\nVal samples: 359\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 13.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.17\n  Val MAE:   1.44\n  Val RMSE:  1.98\n  Val R²:    0.004\n\n🔍 Top 5 Features:\n  Feature 123: 0.128\n  Feature 119: 0.114\n  Feature 120: 0.110\n  Feature 96: 0.080\n  Feature 102: 0.069\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\yellowCards_total_ALL_stacked.json\n\n============================================================\n📊 TIER 2 TRAINING SUMMARY\n============================================================\n\nTotal Tier 2 models trained: 24\nAverage Val MAE: 2.34\nAverage Val R²:  -0.214\n\n🏆 All Tier 2 Models (sorted by Val MAE):\n1. offsides_home_ALL ✅: MAE=0.87, R²=-0.152\n2. offsides_away_ALL ✅: MAE=0.87, R²=-0.392\n3. yellowCards_home_ALL ✅: MAE=0.90, R²=-0.150\n4. cornerKicks_home_1ST ✅: MAE=0.98, R²=-0.252\n5. yellowCards_away_ALL ✅: MAE=1.38, R²=-0.284\n6. yellowCards_total_ALL ✅: MAE=1.44, R²=0.004\n7. cornerKicks_away_2ND ✅: MAE=1.44, R²=-0.395\n8. cornerKicks_home_2ND ✅: MAE=1.62, R²=-0.010\n9. cornerKicks_away_1ST ✅: MAE=1.66, R²=-0.530\n10. offsides_total_ALL ✅: MAE=1.76, R²=-0.179\n11. cornerKicks_total_1ST ✅: MAE=1.83, R²=-0.484\n12. cornerKicks_total_2ND ✅: MAE=2.01, R²=-0.499\n13. shotsOnGoal_home_ALL ✅: MAE=2.14, R²=-0.311\n14. shotsOnGoal_away_ALL ✅: MAE=2.19, R²=-0.041\n15. cornerKicks_away_ALL ✅: MAE=2.65, R²=-0.345\n16. cornerKicks_home_ALL ✅: MAE=2.93, R²=-0.240\n17. totalShots_away_ALL ✅: MAE=3.07, R²=0.413\n18. shotsOnGoal_total_ALL ✅: MAE=3.13, R²=-0.362\n19. cornerKicks_total_ALL ✅: MAE=3.19, R²=-0.133\n20. fouls_home_ALL ✅: MAE=3.62, R²=0.148\n21. fouls_away_ALL ✅: MAE=3.76, R²=-0.729\n22. totalShots_total_ALL ✅: MAE=3.99, R²=-0.085\n23. totalShots_home_ALL ✅: MAE=4.03, R²=-0.097\n24. fouls_total_ALL ✅: MAE=4.69, R²=-0.036\n\n🏆 All Tier 2 Models (sorted by Val R²):\n1. totalShots_away_ALL ✅: R²=0.413, MAE=3.07\n2. fouls_home_ALL ✅: R²=0.148, MAE=3.62\n3. yellowCards_total_ALL ✅: R²=0.004, MAE=1.44\n4. cornerKicks_home_2ND ✅: R²=-0.010, MAE=1.62\n5. fouls_total_ALL ✅: R²=-0.036, MAE=4.69\n6. shotsOnGoal_away_ALL ✅: R²=-0.041, MAE=2.19\n7. totalShots_total_ALL ✅: R²=-0.085, MAE=3.99\n8. totalShots_home_ALL ✅: R²=-0.097, MAE=4.03\n9. cornerKicks_total_ALL ✅: R²=-0.133, MAE=3.19\n10. yellowCards_home_ALL ✅: R²=-0.150, MAE=0.90\n11. offsides_home_ALL ✅: R²=-0.152, MAE=0.87\n12. offsides_total_ALL ✅: R²=-0.179, MAE=1.76\n13. cornerKicks_home_ALL ✅: R²=-0.240, MAE=2.93\n14. cornerKicks_home_1ST ✅: R²=-0.252, MAE=0.98\n15. yellowCards_away_ALL ✅: R²=-0.284, MAE=1.38\n16. shotsOnGoal_home_ALL ✅: R²=-0.311, MAE=2.14\n17. cornerKicks_away_ALL ✅: R²=-0.345, MAE=2.65\n18. shotsOnGoal_total_ALL ✅: R²=-0.362, MAE=3.13\n19. offsides_away_ALL ✅: R²=-0.392, MAE=0.87\n20. cornerKicks_away_2ND ✅: R²=-0.395, MAE=1.44\n21. cornerKicks_total_1ST ✅: R²=-0.484, MAE=1.83\n22. cornerKicks_total_2ND ✅: R²=-0.499, MAE=2.01\n23. cornerKicks_away_1ST ✅: R²=-0.530, MAE=1.66\n24. fouls_away_ALL ✅: R²=-0.729, MAE=3.76\n\n✅ Tier 2 training complete!\n\n💡 Next: Tier 2 models are ready to use in production!\n   When you have more data, retrain Tier 1 and Tier 2 will improve automatically.\n",
+    "stderr": "",
+    "models": [
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "1ST",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1135,
+        "n_val_samples": 172,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.06668683141469955,
+          "val_mae": 1.6589229106903076,
+          "val_rmse": 2.2014386371669934,
+          "val_r2": -0.5303987264633179
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "2ND",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 1220,
+        "n_val_samples": 218,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.04704113304615021,
+          "val_mae": 1.443676471710205,
+          "val_rmse": 1.8341685762212028,
+          "val_r2": -0.39500725269317627
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 2243,
+        "n_val_samples": 390,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.19845938682556152,
+          "val_mae": 2.6536331176757812,
+          "val_rmse": 3.27498326188098,
+          "val_r2": -0.3445523977279663
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "1ST",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1389,
+        "n_val_samples": 210,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.04893560707569122,
+          "val_mae": 0.9813225865364075,
+          "val_rmse": 1.4112322815153615,
+          "val_r2": -0.2522602081298828
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "2ND",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1437,
+        "n_val_samples": 212,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.061222467571496964,
+          "val_mae": 1.6178165674209595,
+          "val_rmse": 2.047786713438822,
+          "val_r2": -0.009867310523986816
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 2643,
+        "n_val_samples": 461,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.2449445128440857,
+          "val_mae": 2.9293341636657715,
+          "val_rmse": 3.474767328610086,
+          "val_r2": -0.24043548107147217
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "1ST",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 2000,
+        "n_val_samples": 326,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.22334063053131104,
+          "val_mae": 1.8277558088302612,
+          "val_rmse": 2.4314087293730027,
+          "val_r2": -0.48444604873657227
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "2ND",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 2181,
+        "n_val_samples": 322,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.19926948845386505,
+          "val_mae": 2.0086286067962646,
+          "val_rmse": 2.6434971465269808,
+          "val_r2": -0.49898993968963623
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 3092,
+        "n_val_samples": 549,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.32887446880340576,
+          "val_mae": 3.188199758529663,
+          "val_rmse": 3.8349020001200684,
+          "val_r2": -0.13251268863677979
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 182,
+        "n_val_samples": 56,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.08469542860984802,
+          "val_mae": 3.764847993850708,
+          "val_rmse": 4.829207906911724,
+          "val_r2": -0.7289704084396362
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 174,
+        "n_val_samples": 53,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.07032602280378342,
+          "val_mae": 3.620375394821167,
+          "val_rmse": 5.008099861648444,
+          "val_r2": 0.14798998832702637
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 254,
+        "n_val_samples": 84,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.11809545755386353,
+          "val_mae": 4.691956520080566,
+          "val_rmse": 5.706063629148607,
+          "val_r2": -0.035959601402282715
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 94,
+        "n_val_samples": 31,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.02988448366522789,
+          "val_mae": 0.8707485795021057,
+          "val_rmse": 1.4709106947282167,
+          "val_r2": -0.3916987180709839
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 99,
+        "n_val_samples": 32,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.04380470886826515,
+          "val_mae": 0.8701198101043701,
+          "val_rmse": 1.1728288964361135,
+          "val_r2": -0.1517091989517212
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 165,
+        "n_val_samples": 56,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.052780069410800934,
+          "val_mae": 1.757376790046692,
+          "val_rmse": 2.2128099256785245,
+          "val_r2": -0.17937874794006348
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 474,
+        "n_val_samples": 82,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.0758938267827034,
+          "val_mae": 2.188202381134033,
+          "val_rmse": 2.9023182843452955,
+          "val_r2": -0.040933847427368164
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 546,
+        "n_val_samples": 92,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.16998310387134552,
+          "val_mae": 2.143450975418091,
+          "val_rmse": 2.7680697223228283,
+          "val_r2": -0.3111143112182617
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 750,
+        "n_val_samples": 126,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.29792898893356323,
+          "val_mae": 3.1296446323394775,
+          "val_rmse": 3.636117789237509,
+          "val_r2": -0.3623553514480591
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 702,
+        "n_val_samples": 131,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.1849839985370636,
+          "val_mae": 3.068629026412964,
+          "val_rmse": 3.905648146994314,
+          "val_r2": 0.41268569231033325
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 778,
+        "n_val_samples": 151,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.25104767084121704,
+          "val_mae": 4.027047634124756,
+          "val_rmse": 5.115805962122669,
+          "val_r2": -0.09741270542144775
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1009,
+        "n_val_samples": 204,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.4137536883354187,
+          "val_mae": 3.98891544342041,
+          "val_rmse": 4.998531125793591,
+          "val_r2": -0.08532476425170898
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1390,
+        "n_val_samples": 251,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.0433361753821373,
+          "val_mae": 1.383170247077942,
+          "val_rmse": 1.7579308364030657,
+          "val_r2": -0.2839686870574951
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1199,
+        "n_val_samples": 218,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.03526105731725693,
+          "val_mae": 0.9028943181037903,
+          "val_rmse": 1.2531229109520754,
+          "val_r2": -0.15024256706237793
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 2017,
+        "n_val_samples": 359,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.1738404482603073,
+          "val_mae": 1.4374879598617554,
+          "val_rmse": 1.9835519961289259,
+          "val_r2": 0.0037691593170166016
+        }
+      }
+    ]
   }
 ]

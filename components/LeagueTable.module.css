@@ -78,18 +78,25 @@
   text-align: left;
   font-size: 0.875rem;
   background: transparent;
-  border: none; /* Removed border */
-  border-radius: 8px;
-  margin-bottom: 2px;
+  border: 1px solid transparent; /* Keep layout stable for hover border */
+  border-radius: 0; /* Avoid mismatched rounding inside rounded container */
+  margin-bottom: 1px;
   cursor: pointer;
-  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* Only animate bg */
+  transition:
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  box-shadow: none !important; /* Disable theme hover glow */
+  transform: none !important;
 }
 
 .rowButton:hover {
-  background: rgba(255, 255, 255, 0.03);
-  /* Removed border-color & transform for cleaner hover */
+  background: rgba(255, 255, 255, 0.04); /* Slightly lighter but still dark */
+  border-color: rgba(255, 255, 255, 0.08);
+  border-left-color: rgba(255, 255, 255, 0.12); /* Slim accent without glow */
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 /* Glassmorphism active state - Background only */

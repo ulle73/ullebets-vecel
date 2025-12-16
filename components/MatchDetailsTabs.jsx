@@ -158,10 +158,6 @@ export default function MatchDetailsTabs({ match, isLoading, error }) {
   return (
     <div className="flex flex-col h-full w-full bg-[#030304] relative isolate overflow-hidden rounded-2xl shadow-2xl border border-white/5">
 
-      {/* 1. Global Background Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-[#050505] to-black -z-20" />
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent z-20" />
-
       {/* 2. Top Navigation Bar - FIXED */}
       <TopNavBar activeTab={activeTab} setActiveTab={setActiveTab} />
 

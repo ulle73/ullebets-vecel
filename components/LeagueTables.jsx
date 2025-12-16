@@ -23,7 +23,7 @@ export default function LeagueTables({
     : `Matcher: ${matchesCount}`;
 
   const containerClass = [
-    "flex flex-col rounded-lg border border-gray-200 bg-gray-50 shadow-sm",
+    "flex flex-col rounded-lg border border-gray-200 bg-gray-50",
     "lg:h-full lg:min-h-0",
     className,
   ]
