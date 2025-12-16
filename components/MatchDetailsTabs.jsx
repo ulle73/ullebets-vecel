@@ -77,9 +77,9 @@ function MatchHeader({ match, selectedPeriod, onPeriodChange, activeTab }) {
 
       <div className="flex items-center gap-12 z-10 sm:scale-100 scale-90">
         <div className="flex flex-col items-center gap-3 w-40 md:w-56 text-center group">
-          <div className="relative w-20 h-20 md:w-28 md:h-28 transition-transform duration-500 group-hover:scale-110">
+          <div className="relative w-20 h-20 md:w-28 md:h-28 transition-transform duration-500">
             {/* Strong colored glow using the image itself */}
-            <div className="absolute inset-0 blur-3xl opacity-60 scale-125">
+            <div className="absolute inset-0 blur-lg opacity-40 scale-125">
               <Image
                 src={getLogo(match.homeTeamId)}
                 alt=""
@@ -110,9 +110,9 @@ function MatchHeader({ match, selectedPeriod, onPeriodChange, activeTab }) {
         </div>
 
         <div className="flex flex-col items-center gap-3 w-40 md:w-56 text-center group">
-          <div className="relative w-20 h-20 md:w-28 md:h-28 transition-transform duration-500 group-hover:scale-110">
+          <div className="relative w-20 h-20 md:w-28 md:h-28 transition-transform duration-500">
             {/* Strong colored glow */}
-            <div className="absolute inset-0 blur-3xl opacity-60 scale-125">
+            <div className="absolute inset-0 blur-lg opacity-40 scale-125">
               <Image
                 src={getLogo(match.awayTeamId)}
                 alt=""
