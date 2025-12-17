@@ -83,10 +83,6 @@ export function FilterChips({ options, value, onChange }) {
 function getTempoCategory(score) {
   if (!Number.isFinite(score)) return null;
 
-  // Check if mixed (some positive, some negative behaviors)
-  const behaviors = [score]; // Since score is sum, check if it's mixed by checking individual scores
-  // But since we don't have individual, perhaps skip mixed for now
-
   if (score >= 5) return { label: "EXTREME", color: "bg-red-500", icon: "🔥🔥" };
   if (score >= 2) return { label: "HIGH", color: "bg-orange-500", icon: "🔥" };
   if (score >= -1) return { label: "NEUTRAL", color: "bg-gray-300", icon: "⚪" };
@@ -126,7 +122,6 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
   const isUnder = condition === "under";
   const isGreen = (isOver && pctDelta > 0) || (isUnder && pctDelta < 0);
   const isRed = (isOver && pctDelta < 0) || (isUnder && pctDelta > 0);
-  const pctTone = isGreen ? "text-emerald-400" : isRed ? "text-rose-400" : "text-slate-400";
 
   const [homeNameRaw = "", awayNameRaw = ""] = (r.matchLabel || "").split(" vs ");
   const homeName = homeNameRaw || r.homeTeamName || "Hemmalag";
@@ -142,23 +137,15 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
   const marketBiasRows = [];
 
   if (r.marketBias?.home?.direction) {
-    marketBiasRows.push({
-      label: homeName,
-      direction: r.marketBias.home.direction,
-    });
+    marketBiasRows.push({ label: homeName, direction: r.marketBias.home.direction });
   }
   if (r.marketBias?.away?.direction) {
-    marketBiasRows.push({
-      label: awayName,
-      direction: r.marketBias.away.direction,
-    });
+    marketBiasRows.push({ label: awayName, direction: r.marketBias.away.direction });
   }
   if (!marketBiasRows.length && r.marketBias?.direction) {
-    marketBiasRows.push({
-      label: r.matchLabel,
-      direction: r.marketBias.direction,
-    });
+    marketBiasRows.push({ label: r.matchLabel, direction: r.marketBias.direction });
   }
+
   const calcDeltas = (context = {}) => {
     const pct = (val, avg) => {
       const v = Number(val);
@@ -182,38 +169,20 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
   const hasDeltaData = (deltas) =>
     deltas && (Number.isFinite(deltas.leading) || Number.isFinite(deltas.tied) || Number.isFinite(deltas.trailing));
 
-  const renderBehaviourBlock = (label, deltas, toneClass) => {
+  // Render a detailed row inside the tooltip
+  const renderTooltipRow = (label, deltas) => {
     if (!hasDeltaData(deltas)) return null;
     return (
-      <Tooltip.Root>
-        <Tooltip.Trigger asChild>
-          <button
-            type="button"
-            className="flex w-full items-center justify-between gap-2 rounded border border-white/10 bg-white/[0.03] px-2.5 py-1 text-left text-[10px] font-semibold text-slate-200 transition hover:border-white/20 hover:bg-white/[0.05] focus:outline-none"
-          >
-            <span className={toneClass}>{label}</span>
-            <span className="text-slate-500 font-medium">Hover</span>
-          </button>
-        </Tooltip.Trigger>
-        <Tooltip.Portal>
-          <Tooltip.Content
-            side="top"
-            align="start"
-            className="rounded-lg border border-white/10 bg-slate-900/95 p-3 shadow-xl backdrop-blur text-xs text-slate-100 max-w-xs"
-          >
-            <div className="text-[11px] font-semibold mb-2">{label}</div>
-            <div className="grid grid-cols-[auto_auto] gap-x-3 gap-y-1 items-center">
-              <span className="text-slate-400">Ledning</span>
-              <span className="font-mono">{formatDelta(deltas.leading)}</span>
-              <span className="text-slate-400">Lika</span>
-              <span className="font-mono">{formatDelta(deltas.tied)}</span>
-              <span className="text-slate-400">Underläge</span>
-              <span className="font-mono">{formatDelta(deltas.trailing)}</span>
-            </div>
-            <Tooltip.Arrow className="fill-slate-900/95" />
-          </Tooltip.Content>
-        </Tooltip.Portal>
-      </Tooltip.Root>
+      <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 items-center">
+        <span className="text-slate-300 font-medium">{label}</span>
+        <div className="flex gap-2 text-xs font-mono">
+          <span className={`${deltas.leading > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>L: {formatDelta(deltas.leading)}</span>
+          <span className="text-slate-600">|</span>
+          <span className={`${deltas.tied > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>T: {formatDelta(deltas.tied)}</span>
+          <span className="text-slate-600">|</span>
+          <span className={`${deltas.trailing > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>U: {formatDelta(deltas.trailing)}</span>
+        </div>
+      </div>
     );
   };
 
@@ -221,13 +190,12 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
   const awayAttackDeltas = calcDeltas(r.awayBehaviour?.for?.context);
   const homeConcedeDeltas = calcDeltas(r.homeBehaviour?.against?.context);
   const awayConcedeDeltas = calcDeltas(r.awayBehaviour?.against?.context);
-  const hasBehaviourContent = showBehaviour && (
-    hasDeltaData(homeAttackDeltas) ||
-    hasDeltaData(awayAttackDeltas) ||
-    hasDeltaData(homeConcedeDeltas) ||
-    hasDeltaData(awayConcedeDeltas) ||
-    tempoCategory
-  );
+
+  const hasHomeData = hasDeltaData(homeAttackDeltas) || hasDeltaData(homeConcedeDeltas);
+  const hasAwayData = hasDeltaData(awayAttackDeltas) || hasDeltaData(awayConcedeDeltas);
+  const hasAnyBehaviour = hasHomeData || hasAwayData;
+
+  const hasBehaviourContent = showBehaviour && (hasAnyBehaviour || tempoCategory);
 
   return (
     <li className={`flex flex-col gap-4 rounded-2xl border p-5 shadow-2xl transition-all duration-200 group ${borderHighlight}`}>
@@ -274,7 +242,7 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
           {condition}
         </span>
 
-        {/* Stat Key Badge - PURPLE */}
+        {/* Stat Key Badge */}
         <span className="px-3 py-1 rounded-full bg-purple-950/30 border border-purple-500/30 text-[10px] font-bold uppercase tracking-wider text-purple-300 shadow-sm">
           {r.statLabel}
         </span>
@@ -284,7 +252,7 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
           {scopeLabel}
         </span>
 
-        {/* Period Badge - GRAY (Lighter Text) */}
+        {/* Period Badge - GRAY */}
         <span className="px-3 py-1 rounded-full bg-[#18181b] border border-white/10 text-[10px] font-bold uppercase tracking-wider text-gray-400 shadow-sm">
           {r.period}
         </span>
@@ -307,26 +275,71 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
               </div>
             ))}
 
-            {/* Behaviour sections only for relevant stats */}
+            {/* Behaviour encapsulated in Tempo Tooltip */}
             {showBehaviour && (
-              <>
-                <Tooltip.Provider delayDuration={120}>
-                  {/* Behaviour deltas vs league average per game state */}
-                  {renderBehaviourBlock(`${homeName} attack`, homeAttackDeltas, "text-emerald-300")}
-                  {renderBehaviourBlock(`${awayName} attack`, awayAttackDeltas, "text-emerald-300")}
-                  {renderBehaviourBlock(`${homeName} concede`, homeConcedeDeltas, "text-rose-300")}
-                  {renderBehaviourBlock(`${awayName} concede`, awayConcedeDeltas, "text-rose-300")}
-                </Tooltip.Provider>
+              <div className="mt-1">
+                <Tooltip.Provider delayDuration={0}>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <button className="flex items-center gap-2 text-[10px] text-slate-300 py-1 hover:bg-white/5 rounded px-1 -ml-1 transition w-full text-left">
+                        {tempoCategory ? (
+                          <>
+                            <div className={`h-2.5 w-1 rounded-full ${tempoCategory.color} shadow-[0_0_8px_currentColor] opacity-80`} />
+                            <span className="text-slate-200 font-bold uppercase tracking-wide">Tempo</span>
+                            <span className="text-lg leading-none">{tempoCategory.icon}</span>
+                            <div className="ml-auto w-4 h-4 rounded flex items-center justify-center bg-white/10 text-[10px] font-bold text-slate-300 border border-white/10 italic font-serif">i</div>
+                          </>
+                        ) : (
+                          <span className="text-slate-500 italic">View Behaviour Stats</span>
+                        )}
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        side="right"
+                        sideOffset={10}
+                        align="center"
+                        className="z-50 rounded-xl border border-white/10 bg-[#0A0A0B]/95 p-4 shadow-2xl backdrop-blur-xl text-xs text-slate-100 min-w-[240px]"
+                      >
+                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 border-b border-white/5 pb-2">
+                          Behaviour Profile
+                        </div>
 
-                {/* Tempo Indicator */}
-                {tempoCategory && (
-                  <div className="flex items-center gap-2 text-[10px] text-slate-300">
-                    <div className={`h-3 w-1 rounded-sm ${tempoCategory.color}`} />
-                    <span className="text-slate-500 font-medium">Tempo:</span>
-                    <span className="text-lg leading-none">{tempoCategory.icon}</span>
-                  </div>
-                )}
-              </>
+                        <div className="flex flex-col gap-4">
+                          {/* Home */}
+                          {hasHomeData && (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="relative w-4 h-4">
+                                  <Image src={getLogo(r.homeTeamId)} alt="" fill className="object-contain" unoptimized />
+                                </div>
+                                <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">{homeName}</span>
+                              </div>
+                              {renderTooltipRow("Attack", homeAttackDeltas)}
+                              {renderTooltipRow("Concede", homeConcedeDeltas)}
+                            </div>
+                          )}
+
+                          {/* Away */}
+                          {hasAwayData && (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="relative w-4 h-4">
+                                  <Image src={getLogo(r.awayTeamId)} alt="" fill className="object-contain" unoptimized />
+                                </div>
+                                <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">{awayName}</span>
+                              </div>
+                              {renderTooltipRow("Attack", awayAttackDeltas)}
+                              {renderTooltipRow("Concede", awayConcedeDeltas)}
+                            </div>
+                          )}
+                        </div>
+                        <Tooltip.Arrow className="fill-[#0A0A0B]/95" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+              </div>
             )}
 
             {marketBiasRows.length === 0 && !hasBehaviourContent && (
