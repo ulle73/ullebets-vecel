@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { deriveScopeLabel } from "@/lib/utils/matchups";
 
 const BEHAVIOUR_EXPLANATIONS = {
@@ -158,11 +159,73 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
       direction: r.marketBias.direction,
     });
   }
+  const calcDeltas = (context = {}) => {
+    const pct = (val, avg) => {
+      const v = Number(val);
+      const a = Number(avg);
+      if (!Number.isFinite(v) || !Number.isFinite(a) || a === 0) return null;
+      return ((v - a) / a) * 100;
+    };
+    return {
+      leading: pct(context.shots_leading, context.league_avg_leading),
+      tied: pct(context.shots_tied, context.league_avg_tied),
+      trailing: pct(context.shots_trailing, context.league_avg_trailing),
+    };
+  };
+
+  const formatDelta = (val) => {
+    if (!Number.isFinite(val)) return "—";
+    const rounded = Math.round(val);
+    return `${rounded > 0 ? "+" : ""}${rounded}%`;
+  };
+
+  const hasDeltaData = (deltas) =>
+    deltas && (Number.isFinite(deltas.leading) || Number.isFinite(deltas.tied) || Number.isFinite(deltas.trailing));
+
+  const renderBehaviourBlock = (label, deltas, toneClass) => {
+    if (!hasDeltaData(deltas)) return null;
+    return (
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 rounded border border-white/10 bg-white/[0.03] px-2.5 py-1 text-left text-[10px] font-semibold text-slate-200 transition hover:border-white/20 hover:bg-white/[0.05] focus:outline-none"
+          >
+            <span className={toneClass}>{label}</span>
+            <span className="text-slate-500 font-medium">Hover</span>
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            side="top"
+            align="start"
+            className="rounded-lg border border-white/10 bg-slate-900/95 p-3 shadow-xl backdrop-blur text-xs text-slate-100 max-w-xs"
+          >
+            <div className="text-[11px] font-semibold mb-2">{label}</div>
+            <div className="grid grid-cols-[auto_auto] gap-x-3 gap-y-1 items-center">
+              <span className="text-slate-400">Ledning</span>
+              <span className="font-mono">{formatDelta(deltas.leading)}</span>
+              <span className="text-slate-400">Lika</span>
+              <span className="font-mono">{formatDelta(deltas.tied)}</span>
+              <span className="text-slate-400">Underläge</span>
+              <span className="font-mono">{formatDelta(deltas.trailing)}</span>
+            </div>
+            <Tooltip.Arrow className="fill-slate-900/95" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    );
+  };
+
+  const homeAttackDeltas = calcDeltas(r.homeBehaviour?.for?.context);
+  const awayAttackDeltas = calcDeltas(r.awayBehaviour?.for?.context);
+  const homeConcedeDeltas = calcDeltas(r.homeBehaviour?.against?.context);
+  const awayConcedeDeltas = calcDeltas(r.awayBehaviour?.against?.context);
   const hasBehaviourContent = showBehaviour && (
-    r.homeBehaviour?.for?.key ||
-    r.awayBehaviour?.for?.key ||
-    r.homeBehaviour?.against?.key ||
-    r.awayBehaviour?.against?.key ||
+    hasDeltaData(homeAttackDeltas) ||
+    hasDeltaData(awayAttackDeltas) ||
+    hasDeltaData(homeConcedeDeltas) ||
+    hasDeltaData(awayConcedeDeltas) ||
     tempoCategory
   );
 
@@ -247,49 +310,13 @@ export function RowAvg({ r, showHistoricalOutcome = false, highlightPct = 0 }) {
             {/* Behaviour sections only for relevant stats */}
             {showBehaviour && (
               <>
-                {/* Behaviour - Offensive (.for) */}
-                {(r.homeBehaviour?.for?.key || r.awayBehaviour?.for?.key) && (
-                  <>
-                    {r.homeBehaviour?.for?.key && (
-                      <div className="flex flex-col gap-0.5 w-full">
-                        <div className="flex items-center justify-between gap-2 text-[10px]">
-                          <span className="text-slate-400 font-medium">Offensiv (H)</span>
-                          <span className="text-slate-200">{r.homeBehaviour.for.emoji} {BEHAVIOUR_EXPLANATIONS[r.homeBehaviour.for.key] || r.homeBehaviour.for.label}</span>
-                        </div>
-                      </div>
-                    )}
-                    {r.awayBehaviour?.for?.key && (
-                      <div className="flex flex-col gap-0.5 w-full">
-                        <div className="flex items-center justify-between gap-2 text-[10px]">
-                          <span className="text-slate-400 font-medium">Offensiv (A)</span>
-                          <span className="text-slate-200">{r.awayBehaviour.for.emoji} {BEHAVIOUR_EXPLANATIONS[r.awayBehaviour.for.key] || r.awayBehaviour.for.label}</span>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Behaviour - Defensive (.against) */}
-                {(r.homeBehaviour?.against?.key || r.awayBehaviour?.against?.key) && (
-                  <>
-                    {r.homeBehaviour?.against?.key && (
-                      <div className="flex flex-col gap-0.5 w-full">
-                        <div className="flex items-center justify-between gap-2 text-[10px]">
-                          <span className="text-slate-400 font-medium">Defensiv (H)</span>
-                          <span className="text-slate-200">{r.homeBehaviour.against.emoji} {BEHAVIOUR_EXPLANATIONS[r.homeBehaviour.against.key] || r.homeBehaviour.against.label}</span>
-                        </div>
-                      </div>
-                    )}
-                    {r.awayBehaviour?.against?.key && (
-                      <div className="flex flex-col gap-0.5 w-full">
-                        <div className="flex items-center justify-between gap-2 text-[10px]">
-                          <span className="text-slate-400 font-medium">Defensiv (A)</span>
-                          <span className="text-slate-200">{r.awayBehaviour.against.emoji} {BEHAVIOUR_EXPLANATIONS[r.awayBehaviour.against.key] || r.awayBehaviour.against.label}</span>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
+                <Tooltip.Provider delayDuration={120}>
+                  {/* Behaviour deltas vs league average per game state */}
+                  {renderBehaviourBlock(`${homeName} attack`, homeAttackDeltas, "text-emerald-300")}
+                  {renderBehaviourBlock(`${awayName} attack`, awayAttackDeltas, "text-emerald-300")}
+                  {renderBehaviourBlock(`${homeName} concede`, homeConcedeDeltas, "text-rose-300")}
+                  {renderBehaviourBlock(`${awayName} concede`, awayConcedeDeltas, "text-rose-300")}
+                </Tooltip.Provider>
 
                 {/* Tempo Indicator */}
                 {tempoCategory && (
