@@ -311,6 +311,8 @@ function buildHistoryTooltipEntries({ history, scope, type, line, direction }) {
       const valueText = formatHistoryValue(match);
       return {
         label: label || "–",
+        date: date || "–",
+        teams: teams || "–",
         value: valueText || "–",
         highlight,
       };
@@ -999,8 +1001,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
       const thresholds = statPatterns[statKey].thresholds(cfg.scope, cfg.period) || [];
       const statOdds = oddsStore[teamKey]?.[statKey]?.[cfg.scope]?.[cfg.period] || {};
       return (
-        <div key={statKey} className="rounded-lg border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-all hover:border-white/20">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div key={statKey} className="flex flex-col h-[600px] rounded-lg border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-all hover:border-white/20">
+          <div className="flex-shrink-0 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-sm font-bold text-white tracking-wide">
               {statNames[statKey] || statKey}
             </h3>
@@ -1031,24 +1033,24 @@ export default function BacktestPage({ match, onPositiveResults }) {
               />
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="flex-1 overflow-auto min-h-0 border-t border-white/5">
             <table className="min-w-full text-left text-xs text-slate-200">
-              <thead className="bg-white/5 text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+              <thead className="sticky top-0 z-10 bg-slate-900 text-[10px] uppercase tracking-wider text-white font-bold shadow-sm">
                 <tr>
-                  <th className="px-4 py-3 text-slate-300">Lina</th>
-                  <th className="px-4 py-3 text-slate-300">
+                  <th className="w-16 px-2 py-3 bg-slate-900">Lina</th>
+                  <th className="w-32 px-2 py-3 bg-slate-900">
                     {t("over")} ({t("odds")})
                   </th>
-                  <th className="px-4 py-3 text-slate-300">
+                  <th className="w-24 px-2 py-3 bg-slate-900">
                     EV % ({t("over")})
                   </th>
-                  <th className="px-4 py-3 text-slate-300">
+                  <th className="w-32 px-2 py-3 bg-slate-900">
                     {t("under")} ({t("odds")})
                   </th>
-                  <th className="px-4 py-3 text-slate-300">
+                  <th className="w-24 px-2 py-3 bg-slate-900">
                     EV % ({t("under")})
                   </th>
-                  <th className="px-4 py-3 text-slate-300">{t("history")}</th>
+                  <th className="px-2 py-3 bg-slate-900">{t("history")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -1122,8 +1124,8 @@ export default function BacktestPage({ match, onPositiveResults }) {
                   });
                   return (
                     <tr key={line} className="align-top hover:bg-white/5 transition-colors">
-                      <td className="px-4 py-3 text-sm font-semibold text-white">{line}</td>
-                      <td className="px-4 py-3">
+                      <td className="w-16 px-2 py-3 text-sm font-semibold text-white">{line}</td>
+                      <td className="w-32 px-2 py-3">
                         <input
                           type="number"
                           className="w-24 rounded-md border border-white/10 bg-black/40 px-3 py-2 text-xs font-semibold text-white focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder-white/20"
@@ -1134,7 +1136,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
                           onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "over")}
                         />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="w-24 px-2 py-3">
                         {overEntries.length ? (
                           <div className="flex flex-col gap-1.5">
                             {overEntries.map((entry, idx) => (
@@ -1149,9 +1151,11 @@ export default function BacktestPage({ match, onPositiveResults }) {
                                 ) : (
                                   <span className="text-slate-600">–</span>
                                 )}
+                                {/* EV LABEL REMOVED AS REQUESTED
                                 <span className="text-[9px] uppercase tracking-wide text-slate-500 font-medium">
                                   {entry.label}
                                 </span>
+                                */}
                               </div>
                             ))}
                           </div>
@@ -1159,7 +1163,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
                           <span className="text-slate-600">–</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="w-32 px-2 py-3">
                         <input
                           type="number"
                           className="w-24 rounded-md border border-white/10 bg-black/40 px-3 py-2 text-xs font-semibold text-white focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder-white/20"
@@ -1170,7 +1174,7 @@ export default function BacktestPage({ match, onPositiveResults }) {
                           onChange={handleOddsChange(statKey, cfg.scope, cfg.period, line, "under")}
                         />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="w-24 px-2 py-3">
                         {underEntries.length ? (
                           <div className="flex flex-col gap-1.5">
                             {underEntries.map((entry, idx) => (
@@ -1185,9 +1189,11 @@ export default function BacktestPage({ match, onPositiveResults }) {
                                 ) : (
                                   <span className="text-slate-600">–</span>
                                 )}
+                                {/* EV LABEL REMOVED AS REQUESTED
                                 <span className="text-[9px] uppercase tracking-wide text-slate-500 font-medium">
                                   {entry.label}
                                 </span>
+                                */}
                               </div>
                             ))}
                           </div>
@@ -1195,71 +1201,107 @@ export default function BacktestPage({ match, onPositiveResults }) {
                           <span className="text-slate-600">–</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="space-y-1.5 text-[10px] text-slate-400 font-medium">
+                      <td className="px-2 py-3">
+                        <div className="flex flex-col gap-2 text-[10px] text-white font-semibold">
                           <Tooltip.Root>
                             <Tooltip.Trigger asChild>
-                              <div className="cursor-help hover:text-white transition-colors">
-                                {t("over")}:
-                                <span className="ml-1 font-bold text-white">{overHistory.label}</span>
+                              {/* REMOVED MAX-W CONSTRAINTS FOR HISTORY EXPANSION */}
+                              <div className="group flex items-center justify-between gap-2 cursor-help rounded px-1.5 py-1 hover:bg-white/5 transition-colors">
+                                <span className="text-emerald-400 font-black uppercase tracking-wider">{t("over")}</span>
+                                <span className="font-mono font-bold text-white group-hover:text-emerald-300 transition-colors">{overHistory.label}</span>
                               </div>
                             </Tooltip.Trigger>
                             <Tooltip.Portal>
                               <Tooltip.Content
-                                sideOffset={6}
-                                className="z-50 max-h-80 min-w-[20rem] overflow-y-auto rounded-lg bg-slate-900/95 px-4 py-3 text-[11px] leading-relaxed text-slate-100 shadow-xl border border-white/10 backdrop-blur-md"
+                                side="left"
+                                sideOffset={10}
+                                className="z-50 max-h-80 w-auto min-w-[32rem] overflow-y-auto rounded-xl bg-[#0A0A0B]/95 p-0 text-xs shadow-2xl border border-white/10 backdrop-blur-xl"
                               >
+                                {/* Header */}
+                                <div className="sticky top-0 z-10 border-b border-white/10 bg-[#0A0A0B]/95 px-4 py-3 backdrop-blur-md">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                                      {t("over")} {t("history")}
+                                    </span>
+                                    <span className="font-mono text-[10px] text-slate-400 ml-4">{overHistory.label} matches</span>
+                                  </div>
+                                </div>
+
                                 {overTooltipEntries.length ? (
-                                  <div className="flex flex-col gap-1.5">
+                                  <div className="flex flex-col p-2">
                                     {overTooltipEntries.map((entry, idx) => (
-                                      <div key={idx} className="flex items-start justify-between gap-3 border-b border-white/5 pb-1 last:border-0 last:pb-0">
-                                        <span className="text-left text-slate-200">{entry.label}</span>
-                                        <span
-                                          className={`font-bold ${entry.highlight ? "text-emerald-400" : "text-rose-400"
+                                      <div key={idx} className="grid grid-cols-[80px_1fr_60px] gap-4 items-center rounded p-2 hover:bg-white/5 transition-colors text-[11px]">
+                                        <div className="font-mono text-slate-300 whitespace-nowrap">
+                                          {entry.date}
+                                        </div>
+                                        <div className="text-white font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                                          {entry.teams}
+                                        </div>
+                                        <div
+                                          className={`text-right font-mono font-bold ${entry.highlight ? "text-emerald-400" : "text-rose-400"
                                             }`}
                                         >
                                           {entry.value}
-                                        </span>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-slate-400">Ingen historik</div>
+                                  <div className="p-6 text-center text-slate-500 italic text-xs">Ingen historik tillgänglig</div>
                                 )}
-                                <Tooltip.Arrow className="fill-slate-900/95" />
+                                <Tooltip.Arrow className="fill-[#0A0A0B]/95" />
                               </Tooltip.Content>
                             </Tooltip.Portal>
                           </Tooltip.Root>
+
+                          {/* UNDER SECTION */}
                           <Tooltip.Root>
                             <Tooltip.Trigger asChild>
-                              <div className="cursor-help hover:text-white transition-colors">
-                                {historyOpponentLabel}:
-                                <span className="ml-1 font-bold text-white">{underHistory.label}</span>
+                              {/* REMOVED MAX-W CONSTRAINTS FOR HISTORY EXPANSION */}
+                              <div className="group flex items-center justify-between gap-2 cursor-help rounded px-1.5 py-1 hover:bg-white/5 transition-colors">
+                                <span className="text-rose-400 font-black uppercase tracking-wider truncate" title={historyOpponentLabel}>{historyOpponentLabel}</span>
+                                <span className="font-mono font-bold text-white group-hover:text-rose-300 transition-colors">{underHistory.label}</span>
                               </div>
                             </Tooltip.Trigger>
                             <Tooltip.Portal>
                               <Tooltip.Content
-                                sideOffset={6}
-                                className="z-50 max-h-80 min-w-[20rem] overflow-y-auto rounded-lg bg-slate-900/95 px-4 py-3 text-[11px] leading-relaxed text-slate-100 shadow-xl border border-white/10 backdrop-blur-md"
+                                side="left"
+                                sideOffset={10}
+                                className="z-50 max-h-80 w-auto min-w-[32rem] overflow-y-auto rounded-xl bg-[#0A0A0B]/95 p-0 text-xs shadow-2xl border border-white/10 backdrop-blur-xl"
                               >
+                                {/* Header */}
+                                <div className="sticky top-0 z-10 border-b border-white/10 bg-[#0A0A0B]/95 px-4 py-3 backdrop-blur-md">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">
+                                      {historyOpponentLabel} {t("history")}
+                                    </span>
+                                    <span className="font-mono text-[10px] text-slate-400 ml-4">{underHistory.label} matches</span>
+                                  </div>
+                                </div>
+
                                 {underTooltipEntries.length ? (
-                                  <div className="flex flex-col gap-1.5">
+                                  <div className="flex flex-col p-2">
                                     {underTooltipEntries.map((entry, idx) => (
-                                      <div key={idx} className="flex items-start justify-between gap-3 border-b border-white/5 pb-1 last:border-0 last:pb-0">
-                                        <span className="text-left text-slate-200">{entry.label}</span>
-                                        <span
-                                          className={`font-bold ${entry.highlight ? "text-emerald-400" : "text-rose-400"
+                                      <div key={idx} className="grid grid-cols-[80px_1fr_60px] gap-4 items-center rounded p-2 hover:bg-white/5 transition-colors text-[11px]">
+                                        <div className="font-mono text-slate-300 whitespace-nowrap">
+                                          {entry.date}
+                                        </div>
+                                        <div className="text-white font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                                          {entry.teams}
+                                        </div>
+                                        <div
+                                          className={`text-right font-mono font-bold ${entry.highlight ? "text-emerald-400" : "text-rose-400"
                                             }`}
                                         >
                                           {entry.value}
-                                        </span>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-slate-400">Ingen historik</div>
+                                  <div className="p-6 text-center text-slate-500 italic text-xs">Ingen historik tillgänglig</div>
                                 )}
-                                <Tooltip.Arrow className="fill-slate-900/95" />
+                                <Tooltip.Arrow className="fill-[#0A0A0B]/95" />
                               </Tooltip.Content>
                             </Tooltip.Portal>
                           </Tooltip.Root>
@@ -1438,7 +1480,9 @@ export default function BacktestPage({ match, onPositiveResults }) {
             </div>
           ) : null}
 
-          <div className="space-y-6 pb-1">{renderStatSections()}</div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-1">
+            {renderStatSections()}
+          </div>
         </div>
       </section>
     </Tooltip.Provider>
