@@ -28,11 +28,8 @@ export default async function Page() {
   return (
     <main className="flex min-h-screen flex-col overflow-x-hidden bg-gray-50 lg:h-screen lg:overflow-hidden">
       <header className="flex-shrink-0 px-4 pt-6 pb-2 sm:px-6">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Matcher</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Prefetch: <code className="bg-gray-100 px-1 py-0.5 rounded">{today}</code> &nbsp;och&nbsp;
-          <code className="bg-gray-100 px-1 py-0.5 rounded">{tomorrow}</code>
-        </p>
+        <h1 className="text-xl font-black uppercase tracking-widest text-slate-100/90">Dagens Matcher</h1>
+        <div className="h-0.5 w-12 bg-cyan-500/50 mt-2 mb-2 rounded-full" />
       </header>
 
       <SWRConfig value={{ fallback }}>

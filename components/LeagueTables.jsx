@@ -19,8 +19,8 @@ export default function LeagueTables({
   const statusLabel = error
     ? "Fel vid hämtning."
     : isLoading
-    ? "Laddar…"
-    : `Matcher: ${matchesCount}`;
+      ? "Laddar…"
+      : `Matcher: ${matchesCount}`;
 
   const containerClass = [
     "flex flex-col rounded-lg border border-gray-200 bg-gray-50",
@@ -32,7 +32,7 @@ export default function LeagueTables({
 
   return (
     <div className={containerClass}>
-      <div className="border-b border-gray-100 px-4 py-3">
+      <div className="px-4 py-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
           Dagens matcher
         </h2>

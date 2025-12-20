@@ -230,7 +230,7 @@ export default function BestMatchups({ date, items }) {
     : null;
 
   return (
-    <div className="flex flex-col rounded-lg border border-white/5 bg-[#09090b] shadow-2xl lg:h-full lg:min-h-0">
+    <div className="flex flex-col rounded-lg border border-white/5 bg-[#09090b] shadow-2xl lg:h-full lg:min-h-0 overflow-hidden">
       <div className="border-b border-white/5 px-4 py-4 backdrop-blur-sm bg-white/[0.02]">
         <div className="flex items-center justify-between mb-4">
           <div>
