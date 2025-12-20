@@ -356,6 +356,10 @@ export async function POST(request) {
         const { tuples, eventId } = oddsResult;
         console.log(`[AI Generate User] ✓ Found ${tuples.length} odds tuples for event ${eventId}`);
 
+        // Extract start time correctly from fixture
+        const startTimestamp = match.startTimestamp || match.timestamp || match.matchDate;
+        const startTime = startTimestamp ? (String(startTimestamp).length === 10 ? startTimestamp * 1000 : startTimestamp) : null;
+
         oddsResults.push({
           matchId,
           homeTeam,
@@ -364,6 +368,7 @@ export async function POST(request) {
           awayTeamId,
           leagueName,
           eventId,
+          startTime,
           tuplesCount: tuples.length,
           tuples: tuples // All tuples needed for matching
         });
@@ -519,6 +524,7 @@ export async function POST(request) {
               homeTeamId: oddsResult.homeTeamId,
               awayTeamId: oddsResult.awayTeamId,
               leagueName: oddsResult.leagueName,
+              startTime: oddsResult.startTime,
             },
             insight,
             matchupScore,
@@ -580,10 +586,24 @@ export async function POST(request) {
 
     // Step 9: Save EACH line as its own snapshot document (one line per doc)
     let snapshotsSaved = 0;
+    let skippedStarted = 0;
     const betDocuments = []; // for response payload
+    const now = new Date().getTime();
 
     for (const result of selectedResults) {
       const { bet, result: evResult, evDetails, match, comboRank, comboScore, matchupScore } = result;
+
+      // Skip saving if match has already started
+      const matchStartTime = match.timestamp || match.startTimestamp || match.matchDate;
+      if (matchStartTime) {
+        const startTimeMs = new Date(matchStartTime).getTime();
+        if (startTimeMs <= now) {
+          skippedStarted++;
+          console.log(`[AI Generate User] ⏭️ Skipping ${match.homeTeam} vs ${match.awayTeam} - match already started`);
+          continue;
+        }
+      }
+
       const homeProfile = await getTeamProfile(teamprofilesCol, match.homeTeam, "home");
       const awayProfile = await getTeamProfile(teamprofilesCol, match.awayTeam, "away");
       const dirKey = bet.over ? "over" : "under";
@@ -633,6 +653,8 @@ export async function POST(request) {
         awayTeamId: match.awayTeamId,
         actual: null,
         win: null,
+        startTime: match.startTime,
+        snapshots: [], // Will be filled below
       };
 
       betDocuments.push({
@@ -650,7 +672,7 @@ export async function POST(request) {
         comboRank,
         comboScore,
         date: dateStr,
-        startTime: match.timestamp || match.startTimestamp || match.matchDate,
+        startTime: match.startTime,
         generatedAt: new Date(),
         source: "ai-user",
         type: "ai-user",
@@ -681,7 +703,7 @@ export async function POST(request) {
             eventId: match.eventId,
             matchId: match.matchId,
             matchDate: dateStr, // run date as match date placeholder
-            startTime: match.timestamp || match.startTimestamp || match.matchDate,
+            startTime: match.startTime,
             league: match.leagueName,
             homeTeam: match.homeTeam,
             awayTeam: match.awayTeam,
@@ -696,8 +718,27 @@ export async function POST(request) {
           snapshotLimit: 100,
         });
         snapshotsSaved += 1;
+
+        // Fetch back to get full history including new snapshot
+        const fullBetDoc = await db.collection("ai-generated-bets").findOne({ _id: snapshotId });
+        if (fullBetDoc?.snapshots) {
+          result.snapshots = fullBetDoc.snapshots;
+          line.snapshots = fullBetDoc.snapshots;
+        }
       } catch (error) {
         console.error(`[AI Generate User] ❌ Failed to save snapshot for ${betKey}:`, error.message);
+      }
+
+      // Proactively fetch snapshots if missing (e.g. if saved failed or was skipped)
+      if (!result.snapshots) {
+        try {
+          const snapshotId = betKey.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+          const existing = await db.collection("ai-generated-bets").findOne({ _id: snapshotId });
+          if (existing?.snapshots) {
+            result.snapshots = existing.snapshots;
+            line.snapshots = existing.snapshots;
+          }
+        } catch (e) {}
       }
     }
 
@@ -768,6 +809,9 @@ export async function POST(request) {
           neutralGround: false,
         }),
         leagueName: match.leagueName,
+        // Robust snapshot fetch for each line
+        snapshots: result.snapshots || [],
+        startTime: result.startTime || match.startTime || (match.timestamp || match.startTimestamp || match.matchDate),
       };
 
       return {
@@ -777,6 +821,8 @@ export async function POST(request) {
         league: match.leagueName,
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
+        snapshots: result.snapshots || [],
+        startTime: match.startTime,
       };
     });
 

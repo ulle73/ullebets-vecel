@@ -1,9 +1,10 @@
-  "use client";
+"use client";
 
 import { buildLineKey } from "@/lib/core/keys";
 import clsx from "clsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import AIStatsPopup from "./AIStatsPopup";
+import OddsHistoryPopup from "./OddsHistoryPopup";
 
 function getTeamIconCandidates(teamId) {
   if (!teamId) return ["/images/teams/placeholder.png"];
@@ -295,7 +296,9 @@ function buildMatchUrlEntries(lines = []) {
  */
 export default function AIBetCard({ betDoc, index, showOutcome = false, showUnibetButton = true, priorityMap = {} }) {
   const [activePopup, setActivePopup] = useState(null);
+  const [activeOddsPopup, setActiveOddsPopup] = useState(null);
   const triggerRefs = useRef({});
+  const oddsTriggerRefs = useRef({});
 
   const handleInfoClick = (lineIndex) => {
     const key = `${betDoc._id}-${lineIndex}`;
@@ -588,8 +591,8 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
                           (scewData?.score ?? 0) > 0
                             ? "bg-emerald-500/10 ring-emerald-500/30 text-emerald-100"
                             : (scewData?.score ?? 0) < 0
-                            ? "bg-rose-500/10 ring-rose-500/30 text-rose-100"
-                            : "bg-slate-700/50 ring-slate-500/40 text-slate-200"
+                              ? "bg-rose-500/10 ring-rose-500/30 text-rose-100"
+                              : "bg-slate-700/50 ring-slate-500/40 text-slate-200"
                         )}
                       >
                         <span className="text-[11px] font-semibold uppercase tracking-wide">SCEW</span>
@@ -663,9 +666,39 @@ export default function AIBetCard({ betDoc, index, showOutcome = false, showUnib
 
                 {/* RIGHT: Odds */}
                 <div className="flex min-w-[80px] flex-col items-end justify-center">
-                  <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#b3b3b3]">
-                    Odds
-                  </span>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#b3b3b3]">
+                      Odds
+                    </span>
+                    {/* Odds History Info Button - same styling as Info button */}
+                    {((betDoc.snapshots && betDoc.snapshots.length > 0) || (line.snapshots && line.snapshots.length > 0)) && (
+                      <div className="relative">
+                        <button
+                          ref={(el) => (oddsTriggerRefs.current[uniqueKey] = el)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveOddsPopup(activeOddsPopup === uniqueKey ? null : uniqueKey);
+                          }}
+                          className={clsx(
+                            "flex items-center gap-1.5 rounded-full px-2 py-0.5 transition-all",
+                            activeOddsPopup === uniqueKey
+                              ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50"
+                              : "bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-white"
+                          )}
+                        >
+                          <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] font-bold">i</span>
+                        </button>
+                        <OddsHistoryPopup
+                          snapshots={(line.snapshots && line.snapshots.length > 0) ? line.snapshots : betDoc.snapshots}
+                          line={line}
+                          startTime={line.startTime || betDoc.startTime}
+                          isOpen={activeOddsPopup === uniqueKey}
+                          onClose={() => setActiveOddsPopup(null)}
+                          triggerRef={{ current: oddsTriggerRefs.current[uniqueKey] }}
+                        />
+                      </div>
+                    )}
+                  </div>
                   <span
                     className={`text-6xl font-bold ${oddsColor} tracking-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]`}
                   >

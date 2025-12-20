@@ -1,7 +1,8 @@
 "use client";
 
 import clsx from "clsx";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import OddsHistoryPopup from "./OddsHistoryPopup";
 
 function getTeamIconCandidates(teamId) {
   if (!teamId) return ["/images/teams/placeholder.png"];
@@ -76,6 +77,9 @@ function getBetDescription(line) {
 }
 
 export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
+  const [activeOddsPopup, setActiveOddsPopup] = useState(null);
+  const oddsTriggerRef = useRef(null);
+
   const lines = betDoc?.lines || [];
   const primaryLine = lines[0] || {};
   const homeTeam = primaryLine.teams?.home || primaryLine.homeTeam || betDoc.homeTeam || "";
@@ -150,8 +154,8 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
               {outcomeVal !== "Pending" ? (
                 <>
                   {primaryLine.scope === "home" ? homeTeam :
-                   primaryLine.scope === "away" ? awayTeam :
-                   `${homeTeam} vs ${awayTeam}`} {outcomeVal} {formatPeriodText(primaryLine.period)}
+                    primaryLine.scope === "away" ? awayTeam :
+                      `${homeTeam} vs ${awayTeam}`} {outcomeVal} {formatPeriodText(primaryLine.period)}
                 </>
               ) : (
                 "Pending"
@@ -196,7 +200,7 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
               </div>
             </div>
             <div className={clsx("inline-flex rounded-full px-3 py-1 text-xs font-semibold", accentClasses.bg, accentClasses.text, accentClasses.ring)}>
-             {avgMatchupScore.toFixed(1)}
+              {avgMatchupScore.toFixed(1)}
             </div>
           </div>
 
@@ -206,9 +210,39 @@ export default function AIHistoryCompactCard({ betDoc, index = 0 }) {
               <span className="text-xs font-bold text-slate-500">vs</span>
               <TeamIcon teamId={awayTeamId} alt={awayTeam} className="h-14 w-14 object-contain" />
             </div>
-            <div className="text-right">
-              <div className="text-sm uppercase tracking-widest text-slate-400">ODDS</div>
+            <div className="text-right relative">
+              <div className="flex items-center justify-end gap-1.5">
+                <div className="text-sm uppercase tracking-widest text-slate-400">ODDS</div>
+                {/* Odds History Info Button */}
+                {betDoc.snapshots && betDoc.snapshots.length > 0 && (
+                  <button
+                    ref={oddsTriggerRef}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveOddsPopup(activeOddsPopup ? null : "main");
+                    }}
+                    className={clsx(
+                      "flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-bold transition-all",
+                      activeOddsPopup
+                        ? "border-cyan-500 bg-cyan-500/20 text-cyan-400"
+                        : "border-slate-600 bg-slate-800/50 text-slate-400 hover:border-slate-400 hover:text-white"
+                    )}
+                    title="Visa oddshistorik"
+                  >
+                    i
+                  </button>
+                )}
+              </div>
               <div className={clsx("text-4xl font-bold", accentClasses.text)}>{odds.toFixed(2)}</div>
+              {/* Odds History Popup */}
+              <OddsHistoryPopup
+                snapshots={betDoc.snapshots}
+                line={primaryLine}
+                startTime={betDoc.startTime}
+                isOpen={!!activeOddsPopup}
+                onClose={() => setActiveOddsPopup(null)}
+                triggerRef={oddsTriggerRef}
+              />
             </div>
           </div>
 

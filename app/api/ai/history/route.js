@@ -46,6 +46,14 @@ export async function POST(request) {
       // Get match data
       let match = fixtureMap.get(matchId);
 
+      // Enrich startTime if missing from betDoc (for legacy data)
+      if (!betDoc.startTime && match) {
+        const startTimestamp = match.startTimestamp || match.timestamp || match.matchDate;
+        if (startTimestamp) {
+          betDoc.startTime = String(startTimestamp).length === 10 ? startTimestamp * 1000 : startTimestamp;
+        }
+      }
+
       // If fixture doesn't have stats, try fetching from teamstats
       // We check if we can calculate the tuple. If not, we might need more data.
       // But for now, let's assume fixtures might have it OR we fetch individually if needed.
@@ -158,6 +166,8 @@ export async function POST(request) {
             homeId,
             awayId,
           },
+          startTime: betDoc.startTime,
+          snapshots: betDoc.snapshots || [],
         };
 
         gradedLines.push(normalizedLine);
