@@ -219,6 +219,61 @@ export default function BestMatchups({ date, items }) {
     [mappedUnder, leagueFilter, statFilter, scopeFilter, periodFilter, onlyTopBadges]
   );
 
+  // Calculate summary statistics for historical outcomes
+  const overSummary = useMemo(() => {
+    if (!showHistoricalOutcome) return null;
+    
+    const successfulCards = mappedOver.filter(r => {
+      const leagueBaselineValue = Number.isFinite(r.leagueBaseline) ? r.leagueBaseline : null;
+      const hasComparison = r.outcomeValue != null && leagueBaselineValue != null && leagueBaselineValue !== 0;
+      if (!hasComparison) return false;
+      
+      const pctDelta = ((r.outcomeValue - leagueBaselineValue) / leagueBaselineValue) * 100;
+      return pctDelta > 0; // För "över" vill vi ha positiv pctDelta
+    });
+
+    if (successfulCards.length === 0) return null;
+
+    const avgPct = successfulCards.reduce((sum, r) => {
+      const leagueBaselineValue = r.leagueBaseline;
+      const pctDelta = ((r.outcomeValue - leagueBaselineValue) / leagueBaselineValue) * 100;
+      return sum + pctDelta;
+    }, 0) / successfulCards.length;
+
+    return {
+      count: successfulCards.length,
+      total: mappedOver.filter(r => r.outcomeValue != null).length,
+      avgPct: avgPct
+    };
+  }, [mappedOver, showHistoricalOutcome]);
+
+  const underSummary = useMemo(() => {
+    if (!showHistoricalOutcome) return null;
+    
+    const successfulCards = mappedUnder.filter(r => {
+      const leagueBaselineValue = Number.isFinite(r.leagueBaseline) ? r.leagueBaseline : null;
+      const hasComparison = r.outcomeValue != null && leagueBaselineValue != null && leagueBaselineValue !== 0;
+      if (!hasComparison) return false;
+      
+      const pctDelta = ((r.outcomeValue - leagueBaselineValue) / leagueBaselineValue) * 100;
+      return pctDelta < 0; // För "under" vill vi ha negativ pctDelta
+    });
+
+    if (successfulCards.length === 0) return null;
+
+    const avgPct = successfulCards.reduce((sum, r) => {
+      const leagueBaselineValue = r.leagueBaseline;
+      const pctDelta = ((r.outcomeValue - leagueBaselineValue) / leagueBaselineValue) * 100;
+      return sum + pctDelta;
+    }, 0) / successfulCards.length;
+
+    return {
+      count: successfulCards.length,
+      total: mappedUnder.filter(r => r.outcomeValue != null).length,
+      avgPct: avgPct
+    };
+  }, [mappedUnder, showHistoricalOutcome]);
+
   const generatedAt = data?.generatedAt
     ? new Date(data.generatedAt).toLocaleString("sv-SE", {
       dateStyle: "medium",
@@ -293,9 +348,16 @@ export default function BestMatchups({ date, items }) {
 
       <div className="grid grid-cols-1 gap-3 border-t border-gray-100 px-4 py-4 lg:grid-cols-2 lg:flex-1 lg:min-h-0">
         <div className="flex min-h-[150px] flex-col">
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            Över – topp 20
-          </h3>
+          <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+              Över – topp 20
+            </h3>
+            {overSummary && (
+              <span className="text-xs text-emerald-600 font-medium">
+                {overSummary.count}/{overSummary.total} över • ⌀ {overSummary.avgPct >= 0 ? '+' : ''}{overSummary.avgPct.toFixed(1)}%
+              </span>
+            )}
+          </div>
           <div className="flex-1 overflow-auto pr-1">
             {!data && isLoading ? (
               <div className="rounded border border-dashed border-gray-300 p-4 text-sm text-gray-500">
@@ -324,9 +386,16 @@ export default function BestMatchups({ date, items }) {
         </div>
 
         <div className="flex min-h-[150px] flex-col">
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-purple-700">
-            Under – topp 20
-          </h3>
+          <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-purple-700">
+              Under – topp 20
+            </h3>
+            {underSummary && (
+              <span className="text-xs text-purple-600 font-medium">
+                {underSummary.count}/{underSummary.total} under • ⌀ {underSummary.avgPct.toFixed(1)}%
+              </span>
+            )}
+          </div>
           <div className="flex-1 overflow-auto pr-1">
             {!data && isLoading ? (
               <div className="rounded border border-dashed border-gray-300 p-4 text-sm text-gray-500">
