@@ -221,6 +221,64 @@ export default function BestMatchups({ date, items }) {
     [mappedUnder, leagueFilter, statFilter, scopeFilter, periodFilter, onlyTopBadges]
   );
 
+  // Calculate summary statistics for historical outcomes (only visible rows)
+  const overSummary = useMemo(() => {
+    if (!showHistoricalOutcome) return null;
+
+    const comparableRows = overRows.filter((r) => {
+      const leagueBaselineValue = Number.isFinite(r.leagueBaseline) ? r.leagueBaseline : null;
+      const hasComparison = r.outcomeValue != null && leagueBaselineValue != null && leagueBaselineValue !== 0;
+      return hasComparison;
+    });
+
+    if (comparableRows.length === 0) return null;
+
+    const successfulCards = comparableRows.filter((r) => {
+      const pctDelta = ((r.outcomeValue - r.leagueBaseline) / r.leagueBaseline) * 100;
+      return pctDelta > 0; // För "över" vill vi ha positiv pctDelta
+    });
+
+    const avgPct = comparableRows.reduce((sum, r) => {
+      const pctDelta = ((r.outcomeValue - r.leagueBaseline) / r.leagueBaseline) * 100;
+      return sum + pctDelta;
+    }, 0) / comparableRows.length;
+
+    return {
+      count: successfulCards.length,
+      total: comparableRows.length,
+      avgPct: avgPct,
+    };
+  }, [overRows, showHistoricalOutcome]);
+
+  const underSummary = useMemo(() => {
+    if (!showHistoricalOutcome) return null;
+
+    const comparableRows = underRows.filter((r) => {
+      const leagueBaselineValue = Number.isFinite(r.leagueBaseline) ? r.leagueBaseline : null;
+      const hasComparison = r.outcomeValue != null && leagueBaselineValue != null && leagueBaselineValue !== 0;
+      return hasComparison;
+    });
+
+    if (comparableRows.length === 0) return null;
+
+    const successfulCards = comparableRows.filter((r) => {
+      const pctDelta = ((r.outcomeValue - r.leagueBaseline) / r.leagueBaseline) * 100;
+      return pctDelta < 0; // För "under" vill vi ha negativ pctDelta
+    });
+
+    const avgPct = comparableRows.reduce((sum, r) => {
+      const pctDelta = ((r.outcomeValue - r.leagueBaseline) / r.leagueBaseline) * 100;
+      return sum + pctDelta;
+    }, 0) / comparableRows.length;
+
+    return {
+      count: successfulCards.length,
+      total: comparableRows.length,
+      avgPct: avgPct,
+    };
+  }, [underRows, showHistoricalOutcome]);
+
+
   const generatedAt = data?.generatedAt
     ? new Date(data.generatedAt).toLocaleString("sv-SE", {
       dateStyle: "medium",
@@ -332,10 +390,19 @@ export default function BestMatchups({ date, items }) {
         {/* Over Column */}
         <div className="flex flex-col min-h-0 border-r border-white/5 last:border-0">
           <div className="px-4 py-3 sticky top-0 bg-[#09090b]/95 backdrop-blur z-10 border-b border-white/5">
-            <h3 className="text-sm font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-              Top 20 Över
-            </h3>
+            <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
+              <h3 className="text-sm font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                Över – topp 20
+              </h3>
+              {overSummary && (
+                <span
+                  className={`text-xs font-medium ${overSummary.avgPct < 0 ? "text-rose-400" : "text-emerald-400"}`}
+                >
+                  {overSummary.count}/{overSummary.total} över • {overSummary.avgPct >= 0 ? '+' : ''}{overSummary.avgPct.toFixed(1)}%
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
             {!data && isLoading ? (
@@ -364,10 +431,19 @@ export default function BestMatchups({ date, items }) {
         {/* Under Column */}
         <div className="flex flex-col min-h-0">
           <div className="px-4 py-3 sticky top-0 bg-[#09090b]/95 backdrop-blur z-10 border-b border-white/5">
-            <h3 className="text-sm font-black uppercase tracking-widest text-rose-400 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></span>
-              Top 20 Under
-            </h3>
+            <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
+              <h3 className="text-sm font-black uppercase tracking-widest text-rose-400 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></span>
+                Under – topp 20
+              </h3>
+              {underSummary && (
+                <span
+                  className={`text-xs font-medium ${underSummary.avgPct < 0 ? "text-emerald-400" : "text-rose-400"}`}
+                >
+                  {underSummary.count}/{underSummary.total} under • {underSummary.avgPct >= 0 ? '+' : ''}{underSummary.avgPct.toFixed(1)}%
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
             {!data && isLoading ? (
