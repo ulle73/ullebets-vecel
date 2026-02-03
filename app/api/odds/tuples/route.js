@@ -159,6 +159,7 @@ export async function GET(req) {
     const matches = sortMatchesStable(normalized);
     const results = [];
     const errors = [];
+    
 
     for (const match of matches) {
       const entry = {
