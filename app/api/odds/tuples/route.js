@@ -160,7 +160,7 @@ export async function GET(req) {
     const results = [];
     const errors = [];
     
-
+// testt föra tt see att ändringar sparas
     for (const match of matches) {
       const entry = {
         matchId: match.matchId,
