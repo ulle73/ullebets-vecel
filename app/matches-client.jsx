@@ -7,29 +7,18 @@ import DayInsightsLegacy from "@/components/DayInsights-copy";
 import MatchDetailsTabs from "@/components/MatchDetailsTabs";
 import DailyAutoAnalysis from "@/components/DailyAutoAnalysis";
 import AutoAnalysisHistory from "@/components/AutoAnalysisHistory";
+import DashboardCockpit from "@/components/DashboardCockpit";
+import WatchlistPanel from "@/components/WatchlistPanel";
 import { normalizeMatch } from "@/lib/core/matchups";
-import {
-  buildMatchesByDateKey,
-  buildMatchDetailsKey,
-  buildTeamProfileKeyForMatch,
-} from "@/lib/utils/apiKeys";
-import {
-  fetchJson,
-  fetchJsonAllow404,
-  fetchTeamProfile,
-} from "@/lib/utils/fetchers";
+import { buildMatchesByDateKey, buildMatchDetailsKey, buildTeamProfileKeyForMatch } from "@/lib/utils/apiKeys";
+import { fetchJson, fetchJsonAllow404, fetchTeamProfile } from "@/lib/utils/fetchers";
 
 const DEBUG_TAG = "[MatchesClient]";
 const debug = (...args) => console.log(DEBUG_TAG, ...args);
 const debugError = (...args) => console.error(DEBUG_TAG, ...args);
 
 function makeFormatter() {
-  return new Intl.DateTimeFormat("sv-SE", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Europe/Stockholm",
-  });
+  return new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Stockholm" });
 }
 
 function getNextDateString(currentDate) {
@@ -47,18 +36,7 @@ function toMatchId(value) {
     return str ? str : null;
   }
   if (typeof value === "object") {
-    return toMatchId(
-      value.matchId ??
-      value.id ??
-      value._id ??
-      value.eventId ??
-      value.event_id ??
-      value.event?.id ??
-      value.raw?.matchId ??
-      value.raw?.id ??
-      value.raw?.eventId ??
-      null
-    );
+    return toMatchId(value.matchId ?? value.id ?? value._id ?? value.eventId ?? value.event_id ?? value.event?.id ?? value.raw?.matchId ?? value.raw?.id ?? value.raw?.eventId ?? null);
   }
   return null;
 }
@@ -67,173 +45,96 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const [date, setDate] = useState(defaultDate);
   const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [detailTab, setDetailTab] = useState("stats");
+  const [autoState, setAutoState] = useState({ shortlist: [], bestOverall: null, summary: {} });
+  const [watchlistAlertCount, setWatchlistAlertCount] = useState(0);
   const { cache, mutate: globalMutate } = useSWRConfig();
   const fallbackRef = useRef(initialFallback);
 
   useEffect(() => {
-    const entries = Object.entries(fallbackRef.current || {});
-    if (!entries.length) return;
-    entries.forEach(([key, value]) => {
+    Object.entries(fallbackRef.current || {}).forEach(([key, value]) => {
       if (!key) return;
       const state = cache.get(key);
       if (!state || state.data === undefined) {
-        globalMutate(key, value, {
-          revalidate: false,
-          populateCache: true,
-        });
+        globalMutate(key, value, { revalidate: false, populateCache: true });
       }
     });
   }, [cache, globalMutate]);
 
-  const prefetchTeamProfiles = useCallback(
-    async (matchesToPrefetch) => {
-      if (!Array.isArray(matchesToPrefetch) || !matchesToPrefetch.length) {
-        return;
-      }
-
-      const keys = new Set();
-      for (const match of matchesToPrefetch) {
-        const homeKey = buildTeamProfileKeyForMatch(match, "home");
-        const awayKey = buildTeamProfileKeyForMatch(match, "away");
-        if (homeKey) keys.add(homeKey);
-        if (awayKey) keys.add(awayKey);
-      }
-
-      if (!keys.size) {
-        return;
-      }
-
-      const queue = [];
-      keys.forEach((key) => {
-        const state = cache.get(key);
-        const hasCache = Boolean(state && state.data !== undefined);
-        debug("teamprofiles:prefetch:key", { key, hasCache });
-        if (!hasCache) {
-          queue.push(key);
+  const prefetchTeamProfiles = useCallback(async (matchesToPrefetch) => {
+    if (!Array.isArray(matchesToPrefetch) || !matchesToPrefetch.length) return;
+    const keys = new Set();
+    for (const match of matchesToPrefetch) {
+      const homeKey = buildTeamProfileKeyForMatch(match, "home");
+      const awayKey = buildTeamProfileKeyForMatch(match, "away");
+      if (homeKey) keys.add(homeKey);
+      if (awayKey) keys.add(awayKey);
+    }
+    if (!keys.size) return;
+    const queue = [];
+    keys.forEach((key) => {
+      const state = cache.get(key);
+      const hasCache = Boolean(state && state.data !== undefined);
+      debug("teamprofiles:prefetch:key", { key, hasCache });
+      if (!hasCache) queue.push(key);
+    });
+    let pointer = 0;
+    const concurrency = Math.min(6, queue.length);
+    const worker = async () => {
+      while (pointer < queue.length) {
+        const key = queue[pointer++];
+        if (!key) continue;
+        try {
+          const data = await fetchTeamProfile(key);
+          await globalMutate(key, data, { revalidate: false, populateCache: true });
+        } catch (prefetchError) {
+          debugError("teamprofiles:prefetch:error", { key, message: prefetchError?.message });
         }
-      });
-
-      if (!queue.length) {
-        return;
       }
-
-      let pointer = 0;
-      const concurrency = Math.min(6, queue.length);
-
-      const worker = async () => {
-        while (pointer < queue.length) {
-          const currentIndex = pointer;
-          pointer += 1;
-          const key = queue[currentIndex];
-          if (!key) continue;
-          try {
-            const data = await fetchTeamProfile(key);
-            await globalMutate(key, data, {
-              revalidate: false,
-              populateCache: true,
-            });
-          } catch (prefetchError) {
-            debugError("teamprofiles:prefetch:error", {
-              key,
-              message: prefetchError?.message,
-            });
-          }
-        }
-      };
-
-      await Promise.all(Array.from({ length: concurrency }, worker));
-    },
-    [cache, globalMutate]
-  );
+    };
+    await Promise.all(Array.from({ length: concurrency }, worker));
+  }, [cache, globalMutate]);
 
   const matchesKey = date ? buildMatchesByDateKey(date) : null;
   const tomorrowDate = useMemo(() => getNextDateString(date), [date]);
   const tomorrowMatchesKey = tomorrowDate ? buildMatchesByDateKey(tomorrowDate) : null;
 
-  const { data, error, isLoading } = useSWR(matchesKey, fetchJson, {
-    revalidateOnFocus: false,
-    revalidateIfStale: false,
-    revalidateOnReconnect: false,
-    dedupingInterval: 60_000,
-    keepPreviousData: true,
-  });
-
-  const { data: tomorrowData } = useSWR(tomorrowMatchesKey, fetchJson, {
-    revalidateOnFocus: false,
-    revalidateIfStale: false,
-    revalidateOnReconnect: false,
-    dedupingInterval: 60_000,
-    keepPreviousData: true,
-  });
+  const { data, error, isLoading } = useSWR(matchesKey, fetchJson, { revalidateOnFocus: false, revalidateIfStale: false, revalidateOnReconnect: false, dedupingInterval: 60_000, keepPreviousData: true });
+  const { data: tomorrowData } = useSWR(tomorrowMatchesKey, fetchJson, { revalidateOnFocus: false, revalidateIfStale: false, revalidateOnReconnect: false, dedupingInterval: 60_000, keepPreviousData: true });
 
   const items = useMemo(() => data?.items ?? [], [data]);
-
-  const matches = useMemo(() => {
-    const normalized = items.map(normalizeMatch).filter(Boolean);
-    debug("matches:normalized", {
-      count: normalized.length,
-      sample: normalized.slice(0, 3).map((match) => ({
-        matchId: match.id,
-        leagueId: match.leagueId,
-        homeTeamId: match.homeTeamId,
-        awayTeamId: match.awayTeamId,
-      })),
-    });
-    return normalized;
-  }, [items]);
-
+  const matches = useMemo(() => items.map(normalizeMatch).filter(Boolean), [items]);
   const tomorrowItems = useMemo(() => tomorrowData?.items ?? [], [tomorrowData]);
 
   useEffect(() => {
-    if (!data) return;
-    debug("matches:data", {
-      date,
-      items: data.items?.length ?? 0,
-    });
+    if (data) debug("matches:data", { date, items: data.items?.length ?? 0 });
   }, [data, date]);
 
   const prefetchInFlightRef = useRef(Promise.resolve());
-
   useEffect(() => {
     if (!matchesKey || !matches.length) {
       prefetchInFlightRef.current = Promise.resolve();
       return;
     }
     let cancelled = false;
-    const basePromise = prefetchTeamProfiles(matches);
-    prefetchInFlightRef.current = Promise.resolve(basePromise)
+    prefetchInFlightRef.current = Promise.resolve(prefetchTeamProfiles(matches))
       .catch((prefetchError) => {
-        if (cancelled) return;
-        debugError("teamprofiles:prefetch:failure", {
-          key: matchesKey,
-          message: prefetchError?.message,
-        });
+        if (!cancelled) debugError("teamprofiles:prefetch:failure", { key: matchesKey, message: prefetchError?.message });
       })
       .finally(() => {
-        if (!cancelled) {
-          debug("teamprofiles:prefetch:cycle-complete", { key: matchesKey });
-        }
+        if (!cancelled) debug("teamprofiles:prefetch:cycle-complete", { key: matchesKey });
       });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [matchesKey, matches, prefetchTeamProfiles]);
 
   useEffect(() => {
     if (!tomorrowItems.length) return;
     Promise.resolve(prefetchTeamProfiles(tomorrowItems)).catch((prefetchError) => {
-      debugError("teamprofiles:prefetch:tomorrow", {
-        key: tomorrowMatchesKey,
-        message: prefetchError?.message,
-      });
+      debugError("teamprofiles:prefetch:tomorrow", { key: tomorrowMatchesKey, message: prefetchError?.message });
     });
   }, [tomorrowItems, tomorrowMatchesKey, prefetchTeamProfiles]);
 
   useEffect(() => {
-    if (!selectedMatchId) return;
-    const stillExists = matches.some((match) => match.id === selectedMatchId);
-    if (!stillExists) {
+    if (selectedMatchId && !matches.some((match) => match.id === selectedMatchId)) {
       setSelectedMatchId(null);
       setDetailTab("stats");
     }
@@ -243,23 +144,9 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const formatTime = (ts) => (ts ? formatter.format(new Date(ts * 1000)) : "—");
 
   const matchDetailsKey = selectedMatchId ? buildMatchDetailsKey(selectedMatchId) : null;
+  const { data: matchDetails, error: matchError, isLoading: isMatchLoading } = useSWR(matchDetailsKey, fetchJsonAllow404, { shouldRetryOnError: false, revalidateOnFocus: false, revalidateIfStale: false, revalidateOnReconnect: false });
 
-  const {
-    data: matchDetails,
-    error: matchError,
-    isLoading: isMatchLoading,
-  } = useSWR(matchDetailsKey, fetchJsonAllow404, {
-    shouldRetryOnError: false,
-    revalidateOnFocus: false,
-    revalidateIfStale: false,
-    revalidateOnReconnect: false,
-  });
-
-  const selectedMatchSummary = useMemo(
-    () => matches.find((match) => match.id === selectedMatchId) ?? null,
-    [matches, selectedMatchId]
-  );
-
+  const selectedMatchSummary = useMemo(() => matches.find((match) => match.id === selectedMatchId) ?? null, [matches, selectedMatchId]);
   const mergedMatch = useMemo(() => {
     if (!selectedMatchSummary) return null;
     return {
@@ -275,62 +162,38 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     };
   }, [selectedMatchSummary, matchDetails]);
 
-  const handlePrefetchMatch = useCallback(
-    (match) => {
-      if (!match) return;
-      void prefetchTeamProfiles([match]).catch((prefetchError) => {
-        debugError("teamprofiles:prefetch:on-hover", {
-          matchId: match.id ?? match.matchId ?? null,
-          message: prefetchError?.message,
-        });
+  const handlePrefetchMatch = useCallback((match) => {
+    if (!match) return;
+    void prefetchTeamProfiles([match]).catch((prefetchError) => {
+      debugError("teamprofiles:prefetch:on-hover", { matchId: match.id ?? match.matchId ?? null, message: prefetchError?.message });
+    });
+  }, [prefetchTeamProfiles]);
+
+  const handleSelectMatch = useCallback((payload, preferredTab = "stats") => {
+    const resolvedId = toMatchId(payload);
+    if (!resolvedId) {
+      debugError("selection:invalid", { payload });
+      return;
+    }
+    const matchForSelection = matches.find((match) => match.id === resolvedId);
+    if (matchForSelection) {
+      void prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
+        debugError("teamprofiles:prefetch:on-select", { matchId: resolvedId, message: prefetchError?.message });
       });
-    },
-    [prefetchTeamProfiles]
-  );
-
-  const handleSelectMatch = useCallback(
-    (payload, preferredTab = "stats") => {
-      const resolvedId = toMatchId(payload);
-      if (!resolvedId) {
-        debugError("selection:invalid", { payload });
-        return;
-      }
-
-      const matchForSelection = matches.find((match) => match.id === resolvedId);
-      if (matchForSelection) {
-        void prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
-          debugError("teamprofiles:prefetch:on-select", {
-            matchId: resolvedId,
-            message: prefetchError?.message,
-          });
-        });
-      } else {
-        void Promise.resolve(prefetchInFlightRef.current);
-      }
-
-      setDetailTab(preferredTab || "stats");
-      setSelectedMatchId(resolvedId);
-    },
-    [matches, prefetchTeamProfiles]
-  );
+    }
+    setDetailTab(preferredTab || "stats");
+    setSelectedMatchId(resolvedId);
+  }, [matches, prefetchTeamProfiles]);
 
   const showDetails = Boolean(selectedMatchSummary);
-
   const containerWidthClass = showDetails ? "max-w-full" : "md:max-w-[92vw]";
   const containerPaddingClass = showDetails ? "px-3 sm:px-6 lg:px-8" : "px-4 sm:px-6";
-  const gridColumnsClass = showDetails
-    ? "grid-cols-1 md:[grid-template-columns:500px_1fr] xl:[grid-template-columns:550px_1fr]"
-    : "grid-cols-1 md:[grid-template-columns:1fr_2fr] xl:[grid-template-columns:1fr_2fr]";
-  const gridRowClass = "auto-rows-auto md:auto-rows-[minmax(0,1fr)]";
+  const gridColumnsClass = showDetails ? "grid-cols-1 md:[grid-template-columns:500px_1fr] xl:[grid-template-columns:550px_1fr]" : "grid-cols-1 md:[grid-template-columns:1fr_2fr] xl:[grid-template-columns:1fr_2fr]";
 
   return (
     <div className="flex w-full flex-col overflow-x-hidden lg:h-full lg:min-h-0 lg:overflow-hidden">
-      <div
-        className={`mx-auto flex w-full flex-1 flex-col overflow-x-hidden pb-6 ${containerPaddingClass} ${containerWidthClass} lg:h-full lg:min-h-0 lg:overflow-hidden`}
-      >
-        <div
-          className={`grid w-full gap-4 ${gridColumnsClass} ${gridRowClass} md:h-full md:min-h-0 md:overflow-y-auto md:overscroll-contain lg:h-full lg:min-h-0 lg:overflow-visible lg:overscroll-auto`}
-        >
+      <div className={`mx-auto flex w-full flex-1 flex-col overflow-x-hidden pb-6 ${containerPaddingClass} ${containerWidthClass} lg:h-full lg:min-h-0 lg:overflow-hidden`}>
+        <div className={`grid w-full gap-4 ${gridColumnsClass} auto-rows-auto md:h-full md:min-h-0 md:overflow-y-auto md:overscroll-contain lg:h-full lg:min-h-0 lg:overflow-visible lg:overscroll-auto`}>
           <LeagueTables
             date={date}
             onDateChange={setDate}
@@ -346,21 +209,13 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
 
           {showDetails ? (
             <div className="md:h-full md:min-h-0 lg:h-full lg:min-h-0 lg:overflow-hidden">
-              <MatchDetailsTabs
-                match={mergedMatch}
-                isLoading={isMatchLoading}
-                error={matchError}
-                preferredTab={detailTab}
-              />
+              <MatchDetailsTabs match={mergedMatch} isLoading={isMatchLoading} error={matchError} preferredTab={detailTab} />
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-1">
-              <DailyAutoAnalysis
-                date={date}
-                matches={matches}
-                formatTime={formatTime}
-                onOpenMatch={handleSelectMatch}
-              />
+              <DashboardCockpit autoState={autoState} watchlistAlertCount={watchlistAlertCount} onOpenMatch={handleSelectMatch} />
+              <DailyAutoAnalysis date={date} matches={matches} formatTime={formatTime} onOpenMatch={handleSelectMatch} onAutoStateChange={setAutoState} />
+              <WatchlistPanel currentShortlist={autoState.shortlist} onOpenMatch={handleSelectMatch} onAlertCountChange={setWatchlistAlertCount} />
               <AutoAnalysisHistory onOpenMatch={handleSelectMatch} />
               <DayInsightsLegacy date={date} items={items} />
             </div>
