@@ -87,6 +87,11 @@ export default function BacktestPanel({ match, onSummaryChange }) {
                     value={`${bestBet.agreementPct}%`}
                     tone="accent"
                   />
+                  <StatBadge
+                    label="Ranking"
+                    value={bestBet.strategyScore?.toFixed ? bestBet.strategyScore.toFixed(1) : bestBet.strategyScore}
+                    tone="accent"
+                  />
                 </>
               ) : null}
             </div>
@@ -121,6 +126,22 @@ export default function BacktestPanel({ match, onSummaryChange }) {
                   <div className="mt-1 text-sm text-white">
                     {bestBet.rationale}
                   </div>
+                  {bestBet.rankReasons?.length ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {bestBet.rankReasons.map((reason) => (
+                        <span
+                          key={reason.id}
+                          className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${
+                            reason.tone === "warning"
+                              ? "border-amber-500/20 bg-amber-500/10 text-amber-200"
+                              : "border-cyan-500/20 bg-cyan-500/10 text-cyan-200"
+                          }`}
+                        >
+                          {reason.label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-black/20 p-3">
@@ -204,7 +225,7 @@ export default function BacktestPanel({ match, onSummaryChange }) {
                   {item.headline}
                 </div>
                 <div className="mt-2 text-xs text-slate-400">
-                  EV +{item.primaryEv?.toFixed(1)}% · Confidence {item.confidenceScore}/100
+                  EV +{item.primaryEv?.toFixed(1)}% · Confidence {item.confidenceScore}/100 · Ranking {item.strategyScore?.toFixed ? item.strategyScore.toFixed(1) : item.strategyScore}
                 </div>
               </div>
             ))}

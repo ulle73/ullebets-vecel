@@ -49,6 +49,25 @@ function sanitizeShortlistItem(item = {}) {
           value: Number.isFinite(Number(entry?.value)) ? Number(entry.value) : null,
         }))
       : [],
+    rankReasons: Array.isArray(item.rankReasons)
+      ? item.rankReasons.slice(0, 6).map((reason) => ({
+          id: typeof reason?.id === "string" ? reason.id : null,
+          label: typeof reason?.label === "string" ? reason.label : null,
+          tone: typeof reason?.tone === "string" ? reason.tone : null,
+        }))
+      : [],
+    ranking: item?.ranking && typeof item.ranking === "object"
+      ? {
+          edgeScore: Number.isFinite(Number(item.ranking.edgeScore)) ? Number(item.ranking.edgeScore) : null,
+          confidenceScore: Number.isFinite(Number(item.ranking.confidenceScore)) ? Number(item.ranking.confidenceScore) : null,
+          consensusScore: Number.isFinite(Number(item.ranking.consensusScore)) ? Number(item.ranking.consensusScore) : null,
+          sampleScore: Number.isFinite(Number(item.ranking.sampleScore)) ? Number(item.ranking.sampleScore) : null,
+          priceScore: Number.isFinite(Number(item.ranking.priceScore)) ? Number(item.ranking.priceScore) : null,
+          marketScore: Number.isFinite(Number(item.ranking.marketScore)) ? Number(item.ranking.marketScore) : null,
+          formulaSpread: Number.isFinite(Number(item.ranking.formulaSpread)) ? Number(item.ranking.formulaSpread) : null,
+          formulaDeviation: Number.isFinite(Number(item.ranking.formulaDeviation)) ? Number(item.ranking.formulaDeviation) : null,
+        }
+      : null,
     bet: pickBetPayload(item),
   };
 }
