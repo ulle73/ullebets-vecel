@@ -309,6 +309,8 @@ export default function DailyAutoAnalysis({
         rationale: entry.bestBet?.rationale,
         riskFlags: entry.bestBet?.riskFlags,
         entries: entry.bestBet?.entries,
+        rankReasons: entry.bestBet?.rankReasons,
+        ranking: entry.bestBet?.ranking,
         bet: entry.bestBet?.bet,
       })),
     });
@@ -428,7 +430,7 @@ export default function DailyAutoAnalysis({
                     </div>
                     <div className="text-right">
                       <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Score
+                        Ranking
                       </div>
                       <div className="mt-1 text-lg font-black text-cyan-300">
                         {bet?.strategyScore?.toFixed(1)}
@@ -443,9 +445,53 @@ export default function DailyAutoAnalysis({
                     <MetricBadge label="Odds" value={bet?.bet?.odds?.toFixed ? bet.bet.odds.toFixed(2) : bet?.bet?.odds} />
                   </div>
 
+                  {bet?.rankReasons?.length ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {bet.rankReasons.map((reason) => (
+                        <span
+                          key={reason.id}
+                          className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${
+                            reason.tone === "warning"
+                              ? "border-amber-500/20 bg-amber-500/10 text-amber-200"
+                              : "border-cyan-500/20 bg-cyan-500/10 text-cyan-200"
+                          }`}
+                        >
+                          {reason.label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+
                   <p className="mt-3 text-sm leading-6 text-slate-300">
                     {bet?.rationale}
                   </p>
+
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                        Edge score
+                      </div>
+                      <div className="mt-1 text-sm font-semibold text-white">
+                        {bet?.ranking?.edgeScore}/100
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                        Price score
+                      </div>
+                      <div className="mt-1 text-sm font-semibold text-white">
+                        {bet?.ranking?.priceScore}/100
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                        Market score
+                      </div>
+                      <div className="mt-1 text-sm font-semibold text-white">
+                        {bet?.ranking?.marketScore}/100
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
                     {(bet?.riskFlags || []).length ? (
