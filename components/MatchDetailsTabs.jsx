@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import TeamCompare, { PERIOD_OPTIONS } from "@/components/TeamCompare";
 import Lineups from "@/components/Lineups";
-import BacktestPage from "@/components/BacktestPage";
-import ClosingOddsCard from "@/components/ClosingOddsCard";
+import BacktestPanel from "@/components/BacktestPanel";
 import Image from "next/image";
 import { FormBadges } from "@/components/TeamOddsHistory";
 
@@ -16,7 +15,7 @@ const TABS = [
 
 function TopNavBar({ activeTab, setActiveTab }) {
   return (
-    <div className="flex h-12 w-full items-center justify-center border-b border-white/5 bg-black/40 backdrop-blur-md z-30 relative shrink-0">
+    <div className="relative z-30 flex h-12 w-full shrink-0 items-center justify-center border-b border-white/5 bg-black/40 backdrop-blur-md">
       <div className="flex h-full gap-8">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -24,16 +23,14 @@ function TopNavBar({ activeTab, setActiveTab }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`
-                relative h-full px-2 text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-300
-                ${isActive ? "text-cyan-400" : "text-slate-500 hover:text-slate-300"}
-              `}
+              className={`relative h-full px-2 text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-300 ${
+                isActive ? "text-cyan-400" : "text-slate-500 hover:text-slate-300"
+              }`}
             >
               {tab.label}
-              {/* Active Indicator Line */}
-              {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)] animate-in fade-in slide-in-from-bottom-1 duration-300" />
-              )}
+              {isActive ? (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] animate-in fade-in slide-in-from-bottom-1 bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)] duration-300" />
+              ) : null}
             </button>
           );
         })}
@@ -44,17 +41,18 @@ function TopNavBar({ activeTab, setActiveTab }) {
 
 function PeriodSelector({ selectedPeriod, onChange }) {
   return (
-    <div className="inline-flex items-center justify-center border border-white/10 rounded-full bg-black/40 backdrop-blur-sm overflow-hidden divide-x divide-white/5">
+    <div className="inline-flex items-center justify-center overflow-hidden rounded-full border border-white/10 bg-black/40 backdrop-blur-sm divide-x divide-white/5">
       {PERIOD_OPTIONS.map((option) => {
         const isActive = selectedPeriod === option.value;
         return (
           <button
             key={option.value}
             onClick={() => onChange(option.value)}
-            className={`
-              relative px-5 py-2 transition-all duration-300 text-[10px] font-bold uppercase tracking-wider
-              ${isActive ? "text-white bg-white/10" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"}
-            `}
+            className={`relative px-5 py-2 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${
+              isActive
+                ? "bg-white/10 text-white"
+                : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
+            }`}
           >
             {option.label}
           </button>
@@ -64,22 +62,43 @@ function PeriodSelector({ selectedPeriod, onChange }) {
   );
 }
 
-function MatchHeader({ match, selectedPeriod, onPeriodChange, activeTab }) {
-  // Safe helper for team logos
+function SummaryPill({ label, value, tone = "neutral" }) {
+  const toneClass =
+    tone === "positive"
+      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+      : tone === "accent"
+        ? "border-cyan-500/20 bg-cyan-500/10 text-cyan-300"
+        : "border-white/10 bg-black/30 text-slate-300";
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${toneClass}`}
+    >
+      {label}: {value}
+    </span>
+  );
+}
+
+function MatchHeader({
+  match,
+  selectedPeriod,
+  onPeriodChange,
+  activeTab,
+  backtestSummary,
+}) {
   const getLogo = (id) => {
     if (!id) return "/images/teams/placeholder.png";
     return `/images/teams/${id}.png`;
   };
 
-  return (
-    <div className="flex flex-col items-center justify-center pt-10 pb-8 relative overflow-hidden shrink-0">
-      {/* Dynamic Background Gradient acting as a subtle spotlight behind logos - REMOVED */}
+  const bestBet = backtestSummary?.bestBet ?? null;
 
-      <div className="flex items-center gap-12 z-10 sm:scale-100 scale-90">
-        <div className="flex flex-col items-center gap-3 w-40 md:w-56 text-center group">
-          <div className="relative w-20 h-20 md:w-28 md:h-28 transition-transform duration-500">
-            {/* Strong colored glow using the image itself */}
-            <div className="absolute inset-0 blur-lg opacity-40 scale-125">
+  return (
+    <div className="relative flex flex-col items-center justify-center overflow-hidden pt-10 pb-8 shrink-0">
+      <div className="z-10 flex items-center gap-12 scale-90 sm:scale-100">
+        <div className="group flex w-40 flex-col items-center gap-3 text-center md:w-56">
+          <div className="relative h-20 w-20 transition-transform duration-500 md:h-28 md:w-28">
+            <div className="absolute inset-0 scale-125 blur-lg opacity-40">
               <Image
                 src={getLogo(match.homeTeamId)}
                 alt=""
@@ -92,27 +111,28 @@ function MatchHeader({ match, selectedPeriod, onPeriodChange, activeTab }) {
               src={getLogo(match.homeTeamId)}
               alt={match.homeTeamName}
               fill
-              className="object-contain drop-shadow-2xl z-10"
+              className="z-10 object-contain drop-shadow-2xl"
               unoptimized
             />
           </div>
-          <h2 className="text-base md:text-lg font-bold text-white leading-tight tracking-wide drop-shadow-md">
+          <h2 className="text-base font-bold leading-tight tracking-wide text-white drop-shadow-md md:text-lg">
             {match.homeTeamName}
           </h2>
           <FormBadges teamName={match.homeTeamName} />
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          <span className="text-3xl md:text-4xl font-black text-slate-800 font-mono tracking-tighter mix-blend-screen opacity-50">VS</span>
-          <span className="text-[10px] uppercase tracking-[0.2em] text-cyan-400 font-bold border border-cyan-500/20 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+          <span className="font-mono text-3xl font-black tracking-tighter text-slate-800 opacity-50 mix-blend-screen md:text-4xl">
+            VS
+          </span>
+          <span className="rounded-full border border-cyan-500/20 bg-black/40 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)] backdrop-blur-md">
             {match.leagueName || "MATCH"}
           </span>
         </div>
 
-        <div className="flex flex-col items-center gap-3 w-40 md:w-56 text-center group">
-          <div className="relative w-20 h-20 md:w-28 md:h-28 transition-transform duration-500">
-            {/* Strong colored glow */}
-            <div className="absolute inset-0 blur-lg opacity-40 scale-125">
+        <div className="group flex w-40 flex-col items-center gap-3 text-center md:w-56">
+          <div className="relative h-20 w-20 transition-transform duration-500 md:h-28 md:w-28">
+            <div className="absolute inset-0 scale-125 blur-lg opacity-40">
               <Image
                 src={getLogo(match.awayTeamId)}
                 alt=""
@@ -125,91 +145,113 @@ function MatchHeader({ match, selectedPeriod, onPeriodChange, activeTab }) {
               src={getLogo(match.awayTeamId)}
               alt={match.awayTeamName}
               fill
-              className="object-contain drop-shadow-2xl z-10"
+              className="z-10 object-contain drop-shadow-2xl"
               unoptimized
             />
           </div>
-          <h2 className="text-base md:text-lg font-bold text-white leading-tight tracking-wide drop-shadow-md">
+          <h2 className="text-base font-bold leading-tight tracking-wide text-white drop-shadow-md md:text-lg">
             {match.awayTeamName}
           </h2>
           <FormBadges teamName={match.awayTeamName} />
         </div>
       </div>
 
-      {/* Period Selector restored and placed below logos */}
-      {activeTab === 'stats' && (
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-2 px-4">
+        {bestBet ? (
+          <>
+            <SummaryPill label="Auto-förslag" value={bestBet.headline} tone="accent" />
+            <SummaryPill
+              label="EV"
+              value={`+${bestBet.primaryEv?.toFixed(1)}%`}
+              tone="positive"
+            />
+            <SummaryPill
+              label="Confidence"
+              value={`${bestBet.confidenceScore}/100`}
+              tone="positive"
+            />
+          </>
+        ) : activeTab === "backtest" ? (
+          <SummaryPill
+            label="Backtest"
+            value="Kör för att få auto-förslag"
+            tone="neutral"
+          />
+        ) : null}
+      </div>
+
+      {activeTab === "stats" ? (
         <div className="mt-8 animate-in fade-in slide-in-from-top-1 duration-500">
           <PeriodSelector selectedPeriod={selectedPeriod} onChange={onPeriodChange} />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
 
-export default function MatchDetailsTabs({ match, isLoading, error }) {
-  const [activeTab, setActiveTab] = useState("stats");
-  const [selectedPeriod, setSelectedPeriod] = useState("ALL"); // Default to ALL
-
-  // Ref for the content container
+export default function MatchDetailsTabs({ match, isLoading, error, preferredTab = "stats" }) {
+  const [activeTab, setActiveTab] = useState(preferredTab || "stats");
+  const [selectedPeriod, setSelectedPeriod] = useState("ALL");
+  const [backtestSummary, setBacktestSummary] = useState(null);
   const contentRef = useRef(null);
+
+  useEffect(() => {
+    setBacktestSummary(null);
+  }, [match?.matchId, match?.id]);
+
+  useEffect(() => {
+    const validTab = TABS.some((tab) => tab.id === preferredTab) ? preferredTab : "stats";
+    setActiveTab(validTab);
+  }, [preferredTab, match?.matchId, match?.id]);
 
   if (!match) return null;
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#030304] relative isolate overflow-hidden rounded-2xl shadow-2xl border border-white/5">
-
-      {/* 2. Top Navigation Bar - FIXED */}
+    <div className="relative isolate flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/5 bg-[#030304] shadow-2xl">
       <TopNavBar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* 3. Main Content Area (Scrollable) */}
       <div
         ref={contentRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden p-0 custom-scrollbar scroll-smooth"
+        className="custom-scrollbar flex-1 overflow-y-auto overflow-x-hidden scroll-smooth p-0"
       >
-        {/* MatchHeader moved INSIDE scrollable area to scroll with content */}
-        <div className="bg-black/20 backdrop-blur-md border-b border-white/5 pb-2">
+        <div className="border-b border-white/5 bg-black/20 pb-2 backdrop-blur-md">
           <MatchHeader
             match={match}
             selectedPeriod={selectedPeriod}
             onPeriodChange={setSelectedPeriod}
             activeTab={activeTab}
+            backtestSummary={backtestSummary}
           />
         </div>
 
-        <div className="w-full max-w-[98%] mx-auto min-h-full">
-
-          {/* Tab: STATISTICS */}
-          {activeTab === "stats" && (
-            <div className="h-full animate-in fade-in slide-in-from-bottom-2 duration-500 p-4 md:p-6">
+        <div className="mx-auto min-h-full w-full max-w-[98%]">
+          {activeTab === "stats" ? (
+            <div className="h-full animate-in fade-in slide-in-from-bottom-2 p-4 duration-500 md:p-6">
               <TeamCompare
                 match={match}
                 isLoading={isLoading}
                 error={error}
                 period={selectedPeriod}
-                className="bg-transparent border-0 shadow-none !p-0"
+                className="!p-0 border-0 bg-transparent shadow-none"
               />
             </div>
-          )}
+          ) : null}
 
-          {/* Tab: LINEUPS & ODDS */}
-          {activeTab === "lineups" && (
-            <div className="h-full animate-in fade-in slide-in-from-bottom-2 duration-500 p-4 md:p-6 space-y-8">
+          {activeTab === "lineups" ? (
+            <div className="h-full animate-in fade-in slide-in-from-bottom-2 space-y-8 p-4 duration-500 md:p-6">
               <div className="grid grid-cols-1 gap-6">
                 <section>
-
                   <Lineups match={match} isLoading={isLoading} />
                 </section>
               </div>
             </div>
-          )}
+          ) : null}
 
-          {/* Tab: BACKTEST */}
-          {activeTab === "backtest" && (
-            <div className="h-full animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <BacktestPage match={match} />
+          {activeTab === "backtest" ? (
+            <div className="h-full animate-in fade-in slide-in-from-bottom-2 p-4 duration-500 md:p-6">
+              <BacktestPanel match={match} onSummaryChange={setBacktestSummary} />
             </div>
-          )}
-
+          ) : null}
         </div>
       </div>
 
