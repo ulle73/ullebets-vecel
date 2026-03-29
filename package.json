@@ -8,7 +8,9 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "test": "node test_formulas.js"
+    "test": "node test_formulas.js",
+    "research:eval": "node scripts/research_eval.js",
+    "research:run": "node scripts/research_run.js"
   },
   "dependencies": {
     "@next/third-parties": "^16.0.1",
