@@ -1,8 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
 import BacktestPage from "@/components/BacktestPage";
 import { buildPositiveResultsSummary } from "@/lib/backtest/resultSummary";
+
+const fetcher = async (input) => {
+  const response = await fetch(input);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.message || `HTTP ${response.status}`);
+  }
+  return response.json();
+};
 
 function StatBadge({ label, value, tone = "neutral" }) {
   const toneClass =
@@ -30,15 +40,22 @@ export default function BacktestPanel({ match, onSummaryChange }) {
     unibetUrl: null,
   });
 
+  const { data: rankingFeedback } = useSWR("/api/ranking-feedback?days=120&limit=500", fetcher, {
+    revalidateOnFocus: false,
+  });
+
   const handlePositiveResults = useCallback(
     (_match, results, unibetUrl) => {
-      const nextSummary = buildPositiveResultsSummary(results, unibetUrl);
+      const nextSummary = buildPositiveResultsSummary(results, unibetUrl, {
+        strategyId: "balanced",
+        learningProfile: rankingFeedback || null,
+      });
       setSummary(nextSummary);
       if (typeof onSummaryChange === "function") {
         onSummaryChange(nextSummary);
       }
     },
-    [onSummaryChange]
+    [onSummaryChange, rankingFeedback]
   );
 
   useEffect(() => {
@@ -92,6 +109,13 @@ export default function BacktestPanel({ match, onSummaryChange }) {
                     value={bestBet.strategyScore?.toFixed ? bestBet.strategyScore.toFixed(1) : bestBet.strategyScore}
                     tone="accent"
                   />
+                  {Math.abs(bestBet?.ranking?.learningAdjustment || 0) >= 1 ? (
+                    <StatBadge
+                      label="Lärande"
+                      value={`${bestBet.ranking.learningAdjustment > 0 ? "+" : ""}${bestBet.ranking.learningAdjustment}`}
+                      tone={bestBet.ranking.learningAdjustment >= 0 ? "positive" : "neutral"}
+                    />
+                  ) : null}
                 </>
               ) : null}
             </div>
@@ -200,12 +224,28 @@ export default function BacktestPanel({ match, onSummaryChange }) {
         </div>
 
         {bestBet ? (
-          <div className="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-5">
-            {(bestBet.entries || []).map((entry) => (
+          <div className="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-6">
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Edge score</div>
+              <div className="mt-1 text-sm font-semibold text-white">{bestBet?.ranking?.edgeScore}/100</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Price score</div>
+              <div className="mt-1 text-sm font-semibold text-white">{bestBet?.ranking?.priceScore}/100</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Market score</div>
+              <div className="mt-1 text-sm font-semibold text-white">{bestBet?.ranking?.marketScore}/100</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Lärande</div>
+              <div className="mt-1 text-sm font-semibold text-white">
+                {bestBet?.ranking?.learningAdjustment > 0 ? "+" : ""}{bestBet?.ranking?.learningAdjustment || 0}
+              </div>
+            </div>
+            {(bestBet.entries || []).slice(0, 2).map((entry) => (
               <div key={entry.key} className="rounded-xl border border-white/10 bg-black/20 p-3">
-                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                  {entry.label}
-                </div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{entry.label}</div>
                 <div className={`mt-1 text-sm font-semibold ${entry.value >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
                   {entry.value >= 0 ? "+" : ""}{entry.value.toFixed(1)}%
                 </div>
@@ -218,12 +258,8 @@ export default function BacktestPanel({ match, onSummaryChange }) {
           <div className="mt-4 grid gap-3 xl:grid-cols-3">
             {shortlist.map((item) => (
               <div key={item.bet.key} className="rounded-xl border border-white/10 bg-black/20 p-3">
-                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                  Shortlist
-                </div>
-                <div className="mt-1 text-sm font-semibold text-white">
-                  {item.headline}
-                </div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Shortlist</div>
+                <div className="mt-1 text-sm font-semibold text-white">{item.headline}</div>
                 <div className="mt-2 text-xs text-slate-400">
                   EV +{item.primaryEv?.toFixed(1)}% · Confidence {item.confidenceScore}/100 · Ranking {item.strategyScore?.toFixed ? item.strategyScore.toFixed(1) : item.strategyScore}
                 </div>

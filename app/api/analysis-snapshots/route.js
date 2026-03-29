@@ -64,6 +64,8 @@ function sanitizeShortlistItem(item = {}) {
           sampleScore: Number.isFinite(Number(item.ranking.sampleScore)) ? Number(item.ranking.sampleScore) : null,
           priceScore: Number.isFinite(Number(item.ranking.priceScore)) ? Number(item.ranking.priceScore) : null,
           marketScore: Number.isFinite(Number(item.ranking.marketScore)) ? Number(item.ranking.marketScore) : null,
+          learningAdjustment: Number.isFinite(Number(item.ranking.learningAdjustment)) ? Number(item.ranking.learningAdjustment) : null,
+          learningConfidencePct: Number.isFinite(Number(item.ranking.learningConfidencePct)) ? Number(item.ranking.learningConfidencePct) : null,
           formulaSpread: Number.isFinite(Number(item.ranking.formulaSpread)) ? Number(item.ranking.formulaSpread) : null,
           formulaDeviation: Number.isFinite(Number(item.ranking.formulaDeviation)) ? Number(item.ranking.formulaDeviation) : null,
         }

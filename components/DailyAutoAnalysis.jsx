@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useSWR from "swr";
 import mapUnibetOdds from "@/components/backtest/unibetOddsMapper";
 import {
   STRATEGY_PROFILES,
@@ -13,6 +14,15 @@ import {
 
 const MAX_CONCURRENCY = 2;
 const MAX_BETS_PER_MATCH = 120;
+
+const fetcher = async (input) => {
+  const response = await fetch(input);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.message || `HTTP ${response.status}`);
+  }
+  return response.json();
+};
 
 async function postBacktest(body, signal) {
   const response = await fetch("/api/backtest", {
@@ -115,6 +125,10 @@ export default function DailyAutoAnalysis({
   const abortRef = useRef(null);
   const lastPersistKeyRef = useRef("");
 
+  const { data: rankingFeedback } = useSWR("/api/ranking-feedback?days=120&limit=500", fetcher, {
+    revalidateOnFocus: false,
+  });
+
   useEffect(() => {
     setAnalysisEntries([]);
     setError(null);
@@ -165,10 +179,13 @@ export default function DailyAutoAnalysis({
 
     const normalized = (Array.isArray(batchResults) ? batchResults : [])
       .filter((entry) => entry && !entry.error)
-      .map(normalizeBatchResult)
+      .map((entry) => normalizeBatchResult(entry))
       .filter((entry) => entry && (entry.primaryEv || 0) > 0);
 
-    const summary = buildPositiveResultsSummary(normalized, lookup?.eventUrl || null);
+    const summary = buildPositiveResultsSummary(normalized, lookup?.eventUrl || null, {
+      strategyId: "balanced",
+      learningProfile: rankingFeedback || null,
+    });
 
     return {
       match,
@@ -177,7 +194,7 @@ export default function DailyAutoAnalysis({
       status: summary.count ? "ok" : "no-positive-edges",
       marketCount: bets.length,
     };
-  }, []);
+  }, [rankingFeedback]);
 
   const runAnalysis = useCallback(async () => {
     if (!Array.isArray(matches) || matches.length === 0) {
@@ -255,7 +272,7 @@ export default function DailyAutoAnalysis({
       .map((entry) => {
         const scored = (entry?.candidates || [])
           .filter((candidate) => matchesStrategyFilters(candidate, strategyId))
-          .map((candidate) => scoreResultForStrategy(candidate, strategyId))
+          .map((candidate) => scoreResultForStrategy(candidate, strategyId, rankingFeedback || null))
           .sort((a, b) => {
             if (b.strategyScore !== a.strategyScore) {
               return b.strategyScore - a.strategyScore;
@@ -276,7 +293,7 @@ export default function DailyAutoAnalysis({
       shortlist: perMatch,
       bestOverall: perMatch[0]?.bestBet || null,
     };
-  }, [analysisEntries, strategyId]);
+  }, [analysisEntries, strategyId, rankingFeedback]);
 
   useEffect(() => {
     if (!derived.shortlist.length || isRunning) {
@@ -337,6 +354,13 @@ export default function DailyAutoAnalysis({
               <MetricBadge label="Shortlist" value={derived.shortlist.length} tone={derived.shortlist.length ? "positive" : "neutral"} />
               {derived.bestOverall ? (
                 <MetricBadge label="Top edge" value={`+${derived.bestOverall.primaryEv?.toFixed(1)}%`} tone="positive" />
+              ) : null}
+              {derived.bestOverall && Math.abs(derived.bestOverall?.ranking?.learningAdjustment || 0) >= 1 ? (
+                <MetricBadge
+                  label="Lärande"
+                  value={`${derived.bestOverall.ranking.learningAdjustment > 0 ? "+" : ""}${derived.bestOverall.ranking.learningAdjustment}`}
+                  tone={derived.bestOverall.ranking.learningAdjustment >= 0 ? "positive" : "neutral"}
+                />
               ) : null}
             </div>
 
@@ -429,12 +453,8 @@ export default function DailyAutoAnalysis({
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Ranking
-                      </div>
-                      <div className="mt-1 text-lg font-black text-cyan-300">
-                        {bet?.strategyScore?.toFixed(1)}
-                      </div>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Ranking</div>
+                      <div className="mt-1 text-lg font-black text-cyan-300">{bet?.strategyScore?.toFixed(1)}</div>
                     </div>
                   </div>
 
@@ -443,6 +463,13 @@ export default function DailyAutoAnalysis({
                     <MetricBadge label="Confidence" value={`${bet?.confidenceScore}/100`} tone="positive" />
                     <MetricBadge label="Konsensus" value={`${bet?.agreementPct}%`} tone="accent" />
                     <MetricBadge label="Odds" value={bet?.bet?.odds?.toFixed ? bet.bet.odds.toFixed(2) : bet?.bet?.odds} />
+                    {Math.abs(bet?.ranking?.learningAdjustment || 0) >= 1 ? (
+                      <MetricBadge
+                        label="Lärande"
+                        value={`${bet.ranking.learningAdjustment > 0 ? "+" : ""}${bet.ranking.learningAdjustment}`}
+                        tone={bet.ranking.learningAdjustment >= 0 ? "positive" : "neutral"}
+                      />
+                    ) : null}
                   </div>
 
                   {bet?.rankReasons?.length ? (
@@ -462,34 +489,24 @@ export default function DailyAutoAnalysis({
                     </div>
                   ) : null}
 
-                  <p className="mt-3 text-sm leading-6 text-slate-300">
-                    {bet?.rationale}
-                  </p>
+                  <p className="mt-3 text-sm leading-6 text-slate-300">{bet?.rationale}</p>
 
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                     <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Edge score
-                      </div>
-                      <div className="mt-1 text-sm font-semibold text-white">
-                        {bet?.ranking?.edgeScore}/100
-                      </div>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Edge score</div>
+                      <div className="mt-1 text-sm font-semibold text-white">{bet?.ranking?.edgeScore}/100</div>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Price score
-                      </div>
-                      <div className="mt-1 text-sm font-semibold text-white">
-                        {bet?.ranking?.priceScore}/100
-                      </div>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Price score</div>
+                      <div className="mt-1 text-sm font-semibold text-white">{bet?.ranking?.priceScore}/100</div>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                        Market score
-                      </div>
-                      <div className="mt-1 text-sm font-semibold text-white">
-                        {bet?.ranking?.marketScore}/100
-                      </div>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Market score</div>
+                      <div className="mt-1 text-sm font-semibold text-white">{bet?.ranking?.marketScore}/100</div>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Lärande confidence</div>
+                      <div className="mt-1 text-sm font-semibold text-white">{bet?.ranking?.learningConfidencePct || 0}%</div>
                     </div>
                   </div>
 
@@ -516,9 +533,7 @@ export default function DailyAutoAnalysis({
                         key={formula.key}
                         className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2"
                       >
-                        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                          {formula.label}
-                        </div>
+                        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{formula.label}</div>
                         <div className={`mt-1 text-sm font-semibold ${formula.value >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
                           {formula.value >= 0 ? "+" : ""}{formula.value.toFixed(1)}%
                         </div>
