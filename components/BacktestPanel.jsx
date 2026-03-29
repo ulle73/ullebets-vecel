@@ -121,6 +121,9 @@ export default function BacktestPanel({ match, onSummaryChange }) {
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300/80">Matchens toppspel</div>
                   <div className="mt-1 text-lg font-semibold text-white">{bestBet.headline}</div>
+                  <div className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                    {bestBet.scopeLabel} · {bestBet.periodLabel} · Odds {bestBet.bet?.odds?.toFixed ? bestBet.bet.odds.toFixed(2) : bestBet.bet?.odds}
+                  </div>
                   <div className="mt-2 text-sm text-slate-300">{bestBet.rationale}</div>
                 </div>
                 <div className="text-right">
@@ -132,6 +135,9 @@ export default function BacktestPanel({ match, onSummaryChange }) {
               <div className="mt-4 flex flex-wrap gap-2">
                 <StatBadge label="EV" value={`+${bestBet.primaryEv?.toFixed(1)}%`} tone="positive" />
                 <StatBadge label="Confidence" value={`${bestBet.confidenceScore}/100`} tone="positive" />
+                <StatBadge label="Scope" value={bestBet.scopeLabel} tone="accent" />
+                <StatBadge label="Period" value={bestBet.periodLabel} tone="accent" />
+                <StatBadge label="Odds" value={bestBet.bet?.odds?.toFixed ? bestBet.bet.odds.toFixed(2) : bestBet.bet?.odds} tone="accent" />
                 <StatBadge label="Historik" value={bestBet.proof?.historicalReady ? "Verifierad" : "Byggs upp"} tone={bestBet.proof?.historicalReady ? "positive" : "warning"} />
               </div>
 
@@ -157,6 +163,7 @@ export default function BacktestPanel({ match, onSummaryChange }) {
                   {shortlist.map((item) => (
                     <div key={item.bet.key} className="rounded-xl border border-white/10 bg-black/20 p-3">
                       <div className="text-sm font-semibold text-white">{item.headline}</div>
+                      <div className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">{item.scopeLabel} · {item.periodLabel} · Odds {item.bet?.odds?.toFixed ? item.bet.odds.toFixed(2) : item.bet?.odds}</div>
                       <div className="mt-2 text-xs text-slate-400">EV +{item.primaryEv?.toFixed(1)}% · Ranking {item.strategyScore?.toFixed(1)}</div>
                     </div>
                   ))}
