@@ -189,8 +189,8 @@ function MatchHeader({
   );
 }
 
-export default function MatchDetailsTabs({ match, isLoading, error }) {
-  const [activeTab, setActiveTab] = useState("stats");
+export default function MatchDetailsTabs({ match, isLoading, error, preferredTab = "stats" }) {
+  const [activeTab, setActiveTab] = useState(preferredTab || "stats");
   const [selectedPeriod, setSelectedPeriod] = useState("ALL");
   const [backtestSummary, setBacktestSummary] = useState(null);
   const contentRef = useRef(null);
@@ -198,6 +198,11 @@ export default function MatchDetailsTabs({ match, isLoading, error }) {
   useEffect(() => {
     setBacktestSummary(null);
   }, [match?.matchId, match?.id]);
+
+  useEffect(() => {
+    const validTab = TABS.some((tab) => tab.id === preferredTab) ? preferredTab : "stats";
+    setActiveTab(validTab);
+  }, [preferredTab, match?.matchId, match?.id]);
 
   if (!match) return null;
 

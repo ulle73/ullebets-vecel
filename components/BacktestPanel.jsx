@@ -51,18 +51,19 @@ export default function BacktestPanel({ match, onSummaryChange }) {
   }, [match?.matchId, match?.id]);
 
   const bestBet = summary.bestBet;
+  const shortlist = summary.items.slice(0, 3);
   const helperText = useMemo(() => {
     if (bestBet) {
-      return `Bästa autospelet just nu är ${bestBet.headline.toLowerCase()} med EV +${bestBet.primaryEv?.toFixed(1)}%.`;
+      return `Bästa autospelet just nu är ${bestBet.headline.toLowerCase()} med EV +${bestBet.primaryEv?.toFixed(1)}%. ${bestBet.rationale}`;
     }
-    return "Auto-läget visar shortlistan och gömmer hela linjegridden tills du vill gräva djupare.";
+    return "Auto-läget visar shortlistan, riskflaggorna och modellkonsensus medan hela linjegridden hålls undan tills du vill gå djupare.";
   }, [bestBet]);
 
   return (
     <div className="flex flex-col gap-4">
       <section className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 shadow-2xl">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <StatBadge
                 label="Läge"
@@ -75,11 +76,18 @@ export default function BacktestPanel({ match, onSummaryChange }) {
                 tone={summary.count > 0 ? "positive" : "neutral"}
               />
               {bestBet ? (
-                <StatBadge
-                  label="Confidence"
-                  value={`${bestBet.confidenceScore}/100`}
-                  tone="positive"
-                />
+                <>
+                  <StatBadge
+                    label="Confidence"
+                    value={`${bestBet.confidenceScore}/100`}
+                    tone="positive"
+                  />
+                  <StatBadge
+                    label="Konsensus"
+                    value={`${bestBet.agreementPct}%`}
+                    tone="accent"
+                  />
+                </>
               ) : null}
             </div>
 
@@ -93,43 +101,53 @@ export default function BacktestPanel({ match, onSummaryChange }) {
             </div>
 
             {bestBet ? (
-              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.08] p-3">
+              <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+                <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.08] p-3 xl:col-span-1">
                   <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300/80">
                     Auto-förslag
                   </div>
                   <div className="mt-1 text-sm font-semibold text-white">
                     {bestBet.headline}
                   </div>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                    Scope
-                  </div>
-                  <div className="mt-1 text-sm font-semibold text-white">
-                    {bestBet.scopeLabel}
+                  <div className="mt-2 text-xs text-emerald-100/80">
+                    {bestBet.scopeLabel} · {bestBet.periodLabel}
                   </div>
                 </div>
+
                 <div className="rounded-xl border border-white/10 bg-black/20 p-3">
                   <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                    EV
+                    Rationale
                   </div>
-                  <div className="mt-1 text-sm font-semibold text-emerald-300">
-                    +{bestBet.primaryEv?.toFixed(1)}%
+                  <div className="mt-1 text-sm text-white">
+                    {bestBet.rationale}
                   </div>
                 </div>
+
                 <div className="rounded-xl border border-white/10 bg-black/20 p-3">
                   <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                    Konsensus
+                    Riskflaggor
                   </div>
-                  <div className="mt-1 text-sm font-semibold text-white">
-                    {bestBet.agreementPct}% · {bestBet.agreementLabel}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {bestBet.riskFlags.length ? (
+                      bestBet.riskFlags.map((flag) => (
+                        <span
+                          key={flag.id}
+                          className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-200"
+                        >
+                          {flag.label}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-200">
+                        Ren riskbild
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-white/10 bg-black/20 p-3 text-sm text-slate-400">
-                Kör backtesten för matchen så fylls auto-kortet med bästa spel, confidence och modellkonsensus.
+                Kör backtesten för matchen så fylls auto-kortet med bästa spel, confidence, modellkonsensus och riskflaggor.
               </div>
             )}
           </div>
@@ -159,6 +177,39 @@ export default function BacktestPanel({ match, onSummaryChange }) {
             </button>
           </div>
         </div>
+
+        {bestBet ? (
+          <div className="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-5">
+            {(bestBet.entries || []).map((entry) => (
+              <div key={entry.key} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                  {entry.label}
+                </div>
+                <div className={`mt-1 text-sm font-semibold ${entry.value >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                  {entry.value >= 0 ? "+" : ""}{entry.value.toFixed(1)}%
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {shortlist.length > 1 ? (
+          <div className="mt-4 grid gap-3 xl:grid-cols-3">
+            {shortlist.map((item) => (
+              <div key={item.bet.key} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                  Shortlist
+                </div>
+                <div className="mt-1 text-sm font-semibold text-white">
+                  {item.headline}
+                </div>
+                <div className="mt-2 text-xs text-slate-400">
+                  EV +{item.primaryEv?.toFixed(1)}% · Confidence {item.confidenceScore}/100
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <div className="backtest-panel-shell" data-backtest-mode={viewMode}>

@@ -3,13 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import LeagueTables from "@/components/LeagueTables";
-import TeamCompare from "@/components/TeamCompare";
 import DayInsightsLegacy from "@/components/DayInsights-copy";
-import DayInsights from "@/components/DayInsights-copy-v2";
-import Lineups from "@/components/Lineups";
-import BacktestPage from "@/components/BacktestPage";
-import ClosingOddsCard from "@/components/ClosingOddsCard";
 import MatchDetailsTabs from "@/components/MatchDetailsTabs";
+import DailyAutoAnalysis from "@/components/DailyAutoAnalysis";
 import { normalizeMatch } from "@/lib/core/matchups";
 import {
   buildMatchesByDateKey,
@@ -69,6 +65,7 @@ function toMatchId(value) {
 export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const [date, setDate] = useState(defaultDate);
   const [selectedMatchId, setSelectedMatchId] = useState(null);
+  const [detailTab, setDetailTab] = useState("stats");
   const { cache, mutate: globalMutate } = useSWRConfig();
   const fallbackRef = useRef(initialFallback);
 
@@ -116,11 +113,8 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
       });
 
       if (!queue.length) {
-        debug("teamprofiles:prefetch:all-cached", { total: keys.size });
         return;
       }
-
-      debug("teamprofiles:prefetch:start", { total: queue.length });
 
       let pointer = 0;
       const concurrency = Math.min(6, queue.length);
@@ -147,7 +141,6 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
       };
 
       await Promise.all(Array.from({ length: concurrency }, worker));
-      debug("teamprofiles:prefetch:done", { total: queue.length });
     },
     [cache, globalMutate]
   );
@@ -156,48 +149,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const tomorrowDate = useMemo(() => getNextDateString(date), [date]);
   const tomorrowMatchesKey = tomorrowDate ? buildMatchesByDateKey(tomorrowDate) : null;
 
-  // const { data, error, isLoading } = useSWR(matchesKey, fetchJson, {
-  //   revalidateOnFocus: false,
-  //   revalidateIfStale: false,
-  //   revalidateOnReconnect: false,
-  //   dedupingInterval: 60_000,
-  //   keepPreviousData: true,
-  // });
-
-  //   useEffect(() => {
-  //     if (!data) return;
-  //     debug("matches:data", {
-  //       date,
-  //       items: data.items?.length ?? 0,
-  //     });
-  //   }, [data, date]);
-
-  //   useEffect(() => {
-  //     if (!matchesKey) return;
-  //     if (!matches.length) return;
-  //     let cancelled = false;
-  //     prefetchTeamProfiles(matches).catch((prefetchError) => {
-  //       if (cancelled) return;
-  //       debugError("teamprofiles:prefetch:failure", {
-  //         key: matchesKey,
-  //         message: prefetchError?.message,
-  //       });
-  //     });
-  //     return () => {
-  //       cancelled = true;
-  //     };
-  //   }, [matchesKey, matches, prefetchTeamProfiles]);
-
-  //   if (error) {
-  //     debugError("matches:error", error);
-  //   }
-
-
-  const {
-    data,
-    error,
-    isLoading,
-  } = useSWR(matchesKey, fetchJson, {
+  const { data, error, isLoading } = useSWR(matchesKey, fetchJson, {
     revalidateOnFocus: false,
     revalidateIfStale: false,
     revalidateOnReconnect: false,
@@ -205,9 +157,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     keepPreviousData: true,
   });
 
-  const {
-    data: tomorrowData,
-  } = useSWR(tomorrowMatchesKey, fetchJson, {
+  const { data: tomorrowData } = useSWR(tomorrowMatchesKey, fetchJson, {
     revalidateOnFocus: false,
     revalidateIfStale: false,
     revalidateOnReconnect: false,
@@ -215,7 +165,6 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     keepPreviousData: true,
   });
 
-  // ⬇️ Flytta UPP dessa två så de kommer innan effekter
   const items = useMemo(() => data?.items ?? [], [data]);
 
   const matches = useMemo(() => {
@@ -234,7 +183,6 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
 
   const tomorrowItems = useMemo(() => tomorrowData?.items ?? [], [tomorrowData]);
 
-  // Nu kan effekterna tryggt referera till matches
   useEffect(() => {
     if (!data) return;
     debug("matches:data", {
@@ -252,23 +200,19 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     }
     let cancelled = false;
     const basePromise = prefetchTeamProfiles(matches);
-    if (basePromise instanceof Promise) {
-      prefetchInFlightRef.current = basePromise
-        .catch((prefetchError) => {
-          if (cancelled) return;
-          debugError("teamprofiles:prefetch:failure", {
-            key: matchesKey,
-            message: prefetchError?.message,
-          });
-        })
-        .finally(() => {
-          if (!cancelled) {
-            debug("teamprofiles:prefetch:cycle-complete", { key: matchesKey });
-          }
+    prefetchInFlightRef.current = Promise.resolve(basePromise)
+      .catch((prefetchError) => {
+        if (cancelled) return;
+        debugError("teamprofiles:prefetch:failure", {
+          key: matchesKey,
+          message: prefetchError?.message,
         });
-    } else {
-      prefetchInFlightRef.current = Promise.resolve();
-    }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          debug("teamprofiles:prefetch:cycle-complete", { key: matchesKey });
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -277,65 +221,27 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
 
   useEffect(() => {
     if (!tomorrowItems.length) return;
-    const promise = prefetchTeamProfiles(tomorrowItems);
-    Promise.resolve(promise)
-      .catch((prefetchError) => {
-        debugError("teamprofiles:prefetch:tomorrow", {
-          key: tomorrowMatchesKey,
-          message: prefetchError?.message,
-        });
+    Promise.resolve(prefetchTeamProfiles(tomorrowItems)).catch((prefetchError) => {
+      debugError("teamprofiles:prefetch:tomorrow", {
+        key: tomorrowMatchesKey,
+        message: prefetchError?.message,
       });
+    });
   }, [tomorrowItems, tomorrowMatchesKey, prefetchTeamProfiles]);
-
-  if (error) {
-    debugError("matches:error", error);
-  }
-
-
-  // const allItems = useMemo(() => data?.items ?? [], [data]);
-
-  // const items = useMemo(() => {
-  //   return allItems.filter((entry) => {
-  //     const ts = getTimestamp(entry);
-  //     if (!ts) return false;
-  //     return ymdSEFromTs(ts) === date;
-  //   });
-  // }, [allItems, date]);
-
-  // const items = useMemo(() => data?.items ?? [], [data]);
-
-  // const matches = useMemo(() => {
-  //   const normalized = items.map(normalizeMatch);
-  //   debug("matches:normalized", {
-  //     count: normalized.length,
-  //     sample: normalized.slice(0, 3).map((match) => ({
-  //       matchId: match.id,
-  //       leagueId: match.leagueId,
-  //       homeTeamId: match.homeTeamId,
-  //       awayTeamId: match.awayTeamId,
-  //     })),
-  //   });
-  //   return normalized;
-  // }, [items]);
 
   useEffect(() => {
     if (!selectedMatchId) return;
     const stillExists = matches.some((match) => match.id === selectedMatchId);
     if (!stillExists) {
-      debug("selection:cleared", {
-        reason: "match not in current list",
-        selectedMatchId,
-      });
       setSelectedMatchId(null);
+      setDetailTab("stats");
     }
   }, [matches, selectedMatchId]);
 
   const formatter = useMemo(makeFormatter, []);
   const formatTime = (ts) => (ts ? formatter.format(new Date(ts * 1000)) : "—");
 
-  const matchDetailsKey = selectedMatchId
-    ? buildMatchDetailsKey(selectedMatchId)
-    : null;
+  const matchDetailsKey = selectedMatchId ? buildMatchDetailsKey(selectedMatchId) : null;
 
   const {
     data: matchDetails,
@@ -348,38 +254,14 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     revalidateOnReconnect: false,
   });
 
-  useEffect(() => {
-    if (!selectedMatchId) return;
-    debug("details:fetch", {
-      selectedMatchId,
-      isMatchLoading,
-      hasDetails: Boolean(matchDetails),
-      error: matchError ? matchError.message : null,
-    });
-  }, [selectedMatchId, matchDetails, isMatchLoading, matchError]);
-
   const selectedMatchSummary = useMemo(
     () => matches.find((match) => match.id === selectedMatchId) ?? null,
     [matches, selectedMatchId]
   );
 
-  useEffect(() => {
-    if (!selectedMatchId) return;
-    debug("selection:update", {
-      selectedMatchId,
-      summary: selectedMatchSummary
-        ? {
-          leagueId: selectedMatchSummary.leagueId,
-          homeTeamId: selectedMatchSummary.homeTeamId,
-          awayTeamId: selectedMatchSummary.awayTeamId,
-        }
-        : null,
-    });
-  }, [selectedMatchId, selectedMatchSummary]);
-
   const mergedMatch = useMemo(() => {
     if (!selectedMatchSummary) return null;
-    const merged = {
+    return {
       leagueId: selectedMatchSummary.leagueId,
       leagueName: selectedMatchSummary.leagueName,
       ...selectedMatchSummary.raw,
@@ -390,14 +272,6 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
       homeTeamId: matchDetails?.homeTeamId ?? selectedMatchSummary.homeTeamId,
       awayTeamId: matchDetails?.awayTeamId ?? selectedMatchSummary.awayTeamId,
     };
-    debug("match:merged", {
-      matchId: merged.matchId,
-      leagueId: merged.leagueId,
-      homeTeamId: merged.homeTeamId,
-      awayTeamId: merged.awayTeamId,
-      hasDetails: Boolean(matchDetails),
-    });
-    return merged;
   }, [selectedMatchSummary, matchDetails]);
 
   const handlePrefetchMatch = useCallback(
@@ -413,34 +287,35 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     [prefetchTeamProfiles]
   );
 
-  const handleSelectMatch = useCallback((payload) => {
-    const resolvedId = toMatchId(payload);
-    if (!resolvedId) {
-      debugError("selection:invalid", { payload });
-      return;
-    }
-    debug("selection:requested", {
-      payload,
-      resolvedId,
-    });
-    const matchForSelection = matches.find((match) => match.id === resolvedId);
-    if (matchForSelection) {
-      void prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
-        debugError("teamprofiles:prefetch:on-select", {
-          matchId: resolvedId,
-          message: prefetchError?.message,
-        });
-      });
-    } else {
-      void Promise.resolve(prefetchInFlightRef.current);
-    }
+  const handleSelectMatch = useCallback(
+    (payload, preferredTab = "stats") => {
+      const resolvedId = toMatchId(payload);
+      if (!resolvedId) {
+        debugError("selection:invalid", { payload });
+        return;
+      }
 
-    setSelectedMatchId(resolvedId);
-  }, [matches, prefetchTeamProfiles]);
+      const matchForSelection = matches.find((match) => match.id === resolvedId);
+      if (matchForSelection) {
+        void prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
+          debugError("teamprofiles:prefetch:on-select", {
+            matchId: resolvedId,
+            message: prefetchError?.message,
+          });
+        });
+      } else {
+        void Promise.resolve(prefetchInFlightRef.current);
+      }
+
+      setDetailTab(preferredTab || "stats");
+      setSelectedMatchId(resolvedId);
+    },
+    [matches, prefetchTeamProfiles]
+  );
 
   const showDetails = Boolean(selectedMatchSummary);
 
-  const containerWidthClass = showDetails ? "max-w-full" : "md:max-w-[85vw]";
+  const containerWidthClass = showDetails ? "max-w-full" : "md:max-w-[92vw]";
   const containerPaddingClass = showDetails ? "px-3 sm:px-6 lg:px-8" : "px-4 sm:px-6";
   const gridColumnsClass = showDetails
     ? "grid-cols-1 md:[grid-template-columns:500px_1fr] xl:[grid-template-columns:550px_1fr]"
@@ -460,7 +335,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
             onDateChange={setDate}
             items={items}
             formatTime={formatTime}
-            onSelectMatch={handleSelectMatch}
+            onSelectMatch={(match) => handleSelectMatch(match, "stats")}
             onPrefetchMatch={handlePrefetchMatch}
             selectedMatchId={selectedMatchId}
             isLoading={isLoading}
@@ -468,22 +343,24 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
             matchesCount={matches.length}
           />
 
-
-
           {showDetails ? (
             <div className="md:h-full md:min-h-0 lg:h-full lg:min-h-0 lg:overflow-hidden">
               <MatchDetailsTabs
                 match={mergedMatch}
                 isLoading={isMatchLoading}
                 error={matchError}
+                preferredTab={detailTab}
               />
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-1">
-              {/* Kommentera ut denna rad om du vill gömma originalversionen */}
+              <DailyAutoAnalysis
+                date={date}
+                matches={matches}
+                formatTime={formatTime}
+                onOpenMatch={handleSelectMatch}
+              />
               <DayInsightsLegacy date={date} items={items} />
-              {/* Kommentera ut denna rad om du vill gömma nya prognosversionen */}
-              {/* <DayInsights date={date} items={items} /> */}
             </div>
           )}
         </div>
