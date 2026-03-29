@@ -6,6 +6,7 @@ import LeagueTables from "@/components/LeagueTables";
 import DayInsightsLegacy from "@/components/DayInsights-copy";
 import MatchDetailsTabs from "@/components/MatchDetailsTabs";
 import DailyAutoAnalysis from "@/components/DailyAutoAnalysis";
+import AutoAnalysisHistory from "@/components/AutoAnalysisHistory";
 import { normalizeMatch } from "@/lib/core/matchups";
 import {
   buildMatchesByDateKey,
@@ -360,6 +361,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
                 formatTime={formatTime}
                 onOpenMatch={handleSelectMatch}
               />
+              <AutoAnalysisHistory onOpenMatch={handleSelectMatch} />
               <DayInsightsLegacy date={date} items={items} />
             </div>
           )}

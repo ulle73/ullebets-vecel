@@ -303,8 +303,13 @@ export default function DailyAutoAnalysis({
         primaryEv: entry.bestBet?.primaryEv,
         confidenceScore: entry.bestBet?.confidenceScore,
         agreementPct: entry.bestBet?.agreementPct,
-        riskFlags: entry.bestBet?.riskFlags,
         strategyScore: entry.bestBet?.strategyScore,
+        scopeLabel: entry.bestBet?.scopeLabel,
+        periodLabel: entry.bestBet?.periodLabel,
+        rationale: entry.bestBet?.rationale,
+        riskFlags: entry.bestBet?.riskFlags,
+        entries: entry.bestBet?.entries,
+        bet: entry.bestBet?.bet,
       })),
     });
   }, [analysisEntries.length, date, derived.shortlist, isRunning, strategyId, strategyProfile.label]);
