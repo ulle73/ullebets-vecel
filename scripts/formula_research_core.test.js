@@ -18,8 +18,8 @@ test("pickConfiguredFormula uses stat display order before fallback priority", (
     },
   });
 
-  assert.equal(selection.formulaKey, "leagueAvg");
-  assert.equal(selection.evPct, 9);
+  assert.equal(selection.formulaKey, "base");
+  assert.equal(selection.evPct, 4);
 });
 
 test("pickConfiguredFormula falls back to base for unknown stats", () => {
@@ -70,7 +70,7 @@ test("summarizeConfiguredFormulaResults aggregates ROI from positive configured 
 
   assert.equal(summary.metrics.selectedBets, 2);
   assert.equal(summary.metrics.settledBets, 2);
-  assert.equal(summary.metrics.formulaCounts.leagueAvg, 2);
+  assert.equal(summary.metrics.formulaCounts.base, 2);
   assert.equal(summary.metrics.roiPct, 0);
   assert.equal(summary.metrics.winRatePct, 50);
 });
