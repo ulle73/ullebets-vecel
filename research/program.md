@@ -27,9 +27,26 @@ For each experiment:
 3. Run:
    - `npm run research:eval`
 4. If the result looks promising and guardrails stay healthy, log it with:
-   - `npm run research:run -- --note "short note here"`
+   - `npm run research:run -- --status keep --note "short note here"`
 5. Keep the change only if it improves the objective in a believable way
 6. Otherwise revert and try another change
+
+## Autoloop mode
+
+If you want the repo to behave more like the original `karpathy/autoresearch` flow, use:
+
+- `npm run research:auto`
+
+This does the following:
+
+- creates or uses a dedicated branch named `autoresearch/<tag>`
+- records a baseline in `research/results.tsv`
+- mutates only `lib/backtest/rankingPolicy.js`
+- runs the replay eval after each mutation
+- logs each experiment as `keep`, `discard`, or `crash`
+- commits only kept policy changes
+
+Default focus in `research:auto` is ROI, because this repo's user goal is to improve betting return while still avoiding guardrail regressions.
 
 ## Hard constraints
 - Only edit `lib/backtest/rankingPolicy.js`

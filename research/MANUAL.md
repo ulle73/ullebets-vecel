@@ -5,6 +5,7 @@ This repo uses a local replay loop inspired by the upstream `karpathy/autoresear
 - only edit `lib/backtest/rankingPolicy.js`
 - evaluate against existing MongoDB data
 - log only experiments worth keeping
+- use a dedicated `autoresearch/<tag>` git branch for autonomous runs
 
 ## Before you start
 
@@ -36,6 +37,31 @@ What good looks like:
 - the command prints JSON
 - the process exits on its own
 - the JSON includes `researchScore`, `metrics`, and `guardrails`
+
+## Automatic loop
+
+For the upstream-style autonomous loop, run:
+
+```bash
+npm run research:auto
+```
+
+What it does:
+
+- creates a dedicated branch like `autoresearch/20260330-roi`
+- logs a baseline row
+- mutates `lib/backtest/rankingPolicy.js`
+- runs eval after every mutation
+- logs `keep`, `discard`, or `crash` in `research/results.tsv`
+- commits only kept policy changes
+
+Useful flags:
+
+```bash
+node scripts/research_autoloop.js --focus roi --iterations 20
+node scripts/research_autoloop.js --focus roi --forever
+node scripts/research_autoloop.js --focus roi --resume --tag 20260330-roi
+```
 
 ## Step 2: Change only the policy
 
@@ -70,7 +96,7 @@ Discard changes that raise the score a little but break guardrails.
 If the new policy is worth keeping, append it to the experiment log:
 
 ```bash
-node scripts/research_run.js --note "raised balanced proof weight"
+node scripts/research_run.js --status keep --note "raised balanced proof weight"
 ```
 
 This appends a row to:

@@ -10,7 +10,10 @@
     "lint": "eslint",
     "test": "node test_formulas.js",
     "research:eval": "node scripts/research_eval.js",
-    "research:run": "node scripts/research_run.js"
+    "research:run": "node scripts/research_run.js",
+    "research:auto": "node scripts/research_autoloop.js --focus roi",
+    "research:auto:score": "node scripts/research_autoloop.js --focus researchScore",
+    "test:research": "node --test scripts/research_autoloop_core.test.js"
   },
   "dependencies": {
     "@next/third-parties": "^16.0.1",
