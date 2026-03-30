@@ -9,6 +9,7 @@ import DailyAutoAnalysis from "@/components/DailyAutoAnalysis";
 import AutoAnalysisHistory from "@/components/AutoAnalysisHistory";
 import DashboardCockpit from "@/components/DashboardCockpit";
 import WatchlistPanel from "@/components/WatchlistPanel";
+import ResultLoopPanel from "@/components/ResultLoopPanel";
 import { normalizeMatch } from "@/lib/core/matchups";
 import {
   buildMatchesByDateKey,
@@ -29,6 +30,7 @@ const RIGHT_PANE_TABS = [
   { id: "overview", label: "Översikt" },
   { id: "auto", label: "Auto" },
   { id: "watchlist", label: "Watchlist" },
+  { id: "loop", label: "Resultatloop" },
   { id: "history", label: "Historik" },
 ];
 
@@ -57,16 +59,7 @@ function toMatchId(value) {
   }
   if (typeof value === "object") {
     return toMatchId(
-      value.matchId ??
-        value.id ??
-        value._id ??
-        value.eventId ??
-        value.event_id ??
-        value.event?.id ??
-        value.raw?.matchId ??
-        value.raw?.id ??
-        value.raw?.eventId ??
-        null
+      value.matchId ?? value.id ?? value._id ?? value.eventId ?? value.event_id ?? value.event?.id ?? value.raw?.matchId ?? value.raw?.id ?? value.raw?.eventId ?? null
     );
   }
   return null;
@@ -83,9 +76,7 @@ function HeaderBadge({ label, value, tone = "neutral" }) {
           : "border-white/10 bg-white/[0.04] text-slate-300";
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${toneClass}`}
-    >
+    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${toneClass}`}>
       {label}: {value}
     </span>
   );
@@ -96,12 +87,14 @@ function RightPaneWorkspace({
   onTabChange,
   autoState,
   watchlistAlertCount,
+  resultLoopSummary,
   onOpenMatch,
   date,
   matches,
   formatTime,
   setAutoState,
   setWatchlistAlertCount,
+  setResultLoopSummary,
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/5 bg-[#030304] shadow-2xl">
@@ -109,15 +102,9 @@ function RightPaneWorkspace({
         <div className="px-4 py-4">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                Workspace
-              </div>
-              <h2 className="mt-1 text-sm font-black uppercase tracking-[0.18em] text-slate-100">
-                Högerpanel
-              </h2>
-              <p className="mt-2 text-sm text-slate-400">
-                Kompakt överblick över dagens signaler. Flikarna håller ytan ren och låter bara högersidan scrolla.
-              </p>
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Workspace</div>
+              <h2 className="mt-1 text-sm font-black uppercase tracking-[0.18em] text-slate-100">Högerpanel</h2>
+              <p className="mt-2 text-sm text-slate-400">Kompakt överblick över dagens signaler. Flikarna håller ytan ren och låter bara högersidan scrolla.</p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -125,6 +112,7 @@ function RightPaneWorkspace({
               <HeaderBadge label="Shortlist" value={autoState?.summary?.shortlistCount || 0} tone={(autoState?.summary?.shortlistCount || 0) > 0 ? "positive" : "neutral"} />
               <HeaderBadge label="Proof-klara" value={autoState?.summary?.provenCount || 0} tone={(autoState?.summary?.provenCount || 0) > 0 ? "positive" : "warning"} />
               <HeaderBadge label="Alerts" value={watchlistAlertCount || 0} tone={(watchlistAlertCount || 0) > 0 ? "positive" : "neutral"} />
+              <HeaderBadge label="Spelade" value={resultLoopSummary?.trackedBets || 0} tone={(resultLoopSummary?.trackedBets || 0) > 0 ? "positive" : "neutral"} />
             </div>
           </div>
         </div>
@@ -138,11 +126,7 @@ function RightPaneWorkspace({
                   key={tab.id}
                   type="button"
                   onClick={() => onTabChange(tab.id)}
-                  className={`rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] transition ${
-                    active
-                      ? "bg-cyan-500/15 text-cyan-300"
-                      : "text-slate-500 hover:text-slate-300"
-                  }`}
+                  className={`rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] transition ${active ? "bg-cyan-500/15 text-cyan-300" : "text-slate-500 hover:text-slate-300"}`}
                 >
                   {tab.label}
                 </button>
@@ -155,31 +139,21 @@ function RightPaneWorkspace({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {activeTab === "overview" ? (
           <div className="space-y-4">
-            <DashboardCockpit
-              autoState={autoState}
-              watchlistAlertCount={watchlistAlertCount}
-              onOpenMatch={onOpenMatch}
-            />
+            <DashboardCockpit autoState={autoState} watchlistAlertCount={watchlistAlertCount} onOpenMatch={onOpenMatch} />
             <DayInsightsLegacy date={date} items={matches.map((match) => match.raw || match)} />
           </div>
         ) : null}
 
         {activeTab === "auto" ? (
-          <DailyAutoAnalysis
-            date={date}
-            matches={matches}
-            formatTime={formatTime}
-            onOpenMatch={onOpenMatch}
-            onAutoStateChange={setAutoState}
-          />
+          <DailyAutoAnalysis date={date} matches={matches} formatTime={formatTime} onOpenMatch={onOpenMatch} onAutoStateChange={setAutoState} />
         ) : null}
 
         {activeTab === "watchlist" ? (
-          <WatchlistPanel
-            currentShortlist={autoState.shortlist}
-            onOpenMatch={onOpenMatch}
-            onAlertCountChange={setWatchlistAlertCount}
-          />
+          <WatchlistPanel currentShortlist={autoState.shortlist} onOpenMatch={onOpenMatch} onAlertCountChange={setWatchlistAlertCount} />
+        ) : null}
+
+        {activeTab === "loop" ? (
+          <ResultLoopPanel onOpenMatch={onOpenMatch} onSummaryChange={setResultLoopSummary} />
         ) : null}
 
         {activeTab === "history" ? (
@@ -197,6 +171,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const [workspaceTab, setWorkspaceTab] = useState("overview");
   const [autoState, setAutoState] = useState({ shortlist: [], bestOverall: null, summary: {} });
   const [watchlistAlertCount, setWatchlistAlertCount] = useState(0);
+  const [resultLoopSummary, setResultLoopSummary] = useState({ trackedBets: 0, settledBets: 0, openBets: 0, roiPct: 0 });
   const { cache, mutate: globalMutate } = useSWRConfig();
   const fallbackRef = useRef(initialFallback);
 
@@ -210,45 +185,42 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     });
   }, [cache, globalMutate]);
 
-  const prefetchTeamProfiles = useCallback(
-    async (matchesToPrefetch) => {
-      if (!Array.isArray(matchesToPrefetch) || !matchesToPrefetch.length) return;
-      const keys = new Set();
-      for (const match of matchesToPrefetch) {
-        const homeKey = buildTeamProfileKeyForMatch(match, "home");
-        const awayKey = buildTeamProfileKeyForMatch(match, "away");
-        if (homeKey) keys.add(homeKey);
-        if (awayKey) keys.add(awayKey);
-      }
-      if (!keys.size) return;
+  const prefetchTeamProfiles = useCallback(async (matchesToPrefetch) => {
+    if (!Array.isArray(matchesToPrefetch) || !matchesToPrefetch.length) return;
+    const keys = new Set();
+    for (const match of matchesToPrefetch) {
+      const homeKey = buildTeamProfileKeyForMatch(match, "home");
+      const awayKey = buildTeamProfileKeyForMatch(match, "away");
+      if (homeKey) keys.add(homeKey);
+      if (awayKey) keys.add(awayKey);
+    }
+    if (!keys.size) return;
 
-      const queue = [];
-      keys.forEach((key) => {
-        const state = cache.get(key);
-        const hasCache = Boolean(state && state.data !== undefined);
-        debug("teamprofiles:prefetch:key", { key, hasCache });
-        if (!hasCache) queue.push(key);
-      });
+    const queue = [];
+    keys.forEach((key) => {
+      const state = cache.get(key);
+      const hasCache = Boolean(state && state.data !== undefined);
+      debug("teamprofiles:prefetch:key", { key, hasCache });
+      if (!hasCache) queue.push(key);
+    });
 
-      let pointer = 0;
-      const concurrency = Math.min(6, queue.length);
-      const worker = async () => {
-        while (pointer < queue.length) {
-          const key = queue[pointer++];
-          if (!key) continue;
-          try {
-            const data = await fetchTeamProfile(key);
-            await globalMutate(key, data, { revalidate: false, populateCache: true });
-          } catch (prefetchError) {
-            debugError("teamprofiles:prefetch:error", { key, message: prefetchError?.message });
-          }
+    let pointer = 0;
+    const concurrency = Math.min(6, queue.length);
+    const worker = async () => {
+      while (pointer < queue.length) {
+        const key = queue[pointer++];
+        if (!key) continue;
+        try {
+          const data = await fetchTeamProfile(key);
+          await globalMutate(key, data, { revalidate: false, populateCache: true });
+        } catch (prefetchError) {
+          debugError("teamprofiles:prefetch:error", { key, message: prefetchError?.message });
         }
-      };
+      }
+    };
 
-      await Promise.all(Array.from({ length: concurrency }, worker));
-    },
-    [cache, globalMutate]
-  );
+    await Promise.all(Array.from({ length: concurrency }, worker));
+  }, [cache, globalMutate]);
 
   const matchesKey = date ? buildMatchesByDateKey(date) : null;
   const tomorrowDate = useMemo(() => getNextDateString(date), [date]);
@@ -288,30 +260,18 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     let cancelled = false;
     prefetchInFlightRef.current = Promise.resolve(prefetchTeamProfiles(matches))
       .catch((prefetchError) => {
-        if (!cancelled) {
-          debugError("teamprofiles:prefetch:failure", {
-            key: matchesKey,
-            message: prefetchError?.message,
-          });
-        }
+        if (!cancelled) debugError("teamprofiles:prefetch:failure", { key: matchesKey, message: prefetchError?.message });
       })
       .finally(() => {
-        if (!cancelled) {
-          debug("teamprofiles:prefetch:cycle-complete", { key: matchesKey });
-        }
+        if (!cancelled) debug("teamprofiles:prefetch:cycle-complete", { key: matchesKey });
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [matchesKey, matches, prefetchTeamProfiles]);
 
   useEffect(() => {
     if (!tomorrowItems.length) return;
     Promise.resolve(prefetchTeamProfiles(tomorrowItems)).catch((prefetchError) => {
-      debugError("teamprofiles:prefetch:tomorrow", {
-        key: tomorrowMatchesKey,
-        message: prefetchError?.message,
-      });
+      debugError("teamprofiles:prefetch:tomorrow", { key: tomorrowMatchesKey, message: prefetchError?.message });
     });
   }, [tomorrowItems, tomorrowMatchesKey, prefetchTeamProfiles]);
 
@@ -326,21 +286,14 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
   const formatTime = (ts) => (ts ? formatter.format(new Date(ts * 1000)) : "—");
 
   const matchDetailsKey = selectedMatchId ? buildMatchDetailsKey(selectedMatchId) : null;
-  const {
-    data: matchDetails,
-    error: matchError,
-    isLoading: isMatchLoading,
-  } = useSWR(matchDetailsKey, fetchJsonAllow404, {
+  const { data: matchDetails, error: matchError, isLoading: isMatchLoading } = useSWR(matchDetailsKey, fetchJsonAllow404, {
     shouldRetryOnError: false,
     revalidateOnFocus: false,
     revalidateIfStale: false,
     revalidateOnReconnect: false,
   });
 
-  const selectedMatchSummary = useMemo(
-    () => matches.find((match) => match.id === selectedMatchId) ?? null,
-    [matches, selectedMatchId]
-  );
+  const selectedMatchSummary = useMemo(() => matches.find((match) => match.id === selectedMatchId) ?? null, [matches, selectedMatchId]);
 
   const mergedMatch = useMemo(() => {
     if (!selectedMatchSummary) return null;
@@ -357,56 +310,38 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
     };
   }, [selectedMatchSummary, matchDetails]);
 
-  const handlePrefetchMatch = useCallback(
-    (match) => {
-      if (!match) return;
-      void prefetchTeamProfiles([match]).catch((prefetchError) => {
-        debugError("teamprofiles:prefetch:on-hover", {
-          matchId: match.id ?? match.matchId ?? null,
-          message: prefetchError?.message,
-        });
-      });
-    },
-    [prefetchTeamProfiles]
-  );
+  const handlePrefetchMatch = useCallback((match) => {
+    if (!match) return;
+    void prefetchTeamProfiles([match]).catch((prefetchError) => {
+      debugError("teamprofiles:prefetch:on-hover", { matchId: match.id ?? match.matchId ?? null, message: prefetchError?.message });
+    });
+  }, [prefetchTeamProfiles]);
 
-  const handleSelectMatch = useCallback(
-    (payload, preferredTab = "stats") => {
-      const resolvedId = toMatchId(payload);
-      if (!resolvedId) {
-        debugError("selection:invalid", { payload });
-        return;
-      }
-      const matchForSelection = matches.find((match) => match.id === resolvedId);
-      if (matchForSelection) {
-        void prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
-          debugError("teamprofiles:prefetch:on-select", {
-            matchId: resolvedId,
-            message: prefetchError?.message,
-          });
-        });
-      }
-      setDetailTab(preferredTab || "stats");
-      setSelectedMatchId(resolvedId);
-    },
-    [matches, prefetchTeamProfiles]
-  );
+  const handleSelectMatch = useCallback((payload, preferredTab = "stats") => {
+    const resolvedId = toMatchId(payload);
+    if (!resolvedId) {
+      debugError("selection:invalid", { payload });
+      return;
+    }
+    const matchForSelection = matches.find((match) => match.id === resolvedId);
+    if (matchForSelection) {
+      void prefetchTeamProfiles([matchForSelection]).catch((prefetchError) => {
+        debugError("teamprofiles:prefetch:on-select", { matchId: resolvedId, message: prefetchError?.message });
+      });
+    }
+    setDetailTab(preferredTab || "stats");
+    setSelectedMatchId(resolvedId);
+  }, [matches, prefetchTeamProfiles]);
 
   const showDetails = Boolean(selectedMatchSummary);
   const containerWidthClass = showDetails ? "max-w-full" : "md:max-w-[92vw]";
   const containerPaddingClass = showDetails ? "px-3 sm:px-6 lg:px-8" : "px-4 sm:px-6";
-  const gridColumnsClass = showDetails
-    ? "grid-cols-1 md:[grid-template-columns:500px_1fr] xl:[grid-template-columns:550px_1fr]"
-    : "grid-cols-1 md:[grid-template-columns:1fr_2fr] xl:[grid-template-columns:1fr_2fr]";
+  const gridColumnsClass = showDetails ? "grid-cols-1 md:[grid-template-columns:500px_1fr] xl:[grid-template-columns:550px_1fr]" : "grid-cols-1 md:[grid-template-columns:1fr_2fr] xl:[grid-template-columns:1fr_2fr]";
 
   return (
     <div className="flex w-full flex-col overflow-x-hidden lg:h-full lg:min-h-0 lg:overflow-hidden">
-      <div
-        className={`mx-auto flex w-full flex-1 flex-col overflow-x-hidden pb-6 ${containerPaddingClass} ${containerWidthClass} lg:h-full lg:min-h-0 lg:overflow-hidden`}
-      >
-        <div
-          className={`grid w-full gap-4 ${gridColumnsClass} auto-rows-auto md:h-full md:min-h-0 lg:h-full lg:min-h-0`}
-        >
+      <div className={`mx-auto flex w-full flex-1 flex-col overflow-x-hidden pb-6 ${containerPaddingClass} ${containerWidthClass} lg:h-full lg:min-h-0 lg:overflow-hidden`}>
+        <div className={`grid w-full gap-4 ${gridColumnsClass} auto-rows-auto md:h-full md:min-h-0 lg:h-full lg:min-h-0`}>
           <LeagueTables
             date={date}
             onDateChange={setDate}
@@ -422,12 +357,7 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
 
           {showDetails ? (
             <div className="min-h-0 md:h-full lg:h-full lg:overflow-hidden">
-              <MatchDetailsTabs
-                match={mergedMatch}
-                isLoading={isMatchLoading}
-                error={matchError}
-                preferredTab={detailTab}
-              />
+              <MatchDetailsTabs match={mergedMatch} isLoading={isMatchLoading} error={matchError} preferredTab={detailTab} />
             </div>
           ) : (
             <div className="min-h-0 md:h-full lg:h-full lg:overflow-hidden">
@@ -436,12 +366,14 @@ export default function MatchesClient({ defaultDate, initialFallback = {} }) {
                 onTabChange={setWorkspaceTab}
                 autoState={autoState}
                 watchlistAlertCount={watchlistAlertCount}
+                resultLoopSummary={resultLoopSummary}
                 onOpenMatch={handleSelectMatch}
                 date={date}
                 matches={matches}
                 formatTime={formatTime}
                 setAutoState={setAutoState}
                 setWatchlistAlertCount={setWatchlistAlertCount}
+                setResultLoopSummary={setResultLoopSummary}
               />
             </div>
           )}
