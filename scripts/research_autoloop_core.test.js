@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 
 import {
   applyNumericMutation,
+  applyStringArrayMutation,
   decideExperimentStatus,
   parseEvalJson,
+  readStringArrayProperty,
   readNumericProperty,
 } from "./research_autoloop_core.js";
 
@@ -90,4 +92,36 @@ test("readNumericProperty returns the current numeric value for a nested propert
 
   const value = readNumericProperty(source, "SCORE_SHAPING", ["idealPriceCenter"]);
   assert.equal(value, 2.05);
+});
+
+test("readStringArrayProperty returns the current string array for a nested property", () => {
+  const source = `const INLINE_CONFIG = {
+  totalShots: {
+    display: ["leagueAvg", "base"],
+    blendWeight: 0.8,
+  },
+};
+`;
+
+  const value = readStringArrayProperty(source, "INLINE_CONFIG", ["totalShots", "display"]);
+  assert.deepEqual(value, ["leagueAvg", "base"]);
+});
+
+test("applyStringArrayMutation updates a nested string array without touching sibling properties", () => {
+  const source = `const INLINE_CONFIG = {
+  totalShots: {
+    display: ["leagueAvg", "base"],
+    blendWeight: 0.8,
+  },
+};
+`;
+
+  const next = applyStringArrayMutation(source, {
+    declarationName: "INLINE_CONFIG",
+    propertyPath: ["totalShots", "display"],
+    nextValue: ["multiplier", "leagueAvg"],
+  });
+
+  assert.match(next, /display: \["multiplier", "leagueAvg"\],/);
+  assert.match(next, /blendWeight: 0\.8,/);
 });

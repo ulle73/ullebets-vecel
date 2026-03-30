@@ -85,7 +85,7 @@ function findMatchingBrace(source, openIndex) {
 }
 
 function findDeclarationObjectRange(source, declarationName) {
-  const declarationPattern = new RegExp(`export\\s+const\\s+${escapeRegExp(declarationName)}\\s*=\\s*\\{`);
+  const declarationPattern = new RegExp(`(?:export\\s+)?const\\s+${escapeRegExp(declarationName)}\\s*=\\s*\\{`);
   const match = declarationPattern.exec(source);
   if (!match) {
     throw new Error(`Declaration ${declarationName} not found`);
@@ -125,6 +125,17 @@ function findNumericPropertyMatch(source, range, propertyName) {
   const match = matcher.exec(slice);
   if (!match) {
     throw new Error(`Numeric property ${propertyName} not found`);
+  }
+  return { match, slice };
+}
+
+function findStringArrayPropertyMatch(source, range, propertyName) {
+  const propPattern = `(^[ \\t]*(?:["']?${escapeRegExp(propertyName)}["']?)\\s*:\\s*)(\\[(?:.|\\r|\\n)*?\\])(\\s*,?)`;
+  const slice = source.slice(range.start, range.end);
+  const matcher = new RegExp(propPattern, "m");
+  const match = matcher.exec(slice);
+  if (!match) {
+    throw new Error(`String array property ${propertyName} not found`);
   }
   return { match, slice };
 }
@@ -220,6 +231,47 @@ export function readNumericProperty(source, declarationName, propertyPath = []) 
   const targetProp = propertyPath[propertyPath.length - 1];
   const { match } = findNumericPropertyMatch(source, range, targetProp);
   return Number(match[2]);
+}
+
+export function readStringArrayProperty(source, declarationName, propertyPath = []) {
+  if (!declarationName || !Array.isArray(propertyPath) || !propertyPath.length) {
+    throw new Error("Invalid string array property path");
+  }
+
+  let range = findDeclarationObjectRange(source, declarationName);
+  for (let i = 0; i < propertyPath.length - 1; i += 1) {
+    range = findNestedObjectRange(source, range, propertyPath[i]);
+  }
+
+  const targetProp = propertyPath[propertyPath.length - 1];
+  const { match } = findStringArrayPropertyMatch(source, range, targetProp);
+  return JSON.parse(match[2].replace(/'/g, "\""));
+}
+
+export function applyStringArrayMutation(source, mutation) {
+  const { declarationName, propertyPath = [], nextValue } = mutation || {};
+  if (
+    !declarationName ||
+    !Array.isArray(propertyPath) ||
+    !propertyPath.length ||
+    !Array.isArray(nextValue)
+  ) {
+    throw new Error("Invalid string array mutation");
+  }
+
+  let range = findDeclarationObjectRange(source, declarationName);
+  for (let i = 0; i < propertyPath.length - 1; i += 1) {
+    range = findNestedObjectRange(source, range, propertyPath[i]);
+  }
+
+  const targetProp = propertyPath[propertyPath.length - 1];
+  const { match } = findStringArrayPropertyMatch(source, range, targetProp);
+
+  const formatted = `[${nextValue.map((value) => JSON.stringify(String(value))).join(", ")}]`;
+  const absoluteStart = range.start + match.index;
+  const absoluteEnd = absoluteStart + match[0].length;
+  const replacement = `${match[1]}${formatted}${match[3]}`;
+  return `${source.slice(0, absoluteStart)}${replacement}${source.slice(absoluteEnd)}`;
 }
 
 export function applyMutationSet(source, experiment) {

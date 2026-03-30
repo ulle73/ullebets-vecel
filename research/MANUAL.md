@@ -7,6 +7,11 @@ This repo uses a local replay loop inspired by the upstream `karpathy/autoresear
 - log only experiments worth keeping
 - use a dedicated `autoresearch/<tag>` git branch for autonomous runs
 
+There are now two separate research surfaces:
+
+- `rankingPolicy` loop for shortlist scoring
+- `formulaConfig` loop for formula order selection
+
 ## Before you start
 
 1. Open a terminal in the repo root.
@@ -63,6 +68,55 @@ node scripts/research_autoloop.js --focus roi --forever
 node scripts/research_autoloop.js --focus roi --resume --tag 20260330-roi
 ```
 
+## Formula eval
+
+To evaluate the current formula selection order in `lib/backtest/formulaConfig.js`, run:
+
+```bash
+npm run research:formula:eval
+```
+
+This prints JSON with:
+
+- `selectedBets`
+- `roiPct`
+- `expectedEvPct`
+- `winRatePct`
+- formula mix per stat
+
+This loop optimizes the configured formula order per stat based on historical `evDetails` already stored in backtests.
+
+## Formula autoloop
+
+For the separate formula-config autoloop, run:
+
+```bash
+npm run research:auto:formulas
+```
+
+What it does:
+
+- creates a dedicated branch like `autoresearch-formulas/20260330-roi`
+- logs a baseline in `research/formula-results.tsv`
+- mutates only `lib/backtest/formulaConfig.js`
+- changes only the configured `display` order per stat
+- runs `scripts/formula-ev-check.js --json` after every mutation
+- logs `keep`, `discard`, or `crash`
+- commits only kept formula-order changes
+
+Useful flags:
+
+```bash
+node scripts/research_formula_autoloop.js --iterations 9
+node scripts/research_formula_autoloop.js --forever
+node scripts/research_formula_autoloop.js --resume --tag 20260330-roi
+```
+
+Important limitation:
+
+- this formula loop currently optimizes `display` order, not raw `blendWeight`
+- reason: historical backtest rows store finished formula outputs, but not enough raw state to truthfully replay every base-projection parameter change
+
 ## Step 2: Change only the policy
 
 Edit only:
@@ -114,6 +168,14 @@ The manual loop is:
 3. eval again
 4. log only if the change is believable
 5. revert bad experiments and try the next one
+
+For formula research, the loop is:
+
+1. run `npm run research:formula:eval`
+2. change only `lib/backtest/formulaConfig.js`
+3. re-run the eval
+4. keep only changes that improve ROI without collapsing sample size
+5. log or autoloop the keepers
 
 ## Fast smoke test
 

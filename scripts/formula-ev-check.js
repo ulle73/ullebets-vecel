@@ -3,8 +3,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import clientPromise from "../lib/mongo.js";
+import { summarizeConfiguredFormulaResults } from "./formula_research_core.js";
 
-dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env.local", quiet: true });
 let mongoClient = null;
 
 const __filename = fileURLToPath(import.meta.url);
@@ -218,7 +219,11 @@ function ingestLines({
       ""
     ).toLowerCase();
 
-    const baseProb = convertEvPctToProb(value, odds);
+    const baseEvPct = Number(bet?.evDetails?.evPct);
+    const baseProb = convertEvPctToProb(
+      Number.isFinite(baseEvPct) ? baseEvPct : value,
+      odds
+    );
     if (!Number.isFinite(baseProb)) continue;
 
     const weight = computeTimeWeight(timestamp);
@@ -230,12 +235,16 @@ function ingestLines({
 
     sink.push({
       stat,
+      statKey: stat,
       scope,
       period,
       condition,
       odds,
-      win: Boolean(win),
+      win: win == null ? null : Boolean(win),
       baseProb,
+      evDetails: bet?.evDetails || {},
+      line: Number(bet?.line),
+      direction: bet?.direction || bet?.condition || (bet?.over ? "over" : "under"),
       ...(includeTimestamp ? { timestamp } : {}),
     });
   }
@@ -467,6 +476,26 @@ async function main() {
         sink: bets,
         includeTimestamp: false,
       });
+    }
+
+    if (CLI_ARGS.json) {
+      const configuredSummary = summarizeConfiguredFormulaResults(bets);
+      console.log(
+        JSON.stringify(
+          {
+            mode: "configured",
+            metrics: configuredSummary.metrics,
+            statBreakdown: configuredSummary.statBreakdown,
+            topExamples: configuredSummary.topExamples,
+            samples: {
+              candidateLines: bets.length,
+            },
+          },
+          null,
+          2
+        )
+      );
+      return;
     }
 
     const aggregates = {};

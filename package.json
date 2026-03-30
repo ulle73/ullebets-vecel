@@ -13,7 +13,9 @@
     "research:run": "node scripts/research_run.js",
     "research:auto": "node scripts/research_autoloop.js --focus roi",
     "research:auto:score": "node scripts/research_autoloop.js --focus researchScore",
-    "test:research": "node --test scripts/research_autoloop_core.test.js"
+    "research:formula:eval": "node scripts/formula-ev-check.js --json",
+    "research:auto:formulas": "node scripts/research_formula_autoloop.js",
+    "test:research": "node --test scripts/research_autoloop_core.test.js scripts/formula_research_core.test.js"
   },
   "dependencies": {
     "@next/third-parties": "^16.0.1",

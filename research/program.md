@@ -1,5 +1,9 @@
 # Autoresearch program for ullebets ranking policy
 
+If you want to run formula-selection research instead of ranking-policy research, use:
+
+- `research/formula-program.md`
+
 You are running autonomous policy research for ullebets.
 
 ## Your mission
