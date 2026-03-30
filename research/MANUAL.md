@@ -11,6 +11,7 @@ There are now two separate research surfaces:
 
 - `rankingPolicy` loop for shortlist scoring
 - `formulaConfig` loop for formula order selection
+- `formulaConfig` raw replay loop for parameter tuning
 
 ## Before you start
 
@@ -116,6 +117,67 @@ Important limitation:
 
 - this formula loop currently optimizes `display` order, not raw `blendWeight`
 - reason: historical backtest rows store finished formula outputs, but not enough raw state to truthfully replay every base-projection parameter change
+
+## Formula parameter eval
+
+To evaluate raw formula parameters in `lib/backtest/formulaConfig.js`, run:
+
+```bash
+npm run research:formula:params:eval
+```
+
+This prints JSON with:
+
+- `selectedBets`
+- `settledBets`
+- `roiPct`
+- `expectedEvPct`
+- `winRatePct`
+- formula mix for the replayed window
+
+Important:
+
+- this eval is heavier than the display-order eval
+- it defaults to a `--limit 100` replay window so iterations stay practical
+- raise the limit manually when you want a deeper pass
+
+Examples:
+
+```bash
+node scripts/formula_raw_replay_eval.js --json --limit 250
+node scripts/formula_raw_replay_eval.js --json --limit 100 --statKey cornerKicks
+```
+
+## Formula parameter autoloop
+
+For the separate raw-replay parameter autoloop, run:
+
+```bash
+npm run research:auto:formula-params
+```
+
+What it does:
+
+- creates a dedicated branch like `autoresearch-formula-params/20260330-params`
+- logs a baseline in `research/formula-param-results.tsv`
+- mutates only `lib/backtest/formulaConfig.js`
+- changes only numeric formula parameters such as `blendWeight` and `multifactor.leagueWeight`
+- runs `scripts/formula_raw_replay_eval.js --json` after every mutation
+- logs `keep`, `discard`, or `crash`
+- commits only kept parameter changes
+
+Useful flags:
+
+```bash
+node scripts/research_formula_params_autoloop.js --iterations 10
+node scripts/research_formula_params_autoloop.js --limit 250 --iterations 10
+node scripts/research_formula_params_autoloop.js --resume --tag 20260330-params
+```
+
+Important limitation:
+
+- `blendWeight` may be a real no-op under the current display order because base EV currently uses `prob`, not `blended`
+- the loop still tests it, but it should discard unchanged outcomes rather than pretending the parameter matters
 
 ## Step 2: Change only the policy
 

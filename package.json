@@ -15,7 +15,9 @@
     "research:auto:score": "node scripts/research_autoloop.js --focus researchScore",
     "research:formula:eval": "node scripts/formula-ev-check.js --json",
     "research:auto:formulas": "node scripts/research_formula_autoloop.js",
-    "test:research": "node --test scripts/research_autoloop_core.test.js scripts/formula_research_core.test.js"
+    "research:formula:params:eval": "node scripts/formula_raw_replay_eval.js --json",
+    "research:auto:formula-params": "node scripts/research_formula_params_autoloop.js",
+    "test:research": "node --test scripts/research_autoloop_core.test.js scripts/formula_research_core.test.js scripts/formula_raw_replay_core.test.js"
   },
   "dependencies": {
     "@next/third-parties": "^16.0.1",

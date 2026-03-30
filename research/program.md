@@ -3,6 +3,7 @@
 If you want to run formula-selection research instead of ranking-policy research, use:
 
 - `research/formula-program.md`
+- `research/formula-param-program.md`
 
 You are running autonomous policy research for ullebets.
 
