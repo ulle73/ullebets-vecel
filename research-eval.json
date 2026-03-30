@@ -1,0 +1,57 @@
+
+> ullebets-vecel@0.1.0 research:eval
+> node scripts/research_eval.js --json
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+{
+  "policyVersion": "2026-04-01-autoresearch-v1",
+  "strategyId": "balanced",
+  "picksPerDate": 3,
+  "researchScore": 25,
+  "metrics": {
+    "pickedDates": 1,
+    "pickedBets": 3,
+    "settledBets": 0,
+    "closedClvBets": 0,
+    "beatClosePct": 0,
+    "avgClv": 0,
+    "roiPct": 0,
+    "proofCoveragePct": 0
+  },
+  "samples": {
+    "snapshots": 4,
+    "replayEntries": 4
+  },
+  "guardrails": {
+    "minPickedDates": false,
+    "minPickedBets": false,
+    "minProofCoveragePct": false,
+    "ok": false
+  },
+  "topExamples": [
+    {
+      "date": "2026-04-01",
+      "headline": "Över 1.5 Hörnor",
+      "leagueName": "Brasileirão Betano",
+      "policyScore": 90.6,
+      "primaryEv": 42.85605525378412,
+      "proofScore": 0
+    },
+    {
+      "date": "2026-04-01",
+      "headline": "Över 5.5 Skott på mål",
+      "leagueName": "Brasileirão Betano",
+      "policyScore": 89.24,
+      "primaryEv": 23.877479832917288,
+      "proofScore": 0
+    },
+    {
+      "date": "2026-04-01",
+      "headline": "Över 3.5 Hörnor",
+      "leagueName": "Brasileirão Betano",
+      "policyScore": 74.86,
+      "primaryEv": 11.36372159809153,
+      "proofScore": 0
+    }
+  ]
+}

@@ -20,8 +20,6 @@ function sanitizeItem(body = {}) {
     eventUrl: typeof body.eventUrl === "string" ? body.eventUrl : null,
     bet: body?.bet && typeof body.bet === "object" ? body.bet : null,
     proof: body?.proof && typeof body.proof === "object" ? body.proof : null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   };
 }
 
@@ -52,15 +50,16 @@ export async function POST(req) {
     }
 
     const client = await clientPromise;
+    const now = new Date();
     await client.db(DB_NAME).collection(COLLECTION).updateOne(
       { trackingKey: item.trackingKey },
       {
         $set: {
           ...item,
-          updatedAt: new Date(),
+          updatedAt: now,
         },
         $setOnInsert: {
-          createdAt: new Date(),
+          createdAt: now,
         },
       },
       { upsert: true }

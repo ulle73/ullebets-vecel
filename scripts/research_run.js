@@ -55,13 +55,22 @@ function ensureResultsFile() {
   }
 }
 
+function parseEvalJson(stdout) {
+  const trimmed = String(stdout || "").trim();
+  const jsonStart = trimmed.indexOf("{");
+  if (jsonStart === -1) {
+    throw new Error("research_eval did not return JSON");
+  }
+  return JSON.parse(trimmed.slice(jsonStart));
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const stdout = execSync(
     `node scripts/research_eval.js --json --strategy ${args.strategyId} --days ${args.days} --limit ${args.limit}`,
     { cwd: rootDir, encoding: "utf-8" }
   );
-  const result = JSON.parse(stdout);
+  const result = parseEvalJson(stdout);
 
   ensureResultsFile();
 
