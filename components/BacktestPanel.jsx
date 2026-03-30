@@ -36,7 +36,9 @@ export default function BacktestPanel({ match, onSummaryChange }) {
   const { mutate } = useSWRConfig();
   const { data: rankingFeedback } = useSWR("/api/ranking-feedback?days=120&limit=500", fetcher, { revalidateOnFocus: false });
   const { data: watchlistData } = useSWR("/api/watchlist", fetcher, { revalidateOnFocus: false });
+  const { data: resultLoopData } = useSWR("/api/result-loop?days=180&limit=120", fetcher, { revalidateOnFocus: false });
   const watchlistKeys = new Set((watchlistData?.items || []).map((item) => item.trackingKey));
+  const resultLoopKeys = new Set((resultLoopData?.items || []).map((item) => item.trackingKey));
 
   const handlePositiveResults = useCallback(
     (_match, results, unibetUrl) => {
@@ -86,12 +88,48 @@ export default function BacktestPanel({ match, onSummaryChange }) {
     mutate("/api/watchlist");
   };
 
+  const toggleTaken = async (bet) => {
+    const matchId = match?.matchId || match?.id;
+    const trackingKey = buildTrackingKey(matchId, bet?.bet);
+    if (resultLoopKeys.has(trackingKey)) {
+      await fetch("/api/result-loop", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ trackingKey }),
+      });
+    } else {
+      await fetch("/api/result-loop", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          trackingKey,
+          matchId,
+          homeTeamName: bet?.bet?.homeTeam,
+          awayTeamName: bet?.bet?.awayTeam,
+          leagueName: match?.leagueName,
+          headline: bet?.headline,
+          strategyScore: bet?.strategyScore,
+          confidenceScore: bet?.confidenceScore,
+          primaryEv: bet?.primaryEv,
+          bet: bet?.bet,
+          proof: bet?.proof,
+          ranking: bet?.ranking,
+          eventUrl: summary?.unibetUrl,
+          source: "backtest",
+          stakeUnits: 1,
+        }),
+      });
+    }
+    mutate("/api/result-loop?days=180&limit=120");
+  };
+
   const helperText = useMemo(() => {
-    if (bestBet) return "Auto-läget visar ett toppspel först, därefter några sekundära chanser. Växla till avancerat när du vill se fler scores och mer rådata.";
-    return "Kör backtesten för matchen så fylls auto-läget med ett tydligt toppspel, proof-status och watchlist-knapp.";
+    if (bestBet) return "Auto-läget visar ett toppspel först, därefter några sekundära chanser. Här kan du också markera om du faktiskt tog spelet så att resultatloopen byggs upp.";
+    return "Kör backtesten för matchen så fylls auto-läget med ett tydligt toppspel, proof-status och resultatloop-knapp.";
   }, [bestBet]);
 
   const bestTrackingKey = bestBet ? buildTrackingKey(match?.matchId || match?.id, bestBet.bet) : null;
+  const isBestTracked = bestTrackingKey ? resultLoopKeys.has(bestTrackingKey) : false;
 
   return (
     <div className="flex flex-col gap-4">
@@ -102,6 +140,7 @@ export default function BacktestPanel({ match, onSummaryChange }) {
               <StatBadge label="Läge" value={viewMode === "auto" ? "Auto" : "Avancerat"} tone="accent" />
               <StatBadge label="Plusspel" value={summary.count} tone={summary.count > 0 ? "positive" : "neutral"} />
               {bestBet ? <StatBadge label="Proof" value={`${bestBet.proof?.proofScore || 0}/100`} tone={bestBet.proof?.historicalReady ? "positive" : "warning"} /> : null}
+              {bestBet ? <StatBadge label="Loop" value={isBestTracked ? "Spelad" : "Ej spelad"} tone={isBestTracked ? "positive" : "neutral"} /> : null}
             </div>
             <div>
               <h3 className="text-sm font-black uppercase tracking-[0.18em] text-slate-100">Backtestkort</h3>
@@ -143,6 +182,7 @@ export default function BacktestPanel({ match, onSummaryChange }) {
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <button type="button" onClick={() => toggleWatchlist(bestBet)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-300">{watchlistKeys.has(bestTrackingKey) ? "Ta bort bevakning" : "Bevaka spel"}</button>
+                <button type="button" onClick={() => toggleTaken(bestBet)} className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-300">{isBestTracked ? "Ta bort spelad" : "Markera spelad"}</button>
                 {summary.unibetUrl ? <a href={summary.unibetUrl} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-300">Oddsmarknad</a> : null}
               </div>
             </article>
@@ -160,13 +200,19 @@ export default function BacktestPanel({ match, onSummaryChange }) {
               <div className="rounded-2xl border border-white/5 bg-[#050505] p-4">
                 <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Sekundära chanser</div>
                 <div className="mt-3 grid gap-3 xl:grid-cols-3">
-                  {shortlist.map((item) => (
-                    <div key={item.bet.key} className="rounded-xl border border-white/10 bg-black/20 p-3">
-                      <div className="text-sm font-semibold text-white">{item.headline}</div>
-                      <div className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">{item.scopeLabel} · {item.periodLabel} · Odds {item.bet?.odds?.toFixed ? item.bet.odds.toFixed(2) : item.bet?.odds}</div>
-                      <div className="mt-2 text-xs text-slate-400">EV +{item.primaryEv?.toFixed(1)}% · Ranking {item.strategyScore?.toFixed(1)}</div>
-                    </div>
-                  ))}
+                  {shortlist.map((item) => {
+                    const tracked = resultLoopKeys.has(buildTrackingKey(match?.matchId || match?.id, item.bet));
+                    return (
+                      <div key={item.bet.key} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                        <div className="text-sm font-semibold text-white">{item.headline}</div>
+                        <div className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">{item.scopeLabel} · {item.periodLabel} · Odds {item.bet?.odds?.toFixed ? item.bet.odds.toFixed(2) : item.bet?.odds}</div>
+                        <div className="mt-2 text-xs text-slate-400">EV +{item.primaryEv?.toFixed(1)}% · Ranking {item.strategyScore?.toFixed(1)}</div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button type="button" onClick={() => toggleTaken(item)} className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300">{tracked ? "Spelad" : "Markera spelad"}</button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : null}
