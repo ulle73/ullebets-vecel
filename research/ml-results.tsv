@@ -1,0 +1,12 @@
+timestamp	git_sha	git_branch	limit	stat_key	selected_bets	settled_bets	roi_pct	expected_ev_pct	actual_ev_pct	win_rate_pct	status	note
+2026-03-31T06:01:21.931Z	90741ce	autoresearch-ml/20260331-ml	100	all	15	15	108.87	5.66	108.87	100	keep	baseline
+2026-03-31T06:02:31.136Z	90741ce	autoresearch-ml/20260331-ml	100	all	22	22	89.18	18.17	89.18	95.45	discard	promote ML to primary for totalShots total ALL (totalShots.total.ALL "off" -> "primary") | ROI did not improve (108.87 -> 89.18)
+2026-03-31T06:04:58.178Z	90741ce	autoresearch-ml/20260331-ml	100	all	15	15	108.87	5.66	108.87	100	discard	promote ML to primary for totalShots home ALL (totalShots.home.ALL "off" -> "primary") | ROI did not improve (108.87 -> 108.87)
+2026-03-31T06:07:27.336Z	90741ce	autoresearch-ml/20260331-ml	100	all	13	13	114.23	5.34	114.23	100	keep	promote ML to primary for totalShots away ALL (totalShots.away.ALL "off" -> "primary") | ROI improved (108.87 -> 114.23)
+2026-03-31T06:07:49.516Z	7adb704	autoresearch-ml/20260331-ml	100	all	7	7	96.86	6.45	96.86	100	discard	promote ML to primary for shotsOnGoal total ALL (shotsOnGoal.total.ALL "off" -> "primary") | guardrail regression (0/2)
+2026-03-31T06:08:15.541Z	7adb704	autoresearch-ml/20260331-ml	100	all	10	10	124.7	6.18	124.7	100	keep	promote ML to primary for shotsOnGoal home ALL (shotsOnGoal.home.ALL "off" -> "primary") | ROI improved (114.23 -> 124.7)
+2026-03-31T06:08:41.052Z	95b49ea	autoresearch-ml/20260331-ml	100	all	10	10	124.7	9.6	124.7	100	discard	promote ML to primary for shotsOnGoal away ALL (shotsOnGoal.away.ALL "off" -> "primary") | ROI did not improve (124.7 -> 124.7)
+2026-03-31T07:22:22.375Z	95b49ea	autoresearch-ml/20260331-ml	250	all	50	50	35.84	20.38	35.84	66	keep	promote ML to primary for totalShots total ALL (totalShots.total.ALL "off" -> "primary") | ROI improved (34.02 -> 35.84)
+2026-03-31T07:24:11.895Z	f5f4e9a	autoresearch-ml/20260331-ml	250	all	51	51	16.29	20.52	16.29	54.9	discard	promote ML to primary for totalShots home ALL (totalShots.home.ALL "off" -> "primary") | ROI did not improve (35.84 -> 16.29)
+2026-03-31T07:26:41.908Z	f5f4e9a	autoresearch-ml/20260331-ml	250	all	59	59	1.36	19.71	1.36	55.93	discard	promote ML to primary for shotsOnGoal total ALL (shotsOnGoal.total.ALL "off" -> "primary") | ROI did not improve (35.84 -> 1.36)
+2026-03-31T07:29:08.448Z	f5f4e9a	autoresearch-ml/20260331-ml	250	all	61	61	18.18	24.72	18.18	59.02	discard	promote ML to primary for shotsOnGoal away ALL (shotsOnGoal.away.ALL "off" -> "primary") | ROI did not improve (35.84 -> 18.18)
