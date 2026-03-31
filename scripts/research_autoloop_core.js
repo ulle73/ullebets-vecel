@@ -140,6 +140,17 @@ function findStringArrayPropertyMatch(source, range, propertyName) {
   return { match, slice };
 }
 
+function findStringPropertyMatch(source, range, propertyName) {
+  const propPattern = `(^[ \\t]*(?:["']?${escapeRegExp(propertyName)}["']?)\\s*:\\s*)(["'])([^"'\\r\\n]*)(\\2)(\\s*,?)`;
+  const slice = source.slice(range.start, range.end);
+  const matcher = new RegExp(propPattern, "m");
+  const match = matcher.exec(slice);
+  if (!match) {
+    throw new Error(`String property ${propertyName} not found`);
+  }
+  return { match, slice };
+}
+
 function countSatisfiedGuardrails(guardrails = {}) {
   return Object.entries(guardrails)
     .filter(([key, value]) => key !== "ok" && typeof value === "boolean" && value)
@@ -271,6 +282,46 @@ export function applyStringArrayMutation(source, mutation) {
   const absoluteStart = range.start + match.index;
   const absoluteEnd = absoluteStart + match[0].length;
   const replacement = `${match[1]}${formatted}${match[3]}`;
+  return `${source.slice(0, absoluteStart)}${replacement}${source.slice(absoluteEnd)}`;
+}
+
+export function readStringProperty(source, declarationName, propertyPath = []) {
+  if (!declarationName || !Array.isArray(propertyPath) || !propertyPath.length) {
+    throw new Error("Invalid string property path");
+  }
+
+  let range = findDeclarationObjectRange(source, declarationName);
+  for (let i = 0; i < propertyPath.length - 1; i += 1) {
+    range = findNestedObjectRange(source, range, propertyPath[i]);
+  }
+
+  const targetProp = propertyPath[propertyPath.length - 1];
+  const { match } = findStringPropertyMatch(source, range, targetProp);
+  return match[3];
+}
+
+export function applyStringMutation(source, mutation) {
+  const { declarationName, propertyPath = [], nextValue } = mutation || {};
+  if (
+    !declarationName ||
+    !Array.isArray(propertyPath) ||
+    !propertyPath.length ||
+    typeof nextValue !== "string"
+  ) {
+    throw new Error("Invalid string mutation");
+  }
+
+  let range = findDeclarationObjectRange(source, declarationName);
+  for (let i = 0; i < propertyPath.length - 1; i += 1) {
+    range = findNestedObjectRange(source, range, propertyPath[i]);
+  }
+
+  const targetProp = propertyPath[propertyPath.length - 1];
+  const { match } = findStringPropertyMatch(source, range, targetProp);
+  const formatted = JSON.stringify(nextValue);
+  const absoluteStart = range.start + match.index;
+  const absoluteEnd = absoluteStart + match[0].length;
+  const replacement = `${match[1]}${formatted}${match[5]}`;
   return `${source.slice(0, absoluteStart)}${replacement}${source.slice(absoluteEnd)}`;
 }
 

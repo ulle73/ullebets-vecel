@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 
 import {
   applyNumericMutation,
+  applyStringMutation,
   applyStringArrayMutation,
   decideExperimentStatus,
   parseEvalJson,
+  readStringProperty,
   readStringArrayProperty,
   readNumericProperty,
 } from "./research_autoloop_core.js";
@@ -124,4 +126,45 @@ test("applyStringArrayMutation updates a nested string array without touching si
 
   assert.match(next, /display: \["multiplier", "leagueAvg"\],/);
   assert.match(next, /blendWeight: 0\.8,/);
+});
+
+test("readStringProperty returns the current string value for a nested property", () => {
+  const source = `const INLINE_ML_SELECTION_POLICY = {
+  totalShots: {
+    total: {
+      ALL: "off",
+    },
+  },
+};
+`;
+
+  const value = readStringProperty(source, "INLINE_ML_SELECTION_POLICY", [
+    "totalShots",
+    "total",
+    "ALL",
+  ]);
+  assert.equal(value, "off");
+});
+
+test("applyStringMutation updates a nested string value without touching sibling properties", () => {
+  const source = `const INLINE_ML_SELECTION_POLICY = {
+  totalShots: {
+    total: {
+      ALL: "off",
+    },
+    home: {
+      ALL: "off",
+    },
+  },
+};
+`;
+
+  const next = applyStringMutation(source, {
+    declarationName: "INLINE_ML_SELECTION_POLICY",
+    propertyPath: ["totalShots", "total", "ALL"],
+    nextValue: "primary",
+  });
+
+  assert.match(next, /ALL: "primary",/);
+  assert.match(next, /home: \{\s*ALL: "off",/s);
 });

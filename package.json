@@ -17,7 +17,9 @@
     "research:auto:formulas": "node scripts/research_formula_autoloop.js",
     "research:formula:params:eval": "node scripts/formula_raw_replay_eval.js --json",
     "research:auto:formula-params": "node scripts/research_formula_params_autoloop.js",
-    "test:research": "node --test scripts/research_autoloop_core.test.js scripts/formula_research_core.test.js scripts/formula_raw_replay_core.test.js"
+    "research:ml:eval": "node scripts/ml_formula_replay_eval.js --json",
+    "research:auto:ml": "node scripts/research_ml_autoloop.js",
+    "test:research": "node --test scripts/research_autoloop_core.test.js scripts/formula_research_core.test.js scripts/formula_raw_replay_core.test.js scripts/ml_tier2_phase1.test.js scripts/ml_primary_selection.test.js"
   },
   "dependencies": {
     "@next/third-parties": "^16.0.1",

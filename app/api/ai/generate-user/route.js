@@ -6,6 +6,7 @@ import { getUnibetOddsForMatch } from "@/lib/engines/unibet-engine";
 import { calculateEvForBet, clearTeamDataCache } from "@/lib/engines/ev-engine";
 import { buildBetKey } from "@/lib/core/keys";
 import { normalizeTeamName } from "@/lib/core/normalization";
+import { pickPrimaryEvSelection } from "@/lib/backtest/primaryEvSelection";
 
 // Database
 import clientPromise from "@/lib/mongo";
@@ -46,30 +47,16 @@ function collectEvDetails(result) {
   return evDetails;
 }
 
-function resolvePrimaryEvValue(evDetails) {
+function resolvePrimaryEvValue(evDetails, context = {}) {
   if (!evDetails) return null;
 
-  const preferredOrder = [
-    "evPctUniversalOptimized",
-    "evPctWithMultiplier",
-    "evPctMultifactor",
-    "evPctOptaCombined",
-    "evPctOptaPlusBase",
-    "evPctLeagueAvg",
-    "evPct",
-    "legacyEvPct",
-  ];
-
-  for (const key of preferredOrder) {
-    const value = evDetails[key];
-    if (typeof value === "number") return value;
-  }
-
-  for (const [, value] of Object.entries(evDetails)) {
-    if (typeof value === "number") return value;
-  }
-
-  return null;
+  const selection = pickPrimaryEvSelection({
+    evDetails,
+    statKey: context?.statKey ?? "unknown",
+    scope: context?.scope ?? "total",
+    period: context?.period ?? "ALL",
+  });
+  return selection.evPct;
 }
 
 const STAT_ALIASES = new Map([
@@ -202,7 +189,7 @@ async function processMatchForAI(match, tuples, eventId, teamprofilesCol) {
           });
 
           const evDetails = collectEvDetails(result);
-          const value = resolvePrimaryEvValue(evDetails);
+          const value = resolvePrimaryEvValue(evDetails, tuple);
           const profile = scope === "home" ? homeProfile : scope === "away" ? awayProfile : null;
           const scewDir = selectScew(profile, statKey, period, direction, oddValue);
 

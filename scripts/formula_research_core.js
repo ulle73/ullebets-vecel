@@ -1,39 +1,24 @@
-import { getFormulaConfig } from "../lib/backtest/formulaConfig.js";
+import {
+  getConfiguredFormulaOrder,
+  pickPrimaryEvSelection,
+  RESEARCH_FORMULA_PRIORITY,
+} from "../lib/backtest/primaryEvSelection.js";
 
-export const FORMULA_VALUE_KEYS = {
-  multiplier: "evPctWithMultiplier",
-  multifactor: "evPctMultifactor",
-  leagueAvg: "evPctLeagueAvg",
-  base: "evPct",
-  legacy: "legacyEvPct",
-};
-
-export const DEFAULT_FORMULA_PRIORITY = ["multiplier", "multifactor", "leagueAvg", "base", "legacy"];
-
-function toFiniteNumber(value) {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-export function getConfiguredFormulaOrder(statKey) {
-  const config = getFormulaConfig(statKey);
-  const display = Array.isArray(config?.display) ? config.display : [];
-  return [...new Set([...display, ...DEFAULT_FORMULA_PRIORITY])];
-}
-
-function getFormulaEv(line, formulaKey) {
-  const valueKey = FORMULA_VALUE_KEYS[formulaKey];
-  if (!valueKey) return null;
-  return toFiniteNumber(line?.evDetails?.[valueKey] ?? line?.[valueKey] ?? null);
-}
+export { getConfiguredFormulaOrder };
 
 export function pickConfiguredFormula({ statKey, line }) {
-  const order = getConfiguredFormulaOrder(statKey);
-  for (const formulaKey of order) {
-    const evPct = getFormulaEv(line, formulaKey);
-    if (evPct == null) continue;
-    return { formulaKey, evPct };
-  }
-  return { formulaKey: null, evPct: null };
+  const selection = pickPrimaryEvSelection({
+    statKey,
+    scope: line?.scope ?? line?.bet?.scope ?? "total",
+    period: line?.period ?? line?.bet?.period ?? "ALL",
+    evDetails: line?.evDetails && typeof line.evDetails === "object" ? line.evDetails : line,
+    fallbackPriority: RESEARCH_FORMULA_PRIORITY,
+  });
+
+  return {
+    formulaKey: selection.formulaKey,
+    evPct: selection.evPct,
+  };
 }
 
 function computeActualEv(line) {
