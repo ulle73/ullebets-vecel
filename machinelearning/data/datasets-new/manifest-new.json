@@ -1,0 +1,1436 @@
+{
+  "generatedAt": "2026-03-31T21:52:02.059Z",
+  "comboCount": 84,
+  "featureModes": {
+    "strict": {
+      "featureCount": 47,
+      "featureNames": [
+        "market_line",
+        "market_over_odds",
+        "market_implied_over",
+        "market_under_odds",
+        "market_implied_under",
+        "market_margin",
+        "quality_home_opta_rank",
+        "quality_home_opta_rating",
+        "quality_away_opta_rank",
+        "quality_away_opta_rating",
+        "quality_opta_rank_diff",
+        "quality_opta_rating_diff",
+        "wma_home_for_recent",
+        "wma_home_for_medium",
+        "wma_home_for_long",
+        "wma_away_for_recent",
+        "wma_away_for_medium",
+        "wma_away_for_long",
+        "wma_home_against_recent",
+        "wma_home_against_medium",
+        "wma_home_against_long",
+        "wma_away_against_recent",
+        "wma_away_against_medium",
+        "wma_away_against_long",
+        "formula_evPctMultifactor",
+        "formula_evPctUniversalOptimized",
+        "formula_evPctOptaCombined",
+        "formula_evPctLeagueAvg",
+        "formula_evPctOptaRating",
+        "formula_evPctBase",
+        "formula_evPctPoisson",
+        "consensus_count",
+        "consensus_mean",
+        "consensus_std",
+        "consensus_range",
+        "consensus_max",
+        "consensus_min",
+        "consensus_median",
+        "flag_no_odds",
+        "flag_supervised",
+        "flag_has_formulas",
+        "flag_scope_home",
+        "flag_scope_away",
+        "flag_scope_total",
+        "flag_period_all",
+        "flag_period_1st",
+        "flag_period_2nd"
+      ]
+    },
+    "extended": {
+      "featureCount": 191,
+      "featureNames": [
+        "market_line",
+        "market_over_odds",
+        "market_implied_over",
+        "market_under_odds",
+        "market_implied_under",
+        "market_margin",
+        "quality_home_opta_rank",
+        "quality_home_opta_rating",
+        "quality_away_opta_rank",
+        "quality_away_opta_rating",
+        "quality_opta_rank_diff",
+        "quality_opta_rating_diff",
+        "wma_home_for_recent",
+        "wma_home_for_medium",
+        "wma_home_for_long",
+        "wma_away_for_recent",
+        "wma_away_for_medium",
+        "wma_away_for_long",
+        "wma_home_against_recent",
+        "wma_home_against_medium",
+        "wma_home_against_long",
+        "wma_away_against_recent",
+        "wma_away_against_medium",
+        "wma_away_against_long",
+        "formula_evPctMultifactor",
+        "formula_evPctUniversalOptimized",
+        "formula_evPctOptaCombined",
+        "formula_evPctLeagueAvg",
+        "formula_evPctOptaRating",
+        "formula_evPctBase",
+        "formula_evPctPoisson",
+        "consensus_count",
+        "consensus_mean",
+        "consensus_std",
+        "consensus_range",
+        "consensus_max",
+        "consensus_min",
+        "consensus_median",
+        "flag_no_odds",
+        "flag_supervised",
+        "flag_has_formulas",
+        "flag_scope_home",
+        "flag_scope_away",
+        "flag_scope_total",
+        "flag_period_all",
+        "flag_period_1st",
+        "flag_period_2nd",
+        "profile_home_value",
+        "profile_home_rank",
+        "profile_away_value",
+        "profile_away_rank",
+        "profile_home_rank_for",
+        "profile_home_rank_against",
+        "profile_away_rank_for",
+        "profile_away_rank_against",
+        "profile_matchup_score",
+        "profile_home_score_first_pct",
+        "profile_away_score_first_pct",
+        "profile_score_first_diff",
+        "profile_home_shots_per_min_leading",
+        "profile_home_shots_per_min_trailing",
+        "profile_home_shots_per_min_tied",
+        "profile_away_shots_per_min_leading",
+        "profile_away_shots_per_min_trailing",
+        "profile_away_shots_per_min_tied",
+        "profile_home_shots_per_ten",
+        "profile_away_shots_per_ten",
+        "profile_extra_home_for_ballPossession",
+        "profile_extra_away_for_ballPossession",
+        "profile_extra_home_against_ballPossession",
+        "profile_extra_away_against_ballPossession",
+        "profile_extra_home_for_passes",
+        "profile_extra_away_for_passes",
+        "profile_extra_home_against_passes",
+        "profile_extra_away_against_passes",
+        "profile_extra_home_for_accuratePasses",
+        "profile_extra_away_for_accuratePasses",
+        "profile_extra_home_against_accuratePasses",
+        "profile_extra_away_against_accuratePasses",
+        "profile_extra_home_for_finalThirdEntries",
+        "profile_extra_away_for_finalThirdEntries",
+        "profile_extra_home_against_finalThirdEntries",
+        "profile_extra_away_against_finalThirdEntries",
+        "profile_extra_home_for_touchesInOppBox",
+        "profile_extra_away_for_touchesInOppBox",
+        "profile_extra_home_against_touchesInOppBox",
+        "profile_extra_away_against_touchesInOppBox",
+        "profile_extra_home_for_expectedGoals",
+        "profile_extra_away_for_expectedGoals",
+        "profile_extra_home_against_expectedGoals",
+        "profile_extra_away_against_expectedGoals",
+        "profile_extra_home_for_bigChanceCreated",
+        "profile_extra_away_for_bigChanceCreated",
+        "profile_extra_home_against_bigChanceCreated",
+        "profile_extra_away_against_bigChanceCreated",
+        "profile_extra_home_for_bigChanceMissed",
+        "profile_extra_away_for_bigChanceMissed",
+        "profile_extra_home_against_bigChanceMissed",
+        "profile_extra_away_against_bigChanceMissed",
+        "profile_extra_home_for_bigChanceScored",
+        "profile_extra_away_for_bigChanceScored",
+        "profile_extra_home_against_bigChanceScored",
+        "profile_extra_away_against_bigChanceScored",
+        "profile_extra_home_for_shotsOffGoal",
+        "profile_extra_away_for_shotsOffGoal",
+        "profile_extra_home_against_shotsOffGoal",
+        "profile_extra_away_against_shotsOffGoal",
+        "profile_extra_home_for_totalShotsInsideBox",
+        "profile_extra_away_for_totalShotsInsideBox",
+        "profile_extra_home_against_totalShotsInsideBox",
+        "profile_extra_away_against_totalShotsInsideBox",
+        "profile_extra_home_for_totalShotsOutsideBox",
+        "profile_extra_away_for_totalShotsOutsideBox",
+        "profile_extra_home_against_totalShotsOutsideBox",
+        "profile_extra_away_against_totalShotsOutsideBox",
+        "profile_extra_home_for_accurateCross",
+        "profile_extra_away_for_accurateCross",
+        "profile_extra_home_against_accurateCross",
+        "profile_extra_away_against_accurateCross",
+        "profile_extra_home_for_accurateLongBalls",
+        "profile_extra_away_for_accurateLongBalls",
+        "profile_extra_home_against_accurateLongBalls",
+        "profile_extra_away_against_accurateLongBalls",
+        "profile_extra_home_for_ballRecovery",
+        "profile_extra_away_for_ballRecovery",
+        "profile_extra_home_against_ballRecovery",
+        "profile_extra_away_against_ballRecovery",
+        "profile_extra_home_for_interceptionWon",
+        "profile_extra_away_for_interceptionWon",
+        "profile_extra_home_against_interceptionWon",
+        "profile_extra_away_against_interceptionWon",
+        "profile_extra_home_for_dispossessed",
+        "profile_extra_away_for_dispossessed",
+        "profile_extra_home_against_dispossessed",
+        "profile_extra_away_against_dispossessed",
+        "profile_extra_home_for_blockedScoringAttempt",
+        "profile_extra_away_for_blockedScoringAttempt",
+        "profile_extra_home_against_blockedScoringAttempt",
+        "profile_extra_away_against_blockedScoringAttempt",
+        "profile_extra_home_for_duelWonPercent",
+        "profile_extra_away_for_duelWonPercent",
+        "profile_extra_home_against_duelWonPercent",
+        "profile_extra_away_against_duelWonPercent",
+        "profile_extra_home_for_groundDuelsPercentage",
+        "profile_extra_away_for_groundDuelsPercentage",
+        "profile_extra_home_against_groundDuelsPercentage",
+        "profile_extra_away_against_groundDuelsPercentage",
+        "profile_extra_home_for_aerialDuelsPercentage",
+        "profile_extra_away_for_aerialDuelsPercentage",
+        "profile_extra_home_against_aerialDuelsPercentage",
+        "profile_extra_away_against_aerialDuelsPercentage",
+        "profile_extra_home_for_cleanSheets",
+        "profile_extra_away_for_cleanSheets",
+        "profile_extra_home_against_cleanSheets",
+        "profile_extra_away_against_cleanSheets",
+        "profile_extra_home_for_goalsConceded",
+        "profile_extra_away_for_goalsConceded",
+        "profile_extra_home_against_goalsConceded",
+        "profile_extra_away_against_goalsConceded",
+        "profile_extra_home_for_tackles",
+        "profile_extra_away_for_tackles",
+        "profile_extra_home_against_tackles",
+        "profile_extra_away_against_tackles",
+        "profile_extra_home_for_clearances",
+        "profile_extra_away_for_clearances",
+        "profile_extra_home_against_clearances",
+        "profile_extra_away_against_clearances",
+        "profile_extra_home_for_dribbles",
+        "profile_extra_away_for_dribbles",
+        "profile_extra_home_against_dribbles",
+        "profile_extra_away_against_dribbles",
+        "profile_extra_home_for_dribblesCompleted",
+        "profile_extra_away_for_dribblesCompleted",
+        "profile_extra_home_against_dribblesCompleted",
+        "profile_extra_away_against_dribblesCompleted",
+        "profile_extra_home_for_touches",
+        "profile_extra_away_for_touches",
+        "profile_extra_home_against_touches",
+        "profile_extra_away_against_touches",
+        "profile_extra_home_for_duels",
+        "profile_extra_away_for_duels",
+        "profile_extra_home_against_duels",
+        "profile_extra_away_against_duels",
+        "profile_extra_home_for_groundDuels",
+        "profile_extra_away_for_groundDuels",
+        "profile_extra_home_against_groundDuels",
+        "profile_extra_away_against_groundDuels",
+        "profile_extra_home_for_aerialDuels",
+        "profile_extra_away_for_aerialDuels",
+        "profile_extra_home_against_aerialDuels",
+        "profile_extra_away_against_aerialDuels"
+      ]
+    }
+  },
+  "combos": {
+    "shotsOnGoal_home_ALL": {
+      "strict": {
+        "train": 4885,
+        "val": 314,
+        "test": 3992,
+        "total": 9191
+      },
+      "extended": {
+        "train": 4885,
+        "val": 314,
+        "test": 3992,
+        "total": 9191
+      }
+    },
+    "cornerKicks_away_2ND": {
+      "strict": {
+        "train": 5813,
+        "val": 466,
+        "test": 8326,
+        "total": 14605
+      },
+      "extended": {
+        "train": 5813,
+        "val": 466,
+        "test": 8326,
+        "total": 14605
+      }
+    },
+    "yellowCards_total_ALL": {
+      "strict": {
+        "train": 6333,
+        "val": 592,
+        "test": 9171,
+        "total": 16096
+      },
+      "extended": {
+        "train": 6333,
+        "val": 592,
+        "test": 9171,
+        "total": 16096
+      }
+    },
+    "totalShots_total_ALL": {
+      "strict": {
+        "train": 1020,
+        "val": 212,
+        "test": 5266,
+        "total": 6498
+      },
+      "extended": {
+        "train": 1020,
+        "val": 212,
+        "test": 5266,
+        "total": 6498
+      }
+    },
+    "cornerKicks_home_ALL": {
+      "strict": {
+        "train": 6990,
+        "val": 683,
+        "test": 14844,
+        "total": 22517
+      },
+      "extended": {
+        "train": 6990,
+        "val": 683,
+        "test": 14844,
+        "total": 22517
+      }
+    },
+    "cornerKicks_total_2ND": {
+      "strict": {
+        "train": 6538,
+        "val": 584,
+        "test": 11844,
+        "total": 18966
+      },
+      "extended": {
+        "train": 6538,
+        "val": 584,
+        "test": 11844,
+        "total": 18966
+      }
+    },
+    "cornerKicks_total_1ST": {
+      "strict": {
+        "train": 6379,
+        "val": 584,
+        "test": 11094,
+        "total": 18057
+      },
+      "extended": {
+        "train": 6379,
+        "val": 584,
+        "test": 11094,
+        "total": 18057
+      }
+    },
+    "cornerKicks_total_ALL": {
+      "strict": {
+        "train": 7459,
+        "val": 789,
+        "test": 17520,
+        "total": 25768
+      },
+      "extended": {
+        "train": 7459,
+        "val": 789,
+        "test": 17520,
+        "total": 25768
+      }
+    },
+    "yellowCards_home_ALL": {
+      "strict": {
+        "train": 5616,
+        "val": 465,
+        "test": 6628,
+        "total": 12709
+      },
+      "extended": {
+        "train": 5616,
+        "val": 465,
+        "test": 6628,
+        "total": 12709
+      }
+    },
+    "fouls_home_ALL": {
+      "strict": {
+        "train": 4504,
+        "val": 277,
+        "test": 3058,
+        "total": 7839
+      },
+      "extended": {
+        "train": 4504,
+        "val": 277,
+        "test": 3058,
+        "total": 7839
+      }
+    },
+    "cornerKicks_away_ALL": {
+      "strict": {
+        "train": 6697,
+        "val": 630,
+        "test": 13417,
+        "total": 20744
+      },
+      "extended": {
+        "train": 6697,
+        "val": 630,
+        "test": 13417,
+        "total": 20744
+      }
+    },
+    "shotsOnGoal_away_ALL": {
+      "strict": {
+        "train": 4834,
+        "val": 308,
+        "test": 3750,
+        "total": 8892
+      },
+      "extended": {
+        "train": 4834,
+        "val": 308,
+        "test": 3750,
+        "total": 8892
+      }
+    },
+    "shotsOnGoal_total_ALL": {
+      "strict": {
+        "train": 5090,
+        "val": 354,
+        "test": 5056,
+        "total": 10500
+      },
+      "extended": {
+        "train": 5090,
+        "val": 354,
+        "test": 5056,
+        "total": 10500
+      }
+    },
+    "cornerKicks_home_1ST": {
+      "strict": {
+        "train": 5885,
+        "val": 484,
+        "test": 8626,
+        "total": 14995
+      },
+      "extended": {
+        "train": 5885,
+        "val": 484,
+        "test": 8626,
+        "total": 14995
+      }
+    },
+    "cornerKicks_away_1ST": {
+      "strict": {
+        "train": 5714,
+        "val": 454,
+        "test": 7882,
+        "total": 14050
+      },
+      "extended": {
+        "train": 5714,
+        "val": 454,
+        "test": 7882,
+        "total": 14050
+      }
+    },
+    "totalShots_away_ALL": {
+      "strict": {
+        "train": 709,
+        "val": 136,
+        "test": 2395,
+        "total": 3240
+      },
+      "extended": {
+        "train": 709,
+        "val": 136,
+        "test": 2395,
+        "total": 3240
+      }
+    },
+    "yellowCards_away_ALL": {
+      "strict": {
+        "train": 5748,
+        "val": 490,
+        "test": 6972,
+        "total": 13210
+      },
+      "extended": {
+        "train": 5748,
+        "val": 490,
+        "test": 6972,
+        "total": 13210
+      }
+    },
+    "fouls_total_ALL": {
+      "strict": {
+        "train": 4584,
+        "val": 311,
+        "test": 4012,
+        "total": 8907
+      },
+      "extended": {
+        "train": 4584,
+        "val": 311,
+        "test": 4012,
+        "total": 8907
+      }
+    },
+    "cornerKicks_home_2ND": {
+      "strict": {
+        "train": 5890,
+        "val": 488,
+        "test": 8822,
+        "total": 15200
+      },
+      "extended": {
+        "train": 5890,
+        "val": 488,
+        "test": 8822,
+        "total": 15200
+      }
+    },
+    "offsides_away_ALL": {
+      "strict": {
+        "train": 4221,
+        "val": 256,
+        "test": 2310,
+        "total": 6787
+      },
+      "extended": {
+        "train": 4221,
+        "val": 256,
+        "test": 2310,
+        "total": 6787
+      }
+    },
+    "totalShots_home_ALL": {
+      "strict": {
+        "train": 778,
+        "val": 151,
+        "test": 2601,
+        "total": 3530
+      },
+      "extended": {
+        "train": 778,
+        "val": 151,
+        "test": 2601,
+        "total": 3530
+      }
+    },
+    "fouls_away_ALL": {
+      "strict": {
+        "train": 4512,
+        "val": 283,
+        "test": 3182,
+        "total": 7977
+      },
+      "extended": {
+        "train": 4512,
+        "val": 283,
+        "test": 3182,
+        "total": 7977
+      }
+    },
+    "offsides_home_ALL": {
+      "strict": {
+        "train": 4227,
+        "val": 249,
+        "test": 2330,
+        "total": 6806
+      },
+      "extended": {
+        "train": 4227,
+        "val": 249,
+        "test": 2330,
+        "total": 6806
+      }
+    },
+    "offsides_total_ALL": {
+      "strict": {
+        "train": 4276,
+        "val": 266,
+        "test": 2873,
+        "total": 7415
+      },
+      "extended": {
+        "train": 4276,
+        "val": 266,
+        "test": 2873,
+        "total": 7415
+      }
+    },
+    "freeKicks_home_ALL": {
+      "strict": {
+        "train": 4523,
+        "val": 222,
+        "test": 1154,
+        "total": 5899
+      },
+      "extended": {
+        "train": 4523,
+        "val": 222,
+        "test": 1154,
+        "total": 5899
+      }
+    },
+    "freeKicks_total_ALL": {
+      "strict": {
+        "train": 4623,
+        "val": 222,
+        "test": 1154,
+        "total": 5999
+      },
+      "extended": {
+        "train": 4623,
+        "val": 222,
+        "test": 1154,
+        "total": 5999
+      }
+    },
+    "freeKicks_away_ALL": {
+      "strict": {
+        "train": 4544,
+        "val": 222,
+        "test": 1154,
+        "total": 5920
+      },
+      "extended": {
+        "train": 4544,
+        "val": 222,
+        "test": 1154,
+        "total": 5920
+      }
+    },
+    "freeKicks_home_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "freeKicks_away_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "freeKicks_total_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "freeKicks_home_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "freeKicks_away_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "freeKicks_total_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "goalKicks_home_ALL": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "goalKicks_away_ALL": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "goalKicks_total_ALL": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "goalKicks_home_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "goalKicks_away_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "goalKicks_total_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "goalKicks_home_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "goalKicks_away_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "goalKicks_total_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "offsides_home_1ST": {
+      "strict": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      },
+      "extended": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      }
+    },
+    "offsides_away_1ST": {
+      "strict": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      },
+      "extended": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      }
+    },
+    "offsides_total_1ST": {
+      "strict": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      },
+      "extended": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      }
+    },
+    "offsides_home_2ND": {
+      "strict": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      },
+      "extended": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      }
+    },
+    "offsides_away_2ND": {
+      "strict": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      },
+      "extended": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      }
+    },
+    "offsides_total_2ND": {
+      "strict": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      },
+      "extended": {
+        "train": 4101,
+        "val": 208,
+        "test": 1092,
+        "total": 5401
+      }
+    },
+    "shotsOnGoal_home_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "shotsOnGoal_away_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "shotsOnGoal_total_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "shotsOnGoal_home_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "shotsOnGoal_away_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "shotsOnGoal_total_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "throwIns_home_ALL": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "throwIns_away_ALL": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "throwIns_total_ALL": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "throwIns_home_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "throwIns_away_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "throwIns_total_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "throwIns_home_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "throwIns_away_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "throwIns_total_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "totalShotsOnGoal_home_ALL": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "totalShotsOnGoal_away_ALL": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "totalShotsOnGoal_total_ALL": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "totalShotsOnGoal_home_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "totalShotsOnGoal_away_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "totalShotsOnGoal_total_1ST": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "totalShotsOnGoal_home_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "totalShotsOnGoal_away_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "totalShotsOnGoal_total_2ND": {
+      "strict": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      },
+      "extended": {
+        "train": 4331,
+        "val": 222,
+        "test": 1154,
+        "total": 5707
+      }
+    },
+    "yellowCards_home_1ST": {
+      "strict": {
+        "train": 4196,
+        "val": 219,
+        "test": 1125,
+        "total": 5540
+      },
+      "extended": {
+        "train": 4196,
+        "val": 219,
+        "test": 1125,
+        "total": 5540
+      }
+    },
+    "yellowCards_away_1ST": {
+      "strict": {
+        "train": 4196,
+        "val": 219,
+        "test": 1125,
+        "total": 5540
+      },
+      "extended": {
+        "train": 4196,
+        "val": 219,
+        "test": 1125,
+        "total": 5540
+      }
+    },
+    "yellowCards_total_1ST": {
+      "strict": {
+        "train": 4196,
+        "val": 219,
+        "test": 1125,
+        "total": 5540
+      },
+      "extended": {
+        "train": 4196,
+        "val": 219,
+        "test": 1125,
+        "total": 5540
+      }
+    },
+    "yellowCards_home_2ND": {
+      "strict": {
+        "train": 4197,
+        "val": 219,
+        "test": 1127,
+        "total": 5543
+      },
+      "extended": {
+        "train": 4197,
+        "val": 219,
+        "test": 1127,
+        "total": 5543
+      }
+    },
+    "yellowCards_away_2ND": {
+      "strict": {
+        "train": 4197,
+        "val": 219,
+        "test": 1127,
+        "total": 5543
+      },
+      "extended": {
+        "train": 4197,
+        "val": 219,
+        "test": 1127,
+        "total": 5543
+      }
+    },
+    "yellowCards_total_2ND": {
+      "strict": {
+        "train": 4197,
+        "val": 219,
+        "test": 1127,
+        "total": 5543
+      },
+      "extended": {
+        "train": 4197,
+        "val": 219,
+        "test": 1127,
+        "total": 5543
+      }
+    },
+    "fouls_home_1ST": {
+      "strict": {
+        "train": 7,
+        "val": 217,
+        "test": 1154,
+        "total": 1378
+      },
+      "extended": {
+        "train": 7,
+        "val": 217,
+        "test": 1154,
+        "total": 1378
+      }
+    },
+    "fouls_away_1ST": {
+      "strict": {
+        "train": 7,
+        "val": 217,
+        "test": 1154,
+        "total": 1378
+      },
+      "extended": {
+        "train": 7,
+        "val": 217,
+        "test": 1154,
+        "total": 1378
+      }
+    },
+    "fouls_total_1ST": {
+      "strict": {
+        "train": 7,
+        "val": 217,
+        "test": 1154,
+        "total": 1378
+      },
+      "extended": {
+        "train": 7,
+        "val": 217,
+        "test": 1154,
+        "total": 1378
+      }
+    },
+    "fouls_home_2ND": {
+      "strict": {
+        "train": 7,
+        "val": 217,
+        "test": 1153,
+        "total": 1377
+      },
+      "extended": {
+        "train": 7,
+        "val": 217,
+        "test": 1153,
+        "total": 1377
+      }
+    },
+    "fouls_away_2ND": {
+      "strict": {
+        "train": 7,
+        "val": 217,
+        "test": 1153,
+        "total": 1377
+      },
+      "extended": {
+        "train": 7,
+        "val": 217,
+        "test": 1153,
+        "total": 1377
+      }
+    },
+    "fouls_total_2ND": {
+      "strict": {
+        "train": 7,
+        "val": 217,
+        "test": 1153,
+        "total": 1377
+      },
+      "extended": {
+        "train": 7,
+        "val": 217,
+        "test": 1153,
+        "total": 1377
+      }
+    }
+  },
+  "sources": {
+    "backtestSamples": 176771,
+    "supervisedSamples": 432039
+  }
+}

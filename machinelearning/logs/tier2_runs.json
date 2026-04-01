@@ -9924,5 +9924,1444 @@
         }
       }
     ]
+  },
+  {
+    "timestamp": "2026-03-31T15:08:54.419008+00:00",
+    "script": "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier2_trainMetaLearner.py",
+    "returncode": 0,
+    "duration_sec": 77.938,
+    "stdout": "🚀 Starting Tier 2 Meta-Learning Training\n============================================================\n\nFound 75 datasets\n\n\n============================================================\nTraining Tier 2: cornerKicks_away_1ST\n============================================================\nTrain samples: 1135\nVal samples: 172\n✅ Loaded Tier 1 model\n✅ Using 34 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 8.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.04\n  Val MAE:   1.39\n  Val RMSE:  1.92\n  Val R²:    -0.168\n\n🔍 Top 5 Features:\n  Feature 100: 0.134\n  Feature 74: 0.133\n  Feature 89: 0.120\n  Feature 110: 0.113\n  Feature 102: 0.102\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_away_1ST_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_away_2ND\n============================================================\nTrain samples: 1220\nVal samples: 218\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 7.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.04\n  Val MAE:   1.45\n  Val RMSE:  1.93\n  Val R²:    -0.541\n\n🔍 Top 5 Features:\n  Feature 107: 0.155\n  Feature 82: 0.106\n  Feature 94: 0.095\n  Feature 100: 0.083\n  Feature 83: 0.072\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_away_2ND_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_away_ALL\n============================================================\nTrain samples: 2243\nVal samples: 390\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 13.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.07\n  Val MAE:   2.44\n  Val RMSE:  3.07\n  Val R²:    -0.179\n\n🔍 Top 5 Features:\n  Feature 7: 0.213\n  Feature 90: 0.112\n  Feature 202: 0.073\n  Feature 8: 0.063\n  Feature 110: 0.063\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_home_1ST\n============================================================\nTrain samples: 1389\nVal samples: 210\n✅ Loaded Tier 1 model\n✅ Using 37 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 9.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.06\n  Val MAE:   1.21\n  Val RMSE:  1.62\n  Val R²:    -0.659\n\n🔍 Top 5 Features:\n  Feature 123: 0.146\n  Feature 109: 0.116\n  Feature 82: 0.110\n  Feature 107: 0.106\n  Feature 88: 0.073\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_home_1ST_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_home_2ND\n============================================================\nTrain samples: 1437\nVal samples: 212\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 11.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.07\n  Val MAE:   1.58\n  Val RMSE:  2.14\n  Val R²:    -0.104\n\n🔍 Top 5 Features:\n  Feature 109: 0.164\n  Feature 63: 0.094\n  Feature 68: 0.092\n  Feature 69: 0.091\n  Feature 107: 0.088\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_home_2ND_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_home_ALL\n============================================================\nTrain samples: 2643\nVal samples: 461\n✅ Loaded Tier 1 model\n✅ Using 42 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 14.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.12\n  Val MAE:   2.89\n  Val RMSE:  3.40\n  Val R²:    -0.190\n\n🔍 Top 5 Features:\n  Feature 112: 0.095\n  Feature 108: 0.069\n  Feature 63: 0.065\n  Feature 99: 0.065\n  Feature 69: 0.063\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_total_1ST\n============================================================\nTrain samples: 2000\nVal samples: 326\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 13.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.09\n  Val MAE:   1.67\n  Val RMSE:  2.14\n  Val R²:    -0.150\n\n🔍 Top 5 Features:\n  Feature 120: 0.141\n  Feature 71: 0.078\n  Feature 132: 0.068\n  Feature 202: 0.065\n  Feature 76: 0.065\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_total_1ST_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_total_2ND\n============================================================\nTrain samples: 2181\nVal samples: 322\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 12.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.08\n  Val MAE:   1.82\n  Val RMSE:  2.34\n  Val R²:    -0.178\n\n🔍 Top 5 Features:\n  Feature 80: 0.144\n  Feature 64: 0.113\n  Feature 83: 0.112\n  Feature 141: 0.082\n  Feature 131: 0.071\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_total_2ND_stacked.json\n\n============================================================\nTraining Tier 2: cornerKicks_total_ALL\n============================================================\nTrain samples: 3092\nVal samples: 549\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [2.0, 19.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.38\n  Val MAE:   3.12\n  Val RMSE:  3.72\n  Val R²:    -0.065\n\n🔍 Top 5 Features:\n  Feature 77: 0.158\n  Feature 60: 0.119\n  Feature 115: 0.116\n  Feature 202: 0.084\n  Feature 110: 0.077\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\cornerKicks_total_ALL_stacked.json\n\n============================================================\nTraining Tier 2: fouls_away_1ST\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_away_2ND\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_away_ALL\n============================================================\nTrain samples: 182\nVal samples: 56\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [4.0, 22.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.07\n  Val MAE:   4.02\n  Val RMSE:  4.55\n  Val R²:    -0.533\n\n🔍 Top 5 Features:\n  Feature 92: 0.263\n  Feature 80: 0.185\n  Feature 99: 0.052\n  Feature 26: 0.046\n  Feature 103: 0.039\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\fouls_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: fouls_home_1ST\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_home_2ND\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_home_ALL\n============================================================\nTrain samples: 174\nVal samples: 53\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [5.0, 19.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.08\n  Val MAE:   3.65\n  Val RMSE:  4.93\n  Val R²:    0.174\n\n🔍 Top 5 Features:\n  Feature 64: 0.246\n  Feature 200: 0.199\n  Feature 66: 0.124\n  Feature 76: 0.062\n  Feature 21: 0.043\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\fouls_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: fouls_total_1ST\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_total_2ND\n============================================================\nTrain samples: 14\nVal samples: 434\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: fouls_total_ALL\n============================================================\nTrain samples: 254\nVal samples: 84\n✅ Loaded Tier 1 model\n✅ Using 22 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [12.0, 40.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.12\n  Val MAE:   5.72\n  Val RMSE:  7.05\n  Val R²:    -0.582\n\n🔍 Top 5 Features:\n  Feature 116: 0.181\n  Feature 80: 0.140\n  Feature 78: 0.107\n  Feature 121: 0.081\n  Feature 104: 0.074\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\fouls_total_ALL_stacked.json\n\n============================================================\nTraining Tier 2: freeKicks_away_ALL\n============================================================\nTrain samples: 213\nVal samples: 0\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: freeKicks_home_ALL\n============================================================\nTrain samples: 192\nVal samples: 0\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: freeKicks_total_ALL\n============================================================\nTrain samples: 292\nVal samples: 0\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_away_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_away_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_away_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_home_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_home_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_home_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_total_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_total_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: goalKicks_total_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_away_1ST\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_away_2ND\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_away_ALL\n============================================================\nTrain samples: 94\nVal samples: 31\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 6.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.03\n  Val MAE:   0.95\n  Val RMSE:  1.52\n  Val R²:    -0.479\n\n🔍 Top 5 Features:\n  Feature 104: 0.176\n  Feature 139: 0.151\n  Feature 22: 0.121\n  Feature 21: 0.076\n  Feature 202: 0.071\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\offsides_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: offsides_home_1ST\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_home_2ND\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_home_ALL\n============================================================\nTrain samples: 99\nVal samples: 32\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 10.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.04\n  Val MAE:   0.89\n  Val RMSE:  1.09\n  Val R²:    -0.003\n\n🔍 Top 5 Features:\n  Feature 30: 0.303\n  Feature 114: 0.127\n  Feature 115: 0.079\n  Feature 112: 0.070\n  Feature 111: 0.070\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\offsides_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: offsides_total_1ST\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_total_2ND\n============================================================\nTrain samples: 4467\nVal samples: 416\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: offsides_total_ALL\n============================================================\nTrain samples: 165\nVal samples: 56\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 10.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.06\n  Val MAE:   1.81\n  Val RMSE:  2.30\n  Val R²:    -0.274\n\n🔍 Top 5 Features:\n  Feature 131: 0.138\n  Feature 82: 0.132\n  Feature 23: 0.095\n  Feature 129: 0.092\n  Feature 122: 0.081\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\offsides_total_ALL_stacked.json\n\n============================================================\nTraining Tier 2: shotsOnGoal_away_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_away_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_away_ALL\n============================================================\nTrain samples: 474\nVal samples: 82\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 10.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.17\n  Val MAE:   2.14\n  Val RMSE:  2.91\n  Val R²:    -0.049\n\n🔍 Top 5 Features:\n  Feature 100: 0.129\n  Feature 142: 0.098\n  Feature 65: 0.093\n  Feature 202: 0.064\n  Feature 83: 0.052\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\shotsOnGoal_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: shotsOnGoal_home_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_home_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_home_ALL\n============================================================\nTrain samples: 546\nVal samples: 92\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 12.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.09\n  Val MAE:   2.14\n  Val RMSE:  2.78\n  Val R²:    -0.322\n\n🔍 Top 5 Features:\n  Feature 28: 0.100\n  Feature 77: 0.096\n  Feature 82: 0.096\n  Feature 202: 0.064\n  Feature 26: 0.053\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\shotsOnGoal_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: shotsOnGoal_total_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_total_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: shotsOnGoal_total_ALL\n============================================================\nTrain samples: 750\nVal samples: 126\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [2.0, 17.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.12\n  Val MAE:   2.87\n  Val RMSE:  3.59\n  Val R²:    -0.329\n\n🔍 Top 5 Features:\n  Feature 202: 0.103\n  Feature 28: 0.101\n  Feature 109: 0.070\n  Feature 87: 0.069\n  Feature 125: 0.061\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\shotsOnGoal_total_ALL_stacked.json\n\n============================================================\nTraining Tier 2: throwIns_away_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_away_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_away_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_home_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_home_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_home_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_total_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_total_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: throwIns_total_ALL\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_away_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_away_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_home_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_home_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_total_1ST\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShotsOnGoal_total_2ND\n============================================================\nTrain samples: 4714\nVal samples: 444\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: totalShots_away_ALL\n============================================================\nTrain samples: 702\nVal samples: 131\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [2.0, 27.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.22\n  Val MAE:   3.62\n  Val RMSE:  4.20\n  Val R²:    0.319\n\n🔍 Top 5 Features:\n  Feature 63: 0.231\n  Feature 92: 0.139\n  Feature 111: 0.089\n  Feature 192: 0.058\n  Feature 126: 0.057\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\totalShots_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: totalShots_home_ALL\n============================================================\nTrain samples: 778\nVal samples: 151\n✅ Loaded Tier 1 model\n✅ Using 36 selected features\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [3.0, 27.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.30\n  Val MAE:   3.95\n  Val RMSE:  4.67\n  Val R²:    0.085\n\n🔍 Top 5 Features:\n  Feature 115: 0.102\n  Feature 132: 0.097\n  Feature 60: 0.092\n  Feature 70: 0.088\n  Feature 93: 0.071\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\totalShots_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: totalShots_total_ALL\n============================================================\nTrain samples: 1009\nVal samples: 204\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [13.0, 42.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.41\n  Val MAE:   4.43\n  Val RMSE:  5.36\n  Val R²:    -0.248\n\n🔍 Top 5 Features:\n  Feature 116: 0.112\n  Feature 139: 0.104\n  Feature 202: 0.094\n  Feature 141: 0.084\n  Feature 131: 0.052\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\totalShots_total_ALL_stacked.json\n\n============================================================\nTraining Tier 2: yellowCards_away_1ST\n============================================================\nTrain samples: 4588\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_away_2ND\n============================================================\nTrain samples: 4590\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_away_ALL\n============================================================\nTrain samples: 1390\nVal samples: 251\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 7.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.04\n  Val MAE:   1.43\n  Val RMSE:  1.88\n  Val R²:    -0.474\n\n🔍 Top 5 Features:\n  Feature 116: 0.262\n  Feature 60: 0.167\n  Feature 202: 0.098\n  Feature 114: 0.097\n  Feature 110: 0.049\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\yellowCards_away_ALL_stacked.json\n\n============================================================\nTraining Tier 2: yellowCards_home_1ST\n============================================================\nTrain samples: 4588\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_home_2ND\n============================================================\nTrain samples: 4590\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_home_ALL\n============================================================\nTrain samples: 1199\nVal samples: 218\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 7.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.03\n  Val MAE:   1.10\n  Val RMSE:  1.54\n  Val R²:    -0.748\n\n🔍 Top 5 Features:\n  Feature 60: 0.160\n  Feature 114: 0.126\n  Feature 67: 0.089\n  Feature 7: 0.066\n  Feature 202: 0.062\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\yellowCards_home_ALL_stacked.json\n\n============================================================\nTraining Tier 2: yellowCards_total_1ST\n============================================================\nTrain samples: 4588\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_total_2ND\n============================================================\nTrain samples: 4590\nVal samples: 438\n⚠️  No formula predictions in data, cannot train Tier 2\n\n============================================================\nTraining Tier 2: yellowCards_total_ALL\n============================================================\nTrain samples: 2017\nVal samples: 359\n✅ Loaded Tier 1 model\nFormula keys: 5\nBuilding Tier 2 features...\nTier 2 feature dimension: 203\nTarget range: [1.0, 13.0]\n\nTraining Tier 2 meta-learner...\n\n📊 Tier 2 Results:\n  Train MAE: 0.10\n  Val MAE:   1.73\n  Val RMSE:  2.20\n  Val R²:    -0.224\n\n🔍 Top 5 Features:\n  Feature 114: 0.155\n  Feature 132: 0.100\n  Feature 60: 0.085\n  Feature 202: 0.082\n  Feature 25: 0.082\n\n✅ Saved Tier 2 model to C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\trained\\tier2\\yellowCards_total_ALL_stacked.json\n\n============================================================\n📊 TIER 2 TRAINING SUMMARY\n============================================================\n\nTotal Tier 2 models trained: 24\nAverage Val MAE: 2.42\nAverage Val R²:  -0.247\n\n🏆 All Tier 2 Models (sorted by Val MAE):\n1. offsides_home_ALL ✅: MAE=0.89, R²=-0.003\n2. offsides_away_ALL ✅: MAE=0.95, R²=-0.479\n3. yellowCards_home_ALL ✅: MAE=1.10, R²=-0.748\n4. cornerKicks_home_1ST ✅: MAE=1.21, R²=-0.659\n5. cornerKicks_away_1ST ✅: MAE=1.39, R²=-0.168\n6. yellowCards_away_ALL ✅: MAE=1.43, R²=-0.474\n7. cornerKicks_away_2ND ✅: MAE=1.45, R²=-0.541\n8. cornerKicks_home_2ND ✅: MAE=1.58, R²=-0.104\n9. cornerKicks_total_1ST ✅: MAE=1.67, R²=-0.150\n10. yellowCards_total_ALL ✅: MAE=1.73, R²=-0.224\n11. offsides_total_ALL ✅: MAE=1.81, R²=-0.274\n12. cornerKicks_total_2ND ✅: MAE=1.82, R²=-0.178\n13. shotsOnGoal_away_ALL ✅: MAE=2.14, R²=-0.049\n14. shotsOnGoal_home_ALL ✅: MAE=2.14, R²=-0.322\n15. cornerKicks_away_ALL ✅: MAE=2.44, R²=-0.179\n16. shotsOnGoal_total_ALL ✅: MAE=2.87, R²=-0.329\n17. cornerKicks_home_ALL ✅: MAE=2.89, R²=-0.190\n18. cornerKicks_total_ALL ✅: MAE=3.12, R²=-0.065\n19. totalShots_away_ALL ✅: MAE=3.62, R²=0.319\n20. fouls_home_ALL ✅: MAE=3.65, R²=0.174\n21. totalShots_home_ALL ✅: MAE=3.95, R²=0.085\n22. fouls_away_ALL ✅: MAE=4.02, R²=-0.533\n23. totalShots_total_ALL ✅: MAE=4.43, R²=-0.248\n24. fouls_total_ALL ✅: MAE=5.72, R²=-0.582\n\n🏆 All Tier 2 Models (sorted by Val R²):\n1. totalShots_away_ALL ✅: R²=0.319, MAE=3.62\n2. fouls_home_ALL ✅: R²=0.174, MAE=3.65\n3. totalShots_home_ALL ✅: R²=0.085, MAE=3.95\n4. offsides_home_ALL ✅: R²=-0.003, MAE=0.89\n5. shotsOnGoal_away_ALL ✅: R²=-0.049, MAE=2.14\n6. cornerKicks_total_ALL ✅: R²=-0.065, MAE=3.12\n7. cornerKicks_home_2ND ✅: R²=-0.104, MAE=1.58\n8. cornerKicks_total_1ST ✅: R²=-0.150, MAE=1.67\n9. cornerKicks_away_1ST ✅: R²=-0.168, MAE=1.39\n10. cornerKicks_total_2ND ✅: R²=-0.178, MAE=1.82\n11. cornerKicks_away_ALL ✅: R²=-0.179, MAE=2.44\n12. cornerKicks_home_ALL ✅: R²=-0.190, MAE=2.89\n13. yellowCards_total_ALL ✅: R²=-0.224, MAE=1.73\n14. totalShots_total_ALL ✅: R²=-0.248, MAE=4.43\n15. offsides_total_ALL ✅: R²=-0.274, MAE=1.81\n16. shotsOnGoal_home_ALL ✅: R²=-0.322, MAE=2.14\n17. shotsOnGoal_total_ALL ✅: R²=-0.329, MAE=2.87\n18. yellowCards_away_ALL ✅: R²=-0.474, MAE=1.43\n19. offsides_away_ALL ✅: R²=-0.479, MAE=0.95\n20. fouls_away_ALL ✅: R²=-0.533, MAE=4.02\n21. cornerKicks_away_2ND ✅: R²=-0.541, MAE=1.45\n22. fouls_total_ALL ✅: R²=-0.582, MAE=5.72\n23. cornerKicks_home_1ST ✅: R²=-0.659, MAE=1.21\n24. yellowCards_home_ALL ✅: R²=-0.748, MAE=1.10\n\n✅ Tier 2 training complete!\n\n💡 Next: Tier 2 models are ready to use in production!\n   When you have more data, retrain Tier 1 and Tier 2 will improve automatically.\n",
+    "stderr": "",
+    "models": [
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "1ST",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 1135,
+        "n_val_samples": 172,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.039463456720113754,
+          "val_mae": 1.3875410556793213,
+          "val_rmse": 1.9228343275081452,
+          "val_r2": -0.1675492525100708
+        },
+        "baseline": {
+          "train_mean": 2.5162995594713657,
+          "train_median": 2.0,
+          "mean": {
+            "val_mae": 1.3274766929617867,
+            "val_rmse": 1.7823320786409576,
+            "val_r2": -0.0031565558573505292
+          },
+          "median": {
+            "val_mae": 1.2674418604651163,
+            "val_rmse": 1.8832184227823858,
+            "val_r2": -0.11993510097775517
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -4.524701867535056,
+          "mae_improve_vs_median_pct": -9.47571631965287,
+          "r2_delta_vs_mean": -0.16439269665272027
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.35241377353668213,
+          "val_r2_median": -0.35910260677337646,
+          "val_mae_mean": 1.499514651298523,
+          "val_mae_median": 1.4857468605041504,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "2ND",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1220,
+        "n_val_samples": 218,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.04332886263728142,
+          "val_mae": 1.4477660655975342,
+          "val_rmse": 1.927972193371021,
+          "val_r2": -0.5413438081741333
+        },
+        "baseline": {
+          "train_mean": 2.7368852459016395,
+          "train_median": 2.0,
+          "mean": {
+            "val_mae": 1.3114528500526395,
+            "val_rmse": 1.5809821640935864,
+            "val_r2": -0.03645868317764234
+          },
+          "median": {
+            "val_mae": 1.1559633027522935,
+            "val_rmse": 1.6141575471917118,
+            "val_r2": -0.08041323467820738
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -10.39406148222739,
+          "mae_improve_vs_median_pct": -25.243254881056533,
+          "r2_delta_vs_mean": -0.504885124996491
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.44520785808563235,
+          "val_r2_median": -0.37796473503112793,
+          "val_mae_mean": 1.499436616897583,
+          "val_mae_median": 1.4912854433059692,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 2243,
+        "n_val_samples": 390,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.072987861931324,
+          "val_mae": 2.4382214546203613,
+          "val_rmse": 3.0673252939529156,
+          "val_r2": -0.179449200630188
+        },
+        "baseline": {
+          "train_mean": 4.560410164957646,
+          "train_median": 4.0,
+          "mean": {
+            "val_mae": 2.254485178961327,
+            "val_rmse": 2.844739940028113,
+            "val_r2": -0.014482886518213167
+          },
+          "median": {
+            "val_mae": 2.082051282051282,
+            "val_rmse": 2.8329562343320847,
+            "val_r2": -0.006095751765427426
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -8.149810758289583,
+          "mae_improve_vs_median_pct": -17.106695480534587,
+          "r2_delta_vs_mean": -0.16496631411197482
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.28019211292266843,
+          "val_r2_median": -0.3647029399871826,
+          "val_mae_mean": 2.440149164199829,
+          "val_mae_median": 2.489346504211426,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "1ST",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 1389,
+        "n_val_samples": 210,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.0595674104988575,
+          "val_mae": 1.2091532945632935,
+          "val_rmse": 1.6245672676809844,
+          "val_r2": -0.6594836711883545
+        },
+        "baseline": {
+          "train_mean": 2.8344132469402448,
+          "train_median": 2.0,
+          "mean": {
+            "val_mae": 1.09056875449964,
+            "val_rmse": 1.3369613298933944,
+            "val_r2": -0.12391971106845046
+          },
+          "median": {
+            "val_mae": 1.019047619047619,
+            "val_rmse": 1.3201731488169053,
+            "val_r2": -0.095870879434242
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -10.87364181069544,
+          "mae_improve_vs_median_pct": -18.655229840323198,
+          "r2_delta_vs_mean": -0.535563960119904
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.4495377063751221,
+          "val_r2_median": -0.25197482109069824,
+          "val_mae_mean": 1.1770099401474,
+          "val_mae_median": 1.1236586570739746,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "2ND",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1437,
+        "n_val_samples": 212,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.07158549129962921,
+          "val_mae": 1.5801106691360474,
+          "val_rmse": 2.1406617544318407,
+          "val_r2": -0.10354733467102051
+        },
+        "baseline": {
+          "train_mean": 3.43910925539318,
+          "train_median": 3.0,
+          "mean": {
+            "val_mae": 1.8161591890862778,
+            "val_rmse": 2.0411421684879145,
+            "val_r2": -0.003324529027630918
+          },
+          "median": {
+            "val_mae": 1.7830188679245282,
+            "val_rmse": 2.1124071934509683,
+            "val_r2": -0.07460831172171378
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": 12.997127199460312,
+          "mae_improve_vs_median_pct": 11.38003654580898,
+          "r2_delta_vs_mean": -0.10022280564338959
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.12122168540954589,
+          "val_r2_median": -0.10069000720977783,
+          "val_mae_mean": 1.6888144969940186,
+          "val_mae_median": 1.7270596027374268,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 2643,
+        "n_val_samples": 461,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.12332140654325485,
+          "val_mae": 2.8871212005615234,
+          "val_rmse": 3.403615510197908,
+          "val_r2": -0.19015562534332275
+        },
+        "baseline": {
+          "train_mean": 5.732879303821415,
+          "train_median": 5.0,
+          "mean": {
+            "val_mae": 2.971697021477763,
+            "val_rmse": 3.26699672174588,
+            "val_r2": -0.09652921831042849
+          },
+          "median": {
+            "val_mae": 2.804772234273319,
+            "val_rmse": 3.1288317072822207,
+            "val_r2": -0.005743464700001644
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": 2.846044543066564,
+          "mae_improve_vs_median_pct": -2.9360304299197484,
+          "r2_delta_vs_mean": -0.09362640703289427
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.17125344276428223,
+          "val_r2_median": -0.1458301544189453,
+          "val_mae_mean": 2.919408845901489,
+          "val_mae_median": 2.9272778034210205,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "1ST",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 2000,
+        "n_val_samples": 326,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.08890192955732346,
+          "val_mae": 1.6709657907485962,
+          "val_rmse": 2.140102127704282,
+          "val_r2": -0.15005195140838623
+        },
+        "baseline": {
+          "train_mean": 4.632,
+          "train_median": 4.0,
+          "mean": {
+            "val_mae": 1.6087852760736194,
+            "val_rmse": 2.0350820546909536,
+            "val_r2": -0.039949723617805466
+          },
+          "median": {
+            "val_mae": 1.4110429447852761,
+            "val_rmse": 2.009181379555096,
+            "val_r2": -0.013647103298364938
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -3.865059905740418,
+          "mae_improve_vs_median_pct": -18.420619083487463,
+          "r2_delta_vs_mean": -0.11010222779058076
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.3404305219650269,
+          "val_r2_median": -0.36767423152923584,
+          "val_mae_mean": 1.7406332969665528,
+          "val_mae_median": 1.7362487316131592,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "2ND",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 2181,
+        "n_val_samples": 322,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.08392003923654556,
+          "val_mae": 1.8194936513900757,
+          "val_rmse": 2.3434988268732706,
+          "val_r2": -0.1780683994293213
+        },
+        "baseline": {
+          "train_mean": 5.384685923888124,
+          "train_median": 6.0,
+          "mean": {
+            "val_mae": 1.8093614815700814,
+            "val_rmse": 2.159171549501404,
+            "val_r2": -3.5307546753626795e-05
+          },
+          "median": {
+            "val_mae": 1.7826086956521738,
+            "val_rmse": 2.2416165418056884,
+            "val_r2": -0.07786329030122463
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -0.5599859355468364,
+          "mae_improve_vs_median_pct": -2.069156053589616,
+          "r2_delta_vs_mean": -0.17803309188256766
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.24177820682525636,
+          "val_r2_median": -0.24403059482574463,
+          "val_mae_mean": 1.845080828666687,
+          "val_mae_median": 1.8955602645874023,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "cornerKicks",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 3092,
+        "n_val_samples": 549,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.37920981645584106,
+          "val_mae": 3.1175856590270996,
+          "val_rmse": 3.7182543768907323,
+          "val_r2": -0.06466448307037354
+        },
+        "baseline": {
+          "train_mean": 9.964424320827943,
+          "train_median": 10.0,
+          "mean": {
+            "val_mae": 3.1082021410208376,
+            "val_rmse": 3.78826290685003,
+            "val_r2": -0.10513349753917978
+          },
+          "median": {
+            "val_mae": 3.1129326047358834,
+            "val_rmse": 3.799386394711728,
+            "val_r2": -0.1116330395431262
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -0.30189535881280116,
+          "mae_improve_vs_median_pct": -0.14947494475586295,
+          "r2_delta_vs_mean": 0.04046901446880624
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.04101648330688477,
+          "val_r2_median": 0.04693448543548584,
+          "val_mae_mean": 3.0173933029174806,
+          "val_mae_median": 2.8777472972869873,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 182,
+        "n_val_samples": 56,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.07097354531288147,
+          "val_mae": 4.02210807800293,
+          "val_rmse": 4.547090820224307,
+          "val_r2": -0.5328617095947266
+        },
+        "baseline": {
+          "train_mean": 12.653846153846153,
+          "train_median": 13.0,
+          "mean": {
+            "val_mae": 3.685439560439561,
+            "val_rmse": 4.712799786312425,
+            "val_r2": -0.646621063969673
+          },
+          "median": {
+            "val_mae": 3.5,
+            "val_rmse": 4.503966505838413,
+            "val_r2": -0.5039243498817967
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -9.135098053899823,
+          "mae_improve_vs_median_pct": -14.917373657226562,
+          "r2_delta_vs_mean": 0.11375935437494644
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.7381025314331054,
+          "val_r2_median": -0.8176440000534058,
+          "val_mae_mean": 4.0631941795349125,
+          "val_mae_median": 4.052855968475342,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 174,
+        "n_val_samples": 53,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.07623327523469925,
+          "val_mae": 3.6501779556274414,
+          "val_rmse": 4.930247521367283,
+          "val_r2": 0.1742735505104065
+        },
+        "baseline": {
+          "train_mean": 11.816091954022989,
+          "train_median": 11.5,
+          "mean": {
+            "val_mae": 4.2626328345261335,
+            "val_rmse": 5.724479996120071,
+            "val_r2": -0.11319393486243334
+          },
+          "median": {
+            "val_mae": 4.2924528301886795,
+            "val_rmse": 5.832973933223118,
+            "val_r2": -0.15578969645664542
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": 14.36799514933538,
+          "mae_improve_vs_median_pct": 14.962887187580492,
+          "r2_delta_vs_mean": 0.28746748537283984
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": 0.16093288660049437,
+          "val_r2_median": 0.16919881105422974,
+          "val_mae_mean": 3.6713164329528807,
+          "val_mae_median": 3.6260154247283936,
+          "gate_pass_rate": 1.0
+        },
+        "gate": {
+          "status": "GO",
+          "reasons": [],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "fouls",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 254,
+        "n_val_samples": 84,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.11663912981748581,
+          "val_mae": 5.722162246704102,
+          "val_rmse": 7.051032554818573,
+          "val_r2": -0.5818853378295898
+        },
+        "baseline": {
+          "train_mean": 24.30314960629921,
+          "train_median": 24.5,
+          "mean": {
+            "val_mae": 5.298275215598051,
+            "val_rmse": 6.774906733756817,
+            "val_r2": -0.46041446493682914
+          },
+          "median": {
+            "val_mae": 5.190476190476191,
+            "val_rmse": 6.666369040975469,
+            "val_r2": -0.41399602278107706
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -8.000472113229094,
+          "mae_improve_vs_median_pct": -10.243492826409293,
+          "r2_delta_vs_mean": -0.1214708728927607
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.30319244861602784,
+          "val_r2_median": -0.20859909057617188,
+          "val_mae_mean": 5.133475017547608,
+          "val_mae_median": 4.905867099761963,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 94,
+        "n_val_samples": 31,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.03260885179042816,
+          "val_mae": 0.9519922733306885,
+          "val_rmse": 1.516245999877383,
+          "val_r2": -0.4788086414337158
+        },
+        "baseline": {
+          "train_mean": 2.0425531914893615,
+          "train_median": 2.0,
+          "mean": {
+            "val_mae": 0.6362388469457789,
+            "val_rmse": 1.252489161402981,
+            "val_r2": -0.009068717907695367
+          },
+          "median": {
+            "val_mae": 0.6129032258064516,
+            "val_rmse": 1.2572371141874243,
+            "val_r2": -0.016733601070950455
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -49.62812753428406,
+          "mae_improve_vs_median_pct": -55.32505512237549,
+          "r2_delta_vs_mean": -0.46973992352602045
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.4922231674194336,
+          "val_r2_median": -0.4666023254394531,
+          "val_mae_mean": 0.947969913482666,
+          "val_mae_median": 0.9249036312103271,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 99,
+        "n_val_samples": 32,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.044705506414175034,
+          "val_mae": 0.8852216005325317,
+          "val_rmse": 1.0945840108109668,
+          "val_r2": -0.003163456916809082
+        },
+        "baseline": {
+          "train_mean": 2.1515151515151514,
+          "train_median": 2.0,
+          "mean": {
+            "val_mae": 1.0350378787878787,
+            "val_rmse": 1.1353657234508818,
+            "val_r2": -0.07930715765399476
+          },
+          "median": {
+            "val_mae": 0.96875,
+            "val_rmse": 1.103970108290981,
+            "val_r2": -0.02044153720359776
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": 14.4744729952101,
+          "mae_improve_vs_median_pct": 8.622286396641885,
+          "r2_delta_vs_mean": 0.07614370073718568
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.03942000865936279,
+          "val_r2_median": -0.049744606018066406,
+          "val_mae_mean": 0.86962331533432,
+          "val_mae_median": 0.862762987613678,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "offsides",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 165,
+        "n_val_samples": 56,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.06406639516353607,
+          "val_mae": 1.8137656450271606,
+          "val_rmse": 2.299855381109285,
+          "val_r2": -0.2739903926849365
+        },
+        "baseline": {
+          "train_mean": 3.3393939393939394,
+          "train_median": 3.0,
+          "mean": {
+            "val_mae": 1.6326839826839825,
+            "val_rmse": 2.0395531350484797,
+            "val_r2": -0.0019247805523463501
+          },
+          "median": {
+            "val_mae": 1.5357142857142858,
+            "val_rmse": 2.052872551885702,
+            "val_r2": -0.01505376344086029
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -11.091041760910553,
+          "mae_improve_vs_median_pct": -18.105669908745337,
+          "r2_delta_vs_mean": -0.2720656121325902
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.07108510732650757,
+          "val_r2_median": 0.03798156976699829,
+          "val_mae_mean": 1.638247299194336,
+          "val_mae_median": 1.5560210943222046,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 474,
+        "n_val_samples": 82,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.16852949559688568,
+          "val_mae": 2.140514373779297,
+          "val_rmse": 2.9133132912348687,
+          "val_r2": -0.0488356351852417
+        },
+        "baseline": {
+          "train_mean": 3.9029535864978904,
+          "train_median": 3.0,
+          "mean": {
+            "val_mae": 2.398991458269013,
+            "val_rmse": 3.0233306850891988,
+            "val_r2": -0.12954703324168437
+          },
+          "median": {
+            "val_mae": 2.707317073170732,
+            "val_rmse": 3.4358227615493333,
+            "val_r2": -0.45879585385576704
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": 10.774406203022489,
+          "mae_improve_vs_median_pct": 20.935955563107058,
+          "r2_delta_vs_mean": 0.08071139805644267
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.0398229718208313,
+          "val_r2_median": -0.05870044231414795,
+          "val_mae_mean": 2.095917749404907,
+          "val_mae_median": 2.1312315464019775,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 546,
+        "n_val_samples": 92,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.09405654668807983,
+          "val_mae": 2.1410067081451416,
+          "val_rmse": 2.779214950286984,
+          "val_r2": -0.32169342041015625
+        },
+        "baseline": {
+          "train_mean": 4.7967032967032965,
+          "train_median": 5.0,
+          "mean": {
+            "val_mae": 1.934424271380793,
+            "val_rmse": 2.4858897306813312,
+            "val_r2": -0.05742638246597154
+          },
+          "median": {
+            "val_mae": 1.9565217391304348,
+            "val_rmse": 2.5409686615797598,
+            "val_r2": -0.10480349344978168
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -10.67927237166487,
+          "mae_improve_vs_median_pct": -9.42923174964057,
+          "r2_delta_vs_mean": -0.2642670379441847
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.2903363466262817,
+          "val_r2_median": -0.28827738761901855,
+          "val_mae_mean": 2.136326313018799,
+          "val_mae_median": 2.1535234451293945,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "shotsOnGoal",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 750,
+        "n_val_samples": 126,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.12203314155340195,
+          "val_mae": 2.868278980255127,
+          "val_rmse": 3.5917197421961995,
+          "val_r2": -0.3292890787124634
+        },
+        "baseline": {
+          "train_mean": 8.281333333333333,
+          "train_median": 8.0,
+          "mean": {
+            "val_mae": 2.5634920634920637,
+            "val_rmse": 3.1883842219986516,
+            "val_r2": -0.04750439534506379
+          },
+          "median": {
+            "val_mae": 2.5634920634920637,
+            "val_rmse": 3.2599055395799623,
+            "val_r2": -0.09502638359738569
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -11.889520591995655,
+          "mae_improve_vs_median_pct": -11.889520591995655,
+          "r2_delta_vs_mean": -0.2817846833673996
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.4369467258453369,
+          "val_r2_median": -0.49815690517425537,
+          "val_mae_mean": 2.9541687965393066,
+          "val_mae_median": 3.0470314025878906,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 702,
+        "n_val_samples": 131,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.2194782942533493,
+          "val_mae": 3.6235156059265137,
+          "val_rmse": 4.204282693361407,
+          "val_r2": 0.3194372057914734
+        },
+        "baseline": {
+          "train_mean": 11.303418803418804,
+          "train_median": 11.0,
+          "mean": {
+            "val_mae": 4.118190122006916,
+            "val_rmse": 5.206012611300198,
+            "val_r2": -0.043505634955971484
+          },
+          "median": {
+            "val_mae": 4.129770992366412,
+            "val_rmse": 5.276333448189997,
+            "val_r2": -0.07188658248750324
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": 12.01193974598076,
+          "mae_improve_vs_median_pct": 12.258679412869993,
+          "r2_delta_vs_mean": 0.3629428407474449
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": 0.38416959047317506,
+          "val_r2_median": 0.40255826711654663,
+          "val_mae_mean": 3.2747341632843017,
+          "val_mae_median": 3.151303291320801,
+          "gate_pass_rate": 1.0
+        },
+        "gate": {
+          "status": "GO",
+          "reasons": [],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": true,
+        "n_train_samples": 778,
+        "n_val_samples": 151,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.30459532141685486,
+          "val_mae": 3.949570894241333,
+          "val_rmse": 4.672233440210818,
+          "val_r2": 0.08464217185974121
+        },
+        "baseline": {
+          "train_mean": 14.174807197943444,
+          "train_median": 14.0,
+          "mean": {
+            "val_mae": 4.016020020769846,
+            "val_rmse": 4.908935828638184,
+            "val_r2": -0.010454018382628272
+          },
+          "median": {
+            "val_mae": 3.980132450331126,
+            "val_rmse": 4.894245844265075,
+            "val_r2": -0.0044155022564853486
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": 1.654601475711158,
+          "mae_improve_vs_median_pct": 0.7678527403591903,
+          "r2_delta_vs_mean": 0.09509619024236948
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.026280856132507323,
+          "val_r2_median": -0.06849884986877441,
+          "val_mae_mean": 4.0341582775115965,
+          "val_mae_median": 3.9978418350219727,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "totalShots",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1009,
+        "n_val_samples": 204,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.4101763963699341,
+          "val_mae": 4.426481246948242,
+          "val_rmse": 5.3592801544427315,
+          "val_r2": -0.24763572216033936
+        },
+        "baseline": {
+          "train_mean": 25.006937561942518,
+          "train_median": 25.0,
+          "mean": {
+            "val_mae": 4.146514701024116,
+            "val_rmse": 4.829661242509517,
+            "val_r2": -0.01323041852697715
+          },
+          "median": {
+            "val_mae": 4.147058823529412,
+            "val_rmse": 4.83045891539648,
+            "val_r2": -0.013565138970652812
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -6.751852244849861,
+          "mae_improve_vs_median_pct": -6.737845671092356,
+          "r2_delta_vs_mean": -0.2344053036333622
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.06892604827880859,
+          "val_r2_median": -0.016297340393066406,
+          "val_mae_mean": 4.174256896972656,
+          "val_mae_median": 4.148408889770508,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1390,
+        "n_val_samples": 251,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.04223489388823509,
+          "val_mae": 1.4289898872375488,
+          "val_rmse": 1.8833649010952418,
+          "val_r2": -0.47373640537261963
+        },
+        "baseline": {
+          "train_mean": 2.5467625899280577,
+          "train_median": 2.0,
+          "mean": {
+            "val_mae": 1.279830319011723,
+            "val_rmse": 1.5828196673250712,
+            "val_r2": -0.040911309944836605
+          },
+          "median": {
+            "val_mae": 1.3386454183266931,
+            "val_rmse": 1.774094236100703,
+            "val_r2": -0.30768824933721994
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -11.654636244358224,
+          "mae_improve_vs_median_pct": -6.748946933519279,
+          "r2_delta_vs_mean": -0.432825095427783
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.25955679416656496,
+          "val_r2_median": -0.16980862617492676,
+          "val_mae_mean": 1.3188844442367553,
+          "val_mae_median": 1.2624688148498535,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "home",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 1199,
+        "n_val_samples": 218,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.03183068707585335,
+          "val_mae": 1.097052812576294,
+          "val_rmse": 1.5448973372834072,
+          "val_r2": -0.7482411861419678
+        },
+        "baseline": {
+          "train_mean": 2.2710592160133443,
+          "train_median": 2.0,
+          "mean": {
+            "val_mae": 1.0043690843286837,
+            "val_rmse": 1.2601768288314676,
+            "val_r2": -0.16322874524869824
+          },
+          "median": {
+            "val_mae": 1.036697247706422,
+            "val_rmse": 1.3847133972994377,
+            "val_r2": -0.40450061652281133
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -9.228054675693222,
+          "mae_improve_vs_median_pct": -5.821908469748708,
+          "r2_delta_vs_mean": -0.5850124408932695
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.18947701454162597,
+          "val_r2_median": -0.014278888702392578,
+          "val_mae_mean": 0.9725235342979431,
+          "val_mae_median": 0.9059098362922668,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      },
+      {
+        "stat_key": "yellowCards",
+        "scope": "total",
+        "period": "ALL",
+        "model_type": "xgboost_tier2_stacking",
+        "has_tier1": true,
+        "has_selected_features": false,
+        "n_train_samples": 2017,
+        "n_val_samples": 359,
+        "feature_dim": 203,
+        "metrics": {
+          "train_mae": 0.10239993780851364,
+          "val_mae": 1.7326563596725464,
+          "val_rmse": 2.1985581051103997,
+          "val_r2": -0.2239077091217041
+        },
+        "baseline": {
+          "train_mean": 4.4273673772930096,
+          "train_median": 4.0,
+          "mean": {
+            "val_mae": 1.6030495661528814,
+            "val_rmse": 2.0744372913920164,
+            "val_r2": -0.08961592830299514
+          },
+          "median": {
+            "val_mae": 1.6685236768802227,
+            "val_rmse": 2.2348219099873106,
+            "val_r2": -0.26461597098613354
+          }
+        },
+        "baseline_comparison": {
+          "mae_improve_vs_mean_pct": -8.085014727941637,
+          "mae_improve_vs_median_pct": -3.843678317603371,
+          "r2_delta_vs_mean": -0.13429178081870896
+        },
+        "rolling": {
+          "window": 5,
+          "count": 5,
+          "val_r2_mean": -0.23614885807037353,
+          "val_r2_median": -0.23736274242401123,
+          "val_mae_mean": 1.6419064044952392,
+          "val_mae_median": 1.5965228080749512,
+          "gate_pass_rate": 0.0
+        },
+        "gate": {
+          "status": "NO",
+          "reasons": [
+            "val_r2_below_min",
+            "mae_not_better_than_baseline",
+            "rolling_r2_below_min"
+          ],
+          "thresholds": {
+            "min_val_r2": 0.1,
+            "min_rolling_r2": 0.1,
+            "min_mae_improvement_pct": 5.0,
+            "rolling_window": 5,
+            "min_rolling_runs": 3
+          }
+        }
+      }
+    ]
   }
 ]

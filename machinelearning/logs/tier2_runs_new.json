@@ -1,0 +1,397 @@
+[
+  {
+    "timestamp": "2026-03-31T16:31:42.406385+00:00",
+    "script": "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier2_trainMetaLearner-new.py",
+    "command": [
+      "C:\\Users\\ryd\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier2_trainMetaLearner-new.py",
+      "--limit-combos",
+      "1",
+      "--dataset-dir",
+      "machinelearning/data/datasets-new-smoke",
+      "--tier1-dir",
+      "machinelearning/models/trained/tier1-new-smoke",
+      "--output-dir",
+      "machinelearning/models/trained/tier2-new-smoke"
+    ],
+    "returncode": 0,
+    "duration_seconds": 0.31594157218933105,
+    "stdout": "{\n  \"combo_count\": 0,\n  \"trained\": 0,\n  \"skipped\": 0,\n  \"results\": []\n}\n",
+    "stderr": "",
+    "trained_count": 0,
+    "skipped_count": 0,
+    "models": []
+  },
+  {
+    "timestamp": "2026-03-31T16:32:40.277135+00:00",
+    "script": "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier2_trainMetaLearner-new.py",
+    "command": [
+      "C:\\Users\\ryd\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier2_trainMetaLearner-new.py",
+      "--limit-combos",
+      "1",
+      "--dataset-dir",
+      "machinelearning/data/datasets-new-smoke",
+      "--tier1-dir",
+      "machinelearning/models/trained/tier1-new-smoke",
+      "--output-dir",
+      "machinelearning/models/trained/tier2-new-smoke"
+    ],
+    "returncode": 0,
+    "duration_seconds": 6.250608444213867,
+    "stdout": "[tier2-new] Training shotsOnGoal_home_ALL\n  -> xgb_square_1 / MAE 0.184\n{\n  \"combo_count\": 1,\n  \"trained\": 1,\n  \"skipped\": 0,\n  \"results\": [\n    {\n      \"combo_key\": \"shotsOnGoal_home_ALL\",\n      \"stat_key\": \"shotsOnGoal\",\n      \"scope\": \"home\",\n      \"period\": \"ALL\",\n      \"model_type\": \"tier2_new\",\n      \"status\": \"trained\",\n      \"selected_feature_mode\": \"strict\",\n      \"formula_keys\": [\n        \"evPctLeagueAvg\",\n        \"evPctMultifactor\",\n        \"evPctOptaRating\"\n      ],\n      \"tier1_selected_candidate\": {\n        \"label\": \"xgb_square_1\",\n        \"family\": \"xgb_square\",\n        \"params\": {\n          \"n_estimators\": 80,\n          \"max_depth\": 3,\n          \"learning_rate\": 0.08,\n          \"reg_lambda\": 1.0\n        },\n        \"target_transform\": \"raw\",\n        \"objective\": \"reg:squarederror\"\n      },\n      \"selected_candidate\": {\n        \"label\": \"xgb_square_1\",\n        \"family\": \"xgb_square\",\n        \"params\": {\n          \"n_estimators\": 60,\n          \"max_depth\": 3,\n          \"learning_rate\": 0.08,\n          \"reg_lambda\": 1.0\n        },\n        \"target_transform\": \"raw\",\n        \"objective\": \"reg:squarederror\"\n      },\n      \"selection_metrics\": {\n        \"median_mae\": 0.18375681340694422,\n        \"median_rmse\": 0.21951866815677917,\n        \"median_r2\": 0.979301998097373,\n        \"median_line_direction_accuracy\": 1.0,\n        \"stability_penalty\": 0.011229718009918838\n      },\n      \"test_metrics\": {\n        \"mae\": 0.18774595260620117,\n        \"rmse\": 0.24182891143525978,\n        \"r2\": 0.9714892346902347,\n        \"line_direction_accuracy\": 1.0\n      },\n      \"candidate_rankings\": [\n        {\n          \"label\": \"xgb_square_1\",\n          \"family\": \"xgb_square\",\n          \"aggregate\": {\n            \"median_mae\": 0.18375681340694422,\n            \"median_rmse\": 0.21951866815677917,\n            \"median_r2\": 0.979301998097373,\n            \"median_line_direction_accuracy\": 1.0,\n            \"stability_penalty\": 0.011229718009918838\n          }\n        },\n        {\n          \"label\": \"xgb_log_1\",\n          \"family\": \"xgb_log\",\n          \"aggregate\": {\n            \"median_mae\": 0.21218012565225391,\n            \"median_rmse\": 0.2375539894021515,\n            \"median_r2\": 0.9757530048754657,\n            \"median_line_direction_accuracy\": 1.0,\n            \"stability_penalty\": 0.016868322356873657\n          }\n        },\n        {\n          \"label\": \"xgb_log_2\",\n          \"family\": \"xgb_log\",\n          \"aggregate\": {\n            \"median_mae\": 0.21231639432488267,\n            \"median_rmse\": 0.23810781841523931,\n            \"median_r2\": 0.9756457780802102,\n            \"median_line_direction_accuracy\": 1.0,\n            \"stability_penalty\": 0.013245666295923315\n          }\n        },\n        {\n          \"label\": \"xgb_square_2\",\n          \"family\": \"xgb_square\",\n          \"aggregate\": {\n            \"median_mae\": 0.2154653370380401,\n            \"median_rmse\": 0.2515292368505917,\n            \"median_r2\": 0.9728258034299655,\n            \"median_line_direction_accuracy\": 1.0,\n            \"stability_penalty\": 0.010906763569164837\n          }\n        },\n        {\n          \"label\": \"baseline_mean\",\n          \"family\": \"baseline_mean\",\n          \"aggregate\": {\n            \"median_mae\": 1.3624999999999998,\n            \"median_rmse\": 1.5862209458483285,\n            \"median_r2\": -0.08068897343226267,\n            \"median_line_direction_accuracy\": 0.75,\n            \"stability_penalty\": 0.0\n          }\n        }\n      ]\n    }\n  ]\n}\n",
+    "stderr": "",
+    "trained_count": 0,
+    "skipped_count": 0,
+    "models": []
+  },
+  {
+    "timestamp": "2026-04-01T10:22:05.227368+00:00",
+    "script": "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier2_trainMetaLearner-new.py",
+    "command": [
+      "C:\\Users\\ryd\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "C:\\dev\\FRONTEND\\ullebets-vecel\\machinelearning\\models\\train\\tier2_trainMetaLearner-new.py",
+      "--limit-combos",
+      "3"
+    ],
+    "returncode": 0,
+    "duration_seconds": 201.51656532287598,
+    "stdout": "[tier2-new] Training cornerKicks_away_1ST\n  -> baseline_mean / MAE 1.281\n[tier2-new] Training cornerKicks_away_2ND\n  -> baseline_mean / MAE 1.430\n[tier2-new] Training cornerKicks_away_ALL\n  -> baseline_mean / MAE 2.115\n{\n  \"combo_count\": 3,\n  \"trained\": 3,\n  \"skipped\": 0,\n  \"results\": [\n    {\n      \"combo_key\": \"cornerKicks_away_1ST\",\n      \"stat_key\": \"cornerKicks\",\n      \"scope\": \"away\",\n      \"period\": \"1ST\",\n      \"model_type\": \"tier2_new\",\n      \"status\": \"trained\",\n      \"selected_feature_mode\": \"strict\",\n      \"formula_keys\": [\n        \"evPct\",\n        \"evPctFoulsAdvanced\",\n        \"evPctGoalKicksAdvanced\",\n        \"evPctLeagueAvg\",\n        \"evPctMultifactor\",\n        \"evPctShotsAdvanced\",\n        \"evPctSoTAdvanced\",\n        \"evPctThrowInsAdvanced\",\n        \"evPctUniversalOptimized\",\n        \"evPctWithMultiplier\",\n        \"legacyEvPct\"\n      ],\n      \"tier1_selected_candidate\": {\n        \"label\": \"baseline_mean\",\n        \"family\": \"baseline_mean\",\n        \"params\": {},\n        \"target_transform\": \"raw\",\n        \"objective\": null\n      },\n      \"selected_candidate\": {\n        \"label\": \"baseline_mean\",\n        \"family\": \"baseline_mean\",\n        \"params\": {},\n        \"target_transform\": \"raw\",\n        \"objective\": null\n      },\n      \"selection_metrics\": {\n        \"median_mae\": 1.2811374160841376,\n        \"median_rmse\": 1.6674573828586694,\n        \"median_r2\": -0.020194235974521413,\n        \"median_line_direction_accuracy\": 0.8239299610894941,\n        \"stability_penalty\": 0.061469116565449886\n      },\n      \"test_metrics\": {\n        \"mae\": 1.294743708349254,\n        \"rmse\": 1.6564578484002437,\n        \"r2\": -0.004518119435668488,\n        \"line_direction_accuracy\": 0.7236741943669119\n      },\n      \"candidate_rankings\": [\n        {\n          \"label\": \"baseline_mean\",\n          \"family\": \"baseline_mean\",\n          \"aggregate\": {\n            \"median_mae\": 1.2811374160841376,\n            \"median_rmse\": 1.6674573828586694,\n            \"median_r2\": -0.020194235974521413,\n            \"median_line_direction_accuracy\": 0.8239299610894941,\n            \"stability_penalty\": 0.061469116565449886\n          }\n        },\n        {\n          \"label\": \"xgb_square_2\",\n          \"family\": \"xgb_square\",\n          \"aggregate\": {\n            \"median_mae\": 1.3767283001775303,\n            \"median_rmse\": 1.7443874242498287,\n            \"median_r2\": -0.03356918212441262,\n            \"median_line_direction_accuracy\": 0.8239299610894941,\n            \"stability_penalty\": 0.08426527608357394\n          }\n        },\n        {\n          \"label\": \"xgb_square_1\",\n          \"family\": \"xgb_square\",\n          \"aggregate\": {\n            \"median_mae\": 1.3792849491735686,\n            \"median_rmse\": 1.7524022060024618,\n            \"median_r2\": -0.059113440272689055,\n            \"median_line_direction_accuracy\": 0.8239299610894941,\n            \"stability_penalty\": 0.09645563720217876\n          }\n        },\n        {\n          \"label\": \"xgb_log_2\",\n          \"family\": \"xgb_log\",\n          \"aggregate\": {\n            \"median_mae\": 1.4019953186798135,\n            \"median_rmse\": 1.7895473404553004,\n            \"median_r2\": -0.21010162189473403,\n            \"median_line_direction_accuracy\": 0.8239299610894941,\n            \"stability_penalty\": 0.11730954478283337\n          }\n        },\n        {\n          \"label\": \"xgb_log_1\",\n          \"family\": \"xgb_log\",\n          \"aggregate\": {\n            \"median_mae\": 1.4060784244903792,\n            \"median_rmse\": 1.7912896749970306,\n            \"median_r2\": -0.239779071286649,\n            \"median_line_direction_accuracy\": 0.8239299610894941,\n            \"stability_penalty\": 0.116987966746724\n          }\n        }\n      ],\n      \"baseline_mean\": 2.016699092088197\n    },\n    {\n      \"combo_key\": \"cornerKicks_away_2ND\",\n      \"stat_key\": \"cornerKicks\",\n      \"scope\": \"away\",\n      \"period\": \"2ND\",\n      \"model_type\": \"tier2_new\",\n      \"status\": \"trained\",\n      \"selected_feature_mode\": \"extended\",\n      \"formula_keys\": [\n        \"evPct\",\n        \"evPctFoulsAdvanced\",\n        \"evPctGoalKicksAdvanced\",\n        \"evPctLeagueAvg\",\n        \"evPctMultifactor\",\n        \"evPctShotsAdvanced\",\n        \"evPctSoTAdvanced\",\n        \"evPctThrowInsAdvanced\",\n        \"evPctUniversalOptimized\",\n        \"evPctWithMultiplier\",\n        \"legacyEvPct\"\n      ],\n      \"tier1_selected_candidate\": {\n        \"label\": \"xgb_square_1\",\n        \"family\": \"xgb_square\",\n        \"params\": {\n          \"n_estimators\": 80,\n          \"max_depth\": 3,\n          \"learning_rate\": 0.08,\n          \"reg_lambda\": 1.0\n        },\n        \"target_transform\": \"raw\",\n        \"objective\": \"reg:squarederror\"\n      },\n      \"selected_candidate\": {\n        \"label\": \"baseline_mean\",\n        \"family\": \"baseline_mean\",\n        \"params\": {},\n        \"target_transform\": \"raw\",\n        \"objective\": null\n      },\n      \"selection_metrics\": {\n        \"median_mae\": 1.4296911803100794,\n        \"median_rmse\": 1.7734865055872828,\n        \"median_r2\": -0.007827817567424566,\n        \"median_line_direction_accuracy\": 0.8011472275334608,\n        \"stability_penalty\": 0.06503837554276852\n      },\n      \"test_metrics\": {\n        \"mae\": 1.4887645035897237,\n        \"rmse\": 1.8585449750443699,\n        \"r2\": -0.004221555639959629,\n        \"line_direction_accuracy\": 0.7330050444391064\n      },\n      \"candidate_rankings\": [\n        {\n          \"label\": \"baseline_mean\",\n          \"family\": \"baseline_mean\",\n          \"aggregate\": {\n            \"median_mae\": 1.4296911803100794,\n            \"median_rmse\": 1.7734865055872828,\n            \"median_r2\": -0.007827817567424566,\n            \"median_line_direction_accuracy\": 0.8011472275334608,\n            \"stability_penalty\": 0.06503837554276852\n          }\n        },\n        {\n          \"label\": \"xgb_log_1\",\n          \"family\": \"xgb_log\",\n          \"aggregate\": {\n            \"median_mae\": 1.4704236564525668,\n            \"median_rmse\": 1.9443336151515895,\n            \"median_r2\": -0.281773803077769,\n            \"median_line_direction_accuracy\": 0.7968451242829828,\n            \"stability_penalty\": 0.1410656564659052\n          }\n        },\n        {\n          \"label\": \"xgb_log_2\",\n          \"family\": \"xgb_log\",\n          \"aggregate\": {\n            \"median_mae\": 1.4942993072549007,\n            \"median_rmse\": 1.994221846687533,\n            \"median_r2\": -0.3008152262217807,\n            \"median_line_direction_accuracy\": 0.7958891013384322,\n            \"stability_penalty\": 0.1244766061367674\n          }\n        },\n        {\n          \"label\": \"xgb_square_2\",\n          \"family\": \"xgb_square\",\n          \"aggregate\": {\n            \"median_mae\": 1.5401791908165086,\n            \"median_rmse\": 2.0258585317528013,\n            \"median_r2\": -0.5244573164715358,\n            \"median_line_direction_accuracy\": 0.7901529636711282,\n            \"stability_penalty\": 0.27130947235916214\n          }\n        },\n        {\n          \"label\": \"xgb_square_1\",\n          \"family\": \"xgb_square\",\n          \"aggregate\": {\n            \"median_mae\": 1.5444701352024728,\n            \"median_rmse\": 2.02855387346486,\n            \"median_r2\": -0.4614928796552752,\n            \"median_line_direction_accuracy\": 0.7877629063097514,\n            \"stability_penalty\": 0.24365072269830818\n          }\n        }\n      ],\n      \"baseline_mean\": 2.312310877528269\n    },\n    {\n      \"combo_key\": \"cornerKicks_away_ALL\",\n      \"stat_key\": \"cornerKicks\",\n      \"scope\": \"away\",\n      \"period\": \"ALL\",\n      \"model_type\": \"tier2_new\",\n      \"status\": \"trained\",\n      \"selected_feature_mode\": \"strict\",\n      \"formula_keys\": [\n        \"evPct\",\n        \"evPctFoulsAdvanced\",\n        \"evPctGoalKicksAdvanced\",\n        \"evPctLeagueAvg\",\n        \"evPctMultifactor\",\n        \"evPctShotsAdvanced\",\n        \"evPctSoTAdvanced\",\n        \"evPctThrowInsAdvanced\",\n        \"evPctUniversalOptimized\",\n        \"evPctWithMultiplier\",\n        \"legacyEvPct\"\n      ],\n      \"tier1_selected_candidate\": {\n        \"label\": \"xgb_poisson_2\",\n        \"family\": \"xgb_poisson\",\n        \"params\": {\n          \"n_estimators\": 140,\n          \"max_depth\": 4,\n          \"learning_rate\": 0.05,\n          \"reg_lambda\": 1.5\n        },\n        \"target_transform\": \"raw\",\n        \"objective\": \"count:poisson\"\n      },\n      \"selected_candidate\": {\n        \"label\": \"baseline_mean\",\n        \"family\": \"baseline_mean\",\n        \"params\": {},\n        \"target_transform\": \"raw\",\n        \"objective\": null\n      },\n      \"selection_metrics\": {\n        \"median_mae\": 2.115107007724819,\n        \"median_rmse\": 2.6265226746077435,\n        \"median_r2\": -0.0005859630116157311,\n        \"median_line_direction_accuracy\": 0.9676494676494676,\n        \"stability_penalty\": 0.03835537488169078\n      },\n      \"test_metrics\": {\n        \"mae\": 2.1849959675548556,\n        \"rmse\": 2.708412107482617,\n        \"r2\": -0.00652816223554975,\n        \"line_direction_accuracy\": 0.732652604904226\n      },\n      \"candidate_rankings\": [\n        {\n          \"label\": \"baseline_mean\",\n          \"family\": \"baseline_mean\",\n          \"aggregate\": {\n            \"median_mae\": 2.115107007724819,\n            \"median_rmse\": 2.6265226746077435,\n            \"median_r2\": -0.0005859630116157311,\n            \"median_line_direction_accuracy\": 0.9676494676494676,\n            \"stability_penalty\": 0.03835537488169078\n          }\n        },\n        {\n          \"label\": \"xgb_square_1\",\n          \"family\": \"xgb_square\",\n          \"aggregate\": {\n            \"median_mae\": 2.1363497374489304,\n            \"median_rmse\": 2.760926249715805,\n            \"median_r2\": -0.10550091688933871,\n            \"median_line_direction_accuracy\": 0.9676494676494676,\n            \"stability_penalty\": 0.23381980329824098\n          }\n        },\n        {\n          \"label\": \"xgb_log_1\",\n          \"family\": \"xgb_log\",\n          \"aggregate\": {\n            \"median_mae\": 2.13710596132438,\n            \"median_rmse\": 2.788564859444071,\n            \"median_r2\": -0.12767978208645414,\n            \"median_line_direction_accuracy\": 0.9676494676494676,\n            \"stability_penalty\": 0.23098088498972955\n          }\n        },\n        {\n          \"label\": \"xgb_square_2\",\n          \"family\": \"xgb_square\",\n          \"aggregate\": {\n            \"median_mae\": 2.1803564754399387,\n            \"median_rmse\": 2.818099224792516,\n            \"median_r2\": -0.15180137864091514,\n            \"median_line_direction_accuracy\": 0.9676494676494676,\n            \"stability_penalty\": 0.20926274512277931\n          }\n        },\n        {\n          \"label\": \"xgb_log_2\",\n          \"family\": \"xgb_log\",\n          \"aggregate\": {\n            \"median_mae\": 2.1907513369729923,\n            \"median_rmse\": 2.844583198539552,\n            \"median_r2\": -0.17342020704636119,\n            \"median_line_direction_accuracy\": 0.9676494676494676,\n            \"stability_penalty\": 0.23959749146492246\n          }\n        }\n      ],\n      \"baseline_mean\": 4.324553023065374\n    }\n  ]\n}\n",
+    "stderr": "",
+    "trained_count": 3,
+    "skipped_count": 0,
+    "models": [
+      {
+        "combo_key": "cornerKicks_away_1ST",
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "1ST",
+        "model_type": "tier2_new",
+        "status": "trained",
+        "selected_feature_mode": "strict",
+        "formula_keys": [
+          "evPct",
+          "evPctFoulsAdvanced",
+          "evPctGoalKicksAdvanced",
+          "evPctLeagueAvg",
+          "evPctMultifactor",
+          "evPctShotsAdvanced",
+          "evPctSoTAdvanced",
+          "evPctThrowInsAdvanced",
+          "evPctUniversalOptimized",
+          "evPctWithMultiplier",
+          "legacyEvPct"
+        ],
+        "tier1_selected_candidate": {
+          "label": "baseline_mean",
+          "family": "baseline_mean",
+          "params": {},
+          "target_transform": "raw",
+          "objective": null
+        },
+        "selected_candidate": {
+          "label": "baseline_mean",
+          "family": "baseline_mean",
+          "params": {},
+          "target_transform": "raw",
+          "objective": null
+        },
+        "selection_metrics": {
+          "median_mae": 1.2811374160841376,
+          "median_rmse": 1.6674573828586694,
+          "median_r2": -0.020194235974521413,
+          "median_line_direction_accuracy": 0.8239299610894941,
+          "stability_penalty": 0.061469116565449886
+        },
+        "test_metrics": {
+          "mae": 1.294743708349254,
+          "rmse": 1.6564578484002437,
+          "r2": -0.004518119435668488,
+          "line_direction_accuracy": 0.7236741943669119
+        },
+        "candidate_rankings": [
+          {
+            "label": "baseline_mean",
+            "family": "baseline_mean",
+            "aggregate": {
+              "median_mae": 1.2811374160841376,
+              "median_rmse": 1.6674573828586694,
+              "median_r2": -0.020194235974521413,
+              "median_line_direction_accuracy": 0.8239299610894941,
+              "stability_penalty": 0.061469116565449886
+            }
+          },
+          {
+            "label": "xgb_square_2",
+            "family": "xgb_square",
+            "aggregate": {
+              "median_mae": 1.3767283001775303,
+              "median_rmse": 1.7443874242498287,
+              "median_r2": -0.03356918212441262,
+              "median_line_direction_accuracy": 0.8239299610894941,
+              "stability_penalty": 0.08426527608357394
+            }
+          },
+          {
+            "label": "xgb_square_1",
+            "family": "xgb_square",
+            "aggregate": {
+              "median_mae": 1.3792849491735686,
+              "median_rmse": 1.7524022060024618,
+              "median_r2": -0.059113440272689055,
+              "median_line_direction_accuracy": 0.8239299610894941,
+              "stability_penalty": 0.09645563720217876
+            }
+          },
+          {
+            "label": "xgb_log_2",
+            "family": "xgb_log",
+            "aggregate": {
+              "median_mae": 1.4019953186798135,
+              "median_rmse": 1.7895473404553004,
+              "median_r2": -0.21010162189473403,
+              "median_line_direction_accuracy": 0.8239299610894941,
+              "stability_penalty": 0.11730954478283337
+            }
+          },
+          {
+            "label": "xgb_log_1",
+            "family": "xgb_log",
+            "aggregate": {
+              "median_mae": 1.4060784244903792,
+              "median_rmse": 1.7912896749970306,
+              "median_r2": -0.239779071286649,
+              "median_line_direction_accuracy": 0.8239299610894941,
+              "stability_penalty": 0.116987966746724
+            }
+          }
+        ],
+        "baseline_mean": 2.016699092088197
+      },
+      {
+        "combo_key": "cornerKicks_away_2ND",
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "2ND",
+        "model_type": "tier2_new",
+        "status": "trained",
+        "selected_feature_mode": "extended",
+        "formula_keys": [
+          "evPct",
+          "evPctFoulsAdvanced",
+          "evPctGoalKicksAdvanced",
+          "evPctLeagueAvg",
+          "evPctMultifactor",
+          "evPctShotsAdvanced",
+          "evPctSoTAdvanced",
+          "evPctThrowInsAdvanced",
+          "evPctUniversalOptimized",
+          "evPctWithMultiplier",
+          "legacyEvPct"
+        ],
+        "tier1_selected_candidate": {
+          "label": "xgb_square_1",
+          "family": "xgb_square",
+          "params": {
+            "n_estimators": 80,
+            "max_depth": 3,
+            "learning_rate": 0.08,
+            "reg_lambda": 1.0
+          },
+          "target_transform": "raw",
+          "objective": "reg:squarederror"
+        },
+        "selected_candidate": {
+          "label": "baseline_mean",
+          "family": "baseline_mean",
+          "params": {},
+          "target_transform": "raw",
+          "objective": null
+        },
+        "selection_metrics": {
+          "median_mae": 1.4296911803100794,
+          "median_rmse": 1.7734865055872828,
+          "median_r2": -0.007827817567424566,
+          "median_line_direction_accuracy": 0.8011472275334608,
+          "stability_penalty": 0.06503837554276852
+        },
+        "test_metrics": {
+          "mae": 1.4887645035897237,
+          "rmse": 1.8585449750443699,
+          "r2": -0.004221555639959629,
+          "line_direction_accuracy": 0.7330050444391064
+        },
+        "candidate_rankings": [
+          {
+            "label": "baseline_mean",
+            "family": "baseline_mean",
+            "aggregate": {
+              "median_mae": 1.4296911803100794,
+              "median_rmse": 1.7734865055872828,
+              "median_r2": -0.007827817567424566,
+              "median_line_direction_accuracy": 0.8011472275334608,
+              "stability_penalty": 0.06503837554276852
+            }
+          },
+          {
+            "label": "xgb_log_1",
+            "family": "xgb_log",
+            "aggregate": {
+              "median_mae": 1.4704236564525668,
+              "median_rmse": 1.9443336151515895,
+              "median_r2": -0.281773803077769,
+              "median_line_direction_accuracy": 0.7968451242829828,
+              "stability_penalty": 0.1410656564659052
+            }
+          },
+          {
+            "label": "xgb_log_2",
+            "family": "xgb_log",
+            "aggregate": {
+              "median_mae": 1.4942993072549007,
+              "median_rmse": 1.994221846687533,
+              "median_r2": -0.3008152262217807,
+              "median_line_direction_accuracy": 0.7958891013384322,
+              "stability_penalty": 0.1244766061367674
+            }
+          },
+          {
+            "label": "xgb_square_2",
+            "family": "xgb_square",
+            "aggregate": {
+              "median_mae": 1.5401791908165086,
+              "median_rmse": 2.0258585317528013,
+              "median_r2": -0.5244573164715358,
+              "median_line_direction_accuracy": 0.7901529636711282,
+              "stability_penalty": 0.27130947235916214
+            }
+          },
+          {
+            "label": "xgb_square_1",
+            "family": "xgb_square",
+            "aggregate": {
+              "median_mae": 1.5444701352024728,
+              "median_rmse": 2.02855387346486,
+              "median_r2": -0.4614928796552752,
+              "median_line_direction_accuracy": 0.7877629063097514,
+              "stability_penalty": 0.24365072269830818
+            }
+          }
+        ],
+        "baseline_mean": 2.312310877528269
+      },
+      {
+        "combo_key": "cornerKicks_away_ALL",
+        "stat_key": "cornerKicks",
+        "scope": "away",
+        "period": "ALL",
+        "model_type": "tier2_new",
+        "status": "trained",
+        "selected_feature_mode": "strict",
+        "formula_keys": [
+          "evPct",
+          "evPctFoulsAdvanced",
+          "evPctGoalKicksAdvanced",
+          "evPctLeagueAvg",
+          "evPctMultifactor",
+          "evPctShotsAdvanced",
+          "evPctSoTAdvanced",
+          "evPctThrowInsAdvanced",
+          "evPctUniversalOptimized",
+          "evPctWithMultiplier",
+          "legacyEvPct"
+        ],
+        "tier1_selected_candidate": {
+          "label": "xgb_poisson_2",
+          "family": "xgb_poisson",
+          "params": {
+            "n_estimators": 140,
+            "max_depth": 4,
+            "learning_rate": 0.05,
+            "reg_lambda": 1.5
+          },
+          "target_transform": "raw",
+          "objective": "count:poisson"
+        },
+        "selected_candidate": {
+          "label": "baseline_mean",
+          "family": "baseline_mean",
+          "params": {},
+          "target_transform": "raw",
+          "objective": null
+        },
+        "selection_metrics": {
+          "median_mae": 2.115107007724819,
+          "median_rmse": 2.6265226746077435,
+          "median_r2": -0.0005859630116157311,
+          "median_line_direction_accuracy": 0.9676494676494676,
+          "stability_penalty": 0.03835537488169078
+        },
+        "test_metrics": {
+          "mae": 2.1849959675548556,
+          "rmse": 2.708412107482617,
+          "r2": -0.00652816223554975,
+          "line_direction_accuracy": 0.732652604904226
+        },
+        "candidate_rankings": [
+          {
+            "label": "baseline_mean",
+            "family": "baseline_mean",
+            "aggregate": {
+              "median_mae": 2.115107007724819,
+              "median_rmse": 2.6265226746077435,
+              "median_r2": -0.0005859630116157311,
+              "median_line_direction_accuracy": 0.9676494676494676,
+              "stability_penalty": 0.03835537488169078
+            }
+          },
+          {
+            "label": "xgb_square_1",
+            "family": "xgb_square",
+            "aggregate": {
+              "median_mae": 2.1363497374489304,
+              "median_rmse": 2.760926249715805,
+              "median_r2": -0.10550091688933871,
+              "median_line_direction_accuracy": 0.9676494676494676,
+              "stability_penalty": 0.23381980329824098
+            }
+          },
+          {
+            "label": "xgb_log_1",
+            "family": "xgb_log",
+            "aggregate": {
+              "median_mae": 2.13710596132438,
+              "median_rmse": 2.788564859444071,
+              "median_r2": -0.12767978208645414,
+              "median_line_direction_accuracy": 0.9676494676494676,
+              "stability_penalty": 0.23098088498972955
+            }
+          },
+          {
+            "label": "xgb_square_2",
+            "family": "xgb_square",
+            "aggregate": {
+              "median_mae": 2.1803564754399387,
+              "median_rmse": 2.818099224792516,
+              "median_r2": -0.15180137864091514,
+              "median_line_direction_accuracy": 0.9676494676494676,
+              "stability_penalty": 0.20926274512277931
+            }
+          },
+          {
+            "label": "xgb_log_2",
+            "family": "xgb_log",
+            "aggregate": {
+              "median_mae": 2.1907513369729923,
+              "median_rmse": 2.844583198539552,
+              "median_r2": -0.17342020704636119,
+              "median_line_direction_accuracy": 0.9676494676494676,
+              "stability_penalty": 0.23959749146492246
+            }
+          }
+        ],
+        "baseline_mean": 4.324553023065374
+      }
+    ]
+  }
+]
