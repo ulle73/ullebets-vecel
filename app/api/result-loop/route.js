@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongo";
 import { calcTuple } from "@/lib/backtest/tuples";
+import { isFinishedMatchSnapshot, pickBestTeamstatsSnapshot } from "@/lib/teamstatsSnapshots";
 
 export const runtime = "nodejs";
 
@@ -8,36 +9,6 @@ const DB_NAME = process.env.MONGODB_DB || "app";
 const COLLECTION = "result-loop-bets";
 const TEAMSTATS_COLLECTION = "teamstats";
 const CLV_COLLECTION = "closing-line-tracking";
-const FINAL_STATUSES = new Set(["closed", "ended", "finished", "afterextra", "afterpenalties"]);
-
-function toDate(value) {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function isFinishedMatch(match) {
-  const status = String(
-    match?.status?.type ||
-      match?.status?.description ||
-      match?.matchDetails?.status?.type ||
-      match?.matchDetails?.status?.description ||
-      ""
-  ).toLowerCase();
-
-  if (FINAL_STATUSES.has(status)) return true;
-
-  const homeScore = Number(match?.homeScore ?? match?.matchDetails?.homeScore);
-  const awayScore = Number(match?.awayScore ?? match?.matchDetails?.awayScore);
-  if (Number.isFinite(homeScore) && Number.isFinite(awayScore)) return true;
-
-  const timestamp = Number(match?.timestamp || match?.startTimestamp || 0);
-  if (Number.isFinite(timestamp) && timestamp > 0) {
-    const tsMs = timestamp > 1e12 ? timestamp : timestamp * 1000;
-    return Date.now() - tsMs > 3 * 60 * 60 * 1000;
-  }
-
-  return false;
-}
 
 function resolveActualValue(match, bet) {
   const statKey = bet?.statKey;
@@ -55,16 +26,10 @@ function settleBet(actualValue, bet, stakeUnits = 1) {
   const line = Number(bet?.line);
   if (!Number.isFinite(line)) return null;
   const direction = bet?.direction === "under" ? "under" : "over";
-  if (actualValue === line) {
-    return { result: "push", roiUnits: 0, pnlUnits: 0 };
-  }
+  if (actualValue === line) return { result: "push", roiUnits: 0, pnlUnits: 0 };
   const isWin = direction === "over" ? actualValue > line : actualValue < line;
   const odds = Number(bet?.odds);
-  const roiUnits = isWin
-    ? Number.isFinite(odds) && odds > 1
-      ? odds - 1
-      : 0
-    : -1;
+  const roiUnits = isWin ? (Number.isFinite(odds) && odds > 1 ? odds - 1 : 0) : -1;
   return {
     result: isWin ? "win" : "loss",
     roiUnits: Number(roiUnits.toFixed(2)),
@@ -113,10 +78,20 @@ export async function GET(req) {
     const teamDocs = uniqueMatchIds.length
       ? await db
           .collection(TEAMSTATS_COLLECTION)
-          .find({ _id: { $in: uniqueMatchIds } }, { projection: { _id: 1, full: { $slice: 1 } } })
+          .aggregate([
+            { $match: { _id: { $in: uniqueMatchIds } } },
+            {
+              $project: {
+                _id: 1,
+                head: { $slice: ["$full", 4] },
+                tail: { $slice: ["$full", -12] },
+              },
+            },
+          ])
           .toArray()
       : [];
-    const matchMap = new Map(teamDocs.map((doc) => [String(doc._id), Array.isArray(doc.full) ? doc.full[0] : null]));
+
+    const matchMap = new Map(teamDocs.map((doc) => [String(doc._id), pickBestTeamstatsSnapshot(doc)]));
 
     const clvDocs = docs.length
       ? await db.collection(CLV_COLLECTION).find({ trackingKey: { $in: docs.map((item) => item.trackingKey) } }).toArray()
@@ -124,14 +99,27 @@ export async function GET(req) {
     const clvMap = new Map(clvDocs.map((doc) => [doc.trackingKey, doc]));
 
     const items = docs.map((doc) => {
-      const match = matchMap.get(doc.matchId);
+      const matchSelection = matchMap.get(doc.matchId) || null;
+      const match = matchSelection?.match || null;
       const clv = clvMap.get(doc.trackingKey) || null;
+      const finished = match ? isFinishedMatchSnapshot(match) : false;
       const actualValue = match ? resolveActualValue(match, doc.bet) : null;
-      const settlement = match && isFinishedMatch(match) ? settleBet(actualValue, doc.bet, doc.stakeUnits) : null;
-      const status = settlement ? "settled" : match ? "open" : "pending";
+      const settlement = finished ? settleBet(actualValue, doc.bet, doc.stakeUnits) : null;
+      const status = settlement ? "settled" : !match ? "pending" : finished ? "unresolved" : "open";
+      const statusReason = settlement
+        ? "settled"
+        : !match
+          ? "missing-teamstats"
+          : finished && !Number.isFinite(actualValue)
+            ? "missing-stat-value"
+            : finished
+              ? "missing-settlement"
+              : "match-not-finished";
+
       return {
         ...doc,
         status,
+        statusReason,
         actualValue,
         result: settlement?.result || null,
         roiUnits: settlement?.roiUnits ?? null,
@@ -141,11 +129,15 @@ export async function GET(req) {
         beatClosingLine: typeof clv?.beatClosingLine === "boolean" ? clv.beatClosingLine : null,
         latestObservedOdds: Number.isFinite(Number(clv?.latestObservedOdds)) ? Number(clv.latestObservedOdds) : null,
         updatedAt: doc.updatedAt || doc.createdAt,
+        snapshotCandidateCount: Number(matchSelection?.meta?.candidateCount) || 0,
+        snapshotFinishedCandidates: Number(matchSelection?.meta?.finishedCandidateCount) || 0,
       };
     });
 
     const settled = items.filter((item) => item.status === "settled");
-    const open = items.filter((item) => item.status === "open" || item.status === "pending");
+    const open = items.filter((item) => item.status === "open");
+    const unresolved = items.filter((item) => item.status === "unresolved");
+    const pending = items.filter((item) => item.status === "pending");
     const clvClosed = items.filter((item) => Number.isFinite(item.clvPct));
     const wins = settled.filter((item) => item.result === "win").length;
     const pnlTotal = settled.reduce((sum, item) => sum + (Number(item.pnlUnits) || 0), 0);
@@ -156,6 +148,8 @@ export async function GET(req) {
       summary: {
         trackedBets: items.length,
         openBets: open.length,
+        unresolvedBets: unresolved.length,
+        pendingBets: pending.length,
         settledBets: settled.length,
         winRatePct: settled.length ? Math.round((wins / settled.length) * 100) : 0,
         roiPct: stakedUnits ? Number(((pnlTotal / stakedUnits) * 100).toFixed(1)) : 0,
