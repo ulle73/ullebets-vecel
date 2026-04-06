@@ -21,6 +21,7 @@ async function main() {
     console.log(`AWAY Settings: W:[${Object.values(bestAway.weights)}], M:${bestAway.multiplier}, B:${bestAway.bias}`);
     console.log("--------------------------------------------------\n");
     
+    
     // Run for Home games
     const homeResults = await runSimulation(teamName, statKey, { 
       limit: 30, 
