@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { MongoClient } from "mongodb";
 import fs from "fs/promises";
 import path from "path";
+import { fetchMatchStatistics } from "../rapidApi/match-statistics.js";
 
 dotenv.config({ path: ".env.local" });
 
@@ -59,6 +60,26 @@ function toStatNumber(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function parseRapidApiKeys() {
+  return (process.env.RAPIDAPI_KEYS || process.env.RAPIDAPI_KEY || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function buildRapidContext() {
+  return {
+    rapidApiKeys: parseRapidApiKeys(),
+    rapidApiState: { index: 0, calls: 0 },
+    page: null,
+    logger: console,
+    apiCallStats: {
+      rapid: { success: 0, failure: 0 },
+      sofascore: { success: 0, failure: 0 },
+    },
+  };
+}
+
 function findActualFromFull(fullArr, wantedMatchId, period, statKey) {
   const looksNumeric =
     typeof wantedMatchId === "number" || /^\d+$/.test(String(wantedMatchId));
@@ -102,6 +123,28 @@ function findActualFromFull(fullArr, wantedMatchId, period, statKey) {
   return null;
 }
 
+function findActualFromStatistics(statistics, period, statKey) {
+  if (!Array.isArray(statistics)) return null;
+
+  const nodesToCheck = statistics.filter(
+    (entry) => entry?.period === period || (!entry?.period && period === "ALL")
+  );
+
+  for (const node of nodesToCheck) {
+    for (const group of node?.groups ?? []) {
+      for (const item of group?.statisticsItems ?? []) {
+        if (item?.key === statKey) {
+          const home = toStatNumber(item.homeValue ?? item.home);
+          const away = toStatNumber(item.awayValue ?? item.away);
+          return { home, away };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 function evaluateMatchup(row, actual) {
   if (!actual) return null;
   let value = null;
@@ -120,21 +163,54 @@ function evaluateMatchup(row, actual) {
   };
 }
 
-async function enrichTop50(client, top50) {
+async function loadMatchStatisticsFallback(matchId, rapidContext, cache) {
+  if (!rapidContext?.rapidApiKeys?.length) return null;
+
+  const cacheKey = String(matchId);
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  try {
+    const statsResult = await fetchMatchStatistics(matchId, rapidContext);
+    const statistics = Array.isArray(statsResult?.statistics)
+      ? statsResult.statistics
+      : null;
+    cache.set(cacheKey, statistics);
+    return statistics;
+  } catch (error) {
+    console.warn(`[enrich] RapidAPI stats fallback failed for ${matchId}: ${error?.message || error}`);
+    cache.set(cacheKey, null);
+    return null;
+  }
+}
+
+async function enrichTop50(client, top50, rapidContext) {
   const rows = [...(top50?.over ?? []), ...(top50?.under ?? [])];
   const outcomeMap = new Map();
+  const rapidStatsCache = new Map();
 
   for (const row of rows) {
     const fullArr = await loadTeamstats(client, row.matchId);
     if (!fullArr.length) {
       console.warn(`[enrich] teamstats missing for match ${row.matchId}`);
     }
-    const actual = findActualFromFull(
+    let actual = findActualFromFull(
       fullArr,
       row.matchId,
       row.period,
       row.statKey
     );
+
+    if (!actual) {
+      const statistics = await loadMatchStatisticsFallback(
+        row.matchId,
+        rapidContext,
+        rapidStatsCache
+      );
+      actual = findActualFromStatistics(statistics, row.period, row.statKey);
+    }
+
     const outcome = evaluateMatchup(row, actual);
     outcomeMap.set(buildKey(row), { outcome });
   }
@@ -145,7 +221,7 @@ async function enrichTop50(client, top50) {
   };
 }
 
-async function enrichMatchupsForDate(db, client, date) {
+async function enrichMatchupsForDate(db, client, date, rapidContext) {
   const scoreDoc = await db
     .collection("matchups-score")
     .findOne({ _id: date }, { projection: { data: 1 } });
@@ -167,7 +243,7 @@ async function enrichMatchupsForDate(db, client, date) {
   }
 
   if (scoreDoc?.data) {
-    const newTop50 = await enrichTop50(client, scoreDoc.data.top50);
+    const newTop50 = await enrichTop50(client, scoreDoc.data.top50, rapidContext);
 
     await db.collection("matchups-score").updateOne(
       { _id: date },
@@ -194,7 +270,7 @@ async function enrichMatchupsForDate(db, client, date) {
   }
 
   if (leagueDoc?.data) {
-    const newTop50 = await enrichTop50(client, leagueDoc.data.top50);
+    const newTop50 = await enrichTop50(client, leagueDoc.data.top50, rapidContext);
 
     await db.collection("matchups-league-avg").updateOne(
       { _id: date },
@@ -226,6 +302,7 @@ async function main() {
 
   const dateArg = resolveDateArg();
   const dates = expandDateRange(dateArg);
+  const rapidContext = buildRapidContext();
 
   const client = new MongoClient(MONGODB_URI);
   await client.connect();
@@ -233,7 +310,7 @@ async function main() {
   try {
     const db = client.db(DB_NAME);
     for (const date of dates) {
-      await enrichMatchupsForDate(db, client, date);
+      await enrichMatchupsForDate(db, client, date, rapidContext);
     }
   } finally {
     await client.close();

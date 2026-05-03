@@ -104,6 +104,10 @@ function mapLeagueAvgEntry(entry) {
   const sortKey = toNum(entry.sortKey ?? entry.score) ?? score;
   const scope = entry.scope ?? "total";
   const outcomeInfo = deriveOutcomeForScope(entry.outcome, scope);
+  const leagueBaseline = toNum(entry?.leagueBaseline ?? entry?.forecast?.leagueBaseline);
+  const marketBias = entry.marketBias ?? null;
+  const homeBehaviour = entry.homeBehaviour ?? null;
+  const awayBehaviour = entry.awayBehaviour ?? null;
   const scewScore =
     toNum(entry.scewScore) ??
     toNum(entry.scew?.scewScore) ??
@@ -112,11 +116,14 @@ function mapLeagueAvgEntry(entry) {
   return {
     matchId: entry.matchId ?? matchLabel,
     leagueName: entry.league ?? null,
+    homeTeamId: entry.homeTeamId ?? entry.homeId ?? null,
+    awayTeamId: entry.awayTeamId ?? entry.awayId ?? null,
     statKey: entry.statKey ?? entry.statLabel ?? null,
     statLabel: entry.statLabel ?? entry.statKey ?? "Stat",
     period: entry.period ?? "ALL",
     scope,
     scopeLabel: entry.scopeLabel ?? null,
+    condition: entry.condition ?? entry.direction ?? null,
     matchLabel,
     score,
     sortKey,
@@ -124,6 +131,10 @@ function mapLeagueAvgEntry(entry) {
     badge: badgeForLeagueAvg(sortKey),
     scoreFormat: (value) => value.toFixed(2),
     scoreThresholds: LEAGUE_SCORE_THRESHOLDS,
+    leagueBaseline,
+    marketBias,
+    homeBehaviour,
+    awayBehaviour,
     ...outcomeInfo,
   };
 }
@@ -222,57 +233,59 @@ export default function BestMatchups({ date, items }) {
   // Calculate summary statistics for historical outcomes
   const overSummary = useMemo(() => {
     if (!showHistoricalOutcome) return null;
-    
-    const successfulCards = mappedOver.filter(r => {
+
+    const comparableRows = overRows.filter((r) => {
       const leagueBaselineValue = Number.isFinite(r.leagueBaseline) ? r.leagueBaseline : null;
-      const hasComparison = r.outcomeValue != null && leagueBaselineValue != null && leagueBaselineValue !== 0;
-      if (!hasComparison) return false;
-      
+      return r.outcomeValue != null && leagueBaselineValue != null && leagueBaselineValue !== 0;
+    });
+
+    if (comparableRows.length === 0) return null;
+
+    const successfulCards = comparableRows.filter((r) => {
+      const leagueBaselineValue = r.leagueBaseline;
       const pctDelta = ((r.outcomeValue - leagueBaselineValue) / leagueBaselineValue) * 100;
       return pctDelta > 0; // För "över" vill vi ha positiv pctDelta
     });
 
-    if (successfulCards.length === 0) return null;
-
-    const avgPct = successfulCards.reduce((sum, r) => {
-      const leagueBaselineValue = r.leagueBaseline;
-      const pctDelta = ((r.outcomeValue - leagueBaselineValue) / leagueBaselineValue) * 100;
+    const avgPct = comparableRows.reduce((sum, r) => {
+      const pctDelta = ((r.outcomeValue - r.leagueBaseline) / r.leagueBaseline) * 100;
       return sum + pctDelta;
-    }, 0) / successfulCards.length;
+    }, 0) / comparableRows.length;
 
     return {
       count: successfulCards.length,
-      total: mappedOver.filter(r => r.outcomeValue != null).length,
+      total: comparableRows.length,
       avgPct: avgPct
     };
-  }, [mappedOver, showHistoricalOutcome]);
+  }, [overRows, showHistoricalOutcome]);
 
   const underSummary = useMemo(() => {
     if (!showHistoricalOutcome) return null;
-    
-    const successfulCards = mappedUnder.filter(r => {
+
+    const comparableRows = underRows.filter((r) => {
       const leagueBaselineValue = Number.isFinite(r.leagueBaseline) ? r.leagueBaseline : null;
-      const hasComparison = r.outcomeValue != null && leagueBaselineValue != null && leagueBaselineValue !== 0;
-      if (!hasComparison) return false;
-      
+      return r.outcomeValue != null && leagueBaselineValue != null && leagueBaselineValue !== 0;
+    });
+
+    if (comparableRows.length === 0) return null;
+
+    const successfulCards = comparableRows.filter((r) => {
+      const leagueBaselineValue = r.leagueBaseline;
       const pctDelta = ((r.outcomeValue - leagueBaselineValue) / leagueBaselineValue) * 100;
       return pctDelta < 0; // För "under" vill vi ha negativ pctDelta
     });
 
-    if (successfulCards.length === 0) return null;
-
-    const avgPct = successfulCards.reduce((sum, r) => {
-      const leagueBaselineValue = r.leagueBaseline;
-      const pctDelta = ((r.outcomeValue - leagueBaselineValue) / leagueBaselineValue) * 100;
+    const avgPct = comparableRows.reduce((sum, r) => {
+      const pctDelta = ((r.outcomeValue - r.leagueBaseline) / r.leagueBaseline) * 100;
       return sum + pctDelta;
-    }, 0) / successfulCards.length;
+    }, 0) / comparableRows.length;
 
     return {
       count: successfulCards.length,
-      total: mappedUnder.filter(r => r.outcomeValue != null).length,
+      total: comparableRows.length,
       avgPct: avgPct
     };
-  }, [mappedUnder, showHistoricalOutcome]);
+  }, [underRows, showHistoricalOutcome]);
 
   const generatedAt = data?.generatedAt
     ? new Date(data.generatedAt).toLocaleString("sv-SE", {

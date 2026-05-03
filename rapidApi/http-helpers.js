@@ -1,5 +1,3 @@
-import axios from "axios";
-
 const defaultLogger = {
   info: (...args) => console.log(...args),
   warn: (...args) => console.warn(...args),
@@ -34,6 +32,44 @@ function recordApiOutcome(apiStats, provider, success) {
     bucket.success = (bucket.success || 0) + 1;
   } else {
     bucket.failure = (bucket.failure || 0) + 1;
+  }
+}
+
+function appendQueryParams(urlString, params) {
+  if (!params || typeof params !== "object") return urlString;
+
+  const url = new URL(urlString);
+  for (const [key, value] of Object.entries(params)) {
+    if (value == null) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item == null) continue;
+        url.searchParams.append(key, String(item));
+      }
+      continue;
+    }
+    url.searchParams.set(key, String(value));
+  }
+  return url.toString();
+}
+
+async function readResponseBody(response) {
+  const contentType = response.headers.get("content-type") || "";
+  const text = await response.text();
+  if (!text) return null;
+
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
   }
 }
 
@@ -102,17 +138,28 @@ export async function fetchWithRapidApiFallbacks({
           ...(typeof makeHeaders === "function" ? makeHeaders(params) : makeHeaders || {}),
         };
 
-        const response = await axios.get(url, {
-          headers,
-          params: typeof makeQuery === "function" ? makeQuery(params) : undefined,
-          timeout,
-          validateStatus: () => true,
-        });
+        const query = typeof makeQuery === "function" ? makeQuery(params) : undefined;
+        const finalUrl = appendQueryParams(url, query);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        let response;
+        try {
+          response = await fetch(finalUrl, {
+            method: "GET",
+            headers,
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
+
+        const responseData = await readResponseBody(response);
 
         if (response.status === 200) {
           const rawData = typeof transform === "function"
-            ? transform(response.data, { params, response })
-            : response.data;
+            ? transform(responseData, { params, response })
+            : responseData;
 
           if (!isEmpty(rawData) || allowEmptyForEndpoint) {
             state.index = (idx + 1) % totalKeys;
@@ -121,7 +168,7 @@ export async function fetchWithRapidApiFallbacks({
               success: true,
               data: rawData,
               source: endpoint.source || `${label}:rapid`,
-              endpoint: url,
+              endpoint: finalUrl,
               apiKey,
               calls,
               saw404,
@@ -152,10 +199,9 @@ export async function fetchWithRapidApiFallbacks({
         state.index = (idx + 1) % totalKeys;
         recordApiOutcome(apiStats, "rapid", false);
         continue;
-      } catch (error) {
-        const status = error?.response?.status;
-        const message = status
-          ? `HTTP ${status}`
+        } catch (error) {
+        const message = error?.name === "AbortError"
+          ? "timeout"
           : error?.message || "okänt fel";
         log.warn(
           `[${label}] ${name} misslyckades med RapidAPI-nyckel ...${apiKey.slice(-4)} (${message}).`
