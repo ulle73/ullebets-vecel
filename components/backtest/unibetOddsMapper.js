@@ -1,17 +1,21 @@
 import { getTeamAliases } from "./teamNameAliases.js";
 
+// Unibet has used both legacy "Totala/Totalt antal" labels and newer "Antal" labels.
+// Keep both so we stay backward-compatible if they switch back again.
+const STAT_PREFIX = "(?:Totala|Totalt antal|Antal)";
+
 const STAT_MAP = [
-  { key: "shotsOnGoal", regex: /(Totala|Totalt antal) skott på mål/i },
-  { key: "totalShots", regex: /(Totala|Totalt antal) skott(?! på mål)/i },
-  { key: "cornerKicks", regex: /(Totala|Totalt antal) hörnor/i },
-  { key: "yellowCards", regex: /(Totala|Totalt antal) kort/i },
-  { key: "freeKicks", regex: /(Totala|Totalt antal) frisparkar/i },
+  { key: "shotsOnGoal", regex: new RegExp(`${STAT_PREFIX} skott på mål`, "i") },
+  { key: "totalShots", regex: new RegExp(`${STAT_PREFIX} skott(?! på mål)`, "i") },
+  { key: "cornerKicks", regex: new RegExp(`${STAT_PREFIX} hörnor`, "i") },
+  { key: "yellowCards", regex: new RegExp(`${STAT_PREFIX} kort`, "i") },
+  { key: "freeKicks", regex: new RegExp(`${STAT_PREFIX} frisparkar`, "i") },
   {
     key: "fouls",
-    regex: /(Totala utförda|Totala|Totalt antal) fouls/i,
+    regex: new RegExp(`(?:Totala utförda|${STAT_PREFIX}) fouls`, "i"),
   },
-  { key: "totalTackle", regex: /(Totala|Totalt antal) tacklingar/i },
-  { key: "offsides", regex: /(Totala|Totalt antal) offside/i },
+  { key: "totalTackle", regex: new RegExp(`${STAT_PREFIX} tacklingar`, "i") },
+  { key: "offsides", regex: new RegExp(`${STAT_PREFIX} offside`, "i") },
 ];
 
 function parseLine(raw) {
