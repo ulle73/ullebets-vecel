@@ -5,6 +5,10 @@ import useSWR from "swr";
 import { toNum } from "@/lib/utils/matchups";
 import { getStatKeyLabel } from "@/lib/utils/statKeyLabels";
 import { FilterChips, RowAvg, DEFAULT_SCORE_THRESHOLDS } from "@/components/MatchupsListUI";
+import {
+  buildHistoricalPredictionSummary,
+  isDateBeforeTodayLocal,
+} from "@/lib/dayInsightsSummary";
 
 const PERIODS = [
   { value: "ALL", label: "Hela matchen" },
@@ -55,29 +59,6 @@ function deriveOutcomeForScope(outcome, scope) {
     outcomeHomeValue: hasHome ? home : null,
     outcomeAwayValue: hasAway ? away : null,
   };
-}
-
-function isDateBeforeToday(dateValue) {
-  if (!dateValue) return false;
-  let selectedUtc = null;
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateValue);
-  if (match) {
-    selectedUtc = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  } else {
-    const parsed = Date.parse(dateValue);
-    if (!Number.isNaN(parsed)) {
-      const normalized = new Date(parsed);
-      selectedUtc = Date.UTC(
-        normalized.getUTCFullYear(),
-        normalized.getUTCMonth(),
-        normalized.getUTCDate()
-      );
-    }
-  }
-  if (selectedUtc == null) return false;
-  const now = new Date();
-  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  return selectedUtc < todayUtc;
 }
 
 const fetcher = async (input) => {
@@ -162,7 +143,7 @@ export default function BestMatchups({ date, items }) {
   const [statFilter, setStatFilter] = useState("all");
   const [onlyTopBadges, setOnlyTopBadges] = useState(false);
   const [highlightPct, setHighlightPct] = useState(20);
-  const showHistoricalOutcome = useMemo(() => isDateBeforeToday(date), [date]);
+  const showHistoricalOutcome = useMemo(() => isDateBeforeTodayLocal(date), [date]);
 
   const queryKey = date ? `/api/matchups-score?date=${encodeURIComponent(date)}` : null;
 
@@ -222,61 +203,15 @@ export default function BestMatchups({ date, items }) {
   );
 
   // Calculate summary statistics for historical outcomes (only visible rows)
-  const overSummary = useMemo(() => {
-    if (!showHistoricalOutcome) return null;
+  const overSummary = useMemo(
+    () => buildHistoricalPredictionSummary(overRows, "over", showHistoricalOutcome),
+    [overRows, showHistoricalOutcome]
+  );
 
-    const comparableRows = overRows.filter((r) => {
-      const leagueBaselineValue = Number.isFinite(r.leagueBaseline) ? r.leagueBaseline : null;
-      const hasComparison = r.outcomeValue != null && leagueBaselineValue != null && leagueBaselineValue !== 0;
-      return hasComparison;
-    });
-
-    if (comparableRows.length === 0) return null;
-
-    const successfulCards = comparableRows.filter((r) => {
-      const pctDelta = ((r.outcomeValue - r.leagueBaseline) / r.leagueBaseline) * 100;
-      return pctDelta > 0; // För "över" vill vi ha positiv pctDelta
-    });
-
-    const avgPct = comparableRows.reduce((sum, r) => {
-      const pctDelta = ((r.outcomeValue - r.leagueBaseline) / r.leagueBaseline) * 100;
-      return sum + pctDelta;
-    }, 0) / comparableRows.length;
-
-    return {
-      count: successfulCards.length,
-      total: comparableRows.length,
-      avgPct: avgPct,
-    };
-  }, [overRows, showHistoricalOutcome]);
-
-  const underSummary = useMemo(() => {
-    if (!showHistoricalOutcome) return null;
-
-    const comparableRows = underRows.filter((r) => {
-      const leagueBaselineValue = Number.isFinite(r.leagueBaseline) ? r.leagueBaseline : null;
-      const hasComparison = r.outcomeValue != null && leagueBaselineValue != null && leagueBaselineValue !== 0;
-      return hasComparison;
-    });
-
-    if (comparableRows.length === 0) return null;
-
-    const successfulCards = comparableRows.filter((r) => {
-      const pctDelta = ((r.outcomeValue - r.leagueBaseline) / r.leagueBaseline) * 100;
-      return pctDelta < 0; // För "under" vill vi ha negativ pctDelta
-    });
-
-    const avgPct = comparableRows.reduce((sum, r) => {
-      const pctDelta = ((r.outcomeValue - r.leagueBaseline) / r.leagueBaseline) * 100;
-      return sum + pctDelta;
-    }, 0) / comparableRows.length;
-
-    return {
-      count: successfulCards.length,
-      total: comparableRows.length,
-      avgPct: avgPct,
-    };
-  }, [underRows, showHistoricalOutcome]);
+  const underSummary = useMemo(
+    () => buildHistoricalPredictionSummary(underRows, "under", showHistoricalOutcome),
+    [underRows, showHistoricalOutcome]
+  );
 
 
   const generatedAt = data?.generatedAt
@@ -395,13 +330,9 @@ export default function BestMatchups({ date, items }) {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
                 Över – topp 20
               </h3>
-              {overSummary && (
-                <span
-                  className={`text-xs font-medium ${overSummary.avgPct < 0 ? "text-rose-400" : "text-emerald-400"}`}
-                >
-                  {overSummary.count}/{overSummary.total} över • {overSummary.avgPct >= 0 ? '+' : ''}{overSummary.avgPct.toFixed(1)}%
-                </span>
-              )}
+              <span className={`text-xs font-medium ${overSummary.toneClass}`}>
+                {overSummary.label}
+              </span>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
@@ -436,13 +367,9 @@ export default function BestMatchups({ date, items }) {
                 <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></span>
                 Under – topp 20
               </h3>
-              {underSummary && (
-                <span
-                  className={`text-xs font-medium ${underSummary.avgPct < 0 ? "text-emerald-400" : "text-rose-400"}`}
-                >
-                  {underSummary.count}/{underSummary.total} under • {underSummary.avgPct >= 0 ? '+' : ''}{underSummary.avgPct.toFixed(1)}%
-                </span>
-              )}
+              <span className={`text-xs font-medium ${underSummary.toneClass}`}>
+                {underSummary.label}
+              </span>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
