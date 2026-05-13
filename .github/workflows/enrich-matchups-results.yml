@@ -39,3 +39,4 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB: ${{ secrets.MONGODB_DB }}
+          RAPIDAPI_KEYS: ${{ secrets.RAPIDAPI_KEYS }}
