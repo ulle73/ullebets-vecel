@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongo";
 import { calcTuple } from "@/lib/backtest/tuples";
+import { findTeamstatsMatchSelections } from "@/lib/teamstatsLookup";
 
 export const runtime = "nodejs";
 
@@ -176,26 +177,16 @@ export async function GET(req) {
     const dedupedEntries = [...dedupedMap.values()];
     const uniqueMatchIds = [...new Set(dedupedEntries.map((entry) => entry.matchId))];
 
-    const teamDocs = uniqueMatchIds.length
-      ? await db
-          .collection(TEAMSTATS_COLLECTION)
-          .find(
-            { _id: { $in: uniqueMatchIds } },
-            { projection: { _id: 1, full: { $slice: 1 } } }
-          )
-          .toArray()
-      : [];
-
-    const matchMap = new Map(
-      teamDocs.map((doc) => [String(doc._id), Array.isArray(doc.full) ? doc.full[0] : null])
-    );
+    const matchMap = await findTeamstatsMatchSelections(db, uniqueMatchIds, {
+      collectionName: TEAMSTATS_COLLECTION,
+    });
 
     const settled = [];
     let unsettledCount = 0;
     let missingMetadataCount = flatEntries.length - dedupedEntries.length;
 
     for (const entry of dedupedEntries) {
-      const match = matchMap.get(entry.matchId);
+      const match = matchMap.get(entry.matchId)?.match;
       if (!match || !isFinishedMatch(match)) {
         unsettledCount += 1;
         continue;

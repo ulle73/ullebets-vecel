@@ -1,4 +1,5 @@
 import clientPromise from "@/lib/mongo";
+import { findTeamstatsMatchSelection } from "@/lib/teamstatsLookup";
 
 const asArray = (v) =>
   Array.isArray(v) ? v :
@@ -30,22 +31,27 @@ export async function GET(_req, contextPromise) {
 
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB || "app");
-  const col = db.collection("teamstats");
+  const selection = await findTeamstatsMatchSelection(db, matchId);
+  if (!selection?.match) return new Response("Not found", { status: 404 });
 
-  const doc = await col.findOne(
-    { _id: matchId },
-    { projection: { _id: 1, full: { $slice: 1 } } }
-  );
-  if (!doc) return new Response("Not found", { status: 404 });
-
-  const f0 = Array.isArray(doc.full) ? doc.full[0] ?? {} : {};
+  const f0 = selection.match;
 
   const incidents = Array.isArray(f0.incidents) ? f0.incidents : [];
   const shotmap = asArray(f0.shotmap);
   const odds = (f0.odds && typeof f0.odds === "object") ? f0.odds : null;
-  const statistics = Array.isArray(f0.matchDetails?.statistics) ? f0.matchDetails.statistics : [];
+  const statistics = Array.isArray(f0.matchDetails?.statistics)
+    ? f0.matchDetails.statistics
+    : Array.isArray(f0.statistics)
+      ? f0.statistics
+      : [];
 
   const toScore = (value) => {
+    if (value && typeof value === "object") {
+      for (const key of ["current", "display", "total", "normaltime", "normalTime", "regular", "fullTime", "value"]) {
+        const resolved = toScore(value[key]);
+        if (resolved != null) return resolved;
+      }
+    }
     const num = Number(value);
     return Number.isFinite(num) ? num : null;
   };
@@ -71,12 +77,12 @@ export async function GET(_req, contextPromise) {
     toScore(f0.awayScore) ?? (finalFromIncidents ? finalFromIncidents.away : null);
 
   const res = {
-    matchId: doc._id,
-    timestamp: f0.timestamp ?? null,
+    matchId: f0.matchId ?? f0.id ?? matchId,
+    timestamp: f0.timestamp ?? f0.startTimestamp ?? null,
     homeTeamId: f0.homeTeamId ?? null,
-    homeTeamName: f0.homeTeamName ?? null,
+    homeTeamName: f0.homeTeamName ?? f0.homeTeam?.name ?? null,
     awayTeamId: f0.awayTeamId ?? null,
-    awayTeamName: f0.awayTeamName ?? null,
+    awayTeamName: f0.awayTeamName ?? f0.awayTeam?.name ?? null,
     incidents,
     shotmap,
     odds,

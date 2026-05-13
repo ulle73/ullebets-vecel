@@ -34,7 +34,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import { ACTIVE_THEME } from "./theme-config";
-import Script from "next/script"; // Tillagd: Import för att hantera scripts säkert i Next.js
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,12 +54,14 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" data-theme={ACTIVE_THEME}>
-      <head> {/* Tillagd: Head-tagg för att placera GA-scripts (rekommenderat av Google) */}
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-SGG07WR74G"
-          strategy="afterInteractive" // Tillagd: Laddas efter interaktivitet för bättre prestanda
+          strategy="afterInteractive"
         />
-        <Script id="ga-init" strategy="afterInteractive"> {/* Tillagd: Init-script för GA */}
+        <Script id="ga-init" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -67,10 +69,6 @@ export default function RootLayout({ children }) {
             gtag('config', 'G-SGG07WR74G');
           `}
         </Script>
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
         <Providers>{children}</Providers>
       </body>
     </html>

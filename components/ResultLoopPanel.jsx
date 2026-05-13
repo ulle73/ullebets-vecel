@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
 const fetcher = async (input) => {
@@ -11,6 +11,12 @@ const fetcher = async (input) => {
   }
   return response.json();
 };
+
+async function requireOk(response, fallbackMessage) {
+  if (response.ok) return;
+  const payload = await response.json().catch(() => ({}));
+  throw new Error(payload?.message || fallbackMessage || `HTTP ${response.status}`);
+}
 
 function SummaryCard({ label, value, tone = "neutral" }) {
   const toneClass =
@@ -56,6 +62,7 @@ function StatusBadge({ status, result, clvPct }) {
 }
 
 export default function ResultLoopPanel({ onOpenMatch, onSummaryChange }) {
+  const [mutationError, setMutationError] = useState(null);
   const { mutate } = useSWRConfig();
   const { data, error, isLoading } = useSWR("/api/result-loop?days=180&limit=120", fetcher, {
     revalidateOnFocus: false,
@@ -69,12 +76,18 @@ export default function ResultLoopPanel({ onOpenMatch, onSummaryChange }) {
   }, [onSummaryChange, summary]);
 
   const removeTrackedBet = async (trackingKey) => {
-    await fetch("/api/result-loop", {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ trackingKey }),
-    });
-    mutate("/api/result-loop?days=180&limit=120");
+    try {
+      setMutationError(null);
+      const response = await fetch("/api/result-loop", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ trackingKey }),
+      });
+      await requireOk(response, "Kunde inte ta bort spelad-markeringen.");
+      mutate("/api/result-loop?days=180&limit=120");
+    } catch (err) {
+      setMutationError(err?.message || "Kunde inte uppdatera resultatloopen.");
+    }
   };
 
   return (
@@ -87,6 +100,9 @@ export default function ResultLoopPanel({ onOpenMatch, onSummaryChange }) {
       </div>
 
       <div className="p-4">
+        {mutationError ? (
+          <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-200">{mutationError}</div>
+        ) : null}
         {isLoading ? (
           <div className="rounded-xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-slate-400">Laddar resultatloopen…</div>
         ) : error ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
 const fetcher = async (input) => {
@@ -11,6 +11,12 @@ const fetcher = async (input) => {
   }
   return response.json();
 };
+
+async function requireOk(response, fallbackMessage) {
+  if (response.ok) return;
+  const payload = await response.json().catch(() => ({}));
+  throw new Error(payload?.message || fallbackMessage || `HTTP ${response.status}`);
+}
 
 function buildTrackingKey(item) {
   return `${item.matchId}:${item.bet?.key || `${item.bet?.statKey}:${item.bet?.scope}:${item.bet?.period}:${item.bet?.line}:${item.bet?.direction}`}`;
@@ -33,6 +39,7 @@ function buildAlertsForItem(item, shortlistMap, clvMap) {
 }
 
 export default function WatchlistPanel({ currentShortlist = [], onOpenMatch, onAlertCountChange }) {
+  const [mutationError, setMutationError] = useState(null);
   const { mutate } = useSWRConfig();
   const { data, error, isLoading } = useSWR("/api/watchlist", fetcher, { revalidateOnFocus: false });
   const { data: clvData } = useSWR("/api/closing-lines?days=21&limit=120", fetcher, { revalidateOnFocus: false });
@@ -48,12 +55,18 @@ export default function WatchlistPanel({ currentShortlist = [], onOpenMatch, onA
   }, [alertCount, onAlertCountChange]);
 
   const removeFromWatchlist = async (trackingKey) => {
-    await fetch("/api/watchlist", {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ trackingKey }),
-    });
-    mutate("/api/watchlist");
+    try {
+      setMutationError(null);
+      const response = await fetch("/api/watchlist", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ trackingKey }),
+      });
+      await requireOk(response, "Kunde inte ta bort bevakningen.");
+      mutate("/api/watchlist");
+    } catch (err) {
+      setMutationError(err?.message || "Kunde inte uppdatera watchlist.");
+    }
   };
 
   return (
@@ -69,6 +82,9 @@ export default function WatchlistPanel({ currentShortlist = [], onOpenMatch, onA
       </div>
 
       <div className="p-4">
+        {mutationError ? (
+          <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-200">{mutationError}</div>
+        ) : null}
         {isLoading ? (
           <div className="rounded-xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-slate-400">Laddar watchlist…</div>
         ) : error ? (

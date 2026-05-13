@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongo";
 import mapUnibetOdds from "@/components/backtest/unibetOddsMapper";
 import { findUnibetEventForMatch } from "@/lib/backtest/unibetAuto";
+import { findTeamstatsMatchSelections } from "@/lib/teamstatsLookup";
 
 export const runtime = "nodejs";
 
@@ -126,7 +127,8 @@ function buildAuditPayload(entry, existing, meta, found) {
   const openingOdds = Number(entry?.bet?.odds);
   const nowIso = new Date().toISOString();
   const nowMs = Date.now();
-  const eventStarted = Number.isFinite(meta.timestampMs) ? nowMs >= meta.timestampMs : false;
+  const eventTimestampMs = meta.timestampMs || toTimestampMs(found?.eventStart) || null;
+  const eventStarted = Number.isFinite(eventTimestampMs) ? nowMs >= eventTimestampMs : false;
 
   const latestObservedOdds = found?.currentOdds ?? existing?.latestObservedOdds ?? null;
   const latestObservedAt = found?.currentOdds != null ? nowIso : existing?.latestObservedAt ?? null;
@@ -157,7 +159,7 @@ function buildAuditPayload(entry, existing, meta, found) {
     clvPct: metrics.clvPct,
     impliedEdgeDelta: metrics.impliedEdgeDelta,
     beatClosingLine: metrics.beatClosingLine,
-    eventTimestampMs: meta.timestampMs,
+    eventTimestampMs,
     eventStarted,
     eventId: found?.eventId || existing?.eventId || null,
     eventUrl: found?.eventUrl || existing?.eventUrl || null,
@@ -205,14 +207,9 @@ export async function GET(req) {
     const dedupedEntries = [...dedupedMap.values()].slice(0, limit);
     const uniqueMatchIds = [...new Set(dedupedEntries.map((entry) => entry.matchId))];
 
-    const teamDocs = uniqueMatchIds.length
-      ? await db
-          .collection(TEAMSTATS_COLLECTION)
-          .find({ _id: { $in: uniqueMatchIds } }, { projection: { _id: 1, full: { $slice: 1 } } })
-          .toArray()
-      : [];
-
-    const matchMap = new Map(teamDocs.map((doc) => [String(doc._id), Array.isArray(doc.full) ? doc.full[0] : null]));
+    const matchMap = await findTeamstatsMatchSelections(db, uniqueMatchIds, {
+      collectionName: TEAMSTATS_COLLECTION,
+    });
     const existingDocs = await db
       .collection(CLV_COLLECTION)
       .find({ trackingKey: { $in: dedupedEntries.map(buildTrackingKey) } })
@@ -224,7 +221,7 @@ export async function GET(req) {
     for (const entry of dedupedEntries) {
       const trackingKey = buildTrackingKey(entry);
       const existing = existingMap.get(trackingKey) || null;
-      const match = matchMap.get(entry.matchId) || null;
+      const match = matchMap.get(entry.matchId)?.match || null;
       const meta = normalizeMatchMeta(match, entry);
 
       let found = null;
@@ -247,6 +244,7 @@ export async function GET(req) {
           found = {
             eventId: String(event.eventId),
             eventUrl: event.eventUrl,
+            eventStart: event.start || null,
             currentOdds,
           };
         }

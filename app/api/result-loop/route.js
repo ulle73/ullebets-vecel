@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongo";
 import { calcTuple } from "@/lib/backtest/tuples";
-import { isFinishedMatchSnapshot, pickBestTeamstatsSnapshot } from "@/lib/teamstatsSnapshots";
+import { isFinishedMatchSnapshot } from "@/lib/teamstatsSnapshots";
+import { findTeamstatsMatchSelections } from "@/lib/teamstatsLookup";
 
 export const runtime = "nodejs";
 
@@ -75,23 +76,9 @@ export async function GET(req) {
       .toArray();
 
     const uniqueMatchIds = [...new Set(docs.map((item) => item.matchId).filter(Boolean))];
-    const teamDocs = uniqueMatchIds.length
-      ? await db
-          .collection(TEAMSTATS_COLLECTION)
-          .aggregate([
-            { $match: { _id: { $in: uniqueMatchIds } } },
-            {
-              $project: {
-                _id: 1,
-                head: { $slice: ["$full", 4] },
-                tail: { $slice: ["$full", -12] },
-              },
-            },
-          ])
-          .toArray()
-      : [];
-
-    const matchMap = new Map(teamDocs.map((doc) => [String(doc._id), pickBestTeamstatsSnapshot(doc)]));
+    const matchMap = await findTeamstatsMatchSelections(db, uniqueMatchIds, {
+      collectionName: TEAMSTATS_COLLECTION,
+    });
 
     const clvDocs = docs.length
       ? await db.collection(CLV_COLLECTION).find({ trackingKey: { $in: docs.map((item) => item.trackingKey) } }).toArray()
@@ -131,6 +118,7 @@ export async function GET(req) {
         updatedAt: doc.updatedAt || doc.createdAt,
         snapshotCandidateCount: Number(matchSelection?.meta?.candidateCount) || 0,
         snapshotFinishedCandidates: Number(matchSelection?.meta?.finishedCandidateCount) || 0,
+        snapshotSourceDocCount: Number(matchSelection?.meta?.sourceDocCount) || 0,
       };
     });
 

@@ -18,6 +18,12 @@ function buildTrackingKey(matchId, bet) {
   return `${matchId}:${bet?.key || `${bet?.statKey}:${bet?.scope}:${bet?.period}:${bet?.line}:${bet?.direction}`}`;
 }
 
+async function requireOk(response, fallbackMessage) {
+  if (response.ok) return;
+  const payload = await response.json().catch(() => ({}));
+  throw new Error(payload?.message || fallbackMessage || `HTTP ${response.status}`);
+}
+
 function StatBadge({ label, value, tone = "neutral" }) {
   const toneClass = tone === "positive"
     ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
@@ -33,6 +39,7 @@ function StatBadge({ label, value, tone = "neutral" }) {
 export default function BacktestPanel({ match, onSummaryChange }) {
   const [viewMode, setViewMode] = useState("auto");
   const [summary, setSummary] = useState({ count: 0, items: [], bestBet: null, unibetUrl: null });
+  const [mutationError, setMutationError] = useState(null);
   const { mutate } = useSWRConfig();
   const { data: rankingFeedback } = useSWR("/api/ranking-feedback?days=120&limit=500", fetcher, { revalidateOnFocus: false });
   const { data: watchlistData } = useSWR("/api/watchlist", fetcher, { revalidateOnFocus: false });
@@ -57,70 +64,84 @@ export default function BacktestPanel({ match, onSummaryChange }) {
   const shortlist = summary.items.slice(1, 4);
 
   const toggleWatchlist = async (bet) => {
-    const matchId = match?.matchId || match?.id;
-    const trackingKey = buildTrackingKey(matchId, bet?.bet);
-    if (watchlistKeys.has(trackingKey)) {
-      await fetch("/api/watchlist", {
-        method: "DELETE",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ trackingKey }),
-      });
-    } else {
-      await fetch("/api/watchlist", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          trackingKey,
-          matchId,
-          homeTeamName: bet?.bet?.homeTeam,
-          awayTeamName: bet?.bet?.awayTeam,
-          leagueName: match?.leagueName,
-          headline: bet?.headline,
-          strategyScore: bet?.strategyScore,
-          confidenceScore: bet?.confidenceScore,
-          primaryEv: bet?.primaryEv,
-          bet: bet?.bet,
-          proof: bet?.proof,
-          eventUrl: summary?.unibetUrl,
-        }),
-      });
+    try {
+      setMutationError(null);
+      const matchId = match?.matchId || match?.id;
+      const trackingKey = buildTrackingKey(matchId, bet?.bet);
+      if (watchlistKeys.has(trackingKey)) {
+        const response = await fetch("/api/watchlist", {
+          method: "DELETE",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ trackingKey }),
+        });
+        await requireOk(response, "Kunde inte ta bort bevakningen.");
+      } else {
+        const response = await fetch("/api/watchlist", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            trackingKey,
+            matchId,
+            homeTeamName: bet?.bet?.homeTeam,
+            awayTeamName: bet?.bet?.awayTeam,
+            leagueName: match?.leagueName,
+            headline: bet?.headline,
+            strategyScore: bet?.strategyScore,
+            confidenceScore: bet?.confidenceScore,
+            primaryEv: bet?.primaryEv,
+            bet: bet?.bet,
+            proof: bet?.proof,
+            eventUrl: summary?.unibetUrl,
+          }),
+        });
+        await requireOk(response, "Kunde inte lägga spelet i watchlist.");
+      }
+      mutate("/api/watchlist");
+    } catch (err) {
+      setMutationError(err?.message || "Kunde inte uppdatera watchlist.");
     }
-    mutate("/api/watchlist");
   };
 
   const toggleTaken = async (bet) => {
-    const matchId = match?.matchId || match?.id;
-    const trackingKey = buildTrackingKey(matchId, bet?.bet);
-    if (resultLoopKeys.has(trackingKey)) {
-      await fetch("/api/result-loop", {
-        method: "DELETE",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ trackingKey }),
-      });
-    } else {
-      await fetch("/api/result-loop", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          trackingKey,
-          matchId,
-          homeTeamName: bet?.bet?.homeTeam,
-          awayTeamName: bet?.bet?.awayTeam,
-          leagueName: match?.leagueName,
-          headline: bet?.headline,
-          strategyScore: bet?.strategyScore,
-          confidenceScore: bet?.confidenceScore,
-          primaryEv: bet?.primaryEv,
-          bet: bet?.bet,
-          proof: bet?.proof,
-          ranking: bet?.ranking,
-          eventUrl: summary?.unibetUrl,
-          source: "backtest",
-          stakeUnits: 1,
-        }),
-      });
+    try {
+      setMutationError(null);
+      const matchId = match?.matchId || match?.id;
+      const trackingKey = buildTrackingKey(matchId, bet?.bet);
+      if (resultLoopKeys.has(trackingKey)) {
+        const response = await fetch("/api/result-loop", {
+          method: "DELETE",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ trackingKey }),
+        });
+        await requireOk(response, "Kunde inte ta bort spelad-markeringen.");
+      } else {
+        const response = await fetch("/api/result-loop", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            trackingKey,
+            matchId,
+            homeTeamName: bet?.bet?.homeTeam,
+            awayTeamName: bet?.bet?.awayTeam,
+            leagueName: match?.leagueName,
+            headline: bet?.headline,
+            strategyScore: bet?.strategyScore,
+            confidenceScore: bet?.confidenceScore,
+            primaryEv: bet?.primaryEv,
+            bet: bet?.bet,
+            proof: bet?.proof,
+            ranking: bet?.ranking,
+            eventUrl: summary?.unibetUrl,
+            source: "backtest",
+            stakeUnits: 1,
+          }),
+        });
+        await requireOk(response, "Kunde inte markera spelet som spelat.");
+      }
+      mutate("/api/result-loop?days=180&limit=120");
+    } catch (err) {
+      setMutationError(err?.message || "Kunde inte uppdatera resultatloopen.");
     }
-    mutate("/api/result-loop?days=180&limit=120");
   };
 
   const helperText = useMemo(() => {
@@ -155,6 +176,9 @@ export default function BacktestPanel({ match, onSummaryChange }) {
 
         {bestBet ? (
           <div className="mt-4 space-y-4">
+            {mutationError ? (
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{mutationError}</div>
+            ) : null}
             <article className="rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.06] p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
