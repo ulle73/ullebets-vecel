@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongo";
 import { getMatchesForDate } from "@/lib/repos/fixtures";
 import { getMatch as getTeamstatsMatch } from "@/lib/repos/teamstats";
-import { calcTuple } from "@/lib/backtest/tuples";
+import { resolveMatchupActualValue } from "@/lib/matchupsOutcome";
 
 export async function POST(request) {
   try {
@@ -100,27 +100,24 @@ export async function POST(request) {
                }
           }
 
-          const tuple = calcTuple(fullMatch, statKey, period);
+          const resolved = resolveMatchupActualValue(fullMatch, {
+            statKey,
+            period,
+            scope,
+          });
 
-          if (tuple && tuple[statKey]) {
-              // Extract value based on scope
-              // scope is usually 'total', 'home', 'away'
-              // tuple[statKey] is { home: X, away: Y, total: Z }
-              const val = tuple[statKey][scope];
+          if (typeof resolved?.actualValue === "number") {
+              actual = resolved.actualValue;
 
-              if (typeof val === 'number') {
-                  actual = val;
-
-                  // Determine outcome
-                  if (direction === 'over') {
-                      if (actual > targetLine) outcome = "win";
-                      else if (actual < targetLine) outcome = "loss";
-                      else outcome = "push";
-                  } else { // under
-                      if (actual < targetLine) outcome = "win";
-                      else if (actual > targetLine) outcome = "loss";
-                      else outcome = "push";
-                  }
+              // Determine outcome
+              if (direction === 'over') {
+                  if (actual > targetLine) outcome = "win";
+                  else if (actual < targetLine) outcome = "loss";
+                  else outcome = "push";
+              } else { // under
+                  if (actual < targetLine) outcome = "win";
+                  else if (actual > targetLine) outcome = "loss";
+                  else outcome = "push";
               }
           }
         }

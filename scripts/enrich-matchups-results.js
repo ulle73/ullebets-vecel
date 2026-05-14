@@ -4,6 +4,11 @@ import { MongoClient } from "mongodb";
 import fs from "fs/promises";
 import path from "path";
 import { fetchMatchStatistics } from "../rapidApi/match-statistics.js";
+import { findTeamstatsMatchSelections } from "../lib/teamstatsLookup.js";
+import {
+  buildMatchFromStatisticsPayload,
+  buildMatchupOutcome,
+} from "../lib/matchupsOutcome.js";
 
 dotenv.config({ path: ".env.local" });
 
@@ -36,30 +41,6 @@ function resolveDateArg() {
   return new Date().toISOString().slice(0, 10);
 }
 
-
-
-async function loadTeamstats(client, matchId) {
-  const collection = client.db(DB_NAME).collection("teamstats");
-  const looksNumeric =
-    typeof matchId === "number" || /^\d+$/.test(String(matchId));
-  const exactId = looksNumeric ? Number(matchId) : String(matchId);
-
-  const doc = await collection.findOne(
-    { "full.matchId": exactId },
-    { projection: { full: 1 } }
-  );
-  if (!doc) return [];
-  const full = Array.isArray(doc.full) ? doc.full : [doc.full].filter(Boolean);
-  return full;
-}
-
-function toStatNumber(value) {
-  if (value == null) return null;
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
-  const parsed = Number(String(value).replace(/[^0-9.+-]/g, ""));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 function parseRapidApiKeys() {
   return (process.env.RAPIDAPI_KEYS || process.env.RAPIDAPI_KEY || "")
     .split(",")
@@ -80,89 +61,6 @@ function buildRapidContext() {
   };
 }
 
-function findActualFromFull(fullArr, wantedMatchId, period, statKey) {
-  const looksNumeric =
-    typeof wantedMatchId === "number" || /^\d+$/.test(String(wantedMatchId));
-  const wantedNum = looksNumeric ? Number(wantedMatchId) : null;
-  const wantedStr = String(wantedMatchId);
-
-  const candidatesFull = fullArr.filter((node) => {
-    const nid = node?.matchId;
-    if (nid == null) return false;
-    if (typeof nid === "number" && looksNumeric) return nid === wantedNum;
-    if (typeof nid === "string" && !looksNumeric) return nid === wantedStr;
-    return false;
-  });
-
-  for (const snap of candidatesFull) {
-    const statistics =
-      snap?.matchDetails?.statistics ??
-      snap?.statistics ??
-      snap?.matchDetails?.statisticsItems ??
-      [];
-
-    if (!Array.isArray(statistics)) continue;
-
-    const nodesToCheck = statistics.filter(
-      (entry) =>
-        entry?.period === period || (!entry?.period && period === "ALL")
-    );
-
-    for (const node of nodesToCheck) {
-      for (const group of node?.groups ?? []) {
-        for (const item of group?.statisticsItems ?? []) {
-          if (item?.key === statKey) {
-            const home = toStatNumber(item.homeValue ?? item.home);
-            const away = toStatNumber(item.awayValue ?? item.away);
-            return { home, away };
-          }
-        }
-      }
-    }
-  }
-  return null;
-}
-
-function findActualFromStatistics(statistics, period, statKey) {
-  if (!Array.isArray(statistics)) return null;
-
-  const nodesToCheck = statistics.filter(
-    (entry) => entry?.period === period || (!entry?.period && period === "ALL")
-  );
-
-  for (const node of nodesToCheck) {
-    for (const group of node?.groups ?? []) {
-      for (const item of group?.statisticsItems ?? []) {
-        if (item?.key === statKey) {
-          const home = toStatNumber(item.homeValue ?? item.home);
-          const away = toStatNumber(item.awayValue ?? item.away);
-          return { home, away };
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
-function evaluateMatchup(row, actual) {
-  if (!actual) return null;
-  let value = null;
-  if (row.scope === "home") value = actual.home;
-  else if (row.scope === "away") value = actual.away;
-  else if (row.scope === "total") {
-    if (Number.isFinite(actual.home) || Number.isFinite(actual.away)) {
-      value = (actual.home ?? 0) + (actual.away ?? 0);
-    }
-  }
-  if (!Number.isFinite(value)) return null;
-  return {
-    actualValue: value,
-    homeValue: actual.home ?? null,
-    awayValue: actual.away ?? null,
-  };
-}
-
 async function loadMatchStatisticsFallback(matchId, rapidContext, cache) {
   if (!rapidContext?.rapidApiKeys?.length) return null;
 
@@ -173,11 +71,9 @@ async function loadMatchStatisticsFallback(matchId, rapidContext, cache) {
 
   try {
     const statsResult = await fetchMatchStatistics(matchId, rapidContext);
-    const statistics = Array.isArray(statsResult?.statistics)
-      ? statsResult.statistics
-      : null;
-    cache.set(cacheKey, statistics);
-    return statistics;
+    const match = buildMatchFromStatisticsPayload(statsResult?.statistics);
+    cache.set(cacheKey, match);
+    return match;
   } catch (error) {
     console.warn(`[enrich] RapidAPI stats fallback failed for ${matchId}: ${error?.message || error}`);
     cache.set(cacheKey, null);
@@ -185,33 +81,33 @@ async function loadMatchStatisticsFallback(matchId, rapidContext, cache) {
   }
 }
 
-async function enrichTop50(client, top50, rapidContext) {
+async function enrichTop50(db, top50, rapidContext) {
   const rows = [...(top50?.over ?? []), ...(top50?.under ?? [])];
   const outcomeMap = new Map();
   const rapidStatsCache = new Map();
+  const missingTeamstatsWarned = new Set();
+  const uniqueMatchIds = [...new Set(rows.map((row) => row?.matchId).filter(Boolean).map(String))];
+  const teamstatsMatches = await findTeamstatsMatchSelections(db, uniqueMatchIds, {
+    collectionName: "teamstats",
+  });
 
   for (const row of rows) {
-    const fullArr = await loadTeamstats(client, row.matchId);
-    if (!fullArr.length) {
+    const teamstatsMatch = teamstatsMatches.get(String(row.matchId))?.match || null;
+    if (!teamstatsMatch && !missingTeamstatsWarned.has(String(row.matchId))) {
+      missingTeamstatsWarned.add(String(row.matchId));
       console.warn(`[enrich] teamstats missing for match ${row.matchId}`);
     }
-    let actual = findActualFromFull(
-      fullArr,
-      row.matchId,
-      row.period,
-      row.statKey
-    );
+    let outcome = buildMatchupOutcome(teamstatsMatch, row);
 
-    if (!actual) {
-      const statistics = await loadMatchStatisticsFallback(
+    if (!outcome) {
+      const fallbackMatch = await loadMatchStatisticsFallback(
         row.matchId,
         rapidContext,
         rapidStatsCache
       );
-      actual = findActualFromStatistics(statistics, row.period, row.statKey);
+      outcome = buildMatchupOutcome(fallbackMatch, row, { requireFinished: false });
     }
 
-    const outcome = evaluateMatchup(row, actual);
     outcomeMap.set(buildKey(row), { outcome });
   }
 
@@ -243,7 +139,7 @@ async function enrichMatchupsForDate(db, client, date, rapidContext) {
   }
 
   if (scoreDoc?.data) {
-    const newTop50 = await enrichTop50(client, scoreDoc.data.top50, rapidContext);
+    const newTop50 = await enrichTop50(db, scoreDoc.data.top50, rapidContext);
 
     await db.collection("matchups-score").updateOne(
       { _id: date },
@@ -270,7 +166,7 @@ async function enrichMatchupsForDate(db, client, date, rapidContext) {
   }
 
   if (leagueDoc?.data) {
-    const newTop50 = await enrichTop50(client, leagueDoc.data.top50, rapidContext);
+    const newTop50 = await enrichTop50(db, leagueDoc.data.top50, rapidContext);
 
     await db.collection("matchups-league-avg").updateOne(
       { _id: date },

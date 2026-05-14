@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import clientPromise from "../lib/mongo.js";
-import { calcTuple } from "../lib/backtest/tuples.js";
+import { resolveMatchupActualValue } from "../lib/matchupsOutcome.js";
 import {
   POLICY_VERSION,
   RESEARCH_OBJECTIVE,
@@ -89,14 +89,7 @@ function isFinishedMatch(match) {
 }
 
 function resolveActualValue(match, bet) {
-  const statKey = bet?.statKey;
-  if (!statKey) return null;
-  const tuple = calcTuple(match, statKey, bet?.period || "ALL");
-  const stat = tuple?.[statKey];
-  if (!stat) return null;
-  if (bet?.scope === "home") return Number(stat.home);
-  if (bet?.scope === "away") return Number(stat.away);
-  return Number(stat.total);
+  return resolveMatchupActualValue(match, bet)?.actualValue ?? null;
 }
 
 function settleBet(actualValue, bet) {
