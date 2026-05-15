@@ -119,12 +119,6 @@ export async function GET(req) {
         priceHistory: clv?.priceHistory,
         fallbackTrackedOdds: doc?.bet?.odds,
         fallbackTrackedObservedAt: doc?.createdAt,
-        openingOdds: clv?.openingOdds,
-        openingObservedAt: clv?.openingObservedAt || clv?.createdAt,
-        latestObservedOdds: clv?.latestObservedOdds,
-        latestObservedAt: clv?.latestObservedAt,
-        closingOdds: clv?.closingOdds,
-        closingObservedAt: clv?.closingObservedAt,
       });
       const finished = match ? isFinishedMatchSnapshot(match) : false;
       const actualValue = match ? resolveActualValue(match, doc.bet) : null;
@@ -148,22 +142,34 @@ export async function GET(req) {
         result: settlement?.result || null,
         roiUnits: settlement?.roiUnits ?? null,
         pnlUnits: settlement?.pnlUnits ?? null,
-        savedOdds: Number.isFinite(Number(trackedOdds?.savedOdds)) ? Number(trackedOdds.savedOdds) : null,
+        savedOdds:
+          trackedOdds?.savedOdds != null && Number.isFinite(Number(trackedOdds.savedOdds))
+            ? Number(trackedOdds.savedOdds)
+            : null,
         savedOddsObservedAt: trackedOdds?.savedObservedAt || null,
         closingOdds:
-          eventStarted && Number.isFinite(Number(trackedOdds?.closingOdds))
+          eventStarted &&
+          trackedOdds?.closingOdds != null &&
+          Number.isFinite(Number(trackedOdds.closingOdds))
             ? Number(trackedOdds.closingOdds)
             : null,
         closingObservedAt: eventStarted ? trackedOdds?.closingObservedAt || null : null,
         clvPct:
-          eventStarted && Number.isFinite(Number(trackedOdds?.clvPct))
+          eventStarted &&
+          trackedOdds?.clvPct != null &&
+          Number.isFinite(Number(trackedOdds.clvPct))
             ? Number(trackedOdds.clvPct)
             : null,
         beatClosingLine:
           eventStarted && typeof trackedOdds?.beatClosingLine === "boolean"
             ? trackedOdds.beatClosingLine
             : null,
-        latestObservedOdds: Number.isFinite(Number(clv?.latestObservedOdds)) ? Number(clv.latestObservedOdds) : null,
+        closingLineAvailable: Boolean(trackedOdds?.hasClosingObservation),
+        prematchObservationCount: Number(trackedOdds?.prematchObservationCount) || 0,
+        latestObservedOdds:
+          clv?.latestObservedOdds != null && Number.isFinite(Number(clv.latestObservedOdds))
+            ? Number(clv.latestObservedOdds)
+            : null,
         eventTimestampMs,
         oddsCapturedAfterStart:
           Number.isFinite(eventTimestampMs) &&

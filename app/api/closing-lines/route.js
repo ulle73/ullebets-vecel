@@ -3,6 +3,7 @@ import clientPromise from "@/lib/mongo";
 import mapUnibetOdds from "@/components/backtest/unibetOddsMapper";
 import { findUnibetEventForMatch } from "@/lib/backtest/unibetAuto";
 import {
+  buildTrackedObservationHistory,
   buildTrackingPriceSnapshot,
   computeTrackedOddsWindow,
   mergeTrackingPriceHistory,
@@ -51,6 +52,7 @@ function normalizeShortlistEntry(snapshot, item) {
 
   return {
     trackedAt: snapshot?.createdAt || null,
+    trackingSource: "shortlist",
     date: snapshot?.date || null,
     strategyId: snapshot?.strategyId || null,
     strategyLabel: snapshot?.strategyLabel || null,
@@ -74,6 +76,7 @@ function normalizeResultLoopEntry(item) {
 
   return {
     trackedAt: item?.createdAt || item?.updatedAt || null,
+    trackingSource: "result-loop",
     date: null,
     strategyId: item?.ranking?.strategyId || null,
     strategyLabel: item?.ranking?.strategyLabel || null,
@@ -154,6 +157,27 @@ function buildClvMetrics(openingOdds, closingOdds) {
   };
 }
 
+function buildObservationHistory(entry, existing) {
+  const rawObservations = Array.isArray(entry?.observations)
+    ? entry.observations
+    : [
+        {
+          odds: entry?.bet?.odds,
+          observedAt: entry?.trackedAt || null,
+          source: entry?.trackingSource || (entry?.trackingKey ? "result-loop" : "shortlist"),
+        },
+      ];
+
+  let priceHistory = buildTrackedObservationHistory(rawObservations);
+  const storedMarketHistory = Array.isArray(existing?.priceHistory)
+    ? existing.priceHistory.filter((item) => item?.source === "market")
+    : [];
+  for (const snapshot of storedMarketHistory) {
+    priceHistory = mergeTrackingPriceHistory(priceHistory, snapshot);
+  }
+  return priceHistory;
+}
+
 function buildAuditPayload(entry, existing, meta, found) {
   const nowIso = new Date().toISOString();
   const nowMs = Date.now();
@@ -163,16 +187,8 @@ function buildAuditPayload(entry, existing, meta, found) {
     toTimestampMs(existing?.eventTimestampMs) ||
     null;
   const eventStarted = Number.isFinite(eventTimestampMs) ? nowMs >= eventTimestampMs : false;
-  const trackedAt = entry?.firstTrackedAt || entry?.trackedAt || existing?.createdAt || nowIso;
-  let priceHistory = Array.isArray(existing?.priceHistory) ? existing.priceHistory : [];
-  priceHistory = mergeTrackingPriceHistory(
-    priceHistory,
-    buildTrackingPriceSnapshot({
-      odds: entry?.bet?.odds,
-      observedAt: trackedAt,
-      source: entry?.trackingKey ? "result-loop" : "shortlist",
-    })
-  );
+  const trackedAt = entry?.trackedAt || existing?.createdAt || nowIso;
+  let priceHistory = buildObservationHistory(entry, existing);
 
   if (!eventStarted && Number.isFinite(Number(found?.currentOdds))) {
     priceHistory = mergeTrackingPriceHistory(
@@ -190,22 +206,14 @@ function buildAuditPayload(entry, existing, meta, found) {
     priceHistory,
     fallbackTrackedOdds: entry?.bet?.odds,
     fallbackTrackedObservedAt: trackedAt,
-    openingOdds: existing?.openingOdds,
-    openingObservedAt: existing?.openingObservedAt || existing?.createdAt,
-    latestObservedOdds: existing?.latestObservedOdds,
-    latestObservedAt: existing?.latestObservedAt,
-    closingOdds: existing?.closingOdds,
-    closingObservedAt: existing?.closingObservedAt,
   });
 
   const latestObservedOdds = !eventStarted && Number.isFinite(Number(found?.currentOdds))
     ? Number(found.currentOdds)
-    : Number.isFinite(Number(existing?.latestObservedOdds))
-      ? Number(existing.latestObservedOdds)
-      : trackedOdds.latestPrematchOdds;
+    : trackedOdds.latestPrematchOdds;
   const latestObservedAt = !eventStarted && Number.isFinite(Number(found?.currentOdds))
     ? nowIso
-    : existing?.latestObservedAt || trackedOdds.latestPrematchObservedAt || null;
+    : trackedOdds.latestPrematchObservedAt || null;
   const closingOdds = eventStarted ? trackedOdds.closingOdds : null;
   const closingObservedAt = eventStarted ? trackedOdds.closingObservedAt : null;
   const metrics = buildClvMetrics(trackedOdds.savedOdds, closingOdds);
@@ -232,7 +240,14 @@ function buildAuditPayload(entry, existing, meta, found) {
     eventStarted,
     eventId: found?.eventId || existing?.eventId || null,
     eventUrl: found?.eventUrl || existing?.eventUrl || null,
-    status: closingOdds ? "closed" : latestObservedOdds ? "tracking" : "unmatched",
+    status: eventStarted
+      ? closingOdds
+        ? "closed"
+        : "insufficient-history"
+      : latestObservedOdds
+        ? "tracking"
+        : "unmatched",
+    prematchObservationCount: trackedOdds.prematchObservationCount,
     priceHistory,
     bet: entry.bet,
     updatedAt: nowIso,
@@ -272,29 +287,42 @@ export async function GET(req) {
       ...resultLoopItems.map((item) => normalizeResultLoopEntry(item)).filter(Boolean),
     ];
 
-    const dedupedMap = new Map();
+    const groupedMap = new Map();
     for (const entry of flatEntries) {
       const trackingKey = buildTrackingKey(entry);
-      const prev = dedupedMap.get(trackingKey);
-      const prevDate = toDate(prev?.trackedAt)?.getTime() || 0;
       const nextDate = toDate(entry?.trackedAt)?.getTime() || 0;
-      if (!prev) {
-        dedupedMap.set(trackingKey, { ...entry, firstTrackedAt: entry?.trackedAt || null });
+      const existingGroup = groupedMap.get(trackingKey);
+      if (!existingGroup) {
+        groupedMap.set(trackingKey, {
+          trackingKey,
+          latestEntry: entry,
+          latestTrackedAtMs: nextDate,
+          entries: [entry],
+        });
         continue;
       }
 
-      const firstTrackedAt = [prev?.firstTrackedAt, prev?.trackedAt, entry?.trackedAt]
-        .filter(Boolean)
-        .sort((a, b) => (toDate(a)?.getTime() || 0) - (toDate(b)?.getTime() || 0))[0] || null;
-
-      if (nextDate >= prevDate) {
-        dedupedMap.set(trackingKey, { ...prev, ...entry, firstTrackedAt });
-      } else {
-        dedupedMap.set(trackingKey, { ...prev, firstTrackedAt });
+      existingGroup.entries.push(entry);
+      if (nextDate >= existingGroup.latestTrackedAtMs) {
+        existingGroup.latestEntry = entry;
+        existingGroup.latestTrackedAtMs = nextDate;
       }
     }
 
-    const dedupedEntries = [...dedupedMap.values()].slice(0, limit);
+    const dedupedEntries = [...groupedMap.values()]
+      .sort((left, right) => right.latestTrackedAtMs - left.latestTrackedAtMs)
+      .slice(0, limit)
+      .map((group) => ({
+        ...group.latestEntry,
+        trackingKey: group.trackingKey,
+        observations: group.entries
+          .map((entry) => ({
+            odds: entry?.bet?.odds,
+            observedAt: entry?.trackedAt || null,
+            source: entry?.trackingSource || (entry?.trackingKey ? "result-loop" : "shortlist"),
+          }))
+          .filter((item) => item.observedAt != null && item.odds != null),
+      }));
     const uniqueMatchIds = [...new Set(dedupedEntries.map((entry) => entry.matchId))];
 
     const matchMap = await findTeamstatsMatchSelections(db, uniqueMatchIds, {
@@ -315,31 +343,34 @@ export async function GET(req) {
       const meta = normalizeMatchMeta(match, entry);
 
       let found = null;
-      try {
-        const event = await findUnibetEventForMatch({
-          homeTeam: entry.homeTeamName || meta.homeTeamName,
-          awayTeam: entry.awayTeamName || meta.awayTeamName,
-          leagueName: entry.leagueName || meta.leagueName,
-          timestamp: meta.timestampMs,
-        });
+      const eventStartedFromMeta = Number.isFinite(meta.timestampMs) ? Date.now() >= meta.timestampMs : false;
+      if (!eventStartedFromMeta) {
+        try {
+          const event = await findUnibetEventForMatch({
+            homeTeam: entry.homeTeamName || meta.homeTeamName,
+            awayTeam: entry.awayTeamName || meta.awayTeamName,
+            leagueName: entry.leagueName || meta.leagueName,
+            timestamp: meta.timestampMs,
+          });
 
-        if (event?.eventId) {
-          const oddsPayload = await fetchUnibetOdds(event.eventId);
-          const mappedOdds = mapUnibetOdds(
-            oddsPayload?.betOffers || [],
-            entry.homeTeamName || meta.homeTeamName,
-            entry.awayTeamName || meta.awayTeamName
-          );
-          const currentOdds = findCurrentOddsForBet(mappedOdds, entry.bet);
-          found = {
-            eventId: String(event.eventId),
-            eventUrl: event.eventUrl,
-            eventStart: event.start || null,
-            currentOdds,
-          };
+          if (event?.eventId) {
+            const oddsPayload = await fetchUnibetOdds(event.eventId);
+            const mappedOdds = mapUnibetOdds(
+              oddsPayload?.betOffers || [],
+              entry.homeTeamName || meta.homeTeamName,
+              entry.awayTeamName || meta.awayTeamName
+            );
+            const currentOdds = findCurrentOddsForBet(mappedOdds, entry.bet);
+            found = {
+              eventId: String(event.eventId),
+              eventUrl: event.eventUrl,
+              eventStart: event.start || null,
+              currentOdds,
+            };
+          }
+        } catch {
+          found = null;
         }
-      } catch {
-        found = null;
       }
 
       const payload = buildAuditPayload(entry, existing, meta, found);

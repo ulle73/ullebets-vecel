@@ -80,6 +80,26 @@ export default function ResultLoopPanel({ onOpenMatch, onSummaryChange }) {
     onSummaryChange?.(summary || { trackedBets: 0, settledBets: 0, openBets: 0, roiPct: 0 });
   }, [onSummaryChange, summary]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const refreshClosingLines = async () => {
+      try {
+        await fetcher("/api/closing-lines?days=180&limit=120");
+        if (!cancelled) {
+          await mutate("/api/result-loop?days=180&limit=120");
+        }
+      } catch {
+        // Resultatloopen ska fortsätta fungera även om CLV-refresh misslyckas.
+      }
+    };
+
+    void refreshClosingLines();
+    return () => {
+      cancelled = true;
+    };
+  }, [mutate]);
+
   const removeTrackedBet = async (trackingKey) => {
     try {
       setMutationError(null);
@@ -172,6 +192,12 @@ export default function ResultLoopPanel({ onOpenMatch, onSummaryChange }) {
                           <>
                             <span>·</span>
                             <span>PnL {item.pnlUnits >= 0 ? "+" : ""}{item.pnlUnits}u</span>
+                          </>
+                        ) : null}
+                        {item.eventTimestampMs && item.closingLineAvailable === false ? (
+                          <>
+                            <span>·</span>
+                            <span className="text-amber-300">Saknar closing-historik</span>
                           </>
                         ) : null}
                         {item.oddsCapturedAfterStart ? (

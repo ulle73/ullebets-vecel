@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildTrackedObservationHistory,
   buildTrackingPriceSnapshot,
   computeTrackedOddsWindow,
   findMatchingClvDoc,
@@ -51,6 +52,47 @@ test("computeTrackedOddsWindow hides tracked odds that were only observed after 
   assert.equal(tracked.savedOdds, null);
   assert.equal(tracked.closingOdds, null);
   assert.equal(tracked.clvPct, null);
+});
+
+test("computeTrackedOddsWindow kräver minst två pre-match observationer för att visa closing line", () => {
+  const tracked = computeTrackedOddsWindow({
+    eventTimestampMs: Date.parse("2026-05-15T18:00:00.000Z"),
+    priceHistory: [
+      buildTrackingPriceSnapshot({ odds: 2.02, observedAt: "2026-05-15T09:00:00.000Z", source: "tracked" }),
+    ],
+  });
+
+  assert.equal(tracked.savedOdds, 2.02);
+  assert.equal(tracked.closingOdds, null);
+  assert.equal(tracked.clvPct, null);
+  assert.equal(tracked.prematchObservationCount, 1);
+  assert.equal(tracked.hasClosingObservation, false);
+});
+
+test("buildTrackedObservationHistory behåller flera oddsobservationer i tidsordning", () => {
+  const history = buildTrackedObservationHistory([
+    { odds: 2.63, observedAt: "2026-03-29T18:45:17.923Z", source: "shortlist" },
+    { odds: 2.63, observedAt: "2026-03-29T21:57:24.152Z", source: "shortlist" },
+    { odds: 2.6, observedAt: "2026-03-30T23:29:35.000Z", source: "result-loop" },
+  ]);
+
+  assert.deepEqual(
+    history.map((item) => ({ odds: item.odds, observedAt: item.observedAt, source: item.source })),
+    [
+      { odds: 2.63, observedAt: "2026-03-29T18:45:17.923Z", source: "shortlist" },
+      { odds: 2.63, observedAt: "2026-03-29T21:57:24.152Z", source: "shortlist" },
+      { odds: 2.6, observedAt: "2026-03-30T23:29:35.000Z", source: "result-loop" },
+    ]
+  );
+
+  const tracked = computeTrackedOddsWindow({
+    eventTimestampMs: Date.parse("2026-03-31T01:00:00.000Z"),
+    priceHistory: history,
+  });
+
+  assert.equal(tracked.savedOdds, 2.63);
+  assert.equal(tracked.closingOdds, 2.6);
+  assert.equal(tracked.hasClosingObservation, true);
 });
 
 test("findMatchingClvDoc falls back to canonical bet signature when tracking keys differ", () => {
