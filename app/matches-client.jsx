@@ -156,6 +156,13 @@ function RightPaneWorkspace({
           <ResultLoopPanel onOpenMatch={onOpenMatch} onSummaryChange={setResultLoopSummary} />
         ) : null}
 
+        {activeTab !== "history" ? (
+          <div className="hidden" aria-hidden="true">
+            {/* Warm the expensive history queries before the user opens the tab. */}
+            <AutoAnalysisHistory onOpenMatch={onOpenMatch} />
+          </div>
+        ) : null}
+
         {activeTab === "history" ? (
           <AutoAnalysisHistory onOpenMatch={onOpenMatch} />
         ) : null}

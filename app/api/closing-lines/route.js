@@ -157,7 +157,7 @@ function buildClvMetrics(openingOdds, closingOdds) {
   };
 }
 
-function buildObservationHistory(entry, existing) {
+function buildObservationHistory(entry, existing, { keepMarketHistory = true } = {}) {
   const rawObservations = Array.isArray(entry?.observations)
     ? entry.observations
     : [
@@ -169,7 +169,7 @@ function buildObservationHistory(entry, existing) {
       ];
 
   let priceHistory = buildTrackedObservationHistory(rawObservations);
-  const storedMarketHistory = Array.isArray(existing?.priceHistory)
+  const storedMarketHistory = keepMarketHistory && Array.isArray(existing?.priceHistory)
     ? existing.priceHistory.filter((item) => item?.source === "market")
     : [];
   for (const snapshot of storedMarketHistory) {
@@ -187,14 +187,18 @@ function buildAuditPayload(entry, existing, meta, found) {
     toTimestampMs(existing?.eventTimestampMs) ||
     null;
   const eventStarted = Number.isFinite(eventTimestampMs) ? nowMs >= eventTimestampMs : false;
+  const currentMarketOdds = Number(found?.currentOdds);
+  const hasValidCurrentMarketOdds = Number.isFinite(currentMarketOdds) && currentMarketOdds > 0;
   const trackedAt = entry?.trackedAt || existing?.createdAt || nowIso;
-  let priceHistory = buildObservationHistory(entry, existing);
+  let priceHistory = buildObservationHistory(entry, existing, {
+    keepMarketHistory: hasValidCurrentMarketOdds,
+  });
 
-  if (!eventStarted && Number.isFinite(Number(found?.currentOdds))) {
+  if (!eventStarted && hasValidCurrentMarketOdds) {
     priceHistory = mergeTrackingPriceHistory(
       priceHistory,
       buildTrackingPriceSnapshot({
-        odds: found.currentOdds,
+        odds: currentMarketOdds,
         observedAt: nowIso,
         source: "market",
       })
@@ -208,10 +212,10 @@ function buildAuditPayload(entry, existing, meta, found) {
     fallbackTrackedObservedAt: trackedAt,
   });
 
-  const latestObservedOdds = !eventStarted && Number.isFinite(Number(found?.currentOdds))
-    ? Number(found.currentOdds)
+  const latestObservedOdds = !eventStarted && hasValidCurrentMarketOdds
+    ? currentMarketOdds
     : trackedOdds.latestPrematchOdds;
-  const latestObservedAt = !eventStarted && Number.isFinite(Number(found?.currentOdds))
+  const latestObservedAt = !eventStarted && hasValidCurrentMarketOdds
     ? nowIso
     : trackedOdds.latestPrematchObservedAt || null;
   const closingOdds = eventStarted ? trackedOdds.closingOdds : null;

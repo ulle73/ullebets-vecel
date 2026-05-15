@@ -68,6 +68,11 @@ function determinePeriod(label) {
   return "ALL";
 }
 
+function isPlayerSpecificMarket(label) {
+  if (!label) return false;
+  return /\bspelar(?:en|ens|e|are)\b/i.test(label);
+}
+
 function normalizeEntries(unibetOdds) {
   if (!unibetOdds) return [];
   if (Array.isArray(unibetOdds)) {
@@ -88,6 +93,8 @@ export default function mapUnibetOdds(unibetOdds, homeTeam = "", awayTeam = "") 
   const awayAliases = getTeamAliases(awayTeam);
 
   for (const [label, market] of entries) {
+    if (isPlayerSpecificMarket(label)) continue;
+
     const statEntry = STAT_MAP.find((s) => s.regex.test(label));
     if (!statEntry || !market) continue;
 
