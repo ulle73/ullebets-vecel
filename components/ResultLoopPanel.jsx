@@ -162,7 +162,7 @@ export default function ResultLoopPanel({ onOpenMatch, onSummaryChange }) {
                         <StatusBadge status={item.status} result={item.result} clvPct={item.clvPct} />
                       </div>
 
-                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
+                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-200">
                         <span>Sparat {formatOddsValue(item.savedOdds)}</span>
                         {Number.isFinite(Number(item.closingOdds)) ? (
                           <>
