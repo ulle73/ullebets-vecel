@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongo";
 import mapUnibetOdds from "@/components/backtest/unibetOddsMapper";
 import { findUnibetEventForMatch } from "@/lib/backtest/unibetAuto";
+import {
+  buildTrackingPriceSnapshot,
+  computeTrackedOddsWindow,
+  mergeTrackingPriceHistory,
+} from "@/lib/clvTracking";
 import { findTeamstatsMatchSelections } from "@/lib/teamstatsLookup";
 
 export const runtime = "nodejs";
 
 const DB_NAME = process.env.MONGODB_DB || "app";
 const SNAPSHOT_COLLECTION = "analysis-snapshots";
+const RESULT_LOOP_COLLECTION = "result-loop-bets";
 const TEAMSTATS_COLLECTION = "teamstats";
 const CLV_COLLECTION = "closing-line-tracking";
 const UNIBET_BASE_URL = "https://eu1.offering-api.kambicdn.com/offering/v2018/ubse/betoffer/event";
@@ -34,6 +40,7 @@ function toTimestampMs(value) {
 }
 
 function buildTrackingKey(entry) {
+  if (entry?.trackingKey) return entry.trackingKey;
   return `${entry.matchId}:${entry.bet.key || `${entry.bet.statKey}:${entry.bet.scope}:${entry.bet.period}:${entry.bet.line}:${entry.bet.direction}`}`;
 }
 
@@ -43,7 +50,7 @@ function normalizeShortlistEntry(snapshot, item) {
   }
 
   return {
-    snapshotCreatedAt: snapshot?.createdAt || null,
+    trackedAt: snapshot?.createdAt || null,
     date: snapshot?.date || null,
     strategyId: snapshot?.strategyId || null,
     strategyLabel: snapshot?.strategyLabel || null,
@@ -55,6 +62,30 @@ function normalizeShortlistEntry(snapshot, item) {
     primaryEv: Number(item.primaryEv) || 0,
     confidenceScore: Number(item.confidenceScore) || 0,
     agreementPct: Number(item.agreementPct) || 0,
+    strategyScore: Number(item.strategyScore) || 0,
+    bet: item.bet,
+  };
+}
+
+function normalizeResultLoopEntry(item) {
+  if (!item?.trackingKey || !item?.matchId || !item?.bet?.statKey || item?.bet?.line == null || !item?.bet?.odds) {
+    return null;
+  }
+
+  return {
+    trackedAt: item?.createdAt || item?.updatedAt || null,
+    date: null,
+    strategyId: item?.ranking?.strategyId || null,
+    strategyLabel: item?.ranking?.strategyLabel || null,
+    trackingKey: item.trackingKey,
+    matchId: String(item.matchId),
+    homeTeamName: item.homeTeamName || null,
+    awayTeamName: item.awayTeamName || null,
+    leagueName: item.leagueName || null,
+    headline: item.headline || null,
+    primaryEv: Number(item.primaryEv) || 0,
+    confidenceScore: Number(item.confidenceScore) || 0,
+    agreementPct: Number(item?.ranking?.agreementPct) || 0,
     strategyScore: Number(item.strategyScore) || 0,
     bet: item.bet,
   };
@@ -124,23 +155,60 @@ function buildClvMetrics(openingOdds, closingOdds) {
 }
 
 function buildAuditPayload(entry, existing, meta, found) {
-  const openingOdds = Number(entry?.bet?.odds);
   const nowIso = new Date().toISOString();
   const nowMs = Date.now();
-  const eventTimestampMs = meta.timestampMs || toTimestampMs(found?.eventStart) || null;
+  const eventTimestampMs =
+    meta.timestampMs ||
+    toTimestampMs(found?.eventStart) ||
+    toTimestampMs(existing?.eventTimestampMs) ||
+    null;
   const eventStarted = Number.isFinite(eventTimestampMs) ? nowMs >= eventTimestampMs : false;
+  const trackedAt = entry?.firstTrackedAt || entry?.trackedAt || existing?.createdAt || nowIso;
+  let priceHistory = Array.isArray(existing?.priceHistory) ? existing.priceHistory : [];
+  priceHistory = mergeTrackingPriceHistory(
+    priceHistory,
+    buildTrackingPriceSnapshot({
+      odds: entry?.bet?.odds,
+      observedAt: trackedAt,
+      source: entry?.trackingKey ? "result-loop" : "shortlist",
+    })
+  );
 
-  const latestObservedOdds = found?.currentOdds ?? existing?.latestObservedOdds ?? null;
-  const latestObservedAt = found?.currentOdds != null ? nowIso : existing?.latestObservedAt ?? null;
-
-  let closingOdds = existing?.closingOdds ?? null;
-  let closingObservedAt = existing?.closingObservedAt ?? null;
-  if (!closingOdds && eventStarted && Number.isFinite(latestObservedOdds)) {
-    closingOdds = latestObservedOdds;
-    closingObservedAt = latestObservedAt || nowIso;
+  if (!eventStarted && Number.isFinite(Number(found?.currentOdds))) {
+    priceHistory = mergeTrackingPriceHistory(
+      priceHistory,
+      buildTrackingPriceSnapshot({
+        odds: found.currentOdds,
+        observedAt: nowIso,
+        source: "market",
+      })
+    );
   }
 
-  const metrics = buildClvMetrics(openingOdds, closingOdds);
+  const trackedOdds = computeTrackedOddsWindow({
+    eventTimestampMs,
+    priceHistory,
+    fallbackTrackedOdds: entry?.bet?.odds,
+    fallbackTrackedObservedAt: trackedAt,
+    openingOdds: existing?.openingOdds,
+    openingObservedAt: existing?.openingObservedAt || existing?.createdAt,
+    latestObservedOdds: existing?.latestObservedOdds,
+    latestObservedAt: existing?.latestObservedAt,
+    closingOdds: existing?.closingOdds,
+    closingObservedAt: existing?.closingObservedAt,
+  });
+
+  const latestObservedOdds = !eventStarted && Number.isFinite(Number(found?.currentOdds))
+    ? Number(found.currentOdds)
+    : Number.isFinite(Number(existing?.latestObservedOdds))
+      ? Number(existing.latestObservedOdds)
+      : trackedOdds.latestPrematchOdds;
+  const latestObservedAt = !eventStarted && Number.isFinite(Number(found?.currentOdds))
+    ? nowIso
+    : existing?.latestObservedAt || trackedOdds.latestPrematchObservedAt || null;
+  const closingOdds = eventStarted ? trackedOdds.closingOdds : null;
+  const closingObservedAt = eventStarted ? trackedOdds.closingObservedAt : null;
+  const metrics = buildClvMetrics(trackedOdds.savedOdds, closingOdds);
 
   return {
     trackingKey: buildTrackingKey(entry),
@@ -151,7 +219,8 @@ function buildAuditPayload(entry, existing, meta, found) {
     homeTeamName: entry.homeTeamName || meta.homeTeamName || null,
     awayTeamName: entry.awayTeamName || meta.awayTeamName || null,
     headline: entry.headline || null,
-    openingOdds,
+    openingOdds: trackedOdds.savedOdds,
+    openingObservedAt: trackedOdds.savedObservedAt,
     latestObservedOdds,
     latestObservedAt,
     closingOdds,
@@ -164,6 +233,7 @@ function buildAuditPayload(entry, existing, meta, found) {
     eventId: found?.eventId || existing?.eventId || null,
     eventUrl: found?.eventUrl || existing?.eventUrl || null,
     status: closingOdds ? "closed" : latestObservedOdds ? "tracking" : "unmatched",
+    priceHistory,
     bet: entry.bet,
     updatedAt: nowIso,
     createdAt: existing?.createdAt || nowIso,
@@ -186,21 +256,41 @@ export async function GET(req) {
       .sort({ createdAt: -1 })
       .limit(limit)
       .toArray();
+    const resultLoopItems = await db
+      .collection(RESULT_LOOP_COLLECTION)
+      .find({ createdAt: { $gte: cutoff } }, { projection: { _id: 0 } })
+      .sort({ updatedAt: -1, createdAt: -1 })
+      .limit(Math.min(limit * 4, 300))
+      .toArray();
 
-    const flatEntries = snapshots.flatMap((snapshot) =>
+    const flatEntries = [
+      ...snapshots.flatMap((snapshot) =>
       (Array.isArray(snapshot?.shortlist) ? snapshot.shortlist : [])
         .map((item) => normalizeShortlistEntry(snapshot, item))
         .filter(Boolean)
-    );
+      ),
+      ...resultLoopItems.map((item) => normalizeResultLoopEntry(item)).filter(Boolean),
+    ];
 
     const dedupedMap = new Map();
     for (const entry of flatEntries) {
       const trackingKey = buildTrackingKey(entry);
       const prev = dedupedMap.get(trackingKey);
-      const prevDate = toDate(prev?.snapshotCreatedAt)?.getTime() || 0;
-      const nextDate = toDate(entry?.snapshotCreatedAt)?.getTime() || 0;
-      if (!prev || nextDate >= prevDate) {
-        dedupedMap.set(trackingKey, entry);
+      const prevDate = toDate(prev?.trackedAt)?.getTime() || 0;
+      const nextDate = toDate(entry?.trackedAt)?.getTime() || 0;
+      if (!prev) {
+        dedupedMap.set(trackingKey, { ...entry, firstTrackedAt: entry?.trackedAt || null });
+        continue;
+      }
+
+      const firstTrackedAt = [prev?.firstTrackedAt, prev?.trackedAt, entry?.trackedAt]
+        .filter(Boolean)
+        .sort((a, b) => (toDate(a)?.getTime() || 0) - (toDate(b)?.getTime() || 0))[0] || null;
+
+      if (nextDate >= prevDate) {
+        dedupedMap.set(trackingKey, { ...prev, ...entry, firstTrackedAt });
+      } else {
+        dedupedMap.set(trackingKey, { ...prev, firstTrackedAt });
       }
     }
 

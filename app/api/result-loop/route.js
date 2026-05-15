@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongo";
+import {
+  buildTrackingPriceSnapshot,
+  computeTrackedOddsWindow,
+  findMatchingClvDoc,
+  mergeTrackingPriceHistory,
+  toTimestampMs,
+} from "@/lib/clvTracking";
 import { resolveMatchupActualValue } from "@/lib/matchupsOutcome";
 import { isFinishedMatchSnapshot } from "@/lib/teamstatsSnapshots";
 import { findTeamstatsMatchSelections } from "@/lib/teamstatsLookup";
@@ -13,6 +20,20 @@ const CLV_COLLECTION = "closing-line-tracking";
 
 function resolveActualValue(match, bet) {
   return resolveMatchupActualValue(match, bet)?.actualValue ?? null;
+}
+
+function resolveEventTimestampMs(match, clvDoc) {
+  return (
+    toTimestampMs(clvDoc?.eventTimestampMs) ||
+    toTimestampMs(match?.timestamp) ||
+    toTimestampMs(match?.startTimestamp) ||
+    toTimestampMs(match?.start) ||
+    toTimestampMs(match?.matchTimestamp) ||
+    toTimestampMs(match?.matchDetails?.timestamp) ||
+    toTimestampMs(match?.matchDetails?.startTimestamp) ||
+    toTimestampMs(match?.matchDetails?.start) ||
+    null
+  );
 }
 
 function settleBet(actualValue, bet, stakeUnits = 1) {
@@ -74,14 +95,37 @@ export async function GET(req) {
     });
 
     const clvDocs = docs.length
-      ? await db.collection(CLV_COLLECTION).find({ trackingKey: { $in: docs.map((item) => item.trackingKey) } }).toArray()
+      ? await db.collection(CLV_COLLECTION).find({ matchId: { $in: uniqueMatchIds } }).toArray()
       : [];
-    const clvMap = new Map(clvDocs.map((doc) => [doc.trackingKey, doc]));
+    const clvByMatchId = new Map();
+    for (const doc of clvDocs) {
+      const key = String(doc?.matchId || "");
+      if (!key) continue;
+      const bucket = clvByMatchId.get(key) || [];
+      bucket.push(doc);
+      clvByMatchId.set(key, bucket);
+    }
 
     const items = docs.map((doc) => {
       const matchSelection = matchMap.get(doc.matchId) || null;
       const match = matchSelection?.match || null;
-      const clv = clvMap.get(doc.trackingKey) || null;
+      const clv = findMatchingClvDoc(clvByMatchId.get(String(doc.matchId)) || [], doc);
+      const eventTimestampMs = resolveEventTimestampMs(match, clv);
+      const eventStarted = Number.isFinite(eventTimestampMs)
+        ? Date.now() >= eventTimestampMs
+        : false;
+      const trackedOdds = computeTrackedOddsWindow({
+        eventTimestampMs,
+        priceHistory: clv?.priceHistory,
+        fallbackTrackedOdds: doc?.bet?.odds,
+        fallbackTrackedObservedAt: doc?.createdAt,
+        openingOdds: clv?.openingOdds,
+        openingObservedAt: clv?.openingObservedAt || clv?.createdAt,
+        latestObservedOdds: clv?.latestObservedOdds,
+        latestObservedAt: clv?.latestObservedAt,
+        closingOdds: clv?.closingOdds,
+        closingObservedAt: clv?.closingObservedAt,
+      });
       const finished = match ? isFinishedMatchSnapshot(match) : false;
       const actualValue = match ? resolveActualValue(match, doc.bet) : null;
       const settlement = finished ? settleBet(actualValue, doc.bet, doc.stakeUnits) : null;
@@ -104,10 +148,27 @@ export async function GET(req) {
         result: settlement?.result || null,
         roiUnits: settlement?.roiUnits ?? null,
         pnlUnits: settlement?.pnlUnits ?? null,
-        closingOdds: Number.isFinite(Number(clv?.closingOdds)) ? Number(clv.closingOdds) : null,
-        clvPct: Number.isFinite(Number(clv?.clvPct)) ? Number(clv.clvPct) : null,
-        beatClosingLine: typeof clv?.beatClosingLine === "boolean" ? clv.beatClosingLine : null,
+        savedOdds: Number.isFinite(Number(trackedOdds?.savedOdds)) ? Number(trackedOdds.savedOdds) : null,
+        savedOddsObservedAt: trackedOdds?.savedObservedAt || null,
+        closingOdds:
+          eventStarted && Number.isFinite(Number(trackedOdds?.closingOdds))
+            ? Number(trackedOdds.closingOdds)
+            : null,
+        closingObservedAt: eventStarted ? trackedOdds?.closingObservedAt || null : null,
+        clvPct:
+          eventStarted && Number.isFinite(Number(trackedOdds?.clvPct))
+            ? Number(trackedOdds.clvPct)
+            : null,
+        beatClosingLine:
+          eventStarted && typeof trackedOdds?.beatClosingLine === "boolean"
+            ? trackedOdds.beatClosingLine
+            : null,
         latestObservedOdds: Number.isFinite(Number(clv?.latestObservedOdds)) ? Number(clv.latestObservedOdds) : null,
+        eventTimestampMs,
+        oddsCapturedAfterStart:
+          Number.isFinite(eventTimestampMs) &&
+          Number.isFinite(toTimestampMs(doc?.createdAt)) &&
+          toTimestampMs(doc.createdAt) >= eventTimestampMs,
         updatedAt: doc.updatedAt || doc.createdAt,
         snapshotCandidateCount: Number(matchSelection?.meta?.candidateCount) || 0,
         snapshotFinishedCandidates: Number(matchSelection?.meta?.finishedCandidateCount) || 0,
@@ -156,7 +217,8 @@ export async function POST(req) {
 
     const client = await clientPromise;
     const now = new Date();
-    await client.db(DB_NAME).collection(COLLECTION).updateOne(
+    const db = client.db(DB_NAME);
+    await db.collection(COLLECTION).updateOne(
       { trackingKey: item.trackingKey },
       {
         $set: {
@@ -165,6 +227,44 @@ export async function POST(req) {
         },
         $setOnInsert: {
           createdAt: now,
+        },
+      },
+      { upsert: true }
+    );
+
+    const trackedSnapshot = buildTrackingPriceSnapshot({
+      odds: item?.bet?.odds,
+      observedAt: now,
+      source: "result-loop",
+    });
+    const existingClv = await db
+      .collection(CLV_COLLECTION)
+      .findOne({ trackingKey: item.trackingKey }, { projection: { _id: 0, priceHistory: 1, openingOdds: 1, openingObservedAt: 1, createdAt: 1 } });
+    const priceHistory = mergeTrackingPriceHistory(existingClv?.priceHistory, trackedSnapshot);
+
+    await db.collection(CLV_COLLECTION).updateOne(
+      { trackingKey: item.trackingKey },
+      {
+        $set: {
+          trackingKey: item.trackingKey,
+          matchId: item.matchId,
+          leagueName: item.leagueName,
+          homeTeamName: item.homeTeamName,
+          awayTeamName: item.awayTeamName,
+          headline: item.headline,
+          strategyId: item?.ranking?.strategyId || null,
+          strategyLabel: item?.ranking?.strategyLabel || null,
+          eventUrl: item.eventUrl || null,
+          bet: item.bet,
+          openingOdds:
+            Number.isFinite(Number(existingClv?.openingOdds))
+              ? Number(existingClv.openingOdds)
+              : trackedSnapshot.odds,
+          openingObservedAt:
+            existingClv?.openingObservedAt || trackedSnapshot.observedAt || null,
+          priceHistory,
+          updatedAt: now.toISOString(),
+          createdAt: existingClv?.createdAt || now.toISOString(),
         },
       },
       { upsert: true }

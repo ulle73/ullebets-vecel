@@ -12,6 +12,11 @@ const fetcher = async (input) => {
   return response.json();
 };
 
+function formatOddsValue(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(2) : "—";
+}
+
 async function requireOk(response, fallbackMessage) {
   if (response.ok) return;
   const payload = await response.json().catch(() => ({}));
@@ -138,7 +143,13 @@ export default function ResultLoopPanel({ onOpenMatch, onSummaryChange }) {
                       </div>
 
                       <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
-                        <span>Odds {item.bet?.odds?.toFixed ? item.bet.odds.toFixed(2) : item.bet?.odds}</span>
+                        <span>Sparat {formatOddsValue(item.savedOdds)}</span>
+                        {Number.isFinite(Number(item.closingOdds)) ? (
+                          <>
+                            <span>·</span>
+                            <span>Close {formatOddsValue(item.closingOdds)}</span>
+                          </>
+                        ) : null}
                         <span>·</span>
                         <span>Stake {item.stakeUnits || 1}u</span>
                         <span>·</span>
@@ -161,6 +172,12 @@ export default function ResultLoopPanel({ onOpenMatch, onSummaryChange }) {
                           <>
                             <span>·</span>
                             <span>PnL {item.pnlUnits >= 0 ? "+" : ""}{item.pnlUnits}u</span>
+                          </>
+                        ) : null}
+                        {item.oddsCapturedAfterStart ? (
+                          <>
+                            <span>·</span>
+                            <span className="text-amber-300">Odds sparat efter kickoff döljs i CLV</span>
                           </>
                         ) : null}
                       </div>
