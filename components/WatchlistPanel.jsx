@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
+import { isPastStockholmDate } from "@/lib/stockholmDate";
 
 const fetcher = async (input) => {
   const response = await fetch(input);
@@ -38,8 +39,10 @@ function buildAlertsForItem(item, shortlistMap, clvMap) {
   return alerts.slice(0, 3);
 }
 
-export default function WatchlistPanel({ currentShortlist = [], onOpenMatch, onAlertCountChange }) {
+export default function WatchlistPanel({ currentShortlist = [], date, onOpenMatch, onAlertCountChange }) {
   const [mutationError, setMutationError] = useState(null);
+  const [settlementMessage, setSettlementMessage] = useState(null);
+  const [isSettling, setIsSettling] = useState(false);
   const { mutate } = useSWRConfig();
   const { data, error, isLoading } = useSWR("/api/watchlist", fetcher, { revalidateOnFocus: false });
   const { data: clvData } = useSWR("/api/closing-lines?days=21&limit=120", fetcher, { revalidateOnFocus: false });
@@ -49,6 +52,7 @@ export default function WatchlistPanel({ currentShortlist = [], onOpenMatch, onA
   const clvMap = new Map((clvData?.recent || []).map((entry) => [entry.trackingKey, entry]));
   const enriched = items.map((item) => ({ ...item, alerts: buildAlertsForItem(item, shortlistMap, clvMap) }));
   const alertCount = enriched.reduce((sum, item) => sum + item.alerts.filter((alert) => alert.tone === "positive").length, 0);
+  const canManuallySettle = isPastStockholmDate(date);
 
   useEffect(() => {
     onAlertCountChange?.(alertCount);
@@ -69,6 +73,38 @@ export default function WatchlistPanel({ currentShortlist = [], onOpenMatch, onA
     }
   };
 
+  const settleDateMatches = async () => {
+    if (!canManuallySettle || !date || isSettling) return;
+
+    try {
+      setIsSettling(true);
+      setMutationError(null);
+      setSettlementMessage(null);
+      const response = await fetch("/api/matchups-settlement", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ date }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.message || "Kunde inte rätta matcher för datumet.");
+      }
+
+      await Promise.all([
+        mutate("/api/watchlist"),
+        mutate("/api/closing-lines?days=21&limit=120"),
+        mutate(`/api/matchups-score?date=${encodeURIComponent(date)}`),
+        mutate(`/api/matchups-league-avg?date=${encodeURIComponent(date)}`),
+        mutate("/api/result-loop?days=180&limit=120"),
+      ]);
+      setSettlementMessage(payload?.message || `Rättning klar för ${date}.`);
+    } catch (err) {
+      setMutationError(err?.message || "Kunde inte rätta matcher för datumet.");
+    } finally {
+      setIsSettling(false);
+    }
+  };
+
   return (
     <section className="rounded-2xl border border-white/5 bg-[#09090b] shadow-2xl overflow-hidden">
       <div className="border-b border-white/5 bg-white/[0.02] px-4 py-4">
@@ -77,13 +113,28 @@ export default function WatchlistPanel({ currentShortlist = [], onOpenMatch, onA
             <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-100">Watchlist</h2>
             <p className="mt-2 max-w-4xl text-sm text-slate-300">Bevaka spel du vill följa under dagen. Här samlas in-app alerts när shortlist, historik eller CLV ger nya signaler.</p>
           </div>
-          <div className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300">Alerts: {alertCount}</div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {canManuallySettle ? (
+              <button
+                type="button"
+                onClick={settleDateMatches}
+                disabled={isSettling}
+                className="rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSettling ? "Rättar…" : "Rätta alla matcher"}
+              </button>
+            ) : null}
+            <div className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300">Alerts: {alertCount}</div>
+          </div>
         </div>
       </div>
 
       <div className="p-4">
         {mutationError ? (
           <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-200">{mutationError}</div>
+        ) : null}
+        {settlementMessage ? (
+          <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">{settlementMessage}</div>
         ) : null}
         {isLoading ? (
           <div className="rounded-xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-slate-400">Laddar watchlist…</div>

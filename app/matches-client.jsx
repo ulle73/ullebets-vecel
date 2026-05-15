@@ -149,7 +149,7 @@ function RightPaneWorkspace({
         ) : null}
 
         {activeTab === "watchlist" ? (
-          <WatchlistPanel currentShortlist={autoState.shortlist} onOpenMatch={onOpenMatch} onAlertCountChange={setWatchlistAlertCount} />
+          <WatchlistPanel date={date} currentShortlist={autoState.shortlist} onOpenMatch={onOpenMatch} onAlertCountChange={setWatchlistAlertCount} />
         ) : null}
 
         {activeTab === "loop" ? (
