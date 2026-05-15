@@ -1,16 +1,14 @@
-name: Run Unibet Forward Backtests
+name: Run Unibet Forward Backtests (manual)
 
 on:
-  schedule:
-    - cron: "20 5 * * *" # 06:20 Stockholm (forward sweep 7/5/3 dagar)
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Match date to capture manually (YYYY-MM-DD)"
+        required: true
 
 jobs:
   unibet-forward-backtests:
-    strategy:
-      fail-fast: false
-      matrix:
-        horizon: [7, 6, 5, 4, 3, 2]
     runs-on: ubuntu-latest
     env:
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
@@ -29,9 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run forward backtests (${{ matrix.horizon }} dagar framåt)
+      - name: Run manual forward backtest
         shell: bash
         run: |
-          TARGET_DATE=$(TZ=Europe/Stockholm date -d "+${{ matrix.horizon }} days" +%F)
-          echo "Running forward backtest for $TARGET_DATE (horizon ${{ matrix.horizon }}d)"
+          TARGET_DATE="${{ github.event.inputs.date }}"
+          echo "Running forward backtest for $TARGET_DATE"
           node scripts/run-unibet-forward-backtests.js --date="$TARGET_DATE"

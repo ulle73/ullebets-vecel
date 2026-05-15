@@ -38,6 +38,31 @@ function formatDateTime(value) {
   }
 }
 
+function formatCheckpointMeta(entry = {}) {
+  if (typeof entry.checkpointLabel === "string" && entry.checkpointLabel.trim() !== "") {
+    return entry.checkpointLabel;
+  }
+
+  if (Number.isFinite(Number(entry.minutesToKickoff))) {
+    const totalMinutes = Math.max(0, Math.round(Number(entry.minutesToKickoff)));
+    if (totalMinutes >= 60) {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (minutes === 0) {
+        return `${hours}h före match`;
+      }
+      return `${hours}h ${minutes}m före match`;
+    }
+    return `${totalMinutes}m före match`;
+  }
+
+  if (entry.horizonDays != null) {
+    return `${entry.horizonDays}d före match`;
+  }
+
+  return null;
+}
+
 /**
  * Extract historical odds for a specific line from snapshots
  * @param {Array} snapshots - Array of snapshot objects
@@ -86,6 +111,8 @@ function extractOddsHistory(snapshots = [], targetLine = {}, startTime = null) {
         runDate: snap.runDate,
         odds: oddsVal,
         horizonDays: snap.horizonDays,
+        checkpointLabel: snap.checkpointLabel || null,
+        minutesToKickoff: snap.minutesToKickoff ?? null,
       });
       break; // Only take first match per snapshot
     }
@@ -227,11 +254,11 @@ export default function OddsHistoryPopup({
                     <span className="text-sm text-slate-300 font-medium">
                       {formatDateTime(entry.fetchedAt)}
                     </span>
-                    {entry.horizonDays != null && (
+                    {formatCheckpointMeta(entry) ? (
                       <span className="text-xs text-slate-500">
-                        {entry.horizonDays}d före match
+                        {formatCheckpointMeta(entry)}
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2">
                     <span

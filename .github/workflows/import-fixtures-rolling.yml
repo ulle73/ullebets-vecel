@@ -1,0 +1,105 @@
+name: Import fixtures (rolling D0-D7)
+
+on:
+  schedule:
+    - cron: "15 */4 * * *"
+  workflow_dispatch:
+    inputs:
+      start-date:
+        description: "Optional start date (YYYY-MM-DD). Defaults to today in Stockholm."
+        required: false
+      end-date:
+        description: "Optional end date (YYYY-MM-DD). Defaults to today+7 in Stockholm."
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: import-fixtures-rolling
+  cancel-in-progress: false
+
+jobs:
+  run-script:
+    name: Refresh fixtures for rolling D0-D7
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+      RAPIDAPI_KEYS: ${{ secrets.RAPIDAPI_KEYS }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Puppeteer system libraries (handle Ubuntu 24.04 t64)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          BASE_PKGS=(
+            libnss3
+            libxss1
+            libatk-bridge2.0-0
+            libgtk-3-0
+            libcups2
+            libx11-xcb1
+            libxcomposite1
+            libxdamage1
+            libxfixes3
+            libxrandr2
+            libpangocairo-1.0-0
+            xdg-utils
+          )
+          sudo apt-get install -y --no-install-recommends "${BASE_PKGS[@]}"
+          sudo apt-get install -y --no-install-recommends libgbm1 || sudo apt-get install -y --no-install-recommends libgbm1t64
+          sudo apt-get install -y --no-install-recommends libasound2 || sudo apt-get install -y --no-install-recommends libasound2t64
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Ensure axios is present
+        run: node -e "try{require('axios');process.exit(0)}catch(e){process.exit(1)}" || npm i --no-save axios@^1
+
+      - name: Compute rolling date range
+        id: dates
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.start-date }}" ]; then
+            START="${{ github.event.inputs.start-date }}"
+          else
+            START=$(TZ=Europe/Stockholm date +%F)
+          fi
+          if [ -n "${{ github.event.inputs.end-date }}" ]; then
+            END="${{ github.event.inputs.end-date }}"
+          else
+            END=$(TZ=Europe/Stockholm date -d '+7 days' +%F)
+          fi
+          echo "START=${START}" >> "$GITHUB_OUTPUT"
+          echo "END=${END}" >> "$GITHUB_OUTPUT"
+
+      - name: Run rolling fixtures import
+        env:
+          START: ${{ steps.dates.outputs.START }}
+          END: ${{ steps.dates.outputs.END }}
+        run: |
+          echo "▶ Kör fixtures-script för ${START}-${END}"
+          node scripts/fetch-and-import-fixtures.js "${START}-${END}"
+
+      - name: Commit & push teamstats
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/teamstats/*.json public/teamstats/*.json || true
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(teamstats): refresh rolling fixtures data [skip ci]"
+            git push
+          else
+            echo "No changes to commit."
+          fi

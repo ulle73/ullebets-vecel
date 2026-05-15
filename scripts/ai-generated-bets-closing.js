@@ -119,7 +119,10 @@ async function run() {
             const closings = unibetDoc.snapshots
               .filter((s) => s?.type === "closing")
               .sort((a, b) => new Date(a.fetchedAt) - new Date(b.fetchedAt));
-            closingSnapshot = closings[closings.length - 1] || null;
+            closingSnapshot =
+              [...closings].reverse().find((snapshot) => snapshot?.checkpointKey === "t15m") ||
+              closings[closings.length - 1] ||
+              null;
           }
           closingFetched = true;
         }

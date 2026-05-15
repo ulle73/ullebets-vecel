@@ -1,0 +1,63 @@
+name: Run Unibet Odds Checkpoints
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Optional single match date (YYYY-MM-DD)"
+        required: false
+      days-ahead:
+        description: "How many days ahead to scan when date is omitted"
+        required: false
+      checkpoint:
+        description: "Optional checkpoint filter (d5, d3, d1, t2h, t15m)"
+        required: false
+      now:
+        description: "Optional ISO timestamp override for manual replay"
+        required: false
+
+concurrency:
+  group: run-unibet-odds-checkpoints
+  cancel-in-progress: false
+
+jobs:
+  unibet-odds-checkpoints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+      BASE_URL: ${{ secrets.BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run checkpoint capture
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARGS=()
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            ARGS+=("--date=${{ github.event.inputs.date }}")
+          fi
+          if [ -n "${{ github.event.inputs.days-ahead }}" ]; then
+            ARGS+=("--days-ahead=${{ github.event.inputs.days-ahead }}")
+          fi
+          if [ -n "${{ github.event.inputs.checkpoint }}" ]; then
+            ARGS+=("--checkpoint=${{ github.event.inputs.checkpoint }}")
+          fi
+          if [ -n "${{ github.event.inputs.now }}" ]; then
+            ARGS+=("--now=${{ github.event.inputs.now }}")
+          fi
+          node scripts/run-unibet-odds-checkpoints.js "${ARGS[@]}"

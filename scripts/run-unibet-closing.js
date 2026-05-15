@@ -92,4 +92,17 @@ await runBacktest({
   type: "closing",
   leagues: targetLeagues,
   snapshotLimit: 20,
+  matches: upcomingMatches,
+  runDate: today,
+  metadataBuilder: async ({ match }) => ({
+    captureMode: "manual-closing",
+    checkpointKey: "t15m",
+    checkpointLabel: "Closing 10-15 min",
+    checkpointTargetDays: 0,
+    minutesToKickoff: Math.round(
+      (coerceDate(match.matchDate || match.start)?.getTime() - Date.now()) / 60000
+    ),
+    capturedAt: new Date().toISOString(),
+    targetMatchDate: formatDateInZone(match.matchDate || match.start, "Europe/Stockholm"),
+  }),
 });
