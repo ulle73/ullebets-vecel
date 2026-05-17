@@ -1,48 +1,5 @@
 import { fetchWithRapidApiFallbacks, fetchFromSofaScore } from "./http-helpers.js";
-
-// const RAPID_ENDPOINTS = [
-//   {
-//     name: "sportapi7-scheduled",
-//     host: "sportapi7.p.rapidapi.com",
-//     url: ({ date }) =>
-//       `https://sportapi7.p.rapidapi.com/api/v1/sport/football/scheduled-events/${date}`,
-//     transform: (data) => (Array.isArray(data?.events) ? data.events : []),
-//     allowEmpty: true,
-//   },
-//   {
-//     name: "sportapi7-scheduled-locale",
-//     host: "sportapi7.p.rapidapi.com",
-//     url: ({ date }) =>
-//       `https://sportapi7.p.rapidapi.com/api/v1/sport/football/scheduled-events/${date}?locale=en`,
-//     transform: (data) => (Array.isArray(data?.events) ? data.events : []),
-//     allowEmpty: true,
-//   },
-//   {
-//     name: "sportapi7-scheduled-utc",
-//     host: "sportapi7.p.rapidapi.com",
-//     url: ({ date }) =>
-//       `https://sportapi7.p.rapidapi.com/api/v1/sport/football/events/scheduled?date=${date}`,
-//     transform: (data) => (Array.isArray(data?.events) ? data.events : []),
-//     allowEmpty: true,
-//   },
-//   {
-//     name: "sofascore-scheduled",
-//     host: "sofascore.p.rapidapi.com",
-//     url: ({ date }) =>
-//       `https://sofascore.p.rapidapi.com/sport/football/scheduled-events/${date}`,
-//     transform: (data) => (Array.isArray(data?.events) ? data.events : []),
-//     allowEmpty: true,
-//   },
-//   {
-//     name: "sport-api-real-time-scheduled",
-//     host: "sport-api-real-time.p.rapidapi.com",
-//     url: ({ date }) =>
-//       `https://sport-api-real-time.p.rapidapi.com/sport/football/scheduled-events/${date}`,
-//     transform: (data) => (Array.isArray(data?.events) ? data.events : []),
-//     allowEmpty: true,
-//   },
-// ];
-
+import { RAPIDAPI_BASE_URLS, buildRapidApiUrl } from "./urls.js";
 
 const buildRapidEndpoints = ({ includeGlobalEndpoint }) => {
   const endpoints = [];
@@ -50,9 +7,11 @@ const buildRapidEndpoints = ({ includeGlobalEndpoint }) => {
   if (includeGlobalEndpoint) {
     endpoints.push({
       name: "sportapi7-scheduled",
-      host: "sportapi7.p.rapidapi.com",
       url: ({ date }) =>
-        `https://sportapi7.p.rapidapi.com/api/v1/sport/football/scheduled-events/${date}`,
+        buildRapidApiUrl(
+          RAPIDAPI_BASE_URLS.sportapi7,
+          `/api/v1/sport/football/scheduled-events/${date}`
+        ),
       transform: (data) => (Array.isArray(data?.events) ? data.events : []),
       allowEmpty: true,
     });
@@ -61,25 +20,33 @@ const buildRapidEndpoints = ({ includeGlobalEndpoint }) => {
   endpoints.push(
     {
       name: "sofascore-api-dojo-tournaments",
-      host: "sofascore.p.rapidapi.com",
-      url: ({ date, categoryId }) =>
-        `https://sofascore.p.rapidapi.com/tournaments/get-scheduled-events?categoryId=${categoryId}&date=${date}`,
+      url: () =>
+        buildRapidApiUrl(
+          RAPIDAPI_BASE_URLS.sofascore,
+          "/tournaments/get-scheduled-events"
+        ),
+      query: ({ date, categoryId }) => ({ categoryId, date }),
       transform: (data) => (Array.isArray(data?.events) ? data.events : []),
       allowEmpty: true,
     },
     {
       name: "sport-api-real-time-tournaments",
-      host: "sport-api-real-time.p.rapidapi.com",
-      url: ({ date, categoryId }) =>
-        `https://sport-api-real-time.p.rapidapi.com/tournaments/scheduled-events?categoryId=${categoryId}&date=${date}`,
+      url: () =>
+        buildRapidApiUrl(
+          RAPIDAPI_BASE_URLS.sportApiRealTime,
+          "/tournaments/scheduled-events"
+        ),
+      query: ({ date, categoryId }) => ({ categoryId, date }),
       transform: (data) => (Array.isArray(data?.events) ? data.events : []),
       allowEmpty: true,
     },
     {
       name: "sofascore-sport-scheduled-events",
-      host: "sofascore-sport-api.p.rapidapi.com",
       url: ({ date }) =>
-        `https://sofascore-sport-api.p.rapidapi.com/api/sport/football/scheduled-events/${date}`,
+        buildRapidApiUrl(
+          RAPIDAPI_BASE_URLS.sofascoreSportApi,
+          `/api/sport/football/scheduled-events/${date}`
+        ),
       transform: (data) => (Array.isArray(data?.events) ? data.events : []),
       allowEmpty: true,
     }
@@ -87,7 +54,6 @@ const buildRapidEndpoints = ({ includeGlobalEndpoint }) => {
 
   return endpoints;
 };
-
 
 export async function fetchScheduledMatches(date, context, options = {}) {
   const { rapidApiKeys, rapidApiState, page, logger } = context;
@@ -134,9 +100,8 @@ export async function fetchScheduledMatches(date, context, options = {}) {
   });
 
   return {
-    matches: sofaResult.success && Array.isArray(sofaResult.data)
-      ? sofaResult.data
-      : [],
+    matches:
+      sofaResult.success && Array.isArray(sofaResult.data) ? sofaResult.data : [],
     source: sofaResult.success ? sofaResult.source : null,
     apiKey: null,
     calls: (rapidResult.calls || 0) + (sofaResult.calls || 0),

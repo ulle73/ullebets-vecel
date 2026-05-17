@@ -1,16 +1,19 @@
 import { fetchWithRapidApiFallbacks, fetchFromSofaScore } from "./http-helpers.js";
+import { RAPIDAPI_BASE_URLS, buildRapidApiUrl } from "./urls.js";
 
 const SHOTMAP_ENDPOINTS = [
   {
     name: "sportapi7-shotmap",
-    host: "sportapi7.p.rapidapi.com",
-    url: ({ matchId }) => `https://sportapi7.p.rapidapi.com/api/v1/event/${matchId}/shotmap`,
+    url: ({ matchId }) =>
+      buildRapidApiUrl(
+        RAPIDAPI_BASE_URLS.sportapi7,
+        `/api/v1/event/${matchId}/shotmap`
+      ),
     transform: (data) => data ?? null,
   },
   {
     name: "sofasport-shotmap",
-    host: "sofasport.p.rapidapi.com",
-    url: () => `https://sofasport.p.rapidapi.com/v1/events/shotmap`,
+    url: () => buildRapidApiUrl(RAPIDAPI_BASE_URLS.sofasport, "/v1/events/shotmap"),
     query: ({ matchId }) => ({ event_id: matchId }),
     transform: (data) => data?.data ?? data ?? null,
   },

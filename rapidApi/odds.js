@@ -3,6 +3,7 @@ import {
   fetchFromSofaScore,
   isValueEmpty,
 } from "./http-helpers.js";
+import { RAPIDAPI_BASE_URLS, buildRapidApiUrl } from "./urls.js";
 
 const MARKETS = [1, 5, 226, 317, 100];
 
@@ -36,40 +37,45 @@ const normalizeOddsPayload = (payload) => {
 const buildMarketEndpoints = (market) => [
   {
     name: `sportapi7-odds-${market}`,
-    host: "sportapi7.p.rapidapi.com",
     url: ({ matchId }) =>
-      `https://sportapi7.p.rapidapi.com/api/v1/event/${matchId}/odds/${market}/all`,
+      buildRapidApiUrl(
+        RAPIDAPI_BASE_URLS.sportapi7,
+        `/api/v1/event/${matchId}/odds/${market}/all`
+      ),
     transform: (data) => data ?? null,
     isEmpty: isEmptyOddsPayload,
   },
   {
     name: `sofascore-odds-${market}`,
-    host: "sofascore.p.rapidapi.com",
-    url: () => `https://sofascore.p.rapidapi.com/matches/get-all-odds`,
+    url: () => buildRapidApiUrl(RAPIDAPI_BASE_URLS.sofascore, "/matches/get-all-odds"),
     query: ({ matchId }) => ({ matchId }),
     transform: (data) => normalizeOddsPayload(data),
     isEmpty: isEmptyOddsPayload,
   },
   {
     name: `sport-api-real-time-odds-${market}`,
-    host: "sport-api-real-time.p.rapidapi.com",
-    url: () => `https://sport-api-real-time.p.rapidapi.com/matches/all-odds`,
+    url: () =>
+      buildRapidApiUrl(
+        RAPIDAPI_BASE_URLS.sportApiRealTime,
+        "/matches/all-odds"
+      ),
     query: ({ matchId }) => ({ matchId }),
     transform: (data) => normalizeOddsPayload(data),
     isEmpty: isEmptyOddsPayload,
   },
   {
     name: `sofascore-sport-odds-${market}`,
-    host: "sofascore-sport-api.p.rapidapi.com",
     url: ({ matchId }) =>
-      `https://sofascore-sport-api.p.rapidapi.com/api/event/${matchId}/odds/${market}/all`,
+      buildRapidApiUrl(
+        RAPIDAPI_BASE_URLS.sofascoreSportApi,
+        `/api/event/${matchId}/odds/${market}/all`
+      ),
     transform: (data) => normalizeOddsPayload(data),
     isEmpty: isEmptyOddsPayload,
   },
   {
     name: `sofasport-odds-${market}`,
-    host: "sofasport.p.rapidapi.com",
-    url: () => `https://sofasport.p.rapidapi.com/v1/events/odds/all`,
+    url: () => buildRapidApiUrl(RAPIDAPI_BASE_URLS.sofasport, "/v1/events/odds/all"),
     query: ({ matchId }) => ({
       event_id: matchId,
       provider_id: "1",

@@ -1,43 +1,48 @@
 import { fetchWithRapidApiFallbacks, fetchFromSofaScore } from "./http-helpers.js";
+import { RAPIDAPI_BASE_URLS, buildRapidApiUrl } from "./urls.js";
 
 const INCIDENT_ENDPOINTS = [
   {
     name: "sportapi7-incidents",
-    host: "sportapi7.p.rapidapi.com",
     url: ({ matchId }) =>
-      `https://sportapi7.p.rapidapi.com/api/v1/event/${matchId}/incidents`,
+      buildRapidApiUrl(
+        RAPIDAPI_BASE_URLS.sportapi7,
+        `/api/v1/event/${matchId}/incidents`
+      ),
     transform: (data) => data ?? null,
   },
   {
     name: "sofascore-incidents",
-    host: "sofascore.p.rapidapi.com",
-    url: () => `https://sofascore.p.rapidapi.com/matches/get-incidents`,
+    url: () => buildRapidApiUrl(RAPIDAPI_BASE_URLS.sofascore, "/matches/get-incidents"),
     query: ({ matchId }) => ({ matchId }),
     transform: (data) => data?.incidents ?? data?.data ?? data ?? null,
   },
   {
     name: "sport-api-real-time-incidents",
-    host: "sport-api-real-time.p.rapidapi.com",
-    url: () => `https://sport-api-real-time.p.rapidapi.com/matches/incidents`,
+    url: () =>
+      buildRapidApiUrl(
+        RAPIDAPI_BASE_URLS.sportApiRealTime,
+        "/matches/incidents"
+      ),
     query: ({ matchId }) => ({ matchId }),
     transform: (data) => data?.data ?? data?.incidents ?? data ?? null,
   },
   {
     name: "sofascore-sport-incidents",
-    host: "sofascore-sport-api.p.rapidapi.com",
     url: ({ matchId }) =>
-      `https://sofascore-sport-api.p.rapidapi.com/api/event/${matchId}/incidents`,
+      buildRapidApiUrl(
+        RAPIDAPI_BASE_URLS.sofascoreSportApi,
+        `/api/event/${matchId}/incidents`
+      ),
     transform: (data) => data?.data ?? data?.incidents ?? data ?? null,
   },
   {
     name: "sofasport-incidents",
-    host: "sofasport.p.rapidapi.com",
-    url: () => `https://sofasport.p.rapidapi.com/v1/events/incidents`,
+    url: () => buildRapidApiUrl(RAPIDAPI_BASE_URLS.sofasport, "/v1/events/incidents"),
     query: ({ matchId }) => ({ event_id: matchId }),
     transform: (data) => data?.data ?? data?.incidents ?? data ?? null,
   },
 ];
-
 
 export async function fetchMatchIncidents(matchId, context) {
   const { rapidApiKeys, rapidApiState, page, logger } = context;

@@ -1,3 +1,5 @@
+import { buildSofaScoreApiUrl } from "./urls.js";
+
 const defaultLogger = {
   info: (...args) => console.log(...args),
   warn: (...args) => console.warn(...args),
@@ -231,9 +233,7 @@ export async function fetchFromSofaScore({
     return { success: false, data: null, source: "sofascore", endpoint: null, calls: 0 };
   }
 
-  const url = endpoint.startsWith("http")
-    ? endpoint
-    : `https://www.sofascore.com/api/v1/${endpoint}`;
+  const url = buildSofaScoreApiUrl(endpoint);
 
   try {
     const result = await page.evaluate(async (targetUrl) => {
