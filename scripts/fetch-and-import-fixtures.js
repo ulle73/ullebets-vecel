@@ -3,7 +3,6 @@ import { existsSync } from "fs";
 import path from "path";
 import puppeteer from "puppeteer";
 import { fileURLToPath } from "url";
-import { clientPromise } from "../lib/db.js";
 import { fetchScheduledMatches } from "../rapidApi/scheduled-matches.js";
 import { spawn } from "child_process";
 
@@ -375,6 +374,7 @@ async function main() {
   console.log("🗄  Importerar i databasen …");
   const DB = process.env.MONGODB_DB || "app";
   const COL = "match-for-date";
+  const { clientPromise } = await import("../lib/db.js");
   const client = await clientPromise;
   const col = client.db(DB).collection(COL);
 
