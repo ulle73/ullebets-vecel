@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongo";
 import { resolveMatchupActualValue } from "@/lib/matchupsOutcome";
+import { buildRapidContext, loadMatchStatisticsFallback } from "@/lib/matchupsEnrichment";
+import { toTimestampMs } from "@/lib/clvTracking";
 import { findTeamstatsMatchSelections } from "@/lib/teamstatsLookup";
 
 export const runtime = "nodejs";
@@ -8,6 +10,7 @@ export const runtime = "nodejs";
 const DB_NAME = process.env.MONGODB_DB || "app";
 const SNAPSHOT_COLLECTION = "analysis-snapshots";
 const TEAMSTATS_COLLECTION = "teamstats";
+const RAPID_FALLBACK_WINDOW_MS = 3 * 60 * 60 * 1000;
 const FINAL_STATUSES = new Set(["closed", "ended", "finished", "afterextra", "afterpenalties"]);
 
 function toDate(value) {
@@ -122,6 +125,7 @@ function normalizeShortlistEntry(snapshot, item) {
     awayTeamName: item.awayTeamName || null,
     leagueName: item.leagueName || null,
     headline: item.headline || null,
+    timestamp: item.timestamp ?? null,
     primaryEv: Number(item.primaryEv) || 0,
     confidenceScore: Number(item.confidenceScore) || 0,
     agreementPct: Number(item.agreementPct) || 0,
@@ -141,6 +145,8 @@ export async function GET(req) {
 
     const client = await clientPromise;
     const db = client.db(DB_NAME);
+    const rapidContext = buildRapidContext();
+    const rapidFallbackCache = new Map();
 
     const snapshots = await db
       .collection(SNAPSHOT_COLLECTION)
@@ -178,7 +184,28 @@ export async function GET(req) {
     let missingMetadataCount = flatEntries.length - dedupedEntries.length;
 
     for (const entry of dedupedEntries) {
-      const match = matchMap.get(entry.matchId)?.match;
+      const matchSelection = matchMap.get(entry.matchId) || null;
+      const baseMatch = matchSelection?.match || null;
+      const fallbackTimestampMs = toTimestampMs(entry.timestamp);
+      const fallbackEligible =
+        !baseMatch &&
+        Number.isFinite(fallbackTimestampMs) &&
+        Date.now() - fallbackTimestampMs > RAPID_FALLBACK_WINDOW_MS;
+      const match = fallbackEligible
+        ? await loadMatchStatisticsFallback(
+            entry.matchId,
+            rapidContext,
+            rapidFallbackCache,
+            {
+              timestamp: fallbackTimestampMs,
+              homeTeamName: entry.homeTeamName || null,
+              awayTeamName: entry.awayTeamName || null,
+              leagueName: entry.leagueName || null,
+            },
+            console
+          )
+        : baseMatch;
+
       if (!match || !isFinishedMatch(match)) {
         unsettledCount += 1;
         continue;

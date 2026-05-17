@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
+import { formatBetContextLabels } from "@/lib/utils/betLabels";
 
 const fetcher = async (input) => {
   const response = await fetch(input);
@@ -151,91 +152,110 @@ export default function ResultLoopPanel({ onOpenMatch, onSummaryChange }) {
 
               {items.length ? (
                 <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                  {items.map((item) => (
-                    <article key={item.trackingKey} className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{item.leagueName || "Liga"} · {item.source || "manual"}</div>
-                          <div className="mt-1 text-sm font-semibold text-white">{item.homeTeamName} vs {item.awayTeamName}</div>
-                          <div className="mt-2 text-sm text-slate-300">{item.headline}</div>
+                  {items.map((item) => {
+                    const { scopeLabel, periodLabel } = formatBetContextLabels(
+                      item.bet,
+                      item.homeTeamName,
+                      item.awayTeamName
+                    );
+
+                    return (
+                      <article key={item.trackingKey} className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                              {item.leagueName || "Liga"} · {item.source || "manual"}
+                            </div>
+                            <div className="mt-1 text-sm font-semibold text-white">
+                              {item.homeTeamName} vs {item.awayTeamName}
+                            </div>
+                            <div className="mt-2 text-sm text-slate-300">
+                              {item.headline}
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
+                              <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-cyan-200">
+                                Scope: {scopeLabel}
+                              </span>
+                              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-slate-300">
+                                Period: {periodLabel}
+                              </span>
+                            </div>
+                          </div>
+                          <StatusBadge status={item.status} result={item.result} clvPct={item.clvPct} />
                         </div>
-                        <StatusBadge status={item.status} result={item.result} clvPct={item.clvPct} />
-                      </div>
 
-                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-200">
-                        <span>Sparat {formatOddsValue(item.savedOdds)}</span>
-                        {Number.isFinite(Number(item.closingOdds)) ? (
-                          <>
-                            <span>·</span>
-                            <span>Close {formatOddsValue(item.closingOdds)}</span>
-                          </>
-                        ) : null}
-                        <span>·</span>
-                        <span>Stake {item.stakeUnits || 1}u</span>
-                        <span>·</span>
-                        <span>EV {item.primaryEv >= 0 ? "+" : ""}{item.primaryEv?.toFixed?.(1) ?? item.primaryEv}%</span>
-                        <span>·</span>
-                        <span>Confidence {item.confidenceScore}/100</span>
-                      </div>
+                        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-200">
+                          <span>Sparat {formatOddsValue(item.savedOdds)}</span>
+                          {Number.isFinite(Number(item.closingOdds)) ? (
+                            <>
+                              <span>·</span>
+                              <span>Close {formatOddsValue(item.closingOdds)}</span>
+                            </>
+                          ) : null}
+                          <span>·</span>
+                          <span>Stake {item.stakeUnits || 1}u</span>
+                          <span>·</span>
+                          <span>EV {item.primaryEv >= 0 ? "+" : ""}{item.primaryEv?.toFixed?.(1) ?? item.primaryEv}%</span>
+                          <span>·</span>
+                          <span>Confidence {item.confidenceScore}/100</span>
+                        </div>
 
-                      <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
-                        <span>{item.bet?.scope === "home" ? item.homeTeamName : item.bet?.scope === "away" ? item.awayTeamName : "Totalt"}</span>
-                        <span>·</span>
-                        <span>{item.bet?.period === "1ST" ? "Första halvlek" : item.bet?.period === "2ND" ? "Andra halvlek" : "Hela matchen"}</span>
-                        {Number.isFinite(item.actualValue) ? (
-                          <>
-                            <span>·</span>
-                            <span>Utfall {item.actualValue}</span>
-                          </>
-                        ) : null}
-                        {Number.isFinite(item.pnlUnits) ? (
-                          <>
-                            <span>·</span>
-                            <span>PnL {item.pnlUnits >= 0 ? "+" : ""}{item.pnlUnits}u</span>
-                          </>
-                        ) : null}
-                        {item.eventTimestampMs && item.closingLineAvailable === false ? (
-                          <>
-                            <span>·</span>
-                            <span className="text-amber-300">Saknar closing-historik</span>
-                          </>
-                        ) : null}
-                        {item.oddsCapturedAfterStart ? (
-                          <>
-                            <span>·</span>
-                            <span className="text-amber-300">Odds sparat efter kickoff döljs i CLV</span>
-                          </>
-                        ) : null}
-                      </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                          {Number.isFinite(item.actualValue) ? (
+                            <>
+                              <span>·</span>
+                              <span>Utfall {item.actualValue}</span>
+                            </>
+                          ) : null}
+                          {Number.isFinite(item.pnlUnits) ? (
+                            <>
+                              <span>·</span>
+                              <span>PnL {item.pnlUnits >= 0 ? "+" : ""}{item.pnlUnits}u</span>
+                            </>
+                          ) : null}
+                          {item.eventTimestampMs && item.closingLineAvailable === false ? (
+                            <>
+                              <span>·</span>
+                              <span className="text-amber-300">Saknar closing-historik</span>
+                            </>
+                          ) : null}
+                          {item.oddsCapturedAfterStart ? (
+                            <>
+                              <span>·</span>
+                              <span className="text-amber-300">Odds sparat efter kickoff döljs i CLV</span>
+                            </>
+                          ) : null}
+                        </div>
 
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onOpenMatch?.({ id: item.matchId, matchId: item.matchId }, "backtest")}
-                          className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300"
-                        >
-                          Öppna match
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeTrackedBet(item.trackingKey)}
-                          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-300"
-                        >
-                          Ta bort
-                        </button>
-                        {item.eventUrl ? (
-                          <a
-                            href={item.eventUrl}
-                            target="_blank"
-                            rel="noreferrer"
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => onOpenMatch?.({ id: item.matchId, matchId: item.matchId }, "backtest")}
+                            className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300"
+                          >
+                            Öppna match
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeTrackedBet(item.trackingKey)}
                             className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-300"
                           >
-                            Oddsmarknad
-                          </a>
-                        ) : null}
-                      </div>
-                    </article>
-                  ))}
+                            Ta bort
+                          </button>
+                          {item.eventUrl ? (
+                            <a
+                              href={item.eventUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-300"
+                            >
+                              Oddsmarknad
+                            </a>
+                          ) : null}
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="mt-4 rounded-xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-slate-400">

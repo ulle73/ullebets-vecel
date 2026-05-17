@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongo";
+import { buildRapidContext, loadMatchStatisticsFallback } from "@/lib/matchupsEnrichment";
 import {
   buildTrackingPriceSnapshot,
   computeTrackedOddsWindow,
@@ -17,14 +18,20 @@ const DB_NAME = process.env.MONGODB_DB || "app";
 const COLLECTION = "result-loop-bets";
 const TEAMSTATS_COLLECTION = "teamstats";
 const CLV_COLLECTION = "closing-line-tracking";
+const RAPID_FALLBACK_WINDOW_MS = 3 * 60 * 60 * 1000;
 
 function resolveActualValue(match, bet) {
   return resolveMatchupActualValue(match, bet)?.actualValue ?? null;
 }
 
-function resolveEventTimestampMs(match, clvDoc) {
+function resolveEventTimestampMs(match, clvDoc, doc = null) {
   return (
     toTimestampMs(clvDoc?.eventTimestampMs) ||
+    toTimestampMs(clvDoc?.timestamp) ||
+    toTimestampMs(clvDoc?.eventTimestamp) ||
+    toTimestampMs(doc?.eventTimestampMs) ||
+    toTimestampMs(doc?.timestamp) ||
+    toTimestampMs(match?.eventTimestampMs) ||
     toTimestampMs(match?.timestamp) ||
     toTimestampMs(match?.startTimestamp) ||
     toTimestampMs(match?.start) ||
@@ -56,6 +63,8 @@ function sanitizeBody(body = {}) {
   return {
     trackingKey: typeof body.trackingKey === "string" ? body.trackingKey : null,
     matchId: body.matchId != null ? String(body.matchId) : null,
+    timestamp: Number.isFinite(Number(body.timestamp)) ? Number(body.timestamp) : null,
+    eventTimestampMs: Number.isFinite(Number(body.eventTimestampMs)) ? Number(body.eventTimestampMs) : null,
     homeTeamName: typeof body.homeTeamName === "string" ? body.homeTeamName : null,
     awayTeamName: typeof body.awayTeamName === "string" ? body.awayTeamName : null,
     leagueName: typeof body.leagueName === "string" ? body.leagueName : null,
@@ -88,6 +97,8 @@ export async function GET(req) {
       .sort({ updatedAt: -1, createdAt: -1 })
       .limit(limit)
       .toArray();
+    const rapidContext = buildRapidContext();
+    const rapidFallbackCache = new Map();
 
     const uniqueMatchIds = [...new Set(docs.map((item) => item.matchId).filter(Boolean))];
     const matchMap = await findTeamstatsMatchSelections(db, uniqueMatchIds, {
@@ -106,11 +117,30 @@ export async function GET(req) {
       clvByMatchId.set(key, bucket);
     }
 
-    const items = docs.map((doc) => {
+    const items = await Promise.all(docs.map(async (doc) => {
       const matchSelection = matchMap.get(doc.matchId) || null;
-      const match = matchSelection?.match || null;
       const clv = findMatchingClvDoc(clvByMatchId.get(String(doc.matchId)) || [], doc);
-      const eventTimestampMs = resolveEventTimestampMs(match, clv);
+      const eventTimestampMs = resolveEventTimestampMs(matchSelection?.match || null, clv, doc);
+      let match = matchSelection?.match || null;
+      const fallbackEligible =
+        Number.isFinite(eventTimestampMs) &&
+        Date.now() - eventTimestampMs > RAPID_FALLBACK_WINDOW_MS;
+
+      if (!match && fallbackEligible) {
+        match = await loadMatchStatisticsFallback(
+          doc.matchId,
+          rapidContext,
+          rapidFallbackCache,
+          {
+            timestamp: eventTimestampMs,
+            homeTeamName: doc?.homeTeamName || clv?.homeTeamName || null,
+            awayTeamName: doc?.awayTeamName || clv?.awayTeamName || null,
+            leagueName: doc?.leagueName || clv?.leagueName || null,
+          },
+          console
+        );
+      }
+
       const eventStarted = Number.isFinite(eventTimestampMs)
         ? Date.now() >= eventTimestampMs
         : false;
@@ -180,7 +210,7 @@ export async function GET(req) {
         snapshotFinishedCandidates: Number(matchSelection?.meta?.finishedCandidateCount) || 0,
         snapshotSourceDocCount: Number(matchSelection?.meta?.sourceDocCount) || 0,
       };
-    });
+    }));
 
     const settled = items.filter((item) => item.status === "settled");
     const open = items.filter((item) => item.status === "open");

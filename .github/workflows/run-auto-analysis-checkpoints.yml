@@ -1,0 +1,62 @@
+name: Run Auto Analysis Checkpoints
+
+on:
+  schedule:
+    - cron: "45 5 * * *"
+  workflow_dispatch:
+    inputs:
+      checkpoint:
+        description: "Optional checkpoint filter (d3 or matchday)"
+        required: false
+      date:
+        description: "Optional target match date (YYYY-MM-DD)"
+        required: false
+      strategy:
+        description: "Strategy id (default balanced)"
+        required: false
+      now:
+        description: "Optional ISO timestamp override for replay"
+        required: false
+
+concurrency:
+  group: run-auto-analysis-checkpoints
+  cancel-in-progress: false
+
+jobs:
+  auto-analysis-checkpoints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run auto analysis checkpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARGS=()
+          if [ -n "${{ github.event.inputs.checkpoint }}" ]; then
+            ARGS+=("--checkpoint=${{ github.event.inputs.checkpoint }}")
+          fi
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            ARGS+=("--date=${{ github.event.inputs.date }}")
+          fi
+          if [ -n "${{ github.event.inputs.strategy }}" ]; then
+            ARGS+=("--strategy=${{ github.event.inputs.strategy }}")
+          fi
+          if [ -n "${{ github.event.inputs.now }}" ]; then
+            ARGS+=("--now=${{ github.event.inputs.now }}")
+          fi
+          node scripts/run-auto-analysis-checkpoints.js "${ARGS[@]}"

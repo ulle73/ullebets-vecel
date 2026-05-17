@@ -61,6 +61,7 @@ function normalizeShortlistEntry(snapshot, item) {
     awayTeamName: item.awayTeamName || null,
     leagueName: item.leagueName || null,
     headline: item.headline || null,
+    timestamp: item.timestamp ?? null,
     primaryEv: Number(item.primaryEv) || 0,
     confidenceScore: Number(item.confidenceScore) || 0,
     agreementPct: Number(item.agreementPct) || 0,
@@ -86,6 +87,8 @@ function normalizeResultLoopEntry(item) {
     awayTeamName: item.awayTeamName || null,
     leagueName: item.leagueName || null,
     headline: item.headline || null,
+    timestamp: item.timestamp ?? null,
+    eventTimestampMs: item.eventTimestampMs ?? null,
     primaryEv: Number(item.primaryEv) || 0,
     confidenceScore: Number(item.confidenceScore) || 0,
     agreementPct: Number(item?.ranking?.agreementPct) || 0,
@@ -100,6 +103,8 @@ function normalizeMatchMeta(match, entry) {
       toTimestampMs(match?.timestamp) ||
       toTimestampMs(match?.startTimestamp) ||
       toTimestampMs(match?.start) ||
+      toTimestampMs(entry?.eventTimestampMs) ||
+      toTimestampMs(entry?.timestamp) ||
       toTimestampMs(match?.matchDetails?.start) ||
       null,
     homeTeamName: match?.homeTeamName || match?.homeTeam || entry?.homeTeamName || null,
@@ -183,6 +188,8 @@ function buildAuditPayload(entry, existing, meta, found) {
   const nowMs = Date.now();
   const eventTimestampMs =
     meta.timestampMs ||
+    toTimestampMs(entry?.eventTimestampMs) ||
+    toTimestampMs(entry?.timestamp) ||
     toTimestampMs(found?.eventStart) ||
     toTimestampMs(existing?.eventTimestampMs) ||
     null;
@@ -225,6 +232,7 @@ function buildAuditPayload(entry, existing, meta, found) {
   return {
     trackingKey: buildTrackingKey(entry),
     matchId: entry.matchId,
+    timestamp: entry.timestamp ?? null,
     strategyId: entry.strategyId || null,
     strategyLabel: entry.strategyLabel || null,
     leagueName: entry.leagueName || meta.leagueName || null,

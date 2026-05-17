@@ -131,6 +131,7 @@ export default function BacktestPanel({ match, onSummaryChange }) {
             bet: bet?.bet,
             proof: bet?.proof,
             ranking: bet?.ranking,
+            timestamp: match?.timestamp ?? null,
             eventUrl: summary?.unibetUrl,
             source: "backtest",
             stakeUnits: 1,

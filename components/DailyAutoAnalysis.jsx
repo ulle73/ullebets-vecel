@@ -2,18 +2,36 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
-import mapUnibetOdds from "@/components/backtest/unibetOddsMapper";
-import {
-  STRATEGY_PROFILES,
-  buildPositiveResultsSummary,
-  getStrategyProfile,
-  matchesStrategyFilters,
-  normalizeBatchResult,
-  scoreResultForStrategy,
-} from "@/lib/backtest/resultSummary";
+import { buildTrackingKey } from "@/lib/autoAnalysis/store";
+import { STRATEGY_PROFILES, getStrategyProfile } from "@/lib/backtest/resultSummary";
 
-const MAX_CONCURRENCY = 2;
-const MAX_BETS_PER_MATCH = 120;
+const DEFAULT_VISIBLE_SCORE = {
+  safe: 92,
+  balanced: 90,
+  aggressive: 85,
+  corners: 90,
+  shots: 90,
+};
+
+function createEmptyState() {
+  return {
+    run: null,
+    bestOverall: null,
+    shortlist: [],
+    candidates: [],
+    summary: {
+      shortlistCount: 0,
+      provenCount: 0,
+      candidateCount: 0,
+      qualifyingCandidateCount: 0,
+      marketCount: 0,
+    },
+  };
+}
+
+function getDefaultVisibleScore(strategyId) {
+  return DEFAULT_VISIBLE_SCORE[strategyId] || 90;
+}
 
 const fetcher = async (input) => {
   const response = await fetch(input);
@@ -24,86 +42,10 @@ const fetcher = async (input) => {
   return response.json();
 };
 
-async function postBacktest(body, signal) {
-  const response = await fetch("/api/backtest", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-    signal,
-  });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(payload?.message || `HTTP ${response.status}`);
-  }
-
-  return response.json();
-}
-
-function buildTrackingKey(matchId, bet) {
-  return `${matchId}:${bet?.key || `${bet?.statKey}:${bet?.scope}:${bet?.period}:${bet?.line}:${bet?.direction}`}`;
-}
-
 async function requireOk(response, fallbackMessage) {
   if (response.ok) return;
   const payload = await response.json().catch(() => ({}));
   throw new Error(payload?.message || fallbackMessage || `HTTP ${response.status}`);
-}
-
-function buildMatchLookupPayload(match) {
-  return {
-    action: "auto-unibet-odds",
-    matchId: match?.matchId || match?.id || null,
-    eventId: match?.eventId || match?.raw?.event?.id || match?.raw?.eventId || null,
-    homeTeam: match?.homeTeamName,
-    awayTeam: match?.awayTeamName,
-    leagueName: match?.leagueName,
-    timestamp: match?.timestamp,
-    start: match?.raw?.event?.start || null,
-  };
-}
-
-function buildBatchBets(match, tuples) {
-  const unique = new Map();
-
-  for (const tuple of Array.isArray(tuples) ? tuples : []) {
-    const base = {
-      homeTeam: match?.homeTeamName,
-      awayTeam: match?.awayTeamName,
-      line: tuple.line,
-      scope: tuple.scope,
-      stat: tuple.statKey,
-      period: tuple.period,
-      form: "all",
-      neutralGround: false,
-      home_importance: 5,
-      away_importance: 5,
-    };
-
-    if (Number.isFinite(tuple?.odds?.over) && tuple.odds.over > 1) {
-      const key = `${base.homeTeam}|${base.awayTeam}|${base.stat}|${base.scope}|${base.period}|${base.line}|over`;
-      unique.set(key, { ...base, over: true, odds: tuple.odds.over });
-    }
-
-    if (Number.isFinite(tuple?.odds?.under) && tuple.odds.under > 1) {
-      const key = `${base.homeTeam}|${base.awayTeam}|${base.stat}|${base.scope}|${base.period}|${base.line}|under`;
-      unique.set(key, { ...base, over: false, odds: tuple.odds.under });
-    }
-  }
-
-  return Array.from(unique.values()).slice(0, MAX_BETS_PER_MATCH);
-}
-
-async function persistSnapshot(payload) {
-  try {
-    await fetch("/api/analysis-snapshots", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    // best effort
-  }
 }
 
 function MetricBadge({ label, value, tone = "neutral" }) {
@@ -118,16 +60,26 @@ function MetricBadge({ label, value, tone = "neutral" }) {
   return <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${toneClass}`}>{label}: {value}</span>;
 }
 
-export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOpenMatch, onAutoStateChange }) {
+function buildMatchLinkPayload(entry) {
+  return {
+    id: entry?.matchId,
+    matchId: entry?.matchId,
+    homeTeamName: entry?.homeTeamName,
+    awayTeamName: entry?.awayTeamName,
+    leagueName: entry?.leagueName,
+  };
+}
+
+export default function DailyAutoAnalysis({ date, matches = [], onOpenMatch, onAutoStateChange }) {
   const [strategyId, setStrategyId] = useState("balanced");
-  const [analysisEntries, setAnalysisEntries] = useState([]);
+  const [serverState, setServerState] = useState(createEmptyState);
+  const [visibleMinScore, setVisibleMinScore] = useState(getDefaultVisibleScore("balanced"));
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState(null);
-  const [progress, setProgress] = useState({ completed: 0, total: 0 });
   const abortRef = useRef(null);
-  const lastPersistKeyRef = useRef("");
   const { mutate } = useSWRConfig();
 
+  const strategyProfile = getStrategyProfile(strategyId);
   const { data: rankingFeedback } = useSWR("/api/ranking-feedback?days=120&limit=500", fetcher, { revalidateOnFocus: false });
   const { data: watchlistData } = useSWR("/api/watchlist", fetcher, { revalidateOnFocus: false });
   const { data: resultLoopData } = useSWR("/api/result-loop?days=180&limit=120", fetcher, { revalidateOnFocus: false });
@@ -135,38 +87,45 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
   const resultLoopKeys = new Set((resultLoopData?.items || []).map((item) => item.trackingKey));
 
   useEffect(() => {
-    setAnalysisEntries([]);
+    setServerState(createEmptyState());
     setError(null);
-    setProgress({ completed: 0, total: 0 });
   }, [date]);
+
+  useEffect(() => {
+    setVisibleMinScore(getDefaultVisibleScore(strategyId));
+    setServerState(createEmptyState());
+    setError(null);
+  }, [strategyId]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  const analyzeSingleMatch = useCallback(async (match, signal) => {
-    const lookup = await postBacktest(buildMatchLookupPayload(match), signal);
-    const tuples = mapUnibetOdds(lookup?.odds, match?.homeTeamName, match?.awayTeamName);
-    if (!tuples.length) return { match, candidates: [], unibetUrl: lookup?.eventUrl || null, status: "no-markets", marketCount: 0 };
+  const derived = useMemo(() => {
+    const shortlist = Array.isArray(serverState?.shortlist) ? serverState.shortlist : [];
+    return {
+      run: serverState?.run || null,
+      shortlist,
+      candidates: Array.isArray(serverState?.candidates) ? serverState.candidates : [],
+      bestOverall: serverState?.bestOverall || shortlist[0]?.bestBet || null,
+      summary: {
+        shortlistCount: Number(serverState?.summary?.shortlistCount) || shortlist.length,
+        provenCount: Number(serverState?.summary?.provenCount) || shortlist.filter((entry) => entry?.bestBet?.proof?.historicalReady).length,
+        candidateCount: Number(serverState?.summary?.candidateCount) || 0,
+        qualifyingCandidateCount: Number(serverState?.summary?.qualifyingCandidateCount) || 0,
+        marketCount: Number(serverState?.summary?.marketCount) || 0,
+      },
+    };
+  }, [serverState]);
 
-    const bets = buildBatchBets(match, tuples);
-    if (!bets.length) return { match, candidates: [], unibetUrl: lookup?.eventUrl || null, status: "no-bets", marketCount: 0 };
-
-    const batchResults = await postBacktest({ action: "batch-expected-value", bets }, signal);
-    const normalized = (Array.isArray(batchResults) ? batchResults : [])
-      .filter((entry) => entry && !entry.error)
-      .map((entry) => normalizeBatchResult(entry))
-      .filter((entry) => entry && (entry.primaryEv || 0) > 0);
-
-    const summary = buildPositiveResultsSummary(normalized, lookup?.eventUrl || null, {
-      strategyId: "balanced",
-      learningProfile: rankingFeedback || null,
+  useEffect(() => {
+    onAutoStateChange?.({
+      ...derived,
+      candidateFeed: derived.candidates,
     });
-
-    return { match, candidates: summary.items, unibetUrl: summary.unibetUrl, status: summary.count ? "ok" : "no-positive-edges", marketCount: bets.length };
-  }, [rankingFeedback]);
+  }, [derived, onAutoStateChange]);
 
   const runAnalysis = useCallback(async () => {
     if (!matches.length) {
-      setAnalysisEntries([]);
+      setServerState(createEmptyState());
       setError("Inga matcher att analysera för valt datum.");
       return;
     }
@@ -176,110 +135,46 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
     abortRef.current = controller;
     setIsRunning(true);
     setError(null);
-    setProgress({ completed: 0, total: matches.length });
-
-    const results = new Array(matches.length);
-    let pointer = 0;
-    let completed = 0;
-
-    const worker = async () => {
-      while (pointer < matches.length) {
-        const currentIndex = pointer++;
-        const match = matches[currentIndex];
-        try {
-          results[currentIndex] = await analyzeSingleMatch(match, controller.signal);
-        } catch (err) {
-          if (controller.signal.aborted) return;
-          results[currentIndex] = { match, candidates: [], unibetUrl: null, status: "error", error: err?.message || "Kunde inte analysera matchen" };
-        } finally {
-          completed += 1;
-          setProgress({ completed, total: matches.length });
-        }
-      }
-    };
 
     try {
-      await Promise.all(Array.from({ length: Math.min(MAX_CONCURRENCY, matches.length) }, worker));
-      if (!controller.signal.aborted) setAnalysisEntries(results.filter(Boolean));
+      const response = await fetch("/api/auto-analysis-runs", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          date,
+          strategyId,
+          strategyLabel: strategyProfile.label,
+          matches,
+          learningProfile: rankingFeedback || null,
+          source: "manual-ui",
+        }),
+        signal: controller.signal,
+      });
+      await requireOk(response, "Kunde inte köra autoanalysen.");
+      const payload = await response.json();
+      if (!controller.signal.aborted) {
+        setServerState({
+          run: payload?.run || null,
+          bestOverall: payload?.bestOverall || null,
+          shortlist: Array.isArray(payload?.shortlist) ? payload.shortlist : [],
+          candidates: Array.isArray(payload?.candidates) ? payload.candidates : [],
+          summary: payload?.summary || createEmptyState().summary,
+        });
+      }
     } catch (err) {
-      if (!controller.signal.aborted) setError(err?.message || "Autoanalysen misslyckades.");
+      if (!controller.signal.aborted) {
+        setError(err?.message || "Autoanalysen misslyckades.");
+      }
     } finally {
       if (!controller.signal.aborted) setIsRunning(false);
       if (abortRef.current === controller) abortRef.current = null;
     }
-  }, [analyzeSingleMatch, matches]);
-
-  const strategyProfile = getStrategyProfile(strategyId);
-
-  const derived = useMemo(() => {
-    const perMatch = (analysisEntries || [])
-      .map((entry) => {
-        const scored = (entry?.candidates || [])
-          .filter((candidate) => matchesStrategyFilters(candidate, strategyId))
-          .map((candidate) => scoreResultForStrategy(candidate, strategyId, rankingFeedback || null))
-          .sort((a, b) => (b.strategyScore !== a.strategyScore ? b.strategyScore - a.strategyScore : (b.primaryEv || 0) - (a.primaryEv || 0)));
-        const bestBet = scored[0] || null;
-        return {
-          ...entry,
-          strategyCandidates: scored,
-          bestBet: bestBet ? { ...bestBet, matchId: entry.match?.matchId || entry.match?.id } : null,
-        };
-      })
-      .filter((entry) => entry.bestBet)
-      .sort((a, b) => b.bestBet.strategyScore - a.bestBet.strategyScore);
-
-    return {
-      shortlist: perMatch,
-      bestOverall: perMatch[0]?.bestBet || null,
-      summary: {
-        shortlistCount: perMatch.length,
-        provenCount: perMatch.filter((entry) => entry.bestBet?.proof?.historicalReady).length,
-      },
-    };
-  }, [analysisEntries, strategyId, rankingFeedback]);
-
-  useEffect(() => {
-    onAutoStateChange?.(derived);
-  }, [derived, onAutoStateChange]);
-
-  useEffect(() => {
-    if (!derived.shortlist.length || isRunning) return;
-    const persistKey = `${date}:${strategyId}:${derived.shortlist[0]?.bestBet?.bet?.key || "none"}:${derived.shortlist.length}`;
-    if (lastPersistKeyRef.current === persistKey) return;
-    lastPersistKeyRef.current = persistKey;
-
-    void persistSnapshot({
-      date,
-      strategyId,
-      strategyLabel: strategyProfile.label,
-      analyzedMatches: analysisEntries.length,
-      shortlist: derived.shortlist.slice(0, 20).map((entry) => ({
-        matchId: entry.match?.matchId || entry.match?.id,
-        homeTeamName: entry.match?.homeTeamName,
-        awayTeamName: entry.match?.awayTeamName,
-        leagueName: entry.match?.leagueName,
-        headline: entry.bestBet?.headline,
-        primaryEv: entry.bestBet?.primaryEv,
-        confidenceScore: entry.bestBet?.confidenceScore,
-        agreementPct: entry.bestBet?.agreementPct,
-        strategyScore: entry.bestBet?.strategyScore,
-        scopeLabel: entry.bestBet?.scopeLabel,
-        periodLabel: entry.bestBet?.periodLabel,
-        rationale: entry.bestBet?.rationale,
-        riskFlags: entry.bestBet?.riskFlags,
-        entries: entry.bestBet?.entries,
-        rankReasons: entry.bestBet?.rankReasons,
-        ranking: entry.bestBet?.ranking,
-        proof: entry.bestBet?.proof,
-        bet: entry.bestBet?.bet,
-      })),
-    });
-  }, [analysisEntries.length, date, derived.shortlist, isRunning, strategyId, strategyProfile.label]);
+  }, [date, matches, rankingFeedback, strategyId, strategyProfile.label]);
 
   const toggleWatchlist = async (entry) => {
     try {
       setError(null);
-      const trackingKey = buildTrackingKey(entry.matchId, entry.bet);
+      const trackingKey = entry?.trackingKey || buildTrackingKey(entry.matchId, entry.bet);
       if (watchlistKeys.has(trackingKey)) {
         const response = await fetch("/api/watchlist", {
           method: "DELETE",
@@ -301,6 +196,7 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
             strategyScore: entry.strategyScore,
             confidenceScore: entry.confidenceScore,
             primaryEv: entry.primaryEv,
+            eventUrl: entry.eventUrl,
             bet: entry.bet,
             proof: entry.proof,
           }),
@@ -313,10 +209,10 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
     }
   };
 
-  const toggleTaken = async (entry, leagueName = null, eventUrl = null) => {
+  const toggleTaken = async (entry) => {
     try {
       setError(null);
-      const trackingKey = buildTrackingKey(entry.matchId, entry.bet);
+      const trackingKey = entry?.trackingKey || buildTrackingKey(entry.matchId, entry.bet);
       if (resultLoopKeys.has(trackingKey)) {
         const response = await fetch("/api/result-loop", {
           method: "DELETE",
@@ -333,7 +229,7 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
             matchId: entry.matchId,
             homeTeamName: entry.bet?.homeTeam,
             awayTeamName: entry.bet?.awayTeam,
-            leagueName: leagueName || entry.leagueName || null,
+            leagueName: entry.leagueName,
             headline: entry.headline,
             strategyScore: entry.strategyScore,
             confidenceScore: entry.confidenceScore,
@@ -341,7 +237,8 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
             bet: entry.bet,
             proof: entry.proof,
             ranking: entry.ranking,
-            eventUrl,
+            timestamp: entry.timestamp ?? null,
+            eventUrl: entry.eventUrl || null,
             source: "auto",
             stakeUnits: 1,
           }),
@@ -354,19 +251,33 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
     }
   };
 
-  const helperText = useMemo(() => {
-    if (isRunning) return `Analyserar ${progress.completed}/${progress.total} matcher enligt ${strategyProfile.label.toLowerCase()}-profilen.`;
-    if (derived.bestOverall) return `Snabbläge: ett toppspel, några sekundära chanser och tydliga proof/risk-signaler först. Markera spel som tagna för att bygga resultatloopen.`;
-    return "Kör dagens autoanalys för att få ett rent beslutsläge med toppspel, proof-status, watchlist och resultatloop.";
-  }, [derived.bestOverall, isRunning, progress.completed, progress.total, strategyProfile.label]);
-
   const bestOverall = derived.bestOverall;
-  const bestOverallEntry = derived.shortlist[0] || null;
-  const secondary = derived.shortlist.slice(1, 4);
-  const bestTracked = bestOverall ? resultLoopKeys.has(buildTrackingKey(bestOverall.matchId, bestOverall.bet)) : false;
+  const bestOverallEntry = derived.shortlist.find((entry) => entry?.bestBet?.trackingKey === bestOverall?.trackingKey) || derived.shortlist[0] || null;
+  const bestTracked = bestOverall ? resultLoopKeys.has(bestOverall.trackingKey || buildTrackingKey(bestOverall.matchId, bestOverall.bet)) : false;
+
+  const visibleCandidates = useMemo(
+    () =>
+      derived.candidates
+        .filter((entry) => (entry?.strategyScore || 0) >= visibleMinScore)
+        .sort((a, b) => (b?.strategyScore || 0) - (a?.strategyScore || 0) || (b?.primaryEv || 0) - (a?.primaryEv || 0)),
+    [derived.candidates, visibleMinScore]
+  );
+
+  const visibleSecondary = useMemo(
+    () => visibleCandidates.filter((entry) => entry.trackingKey !== bestOverall?.trackingKey),
+    [bestOverall?.trackingKey, visibleCandidates]
+  );
+
+  const helperText = useMemo(() => {
+    if (isRunning) return `Servern kör autoanalysen för ${matches.length} matcher enligt ${strategyProfile.label.toLowerCase()}-profilen och sparar alla evaluerade spel.`;
+    if (derived.bestOverall) return "Toppspelet visas först. Under det ser du alla kvalificerade spel över vald rankinggräns, medan full kandidatdata sparas för senare backtest och filtrering.";
+    return "Kör dagens autoanalys för att spara alla evaluerade spel, få ett toppspel direkt och samtidigt bygga en full databaskälla för senare filter/backtest.";
+  }, [derived.bestOverall, isRunning, matches.length, strategyProfile.label]);
+
+  const scoreFilters = [85, 90, 95];
 
   return (
-    <section className="rounded-2xl border border-white/5 bg-[#09090b] shadow-2xl overflow-hidden">
+    <section className="overflow-hidden rounded-2xl border border-white/5 bg-[#09090b] shadow-2xl">
       <div className="border-b border-white/5 bg-white/[0.02] px-4 py-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
@@ -374,6 +285,7 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
               <MetricBadge label="Datum" value={date || "—"} tone="accent" />
               <MetricBadge label="Matcher" value={matches.length} />
               <MetricBadge label="Shortlist" value={derived.summary.shortlistCount} tone={derived.summary.shortlistCount ? "positive" : "neutral"} />
+              <MetricBadge label="Kvalificerade spel" value={derived.summary.qualifyingCandidateCount} tone={derived.summary.qualifyingCandidateCount ? "positive" : "neutral"} />
               <MetricBadge label="Proof-klara" value={derived.summary.provenCount} tone={derived.summary.provenCount ? "positive" : "warning"} />
             </div>
             <div>
@@ -410,21 +322,28 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
 
       <div className="p-4">
         {error ? <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div> : null}
-        {isRunning ? <div className="mb-4 overflow-hidden rounded-full border border-white/10 bg-black/30"><div className="h-2 bg-cyan-400/70 transition-all" style={{ width: `${progress.total ? (progress.completed / progress.total) * 100 : 0}%` }} /></div> : null}
+        {isRunning ? (
+          <div className="mb-4 overflow-hidden rounded-full border border-white/10 bg-black/30">
+            <div className="h-2 animate-pulse bg-cyan-400/70" style={{ width: "100%" }} />
+          </div>
+        ) : null}
 
         {!derived.shortlist.length && !isRunning ? (
           <div className="rounded-xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-slate-400">
-            Auto-läget väntar på analys. När det finns kandidater får du ett toppspel, proof-status, riskflaggor, bevakning och möjlighet att markera spel som tagna direkt här.
+            Auto-läget väntar på analys. När körningen är klar sparas alla evaluerade spel i databasen och du får både ett toppspel och en filtrerbar feed direkt här.
           </div>
         ) : null}
 
         {bestOverall ? (
-          <div className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
+          <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
             <article className="rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.06] p-5 shadow-xl">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300/80">Dagens toppspel</div>
-                  <div className="mt-1 text-xl font-semibold text-white">{bestOverall.headline}</div>
+                  <div className="mt-1 text-sm font-semibold text-cyan-100">
+                    {bestOverallEntry?.match?.homeTeamName || bestOverall.homeTeamName || bestOverall.bet?.homeTeam} vs {bestOverallEntry?.match?.awayTeamName || bestOverall.awayTeamName || bestOverall.bet?.awayTeam}
+                  </div>
+                  <div className="mt-2 text-xl font-semibold text-white">{bestOverall.headline}</div>
                   <div className="mt-2 text-sm text-slate-300">{bestOverall.rationale}</div>
                 </div>
                 <div className="text-right">
@@ -434,10 +353,10 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <MetricBadge label="EV" value={`+${bestOverall.primaryEv?.toFixed(1)}%`} tone="positive" />
+                <MetricBadge label="Liga" value={bestOverallEntry?.match?.leagueName || bestOverall.leagueName || "—"} />
+                <MetricBadge label="EV" value={`${bestOverall.primaryEv >= 0 ? "+" : ""}${bestOverall.primaryEv?.toFixed(1)}%`} tone="positive" />
                 <MetricBadge label="Confidence" value={`${bestOverall.confidenceScore}/100`} tone="positive" />
                 <MetricBadge label="Proof" value={`${bestOverall.proof?.proofScore || 0}/100`} tone={bestOverall.proof?.historicalReady ? "positive" : "warning"} />
-                <MetricBadge label="Historik" value={bestOverall.proof?.historicalReady ? "Verifierad" : "Byggs upp"} tone={bestOverall.proof?.historicalReady ? "positive" : "warning"} />
                 <MetricBadge label="Loop" value={bestTracked ? "Spelad" : "Ej spelad"} tone={bestTracked ? "positive" : "neutral"} />
               </div>
 
@@ -451,8 +370,8 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
                   <div className="mt-1 text-sm font-semibold text-white">{bestOverall.sampleSize} matcher</div>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Lärande</div>
-                  <div className="mt-1 text-sm font-semibold text-white">{bestOverall.ranking?.learningAdjustment > 0 ? "+" : ""}{bestOverall.ranking?.learningAdjustment || 0}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Källspel</div>
+                  <div className="mt-1 text-sm font-semibold text-white">{bestOverall.isBestBetForMatch ? "Bäst i matchen" : "Kvalificerat spel"}</div>
                 </div>
               </div>
 
@@ -463,41 +382,70 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" onClick={() => onOpenMatch?.({ id: bestOverall.matchId, matchId: bestOverall.matchId }, "backtest")} className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300">Öppna full analys</button>
-                <button type="button" onClick={() => toggleWatchlist(bestOverall)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-300">{watchlistKeys.has(buildTrackingKey(bestOverall.matchId, bestOverall.bet)) ? "Ta bort bevakning" : "Bevaka spel"}</button>
-                <button type="button" onClick={() => toggleTaken(bestOverall, bestOverallEntry?.match?.leagueName, bestOverallEntry?.unibetUrl || null)} className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-300">{bestTracked ? "Ta bort spelad" : "Markera spelad"}</button>
+                <button type="button" onClick={() => onOpenMatch?.(buildMatchLinkPayload(bestOverall), "backtest")} className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300">Öppna full analys</button>
+                <button type="button" onClick={() => toggleWatchlist(bestOverall)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-300">{watchlistKeys.has(bestOverall.trackingKey || buildTrackingKey(bestOverall.matchId, bestOverall.bet)) ? "Ta bort bevakning" : "Bevaka spel"}</button>
+                <button type="button" onClick={() => toggleTaken(bestOverall)} className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-300">{bestTracked ? "Ta bort spelad" : "Markera spelad"}</button>
               </div>
             </article>
 
             <div className="space-y-4">
               <div className="rounded-2xl border border-white/5 bg-[#050505] p-4 shadow-xl">
-                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Sekundära chanser</div>
-                <div className="mt-3 space-y-3">
-                  {secondary.length ? secondary.map((entry) => {
-                    const bet = entry.bestBet;
-                    const tracked = resultLoopKeys.has(buildTrackingKey(bet.matchId, bet.bet));
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Alla spel över vald ranking</div>
+                    <div className="mt-1 text-sm text-slate-300">Kvalificerade spel sparade från körningen. Default i `Balans` är 90.</div>
+                  </div>
+                  <MetricBadge label="Visas" value={visibleCandidates.length} tone={visibleCandidates.length ? "positive" : "neutral"} />
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {scoreFilters.map((score) => {
+                    const active = visibleMinScore === score;
                     return (
-                      <div key={bet.bet.key} className="rounded-xl border border-white/5 bg-white/[0.03] p-3">
+                      <button
+                        key={score}
+                        type="button"
+                        onClick={() => setVisibleMinScore(score)}
+                        className={`rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition ${active ? "border-cyan-500/20 bg-cyan-500/15 text-cyan-300" : "border-white/10 bg-white/5 text-slate-400 hover:text-slate-200"}`}
+                      >
+                        Score {score}+
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 max-h-[740px] space-y-3 overflow-y-auto pr-1">
+                  {visibleSecondary.length ? visibleSecondary.map((entry) => {
+                    const tracked = resultLoopKeys.has(entry.trackingKey || buildTrackingKey(entry.matchId, entry.bet));
+                    const watched = watchlistKeys.has(entry.trackingKey || buildTrackingKey(entry.matchId, entry.bet));
+                    return (
+                      <div key={entry.trackingKey || `${entry.matchId}:${entry.bet?.key}`} className="rounded-xl border border-white/5 bg-white/[0.03] p-3">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <div className="text-sm font-semibold text-white">{bet.headline}</div>
-                            <div className="mt-1 text-xs text-slate-400">{entry.match?.homeTeamName} vs {entry.match?.awayTeamName}</div>
+                            <div className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{entry.leagueName || "Okänd liga"}</div>
+                            <div className="mt-1 text-sm font-semibold text-white">{entry.homeTeamName || entry.bet?.homeTeam} vs {entry.awayTeamName || entry.bet?.awayTeam}</div>
+                            <div className="mt-1 text-sm text-slate-200">{entry.headline}</div>
+                            <div className="mt-1 text-xs text-slate-400">{entry.scopeLabel} · {entry.periodLabel} · Odds {entry.bet?.odds?.toFixed ? entry.bet.odds.toFixed(2) : entry.bet?.odds}</div>
                           </div>
-                          <div className="text-sm font-black text-cyan-300">{bet.strategyScore?.toFixed(1)}</div>
+                          <div className="text-sm font-black text-cyan-300">{entry.strategyScore?.toFixed(1)}</div>
                         </div>
+
                         <div className="mt-2 flex flex-wrap gap-2">
-                          <MetricBadge label="EV" value={`+${bet.primaryEv?.toFixed(1)}%`} tone="positive" />
-                          <MetricBadge label="Proof" value={`${bet.proof?.proofScore || 0}/100`} tone={bet.proof?.historicalReady ? "positive" : "warning"} />
+                          <MetricBadge label="EV" value={`${entry.primaryEv >= 0 ? "+" : ""}${entry.primaryEv?.toFixed(1)}%`} tone="positive" />
+                          <MetricBadge label="Confidence" value={`${entry.confidenceScore}/100`} tone="positive" />
+                          <MetricBadge label="Proof" value={`${entry.proof?.proofScore || 0}/100`} tone={entry.proof?.historicalReady ? "positive" : "warning"} />
+                          <MetricBadge label="Matchspel" value={entry.isBestBetForMatch ? "Bäst i matchen" : "Extra marknad"} tone={entry.isBestBetForMatch ? "accent" : "neutral"} />
                           <MetricBadge label="Loop" value={tracked ? "Spelad" : "Ej spelad"} tone={tracked ? "positive" : "neutral"} />
                         </div>
+
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <button type="button" onClick={() => onOpenMatch?.(entry.match, "backtest")} className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300">Öppna</button>
-                          <button type="button" onClick={() => toggleWatchlist(bet)} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300">{watchlistKeys.has(buildTrackingKey(bet.matchId, bet.bet)) ? "Bevakas" : "Bevaka"}</button>
-                          <button type="button" onClick={() => toggleTaken(bet, entry.match?.leagueName, entry.unibetUrl || null)} className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300">{tracked ? "Spelad" : "Markera spelad"}</button>
+                          <button type="button" onClick={() => onOpenMatch?.(buildMatchLinkPayload(entry), "backtest")} className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300">Öppna</button>
+                          <button type="button" onClick={() => toggleWatchlist(entry)} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300">{watched ? "Bevakas" : "Bevaka"}</button>
+                          <button type="button" onClick={() => toggleTaken(entry)} className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300">{tracked ? "Spelad" : "Markera spelad"}</button>
                         </div>
                       </div>
                     );
-                  }) : <div className="text-sm text-slate-400">Inga tydliga sekundära chanser ännu.</div>}
+                  }) : <div className="rounded-xl border border-dashed border-white/10 bg-black/20 p-3 text-sm text-slate-400">Inga fler kvalificerade spel över score {visibleMinScore} för vald körning.</div>}
                 </div>
               </div>
 
@@ -506,7 +454,7 @@ export default function DailyAutoAnalysis({ date, matches = [], formatTime, onOp
                 <div className="mt-3 space-y-2 text-sm text-slate-300">
                   <div>• Minst {strategyProfile.minSampleSize} matcher i sample för att få komma med.</div>
                   <div>• Minst {strategyProfile.minConfidence} i confidence och {strategyProfile.minAgreementPct}% modellkonsensus.</div>
-                  <div>• Historik räknas först fullt när marknaden faktiskt är verifierad.</div>
+                  <div>• Alla evaluerade spel sparas i databasen, även sådana som inte visas här.</div>
                 </div>
               </div>
             </div>
