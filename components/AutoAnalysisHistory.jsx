@@ -80,9 +80,20 @@ function ClvStatusBadge({ entry }) {
       : "border-rose-500/20 bg-rose-500/10 text-rose-200"
     : "border-amber-500/20 bg-amber-500/10 text-amber-200";
 
+  let label = "Tracking";
+  if (isClosed) {
+    label = `CLV ${positive ? "+" : ""}${entry.clvPct}%`;
+  } else if (entry?.status === "insufficient-history") {
+    label = "Saknar close-historik";
+  } else if (entry?.status === "unmatched") {
+    label = "Ej matchad";
+  } else if (typeof entry?.status === "string" && entry.status.trim()) {
+    label = entry.status;
+  }
+
   return (
     <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${classes}`}>
-      {isClosed ? `CLV ${positive ? "+" : ""}${entry.clvPct}%` : entry.status || "tracking"}
+      {label}
     </span>
   );
 }
@@ -210,19 +221,15 @@ export default function AutoAnalysisHistory({ onOpenMatch }) {
                               <div className="mt-2 text-sm text-slate-300">
                                 {entry.headline}
                               </div>
-                              <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
-                                <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-cyan-200">
-                                  Scope: {scopeLabel}
-                                </span>
-                                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-slate-300">
-                                  Period: {periodLabel}
-                                </span>
+                              <div className="mt-2 space-y-1 text-xs text-slate-400">
+                                <div>Scope: {scopeLabel}</div>
+                                <div>Period: {periodLabel}</div>
                               </div>
                             </div>
                             <ClvStatusBadge entry={entry} />
                           </div>
 
-                          <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
+                          <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-300">
                             <span>Öppning: {entry.openingOdds?.toFixed ? entry.openingOdds.toFixed(2) : entry.openingOdds}</span>
                             <span>·</span>
                             <span>Senast: {entry.latestObservedOdds?.toFixed ? entry.latestObservedOdds.toFixed(2) : entry.latestObservedOdds ?? "—"}</span>
@@ -298,13 +305,9 @@ export default function AutoAnalysisHistory({ onOpenMatch }) {
                             <div className="mt-2 text-sm text-slate-300">
                               {entry.headline}
                             </div>
-                            <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
-                              <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-cyan-200">
-                                Scope: {scopeLabel}
-                              </span>
-                              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-slate-300">
-                                Period: {periodLabel}
-                              </span>
+                            <div className="mt-2 space-y-1 text-xs text-slate-400">
+                              <div>Scope: {scopeLabel}</div>
+                              <div>Period: {periodLabel}</div>
                             </div>
                           </div>
                           <div className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${

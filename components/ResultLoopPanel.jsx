@@ -172,13 +172,9 @@ export default function ResultLoopPanel({ onOpenMatch, onSummaryChange }) {
                             <div className="mt-2 text-sm text-slate-300">
                               {item.headline}
                             </div>
-                            <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
-                              <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-cyan-200">
-                                Scope: {scopeLabel}
-                              </span>
-                              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-slate-300">
-                                Period: {periodLabel}
-                              </span>
+                            <div className="mt-2 space-y-1 text-xs text-slate-400">
+                              <div>Scope: {scopeLabel}</div>
+                              <div>Period: {periodLabel}</div>
                             </div>
                           </div>
                           <StatusBadge status={item.status} result={item.result} clvPct={item.clvPct} />
