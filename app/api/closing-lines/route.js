@@ -9,6 +9,7 @@ import {
   mergeTrackingPriceHistory,
 } from "@/lib/clvTracking";
 import { findTeamstatsMatchSelections } from "@/lib/teamstatsLookup";
+import { isValidTrackedBet } from "@/lib/autoAnalysis/marketValidity";
 
 export const runtime = "nodejs";
 
@@ -46,7 +47,7 @@ function buildTrackingKey(entry) {
 }
 
 function normalizeShortlistEntry(snapshot, item) {
-  if (!item?.matchId || !item?.bet?.statKey || item?.bet?.line == null || !item?.bet?.odds) {
+  if (!item?.matchId || !isValidTrackedBet(item?.bet) || !item?.bet?.odds) {
     return null;
   }
 
@@ -71,7 +72,7 @@ function normalizeShortlistEntry(snapshot, item) {
 }
 
 function normalizeResultLoopEntry(item) {
-  if (!item?.trackingKey || !item?.matchId || !item?.bet?.statKey || item?.bet?.line == null || !item?.bet?.odds) {
+  if (!item?.trackingKey || !item?.matchId || !isValidTrackedBet(item?.bet) || !item?.bet?.odds) {
     return null;
   }
 

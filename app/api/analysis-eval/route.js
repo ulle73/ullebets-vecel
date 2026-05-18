@@ -4,6 +4,7 @@ import { resolveMatchupActualValue } from "@/lib/matchupsOutcome";
 import { buildRapidContext, loadMatchStatisticsFallback } from "@/lib/matchupsEnrichment";
 import { toTimestampMs } from "@/lib/clvTracking";
 import { findTeamstatsMatchSelections } from "@/lib/teamstatsLookup";
+import { isValidTrackedBet } from "@/lib/autoAnalysis/marketValidity";
 
 export const runtime = "nodejs";
 
@@ -110,7 +111,7 @@ function finalizeBuckets(map) {
 }
 
 function normalizeShortlistEntry(snapshot, item) {
-  if (!item?.matchId || !item?.bet?.statKey || item?.bet?.line == null) {
+  if (!item?.matchId || !isValidTrackedBet(item?.bet)) {
     return null;
   }
 

@@ -26,6 +26,17 @@ function buildShotsOnGoalOffer(label, odds = 5800) {
   ];
 }
 
+function buildTotalShotsOffer(label, odds = 5800, line = 2500) {
+  return [
+    {
+      criterion: { label },
+      outcomes: [
+        { label: "Över", englishLabel: "Over", odds, line },
+      ],
+    },
+  ];
+}
+
 test("maps both legacy and new Unibet stat prefixes", () => {
   const legacyTuples = mapUnibetOdds(
     buildCornerOffer("Totala hörnor"),
@@ -49,6 +60,16 @@ test("ignores player-specific shots-on-goal markets", () => {
     buildShotsOnGoalOffer("Antal skott på mål av spelaren (avgörs genom Opta Data)"),
     "Newcastle United",
     "West Ham United"
+  );
+
+  assert.equal(tuples.length, 0);
+});
+
+test("ignores player-specific total-shots markets", () => {
+  const tuples = mapUnibetOdds(
+    buildTotalShotsOffer("Antal skott från spelaren (avgörs genom Opta Data)"),
+    "Brentford",
+    "Crystal Palace"
   );
 
   assert.equal(tuples.length, 0);
