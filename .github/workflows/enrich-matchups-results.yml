@@ -2,12 +2,16 @@ name: Enrich matchups results
 
 on:
   schedule:
-    - cron: "0 7 * * *"  # Varje dag kl 07:00 UTC, för att rätta nyligen avslutade matcher
+    - cron: "40 7 * * *"  # Varje dag kl 07:40 UTC, efter dump-matchups
   workflow_dispatch:
     inputs:
       target-date:
         description: "Date or range to enrich (YYYY-MM-DD or YYYY-MM-DD-YYYY-MM-DD)."
         required: false
+
+concurrency:
+  group: enrich-matchups-results
+  cancel-in-progress: false
 
 jobs:
   enrich:

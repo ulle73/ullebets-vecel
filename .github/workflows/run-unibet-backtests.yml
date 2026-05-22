@@ -9,6 +9,10 @@ on:
         description: "Datum att köra (YYYY-MM-DD). Lämna tomt för dagens datum."
         required: false
 
+concurrency:
+  group: run-unibet-backtests
+  cancel-in-progress: false
+
 jobs:
   unibet-backtests:
     runs-on: ubuntu-latest

@@ -2,7 +2,7 @@ name: Dump matchups
 
 on:
   schedule:
-    - cron: "0 7 * * *"
+    - cron: "20 7 * * *"
   workflow_dispatch:
     inputs:
       target-date:
@@ -13,6 +13,10 @@ on:
       - Import fixtures (D+7 only)
     types:
       - completed
+
+concurrency:
+  group: dump-matchups
+  cancel-in-progress: false
 
 jobs:
   run-matchups:

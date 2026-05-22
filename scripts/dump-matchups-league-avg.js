@@ -4,6 +4,7 @@ import path from "path";
 import crypto from "node:crypto";
 
 import { clientPromise } from "../lib/db.js";
+import { runMongoWithRetry } from "../lib/mongoUtils.js";
 import { getMatchesForDate } from "../lib/repos/fixtures.js";
 import {
   computeForecastBundle,
@@ -217,16 +218,18 @@ async function fetchProfileFromDb(client, params) {
   const matchType = (params.matchType ?? "").toLowerCase();
 
   if (leagueNumeric != null && teamNumeric != null) {
-    const doc = await collection.findOne({
-      $or: [
-        { _id: `${leagueNumeric}:${teamNumeric}:${matchType}` },
-        {
-          "meta.ligaId": leagueNumeric,
-          "meta.lagId": teamNumeric,
-          "meta.matchType": matchType,
-        },
-      ],
-    });
+    const doc = await runMongoWithRetry("matchups league avg profile by id", () =>
+      collection.findOne({
+        $or: [
+          { _id: `${leagueNumeric}:${teamNumeric}:${matchType}` },
+          {
+            "meta.ligaId": leagueNumeric,
+            "meta.lagId": teamNumeric,
+            "meta.matchType": matchType,
+          },
+        ],
+      })
+    );
     if (doc) {
       return doc;
     }
@@ -245,7 +248,9 @@ async function fetchProfileFromDb(client, params) {
       query.$or?.push({ "meta.teamName": { $regex: `^${params.teamName}$`, $options: "i" } });
     }
     if (query.$or?.length) {
-      const doc = await collection.findOne(query);
+      const doc = await runMongoWithRetry("matchups league avg profile by name", () =>
+        collection.findOne(query)
+      );
       if (doc) {
         return doc;
       }
@@ -479,17 +484,19 @@ async function main() {
       await ensureDir(DIR_PATH);
       const filePath = path.join(DIR_PATH, `${targetDate}.json`);
       await writeSnapshot(filePath, snapshot);
-      await client.db(DB_NAME).collection(COLLECTION_NAME).updateOne(
-        { _id: targetDate },
-        {
-          $set: {
-            date: targetDate,
-            generatedAt,
-            files: { league: path.relative(process.cwd(), filePath) },
-            data: snapshot,
+      await runMongoWithRetry("matchups league avg upsert", () =>
+        client.db(DB_NAME).collection(COLLECTION_NAME).updateOne(
+          { _id: targetDate },
+          {
+            $set: {
+              date: targetDate,
+              generatedAt,
+              files: { league: path.relative(process.cwd(), filePath) },
+              data: snapshot,
+            },
           },
-        },
-        { upsert: true }
+          { upsert: true }
+        )
       );
       console.log(
         `[matchups-league-avg] Persisted data (${pairs.length} pairs, ${snapshot.stats.overCandidates} forecast rows) for ${targetDate}`

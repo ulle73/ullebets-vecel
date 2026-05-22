@@ -5,6 +5,7 @@ import path from "path";
 import crypto from "node:crypto";
 
 import { clientPromise } from "../lib/db.js";
+import { runMongoWithRetry } from "../lib/mongoUtils.js";
 import { getMatchesForDate } from "../lib/repos/fixtures.js";
 import { normalizeMatch } from "../lib/core/matchups.js";
 import {
@@ -372,16 +373,20 @@ async function fetchProfileFromDb(client, params) {
   if (leagueNumeric != null && teamNumeric != null) {
     const identifier = buildIdentifier(leagueNumeric, teamNumeric, matchType);
     if (identifier) {
-      const doc = await collection.findOne({ _id: identifier });
+      const doc = await runMongoWithRetry("matchups profile by id", () =>
+        collection.findOne({ _id: identifier })
+      );
       if (doc && profileMatchesRequest(doc, requestParams)) {
         return stripDbProfile(doc);
       }
     }
-    const docByMeta = await collection.findOne({
-      "meta.ligaId": leagueNumeric,
-      "meta.lagId": teamNumeric,
-      "meta.matchType": matchType,
-    });
+    const docByMeta = await runMongoWithRetry("matchups profile by meta", () =>
+      collection.findOne({
+        "meta.ligaId": leagueNumeric,
+        "meta.lagId": teamNumeric,
+        "meta.matchType": matchType,
+      })
+    );
     if (docByMeta && profileMatchesRequest(docByMeta, requestParams)) {
       return stripDbProfile(docByMeta);
     }
@@ -407,7 +412,9 @@ async function fetchProfileFromDb(client, params) {
     } else if (teamMatcher) {
       query["meta.lagnamn"] = teamMatcher;
     }
-    const docByName = await collection.findOne(query);
+    const docByName = await runMongoWithRetry("matchups profile by name", () =>
+      collection.findOne(query)
+    );
     if (docByName && profileMatchesRequest(docByName, requestParams)) {
       return stripDbProfile(docByName);
     }
@@ -686,9 +693,11 @@ async function main() {
         data: scoreSnapshot,
       };
       const db = client.db(DB_NAME);
-      await db
-        .collection("matchups-score")
-        .updateOne({ _id: targetDate }, { $set: doc }, { upsert: true });
+      await runMongoWithRetry("matchups score upsert", () =>
+        db
+          .collection("matchups-score")
+          .updateOne({ _id: targetDate }, { $set: doc }, { upsert: true })
+      );
       console.log(
         `[matchups] Persisted data (${pairs.length} pairs, ${scoreSnapshot.stats.normalizedMatches} matches).`
       );

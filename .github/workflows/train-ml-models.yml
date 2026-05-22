@@ -102,8 +102,8 @@ name: Daily ML Model Training
 
 on:
   schedule:
-    # Run daily at 6 AM CET (5 AM UTC)
-    - cron: '0 5 * * *'
+    # Run daily after the morning ingest/update jobs
+    - cron: '0 9 * * *'
   
   workflow_dispatch:
     inputs:
@@ -115,6 +115,10 @@ on:
 # Viktigt: ge GITHUB_TOKEN skriv-rättigheter till repo:t
 permissions:
   contents: write
+
+concurrency:
+  group: train-ml-models
+  cancel-in-progress: false
 
 jobs:
   train-ml-models:

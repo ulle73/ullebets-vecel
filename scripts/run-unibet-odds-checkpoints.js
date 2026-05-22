@@ -1,6 +1,7 @@
 import { runBacktest } from "../lib/runners/backtest-runner.js";
 import { getMatchesForMultipleDates } from "../lib/engines/fixtures-engine.js";
 import { clientPromise } from "../lib/db.js";
+import { runMongoWithRetry } from "../lib/mongoUtils.js";
 import { coerceDate, formatDateInZone } from "../lib/utils/date.js";
 import { pickDueCheckpoint } from "../lib/unibet/oddsCheckpoints.js";
 
@@ -43,7 +44,9 @@ function parseArgs(argv) {
 }
 
 async function loadTargetLeagues(db) {
-  const leaguesDoc = await db.collection("leages-and-teams").findOne({});
+  const leaguesDoc = await runMongoWithRetry("load target leagues", () =>
+    db.collection("leages-and-teams").findOne({})
+  );
   if (leaguesDoc) {
     return Object.keys(leaguesDoc).filter((key) => key !== "_id");
   }
@@ -91,19 +94,21 @@ async function loadSnapshotDocsByMatchId(db, matchIds = []) {
   const candidates = toMatchIdCandidates(matchIds);
   if (!candidates.length) return new Map();
 
-  const docs = await db
-    .collection(COLLECTION)
-    .find(
-      { matchId: { $in: candidates } },
-      {
-        projection: {
-          matchId: 1,
-          matchDate: 1,
-          snapshots: 1,
-        },
-      }
-    )
-    .toArray();
+  const docs = await runMongoWithRetry("load checkpoint snapshots", () =>
+    db
+      .collection(COLLECTION)
+      .find(
+        { matchId: { $in: candidates } },
+        {
+          projection: {
+            matchId: 1,
+            matchDate: 1,
+            snapshots: 1,
+          },
+        }
+      )
+      .toArray()
+  );
 
   const map = new Map();
   for (const doc of docs) {
