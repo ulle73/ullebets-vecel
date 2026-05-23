@@ -158,10 +158,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/teamstats public/teamstats scripts/.last-run-update-teams-v2.json
+          git add -f data/teamstats public/teamstats scripts/.last-run-update-teams-v2.json
           if git diff --cached --quiet; then
             echo "No teamstats file changes to commit."
           else
             git commit -m "Backfill teamstats from ${{ inputs.from_date }}"
+            git pull --rebase
             git push
           fi
