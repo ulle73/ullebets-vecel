@@ -571,6 +571,27 @@ const normalizeEvent = (entry) => {
   };
 };
 
+const buildEventInfoFromNormalized = (normalizedEvent) => {
+  if (!normalizedEvent || typeof normalizedEvent !== "object") {
+    return null;
+  }
+
+  const homeTeam = {
+    id: normalizedEvent.homeTeamId ?? null,
+    name: normalizedEvent.homeTeamName ?? null,
+  };
+  const awayTeam = {
+    id: normalizedEvent.awayTeamId ?? null,
+    name: normalizedEvent.awayTeamName ?? null,
+  };
+
+  if (!homeTeam.name || !awayTeam.name) {
+    return null;
+  }
+
+  return { homeTeam, awayTeam };
+};
+
 const SCORE_VALUE_KEYS = [
   "display",
   "current",
@@ -1257,7 +1278,7 @@ async function fetchMatchIdsSofascore(
 }
 
 // Selektiv hämtning av matchdata enligt flaggor
-async function fetchMatchDataSofascore(page, matchId, context, plan = {}) {
+async function fetchMatchDataSofascore(page, matchId, context, plan = {}, options = {}) {
   let info = null;
   let stats = null;
   let statsSource = null;
@@ -1272,14 +1293,17 @@ async function fetchMatchDataSofascore(page, matchId, context, plan = {}) {
   const wantMatches = plan.matches ?? WANT_MATCHES;
   const wantIncidents = plan.incidents ?? WANT_INCIDENTS;
   const wantShotmap = plan.shotmap ?? WANT_SHOTMAP;
+  const skipPublicEventInfo = Boolean(options.skipPublicEventInfo);
 
   if (!wantMatches && !wantIncidents && !wantShotmap) {
     return null;
   }
 
   if (wantMatches) {
-    info = await browserFetch(page, `event/${matchId}`);
-    apiCalls++;
+    if (!skipPublicEventInfo) {
+      info = await browserFetch(page, `event/${matchId}`);
+      apiCalls++;
+    }
 
     if (context) {
       const statsResult = await fetchMatchStatistics(matchId, context);
@@ -1328,7 +1352,7 @@ async function fetchMatchDataSofascore(page, matchId, context, plan = {}) {
     }
   }
 
-  if (wantMatches && !(info && stats)) {
+  if (wantMatches && !stats) {
     return null;
   }
 
@@ -1921,9 +1945,11 @@ async function runYesterdayMode(lookups, leagues) {
 
           const fetched =
             plan.matches || plan.incidents || plan.shotmap
-              ? await fetchMatchDataSofascore(page, matchId, context, plan)
+              ? await fetchMatchDataSofascore(page, matchId, context, plan, {
+                  skipPublicEventInfo: true,
+                })
               : null;
-          if (plan.matches && !(fetched?.info && fetched?.stats)) {
+          if (plan.matches && !fetched?.stats) {
             console.warn(
               `⏭️ Kunde inte hämta basdata för match ${matchId}, hoppar.`
             );
@@ -1940,7 +1966,7 @@ async function runYesterdayMode(lookups, leagues) {
             ? await fetchMatchOdds(context, matchId)
             : { value: undefined, source: null, market: null, apiKey: null };
 
-          const eventInfo = fetched?.info;
+          const eventInfo = fetched?.info || buildEventInfoFromNormalized(normalizedEvent);
           const home = eventInfo?.homeTeam;
           const away = eventInfo?.awayTeam;
 
@@ -1969,7 +1995,7 @@ async function runYesterdayMode(lookups, leagues) {
           }
 
           const { homeScore: resolvedHomeScore, awayScore: resolvedAwayScore } =
-            resolveFinalScores({ primary: fetched?.info, secondary: rawEvent });
+            resolveFinalScores({ primary: eventInfo, secondary: rawEvent });
 
           if (resolvedHomeScore !== null) {
             record.homeScore = resolvedHomeScore;
