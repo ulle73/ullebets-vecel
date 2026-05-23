@@ -1,0 +1,167 @@
+name: Backfill teamstats from date
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_date:
+        description: "Startdatum YYYY-MM-DD. Standard = senaste sparade matchdatum vi hittade"
+        required: true
+        default: "2026-04-22"
+      commit_results:
+        description: "Commit updated teamstats JSON files back to main"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Reset update-teams last-run to requested backfill date
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+          BACKFILL_FROM_DATE: ${{ inputs.from_date }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'fs/promises';
+          import { MongoClient } from 'mongodb';
+
+          const fromDate = process.env.BACKFILL_FROM_DATE;
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate || '')) {
+            throw new Error(`Invalid BACKFILL_FROM_DATE: ${fromDate}`);
+          }
+
+          await fs.mkdir('scripts', { recursive: true });
+          await fs.writeFile(
+            'scripts/.last-run-update-teams-v2.json',
+            JSON.stringify(
+              {
+                lastRun: fromDate,
+                history: [
+                  {
+                    runDate: fromDate,
+                    runAt: new Date().toISOString(),
+                    processedDates: [fromDate],
+                    note: 'manual date backfill reset',
+                  },
+                ],
+              },
+              null,
+              2
+            )
+          );
+
+          const uri = process.env.MONGODB_URI;
+          if (!uri) {
+            console.log('MONGODB_URI saknas - uppdaterar bara lokal last-run-fil.');
+            await fs.writeFile('.previous-update-teams-last-run.json', JSON.stringify({ lastRun: null }, null, 2));
+            process.exit(0);
+          }
+
+          const client = new MongoClient(uri);
+          await client.connect();
+          const dbName = process.env.MONGODB_DB || 'app';
+          const col = client.db(dbName).collection('job_state');
+          const previous = await col.findOne({ _id: 'update-teams-v2' }, { projection: { lastRun: 1 } });
+          await fs.writeFile(
+            '.previous-update-teams-last-run.json',
+            JSON.stringify({ lastRun: previous?.lastRun ?? null }, null, 2)
+          );
+
+          await col.updateOne(
+            { _id: 'update-teams-v2' },
+            {
+              $set: {
+                lastRun: fromDate,
+                updatedAt: new Date().toISOString(),
+                backfillOverride: {
+                  fromDate,
+                  workflow: 'backfill-teamstats-from-date',
+                  startedAt: new Date().toISOString(),
+                },
+              },
+            },
+            { upsert: true }
+          );
+          await client.close(true);
+          console.log(`Last-run satt till ${fromDate}. update-teams-v2 kommer bearbeta fran detta datum till igar.`);
+          NODE
+
+      - name: Run update-teams-v2 backfill
+        env:
+          TEAMSTATS_DIR: ${{ github.workspace }}/data/teamstats
+          PUBLIC_TEAMSTATS_DIR: ${{ github.workspace }}/public/teamstats
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          RAPIDAPI_KEYS: ${{ secrets.RAPIDAPI_KEYS }}
+          RAPIDAPI_SPORTAPI7_BASE_URL: ${{ secrets.RAPIDAPI_SPORTAPI7_BASE_URL }}
+          RAPIDAPI_SOFASCORE_BASE_URL: ${{ secrets.RAPIDAPI_SOFASCORE_BASE_URL }}
+          RAPIDAPI_SPORT_API_REAL_TIME_BASE_URL: ${{ secrets.RAPIDAPI_SPORT_API_REAL_TIME_BASE_URL }}
+          RAPIDAPI_SOFASCORE_SPORT_API_BASE_URL: ${{ secrets.RAPIDAPI_SOFASCORE_SPORT_API_BASE_URL }}
+          RAPIDAPI_SOFASPORT_BASE_URL: ${{ secrets.RAPIDAPI_SOFASPORT_BASE_URL }}
+          SOFASCORE_PUBLIC_API_BASE_URL: ${{ secrets.SOFASCORE_PUBLIC_API_BASE_URL }}
+        run: node scripts/update-teams-v2.js --yesterday
+
+      - name: Restore previous DB last-run if backfill fails
+        if: failure()
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'fs/promises';
+          import { MongoClient } from 'mongodb';
+
+          const uri = process.env.MONGODB_URI;
+          if (!uri) process.exit(0);
+
+          let previous = null;
+          try {
+            previous = JSON.parse(await fs.readFile('.previous-update-teams-last-run.json', 'utf8'))?.lastRun ?? null;
+          } catch {}
+
+          const client = new MongoClient(uri);
+          await client.connect();
+          const dbName = process.env.MONGODB_DB || 'app';
+          const col = client.db(dbName).collection('job_state');
+          if (previous) {
+            await col.updateOne(
+              { _id: 'update-teams-v2' },
+              { $set: { lastRun: previous, updatedAt: new Date().toISOString() }, $unset: { backfillOverride: '' } },
+              { upsert: true }
+            );
+            console.log(`Aterstallde lastRun till ${previous}.`);
+          }
+          await client.close(true);
+          NODE
+
+      - name: Commit updated teamstats files
+        if: ${{ success() && inputs.commit_results }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/teamstats public/teamstats scripts/.last-run-update-teams-v2.json
+          if git diff --cached --quiet; then
+            echo "No teamstats file changes to commit."
+          else
+            git commit -m "Backfill teamstats from ${{ inputs.from_date }}"
+            git push
+          fi
