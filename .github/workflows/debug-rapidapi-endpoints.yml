@@ -1,0 +1,68 @@
+name: Debug RapidAPI endpoints
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_date:
+        description: "YYYY-MM-DD. Empty = yesterday UTC"
+        required: false
+        default: ""
+      category_id:
+        description: "SofaScore categoryId"
+        required: false
+        default: "34"
+      match_ids:
+        description: "Comma-separated match/event ids"
+        required: false
+        default: "15235566,14065562,14083306"
+      max_keys:
+        description: "Max RapidAPI keys to test"
+        required: false
+        default: "10"
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run RapidAPI endpoint diagnostic
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          RAPIDAPI_KEYS: ${{ secrets.RAPIDAPI_KEYS }}
+          RAPIDAPI_KEY_1: ${{ secrets.RAPIDAPI_KEY_1 }}
+          RAPIDAPI_KEY_2: ${{ secrets.RAPIDAPI_KEY_2 }}
+          RAPIDAPI_KEY_3: ${{ secrets.RAPIDAPI_KEY_3 }}
+          RAPIDAPI_KEY_4: ${{ secrets.RAPIDAPI_KEY_4 }}
+          RAPIDAPI_KEY_5: ${{ secrets.RAPIDAPI_KEY_5 }}
+          RAPIDAPI_KEY_6: ${{ secrets.RAPIDAPI_KEY_6 }}
+          RAPIDAPI_KEY_7: ${{ secrets.RAPIDAPI_KEY_7 }}
+          RAPIDAPI_KEY_8: ${{ secrets.RAPIDAPI_KEY_8 }}
+          RAPIDAPI_KEY_9: ${{ secrets.RAPIDAPI_KEY_9 }}
+          RAPIDAPI_KEY_10: ${{ secrets.RAPIDAPI_KEY_10 }}
+          RAPIDAPI_KEY_11: ${{ secrets.RAPIDAPI_KEY_11 }}
+          RAPIDAPI_KEY_12: ${{ secrets.RAPIDAPI_KEY_12 }}
+          RAPIDAPI_KEY_13: ${{ secrets.RAPIDAPI_KEY_13 }}
+          RAPIDAPI_KEY_14: ${{ secrets.RAPIDAPI_KEY_14 }}
+          RAPIDAPI_KEY_15: ${{ secrets.RAPIDAPI_KEY_15 }}
+          RAPIDAPI_KEY_16: ${{ secrets.RAPIDAPI_KEY_16 }}
+          RAPIDAPI_KEY_17: ${{ secrets.RAPIDAPI_KEY_17 }}
+          RAPIDAPI_KEY_18: ${{ secrets.RAPIDAPI_KEY_18 }}
+          RAPIDAPI_KEY_19: ${{ secrets.RAPIDAPI_KEY_19 }}
+          RAPIDAPI_KEY_20: ${{ secrets.RAPIDAPI_KEY_20 }}
+          RAPIDAPI_SPORTAPI7_BASE_URL: ${{ secrets.RAPIDAPI_SPORTAPI7_BASE_URL }}
+          RAPIDAPI_SOFASCORE_BASE_URL: ${{ secrets.RAPIDAPI_SOFASCORE_BASE_URL }}
+          RAPIDAPI_SPORT_API_REAL_TIME_BASE_URL: ${{ secrets.RAPIDAPI_SPORT_API_REAL_TIME_BASE_URL }}
+          RAPIDAPI_SOFASCORE_SPORT_API_BASE_URL: ${{ secrets.RAPIDAPI_SOFASCORE_SPORT_API_BASE_URL }}
+          RAPIDAPI_SOFASPORT_BASE_URL: ${{ secrets.RAPIDAPI_SOFASPORT_BASE_URL }}
+          SOFASCORE_PUBLIC_API_BASE_URL: ${{ secrets.SOFASCORE_PUBLIC_API_BASE_URL }}
+          TEST_DATE: ${{ inputs.test_date }}
+          TEST_CATEGORY_ID: ${{ inputs.category_id }}
+          TEST_MATCH_IDS: ${{ inputs.match_ids }}
+          RAPIDAPI_DEBUG_MAX_KEYS: ${{ inputs.max_keys }}
+        run: node scripts/debug-rapidapi-endpoints.js
