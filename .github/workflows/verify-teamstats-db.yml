@@ -1,0 +1,113 @@
+name: Verify teamstats DB
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_date:
+        description: "Count matches from this date, YYYY-MM-DD"
+        required: true
+        default: "2026-04-22"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install MongoDB driver
+        run: npm install mongodb@6.20.0
+
+      - name: Verify teamstats data in MongoDB
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+          FROM_DATE: ${{ inputs.from_date }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { MongoClient } from 'mongodb';
+
+          const uri = process.env.MONGODB_URI;
+          const dbName = process.env.MONGODB_DB || 'app';
+          const fromDate = process.env.FROM_DATE || '2026-04-22';
+
+          if (!uri) throw new Error('MONGODB_URI saknas i secrets.');
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) throw new Error(`Ogiltigt FROM_DATE: ${fromDate}`);
+
+          const client = new MongoClient(uri);
+          await client.connect();
+          const db = client.db(dbName);
+          const teamstats = db.collection('teamstats');
+          const jobState = db.collection('job_state');
+
+          const state = await jobState.findOne({ _id: 'update-teams-v2' });
+          console.log('# job_state.update-teams-v2');
+          console.log(JSON.stringify({
+            lastRun: state?.lastRun ?? null,
+            updatedAt: state?.updatedAt ?? null,
+            backfillOverride: state?.backfillOverride ?? null,
+          }, null, 2));
+
+          const docCount = await teamstats.countDocuments();
+          const docsWithFull = await teamstats.countDocuments({ full: { $type: 'array', $ne: [] } });
+          const summary = await teamstats.aggregate([
+            { $unwind: '$full' },
+            { $group: {
+              _id: null,
+              totalRows: { $sum: 1 },
+              maxTimestamp: { $max: '$full.timestamp' },
+              maxDate: { $max: '$full.date' },
+              rowsFromDate: { $sum: { $cond: [{ $gte: ['$full.date', fromDate] }, 1, 0] } }
+            } }
+          ]).toArray();
+
+          const distinctFromDate = await teamstats.aggregate([
+            { $unwind: '$full' },
+            { $match: { 'full.date': { $gte: fromDate } } },
+            { $group: { _id: { $ifNull: ['$full.matchId', '$full.id'] } } },
+            { $count: 'distinctMatchesFromDate' }
+          ]).toArray();
+
+          const latestMatches = await teamstats.aggregate([
+            { $unwind: '$full' },
+            { $match: { 'full.date': { $gte: fromDate } } },
+            { $project: {
+              _id: 0,
+              sourceFile: '$_importMeta.sourceFile',
+              importedAt: '$_importMeta.importedAt',
+              matchId: '$full.matchId',
+              date: '$full.date',
+              timestamp: '$full.timestamp',
+              homeTeamName: '$full.homeTeamName',
+              awayTeamName: '$full.awayTeamName',
+              hasMatchDetails: { $cond: [{ $ifNull: ['$full.matchDetails', false] }, true, false] }
+            } },
+            { $sort: { date: -1, timestamp: -1, matchId: 1 } },
+            { $limit: 25 }
+          ]).toArray();
+
+          const s = summary[0] || {};
+          const maxDateFromTs = s.maxTimestamp ? new Date(Number(s.maxTimestamp) * 1000).toISOString().slice(0, 10) : null;
+
+          console.log('\n# teamstats summary');
+          console.log(JSON.stringify({
+            dbName,
+            docCount,
+            docsWithFull,
+            totalRows: s.totalRows ?? 0,
+            maxDate: s.maxDate ?? null,
+            maxTimestamp: s.maxTimestamp ?? null,
+            maxDateFromTimestamp: maxDateFromTs,
+            rowsFromDate: s.rowsFromDate ?? 0,
+            distinctMatchesFromDate: distinctFromDate[0]?.distinctMatchesFromDate ?? 0,
+          }, null, 2));
+
+          console.log(`\n# latest matches from ${fromDate}`);
+          for (const m of latestMatches) {
+            console.log(`${m.date || '?'} #${m.matchId || '?'} ${m.homeTeamName || '?'} vs ${m.awayTeamName || '?'} details=${m.hasMatchDetails} file=${m.sourceFile || '?'} importedAt=${m.importedAt || '?'}`);
+          }
+
+          await client.close(true);
+          NODE
