@@ -2436,10 +2436,30 @@ async function syncTeamstatsToDbForFiles(fileNames) {
   const reconnect = async () => {
     await disconnect();
     await sleep(3_000);
-    await connect();
+    try {
+      await connect();
+      return true;
+    } catch (e) {
+      console.warn(
+        `⚠️ Återanslutning till MongoDB misslyckades: ${e?.message || e}. Försöker vidare med nästa retry …`
+      );
+      await disconnect();
+      return false;
+    }
   };
 
-  await connect();
+  try {
+    await connect();
+  } catch (e) {
+    if (!isTransientMongoSyncError(e)) {
+      throw e;
+    }
+    console.warn(
+      `⚠️ Tillfälligt DB-fel vid första Mongo-anslutning: ${e?.message || e}. Fortsätter med per-fil retry …`
+    );
+    await disconnect();
+    await sleep(5_000);
+  }
 
   let upserts = 0,
     updates = 0,
@@ -2533,6 +2553,7 @@ async function syncTeamstatsToDbForFiles(fileNames) {
             `⚠️ Tillfälligt DB-fel för '${fname}' (försök ${attempt}/4): ${e.message}. Återansluter och försöker igen …`
           );
           await reconnect();
+          await sleep(Math.min(15_000, 2_000 * attempt));
           continue;
         }
 
