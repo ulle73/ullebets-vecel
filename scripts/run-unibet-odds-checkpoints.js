@@ -194,73 +194,82 @@ async function main() {
     throw new Error("Invalid --now timestamp");
   }
 
-  const client = await clientPromise;
-  const db = client.db(DB_NAME);
-  const targetLeagues = await loadTargetLeagues(db);
-  const dates = buildDateRange({
-    now,
-    daysAhead: args.daysAhead,
-    matchDate: args.matchDate,
-  });
-
-  console.log(`\n🎯 UNIBET CHECKPOINT CAPTURE`);
-  console.log(`🕒 Now: ${now.toISOString()}`);
-  console.log(`📅 Scanning dates: ${dates.join(", ")}`);
-  if (args.checkpointKey) {
-    console.log(`🎚️ Checkpoint filter: ${args.checkpointKey}`);
-  }
-
-  const matchesByDate = await getMatchesForMultipleDates(dates, {
-    leagues: targetLeagues,
-  });
-  const allMatches = Object.values(matchesByDate).flat();
-  const matchIds = allMatches
-    .map((match) => match.matchId || match.id || match.event?.id)
-    .filter(Boolean)
-    .map(String);
-
-  console.log(`📥 Loaded ${allMatches.length} fixture matches across ${dates.length} dates`);
-
-  const snapshotsByMatchId = await loadSnapshotDocsByMatchId(db, matchIds);
-  const dueMatches = collectDueMatches(matchesByDate, snapshotsByMatchId, now, args.checkpointKey);
-
-  if (!dueMatches.length) {
-    console.log("ℹ️ No due checkpoint captures right now.");
-    process.exit(0);
-  }
-
-  const dueSummary = dueMatches.reduce((acc, match) => {
-    acc[match.checkpointKey] = (acc[match.checkpointKey] || 0) + 1;
-    return acc;
-  }, {});
-  console.log(`✅ Due matches: ${dueMatches.length}`, dueSummary);
-
-  const grouped = groupMatchesBySnapshotType(dueMatches);
-  const runDate = formatDateInZone(now, TIME_ZONE);
-
-  for (const [snapshotType, matches] of grouped.entries()) {
-    console.log(`\n🚀 Running ${snapshotType} capture for ${matches.length} matches`);
-    await runBacktest({
-      type: snapshotType,
-      leagues: targetLeagues,
-      matches,
-      runDate,
-      snapshotLimit: DEFAULT_SNAPSHOT_LIMIT,
-      exitOnComplete: false,
-      metadataBuilder: async ({ match }) => ({
-        captureMode: "checkpoint",
-        checkpointKey: match.checkpointKey,
-        checkpointLabel: match.checkpointLabel,
-        checkpointTargetDays: match.checkpointTargetDays,
-        minutesToKickoff: match.minutesToKickoff,
-        capturedAt: now.toISOString(),
-        targetMatchDate: formatDateInZone(match.matchDate, TIME_ZONE),
-      }),
+  let client;
+  try {
+    client = await clientPromise;
+    const db = client.db(DB_NAME);
+    const targetLeagues = await loadTargetLeagues(db);
+    const dates = buildDateRange({
+      now,
+      daysAhead: args.daysAhead,
+      matchDate: args.matchDate,
     });
+
+    console.log(`\n🎯 UNIBET CHECKPOINT CAPTURE`);
+    console.log(`🕒 Now: ${now.toISOString()}`);
+    console.log(`📅 Scanning dates: ${dates.join(", ")}`);
+    if (args.checkpointKey) {
+      console.log(`🎚️ Checkpoint filter: ${args.checkpointKey}`);
+    }
+
+    const matchesByDate = await getMatchesForMultipleDates(dates, {
+      leagues: targetLeagues,
+    });
+    const allMatches = Object.values(matchesByDate).flat();
+    const matchIds = allMatches
+      .map((match) => match.matchId || match.id || match.event?.id)
+      .filter(Boolean)
+      .map(String);
+
+    console.log(`📥 Loaded ${allMatches.length} fixture matches across ${dates.length} dates`);
+
+    const snapshotsByMatchId = await loadSnapshotDocsByMatchId(db, matchIds);
+    const dueMatches = collectDueMatches(matchesByDate, snapshotsByMatchId, now, args.checkpointKey);
+
+    if (!dueMatches.length) {
+      console.log("ℹ️ No due checkpoint captures right now.");
+      return;
+    }
+
+    const dueSummary = dueMatches.reduce((acc, match) => {
+      acc[match.checkpointKey] = (acc[match.checkpointKey] || 0) + 1;
+      return acc;
+    }, {});
+    console.log(`✅ Due matches: ${dueMatches.length}`, dueSummary);
+
+    const grouped = groupMatchesBySnapshotType(dueMatches);
+    const runDate = formatDateInZone(now, TIME_ZONE);
+
+    for (const [snapshotType, matches] of grouped.entries()) {
+      console.log(`\n🚀 Running ${snapshotType} capture for ${matches.length} matches`);
+      await runBacktest({
+        type: snapshotType,
+        leagues: targetLeagues,
+        matches,
+        runDate,
+        snapshotLimit: DEFAULT_SNAPSHOT_LIMIT,
+        exitOnComplete: false,
+        metadataBuilder: async ({ match }) => ({
+          captureMode: "checkpoint",
+          checkpointKey: match.checkpointKey,
+          checkpointLabel: match.checkpointLabel,
+          checkpointTargetDays: match.checkpointTargetDays,
+          minutesToKickoff: match.minutesToKickoff,
+          capturedAt: now.toISOString(),
+          targetMatchDate: formatDateInZone(match.matchDate, TIME_ZONE),
+        }),
+      });
+    }
+  } finally {
+    if (client) {
+      await client.close(true).catch(() => {});
+    }
   }
 }
 
-main().catch((error) => {
-  console.error("❌ run-unibet-odds-checkpoints failed:", error);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error("❌ run-unibet-odds-checkpoints failed:", error);
+    process.exit(1);
+  });

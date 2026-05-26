@@ -87,62 +87,71 @@ async function main() {
     throw new Error("Invalid --now timestamp");
   }
 
-  const client = await clientPromise;
-  const db = client.db(DB_NAME);
-  const targetLeagues = await loadTargetLeagues(db);
-  const targets = buildTargets(args, now);
+  let client;
+  try {
+    client = await clientPromise;
+    const db = client.db(DB_NAME);
+    const targetLeagues = await loadTargetLeagues(db);
+    const targets = buildTargets(args, now);
 
-  console.log(`\n🎯 AUTO ANALYSIS CHECKPOINT RUN`);
-  console.log(`🕒 Now: ${now.toISOString()}`);
-  console.log(`🎚️ Strategy: ${args.strategyId}`);
-  console.log(`📅 Targets: ${targets.map((target) => `${target.key}:${target.date}`).join(", ")}`);
+    console.log(`\n🎯 AUTO ANALYSIS CHECKPOINT RUN`);
+    console.log(`🕒 Now: ${now.toISOString()}`);
+    console.log(`🎚️ Strategy: ${args.strategyId}`);
+    console.log(`📅 Targets: ${targets.map((target) => `${target.key}:${target.date}`).join(", ")}`);
 
-  let totalRuns = 0;
-  let totalMatches = 0;
-  let totalCandidates = 0;
+    let totalRuns = 0;
+    let totalMatches = 0;
+    let totalCandidates = 0;
 
-  for (const checkpoint of targets) {
-    const matches = sanitizeMatches(
-      await getMatchesForDateFiltered(checkpoint.date, {
-        leagues: targetLeagues,
-      })
-    );
+    for (const checkpoint of targets) {
+      const matches = sanitizeMatches(
+        await getMatchesForDateFiltered(checkpoint.date, {
+          leagues: targetLeagues,
+        })
+      );
 
-    if (!matches.length) {
-      console.log(`ℹ️ ${checkpoint.key}: inga matcher för ${checkpoint.date}`);
-      continue;
+      if (!matches.length) {
+        console.log(`ℹ️ ${checkpoint.key}: inga matcher för ${checkpoint.date}`);
+        continue;
+      }
+
+      console.log(`\n🚀 ${checkpoint.key} -> ${checkpoint.date}`);
+      console.log(`📥 Matches: ${matches.length}`);
+
+      const result = await executeAndPersistAutoAnalysisRun({
+        db,
+        date: checkpoint.date,
+        matches,
+        strategyId: args.strategyId,
+        source: `scheduled-${checkpoint.key}`,
+        checkpoint,
+        now,
+        deterministicRunId: true,
+      });
+
+      totalRuns += 1;
+      totalMatches += matches.length;
+      totalCandidates += result?.summary?.qualifyingCandidateCount || 0;
+
+      console.log(
+        `✅ Saved ${checkpoint.key}: shortlist=${result?.summary?.shortlistCount || 0}, qualified=${result?.summary?.qualifyingCandidateCount || 0}, marketCount=${result?.summary?.marketCount || 0}`
+      );
     }
 
-    console.log(`\n🚀 ${checkpoint.key} -> ${checkpoint.date}`);
-    console.log(`📥 Matches: ${matches.length}`);
-
-    const result = await executeAndPersistAutoAnalysisRun({
-      db,
-      date: checkpoint.date,
-      matches,
-      strategyId: args.strategyId,
-      source: `scheduled-${checkpoint.key}`,
-      checkpoint,
-      now,
-      deterministicRunId: true,
-    });
-
-    totalRuns += 1;
-    totalMatches += matches.length;
-    totalCandidates += result?.summary?.qualifyingCandidateCount || 0;
-
-    console.log(
-      `✅ Saved ${checkpoint.key}: shortlist=${result?.summary?.shortlistCount || 0}, qualified=${result?.summary?.qualifyingCandidateCount || 0}, marketCount=${result?.summary?.marketCount || 0}`
-    );
+    console.log(`\n🏁 AUTO ANALYSIS CHECKPOINT SUMMARY`);
+    console.log(`Runs: ${totalRuns}`);
+    console.log(`Matches: ${totalMatches}`);
+    console.log(`Qualified candidates: ${totalCandidates}`);
+  } finally {
+    if (client) {
+      await client.close(true).catch(() => {});
+    }
   }
-
-  console.log(`\n🏁 AUTO ANALYSIS CHECKPOINT SUMMARY`);
-  console.log(`Runs: ${totalRuns}`);
-  console.log(`Matches: ${totalMatches}`);
-  console.log(`Qualified candidates: ${totalCandidates}`);
 }
 
-main().catch((error) => {
-  console.error("❌ run-auto-analysis-checkpoints failed:", error);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error("❌ run-auto-analysis-checkpoints failed:", error);
+    process.exit(1);
+  });
