@@ -1,11 +1,11 @@
 
 import dotenv from "dotenv";
-import { MongoClient } from "mongodb";
 import {
   buildRapidContext,
   enrichMatchupsForDate,
   expandDateRange,
 } from "../lib/matchupsEnrichment.js";
+import { withMongoClientRetry } from "../lib/mongo-resilience.js";
 
 dotenv.config({ path: ".env.local" });
 
@@ -25,16 +25,22 @@ async function main() {
   const dates = expandDateRange(dateArg);
   const rapidContext = buildRapidContext();
 
-  const client = new MongoClient(MONGODB_URI);
-  await client.connect();
-
-  try {
-    const db = client.db(DB_NAME);
-    for (const date of dates) {
-      await enrichMatchupsForDate(db, date, rapidContext, { persistFiles: true, logger: console });
-    }
-  } finally {
-    await client.close();
+  for (const date of dates) {
+    await withMongoClientRetry(
+      {
+        uri: MONGODB_URI,
+        dbName: DB_NAME,
+        label: `enrich matchups for ${date}`,
+        logger: console,
+        retries: 3,
+      },
+      async ({ db }) => {
+        await enrichMatchupsForDate(db, date, rapidContext, {
+          persistFiles: true,
+          logger: console,
+        });
+      }
+    );
   }
 }
 

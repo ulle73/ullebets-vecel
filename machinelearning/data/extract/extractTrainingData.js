@@ -24,6 +24,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { toDateStr, toDate } from '../../../lib/core/date.js';
 import { loadExternalUnibetTests } from '../loadExternalUnibetTests.js';
+import { retryTransientMongoOperation } from '../../../lib/mongo-resilience.js';
 
 // Load environment variables
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
@@ -114,63 +115,73 @@ export async function extractTrainingData() {
   }
   
   const client = new MongoClient(mongoUri);
-  await client.connect();
-  console.log('✅ Connected to MongoDB\n');
-  
-  const db = client.db(process.env.MONGODB_DB || 'app');
-  
-  // Collections
-  const backtestCol = db.collection('unibet-backtest');
-  const leaguesCol = db.collection('leages-and-teams');
-  const teamprofilesCol = db.collection('teamprofiles');
-  const teamstatsCol = db.collection('teamstats');
-  
-  // Load leagues-and-teams (for Opta data)
-  console.log('📊 Loading leagues and teams data...');
-  const leaguesDocs = await leaguesCol.find({}).toArray();
-  
-  const leaguesData = {};
-  for (const doc of leaguesDocs) {
-    // Skip _id and merge all league objects
-    const { _id, ...leagues } = doc;
-    Object.assign(leaguesData, leagues);
-  }
-  
-  const leagueCount = Object.keys(leaguesData).length;
-  const teamCount = Object.values(leaguesData).reduce((sum, league) => 
-    sum + (league.teams?.length || 0), 0
-  );
-  
-  console.log(`  Found ${leagueCount} leagues with ${teamCount} total teams\n`);
-  
-  // Cache teamprofiles and teamstats once to avoid repetitive DB lookups
-  console.log('🗂️ Caching teamprofiles and teamstats...');
-  const teamProfileCache = await loadTeamProfileCache(teamprofilesCol);
-  const teamStatsCache = await loadTeamStatsCache(teamstatsCol);
-  console.log(`  Cached ${teamProfileCache.size} teamprofiles and ${teamStatsCache.size} teamstats\n`);
-  
-  // Get all completed matches from unibet-backtest
-  console.log('📝 Fetching completed backtest matches...');
-  const matches = await backtestCol.find({
-    'lines.0': { $exists: true } // Has at least one line
-  }).toArray();
-  
-  console.log(`Found ${matches.length} matches with backtest data\n`);
+  try {
+    await client.connect();
+    console.log('✅ Connected to MongoDB\n');
 
-  // Optionally load external Unibet backtests from disk (can comment out if not needed)
-  const EXTERNAL_BASE = "C:\\Users\\ryd\\OneDrive\\Skrivbord\\FRONTEND\\bet365\\UNIBET\\unibet-backtests";
-  const externalMatches = await loadExternalUnibetTests(EXTERNAL_BASE);
-  if (externalMatches.length) {
-    console.log(`Loaded ${externalMatches.length} external backtest matches from disk\n`);
-    matches.push(...externalMatches);
-  } else {
-    console.log(`No external backtest matches loaded (path: ${EXTERNAL_BASE})\n`);
-  }
-  
-  // Group samples by statKey/scope/period
-  const datasets = {};
-  
-  for (const match of matches) {
+    const db = client.db(process.env.MONGODB_DB || 'app');
+    
+    // Collections
+    const backtestCol = db.collection('unibet-backtest');
+    const leaguesCol = db.collection('leages-and-teams');
+    const teamprofilesCol = db.collection('teamprofiles');
+    const teamstatsCol = db.collection('teamstats');
+    
+    // Load leagues-and-teams (for Opta data)
+    console.log('📊 Loading leagues and teams data...');
+    const leaguesDocs = await retryTransientMongoOperation(
+      'load leagues-and-teams',
+      () => leaguesCol.find({}).toArray(),
+      { logger: console }
+    );
+    
+    const leaguesData = {};
+    for (const doc of leaguesDocs) {
+      // Skip _id and merge all league objects
+      const { _id, ...leagues } = doc;
+      Object.assign(leaguesData, leagues);
+    }
+    
+    const leagueCount = Object.keys(leaguesData).length;
+    const teamCount = Object.values(leaguesData).reduce((sum, league) => 
+      sum + (league.teams?.length || 0), 0
+    );
+    
+    console.log(`  Found ${leagueCount} leagues with ${teamCount} total teams\n`);
+    
+    // Cache teamprofiles and teamstats once to avoid repetitive DB lookups
+    console.log('🗂️ Caching teamprofiles and teamstats...');
+    const teamProfileCache = await loadTeamProfileCache(teamprofilesCol);
+    const teamStatsCache = await loadTeamStatsCache(teamstatsCol);
+    console.log(`  Cached ${teamProfileCache.size} teamprofiles and ${teamStatsCache.size} teamstats\n`);
+    
+    // Get all completed matches from unibet-backtest
+    console.log('📝 Fetching completed backtest matches...');
+    const matches = await retryTransientMongoOperation(
+      'load completed backtest matches',
+      () =>
+        backtestCol.find({
+          'lines.0': { $exists: true } // Has at least one line
+        }).toArray(),
+      { logger: console }
+    );
+    
+    console.log(`Found ${matches.length} matches with backtest data\n`);
+
+    // Optionally load external Unibet backtests from disk (can comment out if not needed)
+    const EXTERNAL_BASE = "C:\\Users\\ryd\\OneDrive\\Skrivbord\\FRONTEND\\bet365\\UNIBET\\unibet-backtests";
+    const externalMatches = await loadExternalUnibetTests(EXTERNAL_BASE);
+    if (externalMatches.length) {
+      console.log(`Loaded ${externalMatches.length} external backtest matches from disk\n`);
+      matches.push(...externalMatches);
+    } else {
+      console.log(`No external backtest matches loaded (path: ${EXTERNAL_BASE})\n`);
+    }
+    
+    // Group samples by statKey/scope/period
+    const datasets = {};
+    
+    for (const match of matches) {
     const matchDateStr = toDateStr(match.matchDate || match.timestamp);
     const matchDate = toDate(matchDateStr);
     if (!matchDate) {
@@ -252,74 +263,76 @@ export async function extractTrainingData() {
         console.log(`  ⚠️  Error building sample for ${datasetKey}: ${err.message}`);
       }
     }
-  }
-  
-  // === SUPERVISED LEARNING FÖR KOMBI UTAN UNIBET-ODDS ===
-  // Vi tar in alla STAT_KEYS men hoppar över de scope/period som har odds (via isOddsSupported)
-  console.log('\n📊 Extracting supervised samples from teamstats...');
-  const supervisedStats = STAT_KEYS;
-  
-  await extractSupervisedSamples({
-    datasets,
-    teamstatsCol,
-    leaguesData,
-    teamprofilesCol,
-    teamProfileCache,
-    supervisedStats,
-    TRAIN_END_DATE,
-    VAL_END_DATE
-  });
-  
-  // Save datasets to JSONL files
-  console.log('\n💾 Saving datasets...\n');
-  const outputDir = path.join(process.cwd(), 'machinelearning', 'data', 'datasets');
-  await fs.mkdir(outputDir, { recursive: true });
-  
-  let savedCount = 0;
-  let skippedCount = 0;
-  let totalTrainSamples = 0;
-  let totalValSamples = 0;
-  let totalTestSamples = 0;
-  
-  for (const [key, splits] of Object.entries(datasets)) {
-    const totalSamples = splits.train.length + splits.val.length + splits.test.length;
-    
-    console.log(`${key}:`);
-    console.log(`  Train: ${splits.train.length}, Val: ${splits.val.length}, Test: ${splits.test.length}`);
-    console.log(`  Total: ${totalSamples}`);
-    totalTrainSamples += splits.train.length;
-    totalValSamples += splits.val.length;
-    totalTestSamples += splits.test.length;
-    
-    // Lower threshold for testing - require at least 10 samples total
-    if (totalSamples < 10) {
-      console.log(`  ⚠️  Too few samples (need at least 10), skipping\n`);
-      skippedCount++;
-      continue;
     }
     
-    // Save each split
-    for (const [splitName, samples] of Object.entries(splits)) {
-      if (samples.length === 0) continue;
+    // === SUPERVISED LEARNING FÖR KOMBI UTAN UNIBET-ODDS ===
+    // Vi tar in alla STAT_KEYS men hoppar över de scope/period som har odds (via isOddsSupported)
+    console.log('\n📊 Extracting supervised samples from teamstats...');
+    const supervisedStats = STAT_KEYS;
+    
+    await extractSupervisedSamples({
+      datasets,
+      teamstatsCol,
+      leaguesData,
+      teamprofilesCol,
+      teamProfileCache,
+      supervisedStats,
+      TRAIN_END_DATE,
+      VAL_END_DATE
+    });
+    
+    // Save datasets to JSONL files
+    console.log('\n💾 Saving datasets...\n');
+    const outputDir = path.join(process.cwd(), 'machinelearning', 'data', 'datasets');
+    await fs.mkdir(outputDir, { recursive: true });
+    
+    let savedCount = 0;
+    let skippedCount = 0;
+    let totalTrainSamples = 0;
+    let totalValSamples = 0;
+    let totalTestSamples = 0;
+    
+    for (const [key, splits] of Object.entries(datasets)) {
+      const totalSamples = splits.train.length + splits.val.length + splits.test.length;
       
-      const filename = path.join(outputDir, `${key}_${splitName}.jsonl`);
-      const content = samples.map(s => JSON.stringify(s)).join('\n');
-      await fs.writeFile(filename, content);
-      console.log(`  ✅ Saved ${samples.length} samples to ${splitName}.jsonl`);
-      savedCount++;
+      console.log(`${key}:`);
+      console.log(`  Train: ${splits.train.length}, Val: ${splits.val.length}, Test: ${splits.test.length}`);
+      console.log(`  Total: ${totalSamples}`);
+      totalTrainSamples += splits.train.length;
+      totalValSamples += splits.val.length;
+      totalTestSamples += splits.test.length;
+      
+      // Lower threshold for testing - require at least 10 samples total
+      if (totalSamples < 10) {
+        console.log(`  ⚠️  Too few samples (need at least 10), skipping\n`);
+        skippedCount++;
+        continue;
+      }
+      
+      // Save each split
+      for (const [splitName, samples] of Object.entries(splits)) {
+        if (samples.length === 0) continue;
+        
+        const filename = path.join(outputDir, `${key}_${splitName}.jsonl`);
+        const content = samples.map(s => JSON.stringify(s)).join('\n');
+        await fs.writeFile(filename, content);
+        console.log(`  ✅ Saved ${samples.length} samples to ${splitName}.jsonl`);
+        savedCount++;
+      }
+      console.log('');
     }
-    console.log('');
+    
+    console.log(`\n📊 Summary:`);
+    console.log(`  Total dataset keys processed: ${Object.keys(datasets).length}`);
+    console.log(`  Files saved: ${savedCount}`);
+    console.log(`  Skipped (too few samples): ${skippedCount}`);
+    console.log(`  Totals -> Train: ${totalTrainSamples}, Val: ${totalValSamples}, Test: ${totalTestSamples}`);
+    
+    console.log('\n✅ Data extraction complete!');
+  } finally {
+    await client.close().catch(() => {});
+    console.log('✅ MongoDB connection closed');
   }
-  
-  console.log(`\n📊 Summary:`);
-  console.log(`  Total dataset keys processed: ${Object.keys(datasets).length}`);
-  console.log(`  Files saved: ${savedCount}`);
-  console.log(`  Skipped (too few samples): ${skippedCount}`);
-  console.log(`  Totals -> Train: ${totalTrainSamples}, Val: ${totalValSamples}, Test: ${totalTestSamples}`);
-  
-  console.log('\n✅ Data extraction complete!');
-  await client.close();
-  console.log('✅ MongoDB connection closed');
 }
 
 /**
@@ -337,7 +350,11 @@ async function extractSupervisedSamples({
   VAL_END_DATE
 }) {
   // Get all teamstats documents
-  const allTeamStats = await teamstatsCol.find({}).toArray();
+  const allTeamStats = await retryTransientMongoOperation(
+    'load teamstats documents for supervised samples',
+    () => teamstatsCol.find({}).toArray(),
+    { logger: console }
+  );
   console.log(`  Found ${allTeamStats.length} teamstats documents`);
   
   let samplesCreated = 0;
@@ -898,7 +915,11 @@ function normalizeTeamName(name) {
  * Cache helpers for teamprofiles and teamstats
  */
 async function loadTeamProfileCache(col) {
-  const docs = await col.find({}).toArray();
+  const docs = await retryTransientMongoOperation(
+    'load teamprofiles cache',
+    () => col.find({}).toArray(),
+    { logger: console }
+  );
   const cache = new Map();
   for (const doc of docs) {
     const name = normalizeTeamName(doc?.meta?.lagnamn);
@@ -917,7 +938,11 @@ function getCachedTeamProfile(cache, teamName, matchType) {
 }
 
 async function loadTeamStatsCache(col) {
-  const docs = await col.find({}).toArray();
+  const docs = await retryTransientMongoOperation(
+    'load teamstats cache',
+    () => col.find({}).toArray(),
+    { logger: console }
+  );
   const cache = new Map();
   for (const doc of docs) {
     const name = normalizeTeamName(doc?._importMeta?.teamName);
@@ -939,22 +964,30 @@ function getCachedTeamStats(cache, teamName, teamRole) {
  * Find team profile in teamprofiles collection
  */
 async function findTeamProfile(col, teamName, matchType) {
-  const doc = await col.findOne({
-    'meta.lagnamn': { $regex: new RegExp(`^${teamName}$`, 'i') },
-    'meta.matchType': matchType
-  });
-  return doc;
+  return retryTransientMongoOperation(
+    `find teamprofile ${teamName} (${matchType})`,
+    () =>
+      col.findOne({
+        'meta.lagnamn': { $regex: new RegExp(`^${teamName}$`, 'i') },
+        'meta.matchType': matchType
+      }),
+    { logger: console }
+  );
 }
 
 /**
  * Find team stats in teamstats collection
  */
 async function findTeamStats(col, teamName, teamRole) {
-  const doc = await col.findOne({
-    '_importMeta.teamName': { $regex: new RegExp(`^${teamName}$`, 'i') },
-    '_importMeta.teamRole': teamRole
-  });
-  return doc;
+  return retryTransientMongoOperation(
+    `find teamstats ${teamName} (${teamRole})`,
+    () =>
+      col.findOne({
+        '_importMeta.teamName': { $regex: new RegExp(`^${teamName}$`, 'i') },
+        '_importMeta.teamRole': teamRole
+      }),
+    { logger: console }
+  );
 }
 
 // Run if called directly

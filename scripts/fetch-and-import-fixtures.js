@@ -5,6 +5,7 @@ import puppeteer from "puppeteer";
 import { fileURLToPath } from "url";
 import { fetchScheduledMatches } from "../rapidApi/scheduled-matches.js";
 import { spawn } from "child_process";
+import { withMongoClientRetry } from "../lib/mongo-resilience.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -374,9 +375,7 @@ async function main() {
   console.log("🗄  Importerar i databasen …");
   const DB = process.env.MONGODB_DB || "app";
   const COL = "match-for-date";
-  const { clientPromise } = await import("../lib/db.js");
-  const client = await clientPromise;
-  const col = client.db(DB).collection(COL);
+  const MONGODB_URI = process.env.MONGODB_URI;
 
   const doc = {
     date: payload.date,
@@ -388,49 +387,65 @@ async function main() {
     matches: Array.isArray(payload.matches) ? payload.matches : [],
   };
 
-  await col.updateOne(
-    { _id: String(payload.date) },
-    { $push: { full: { $each: [doc], $position: 0 } } },
-    { upsert: true }
-  );
-
-  // Logga alla matcher som sparades
-  try {
-    const toLocal = (ts) =>
-      ts
-        ? new Date(ts * 1000).toLocaleString("sv-SE", {
-            timeZone: "Europe/Stockholm",
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : "—";
-
-    const lines = (payload.matches || []).map((m) => {
-      const id = m?.id ?? m?.event?.id ?? "n/a";
-      const league = m?.tournament?.name ?? m?.event?.tournament?.name ?? "—";
-      const home = m?.homeTeam?.name ?? m?.event?.homeTeam?.name ?? "—";
-      const away = m?.awayTeam?.name ?? m?.event?.awayTeam?.name ?? "—";
-      const ts = getEventTs(m);
-      return `  • ${league}: ${home} vs ${away} (id=${id}) @ ${toLocal(ts)}`;
-    });
-
-    console.log("🧾 Matcher sparade i DB:");
-    if (lines.length) lines.forEach((l) => console.log(l));
-    else console.log("  (inga matcher)");
-  } catch (e) {
-    console.warn("⚠️ Kunde inte logga sparade matcher:", e?.message || e);
+  if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI missing");
   }
 
-  // Hjälp-index
-  await col.createIndex({ _id: 1 });
-  await col.createIndex({ "full.0.date": 1 });
-  await col.createIndex({ "full.0.matches.id": 1 });
+  await withMongoClientRetry(
+    {
+      uri: MONGODB_URI,
+      dbName: DB,
+      label: `fixtures db import ${payload.date}`,
+      logger: console,
+      retries: 3,
+    },
+    async ({ db }) => {
+      const col = db.collection(COL);
+
+      await col.updateOne(
+        { _id: String(payload.date) },
+        { $push: { full: { $each: [doc], $position: 0 } } },
+        { upsert: true }
+      );
+
+      // Logga alla matcher som sparades
+      try {
+        const toLocal = (ts) =>
+          ts
+            ? new Date(ts * 1000).toLocaleString("sv-SE", {
+                timeZone: "Europe/Stockholm",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "—";
+
+        const lines = (payload.matches || []).map((m) => {
+          const id = m?.id ?? m?.event?.id ?? "n/a";
+          const league = m?.tournament?.name ?? m?.event?.tournament?.name ?? "—";
+          const home = m?.homeTeam?.name ?? m?.event?.homeTeam?.name ?? "—";
+          const away = m?.awayTeam?.name ?? m?.event?.awayTeam?.name ?? "—";
+          const ts = getEventTs(m);
+          return `  • ${league}: ${home} vs ${away} (id=${id}) @ ${toLocal(ts)}`;
+        });
+
+        console.log("🧾 Matcher sparade i DB:");
+        if (lines.length) lines.forEach((l) => console.log(l));
+        else console.log("  (inga matcher)");
+      } catch (e) {
+        console.warn("⚠️ Kunde inte logga sparade matcher:", e?.message || e);
+      }
+
+      // Hjälp-index
+      await col.createIndex({ _id: 1 });
+      await col.createIndex({ "full.0.date": 1 });
+      await col.createIndex({ "full.0.matches.id": 1 });
+    }
+  );
 
   console.log(`✅ Import klart: ${DB}.${COL} (_id=${payload.date})`);
-  await client.close(true);
 }
 
 // (valfri debug) – se vilka handles som lever efteråt
