@@ -15,7 +15,9 @@ on:
 
 concurrency:
   group: teamstats-db-sync
-  cancel-in-progress: falsepermissions:
+  cancel-in-progress: false
+
+permissions:
   contents: write
 
 jobs:
