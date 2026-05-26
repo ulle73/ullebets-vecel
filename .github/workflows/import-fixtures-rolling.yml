@@ -17,7 +17,9 @@ permissions:
 
 concurrency:
   group: teamstats-db-sync
-  cancel-in-progress: falsejobs:
+  cancel-in-progress: false
+
+jobs:
   run-script:
     name: Refresh fixtures for rolling D0-D7
     runs-on: ubuntu-latest
