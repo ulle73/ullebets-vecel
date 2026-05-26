@@ -16,6 +16,7 @@ on:
 
 concurrency:
   group: teamstats-db-sync
+  queue: max
   cancel-in-progress: false
 
 jobs:
