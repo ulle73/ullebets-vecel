@@ -20,6 +20,10 @@ on:
         required: false
         default: "10"
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   debug:
     runs-on: ubuntu-latest

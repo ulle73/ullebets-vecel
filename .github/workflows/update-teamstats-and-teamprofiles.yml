@@ -11,13 +11,11 @@ on:
         options: ["false", "true"]
 
   schedule:
-    - cron: "0 5 * * *"     
+    - cron: "0 5 * * *"
 
 concurrency:
-  group: teamstats
-  cancel-in-progress: false
-
-permissions:
+  group: teamstats-db-sync
+  cancel-in-progress: falsepermissions:
   contents: write
 
 jobs:

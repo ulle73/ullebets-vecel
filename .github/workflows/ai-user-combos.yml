@@ -9,6 +9,10 @@ on:
         description: "Datum att köra (YYYY-MM-DD). Lämna tomt för dagens datum."
         required: false
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   ai-user-combos:
     runs-on: ubuntu-latest

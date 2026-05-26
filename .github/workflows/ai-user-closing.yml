@@ -17,6 +17,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   ai-user-closing:
     uses: ./.github/workflows/ai-user-daily.yml

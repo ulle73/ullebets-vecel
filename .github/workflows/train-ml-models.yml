@@ -116,6 +116,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   train-ml-models:
     runs-on: ubuntu-latest

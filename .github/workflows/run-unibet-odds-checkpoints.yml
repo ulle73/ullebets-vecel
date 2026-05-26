@@ -19,10 +19,8 @@ on:
         required: false
 
 concurrency:
-  group: run-unibet-odds-checkpoints
-  cancel-in-progress: false
-
-jobs:
+  group: teamstats-db-sync
+  cancel-in-progress: falsejobs:
   unibet-odds-checkpoints:
     runs-on: ubuntu-latest
     timeout-minutes: 45

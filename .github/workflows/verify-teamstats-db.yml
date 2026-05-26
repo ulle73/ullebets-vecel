@@ -8,6 +8,10 @@ on:
         required: true
         default: "2026-04-22"
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   verify:
     runs-on: ubuntu-latest

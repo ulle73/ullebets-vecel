@@ -15,6 +15,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   ai-user-daily:
     runs-on: ubuntu-latest

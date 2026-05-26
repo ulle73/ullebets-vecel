@@ -6,10 +6,8 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: import-fixtures-dplus7
-  cancel-in-progress: false
-
-permissions:
+  group: teamstats-db-sync
+  cancel-in-progress: falsepermissions:
   contents: write
 
 jobs:

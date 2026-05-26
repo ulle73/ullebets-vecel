@@ -7,6 +7,10 @@ on:
         description: "Match date to capture manually (YYYY-MM-DD)"
         required: true
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   unibet-forward-backtests:
     runs-on: ubuntu-latest

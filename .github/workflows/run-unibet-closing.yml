@@ -3,6 +3,10 @@ name: Run Unibet Closing Odds (manual)
 on:
   workflow_dispatch: {}
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   unibet-closing:
     runs-on: ubuntu-latest

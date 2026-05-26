@@ -8,6 +8,10 @@ on:
   workflow_dispatch:
     # Allow manual trigger
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   correct-backtests:
     runs-on: ubuntu-latest

@@ -19,10 +19,8 @@ on:
         required: false
 
 concurrency:
-  group: run-auto-analysis-checkpoints
-  cancel-in-progress: false
-
-jobs:
+  group: teamstats-db-sync
+  cancel-in-progress: falsejobs:
   auto-analysis-checkpoints:
     runs-on: ubuntu-latest
     timeout-minutes: 60

@@ -9,6 +9,10 @@ on:
         description: "Date or range to enrich (YYYY-MM-DD or YYYY-MM-DD-YYYY-MM-DD)."
         required: false
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   enrich:
     runs-on: ubuntu-latest

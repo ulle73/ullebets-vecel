@@ -5,6 +5,10 @@ on:
     - cron: '0 10 * * *' # 09:00 Stockholm time
   workflow_dispatch:
 
+concurrency:
+  group: teamstats-db-sync
+  cancel-in-progress: false
+
 jobs:
   generate-bets:
     runs-on: ubuntu-latest
